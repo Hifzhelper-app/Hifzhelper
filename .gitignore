@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Wrangler build/cache artifacts
+.wrangler/
+
+# Local D1 database files (created by `wrangler dev` / --local migrations)
+*.sqlite
+*.sqlite-journal
+
+# Environment/secrets — never commit real secret values
+.env
+.env.*
+.dev.vars
+
+# OS/editor cruft
+.DS_Store
+*.log
