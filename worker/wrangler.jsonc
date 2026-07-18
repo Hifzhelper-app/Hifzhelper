@@ -1,0 +1,37 @@
+{
+  // Hifzhelper Worker config. Two environments, mirroring the main/dev
+  // branch split agreed in chat — each with its own D1 database, so dev
+  // testing never touches real maktab data.
+  //
+  // The database_id fields below are placeholders — replace them with the
+  // real IDs printed when you create each D1 database (see the setup
+  // manifest). Everything else here is ready to use as-is.
+
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hifzhelper-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-17",
+
+  "env": {
+    "production": {
+      "name": "hifzhelper-api",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "hifzhelper-maktab1",
+          "database_id": "<FILL_IN_PRODUCTION_DATABASE_ID>"
+        }
+      ]
+    },
+    "development": {
+      "name": "hifzhelper-api-dev",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "hifzhelper-maktab1-dev",
+          "database_id": "<FILL_IN_DEVELOPMENT_DATABASE_ID>"
+        }
+      ]
+    }
+  }
+}

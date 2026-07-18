@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#17323a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Hifzhelper" />
+<link rel="manifest" href="manifest.json" />
+<title>Hifzhelper — Student Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="eyebrow">Hifzhelper — student journal</div>
+    <h1 class="title" id="viewTitle">Today's Log</h1>
+    <div class="date-line" id="todayLine"></div>
+  </header>
+
+  <!-- ================= JOURNAL VIEW ================= -->
+  <div class="view active" id="view-journal">
+
+    <div class="juz-wrap">
+      <div class="juz-head">
+        <span class="label">Manzil strip — juz' progress</span>
+        <span class="hint">tap to correct manually</span>
+      </div>
+      <div class="juz-strip" id="juzStrip"></div>
+    </div>
+
+    <div class="juz-wrap">
+      <div class="juz-head">
+        <span class="label">Dhor recency map</span>
+        <span class="hint">fresh → overdue, by half-juz'</span>
+      </div>
+      <div class="juz-strip" id="revisionMap"></div>
+      <div class="legend"><span>fresh</span><div class="bar"></div><span>overdue</span></div>
+    </div>
+
+    <div class="grid3">
+      <div class="card">
+        <h2>Sabaq</h2>
+        <span class="sub">today's new lesson</span>
+        <label>Surah</label>
+        <select id="s_surah"></select>
+        <div class="row2 computed-zone" style="margin:8px 0;">
+          <div id="s_rub_display">Rub': —</div>
+        </div>
+        <div class="tags" id="rubRefToggle" style="margin-bottom:8px;">
+          <div class="tag" data-ref="waterval">Waterval</div>
+          <div class="tag" data-ref="uthmani">Uthmani</div>
+        </div>
+        <label>Ayah range</label>
+        <div class="row2 mini">
+          <div><input type="number" id="s_from" placeholder="from" /></div>
+          <div><input type="number" id="s_to" placeholder="to" /></div>
+        </div>
+        <label>Lines completed</label>
+        <input type="number" id="s_lines" placeholder="e.g. 15" />
+        <label>Quarter reached (juz' 1–28 only)</label>
+        <select id="s_quarter">
+          <option value="1">1st quarter</option>
+          <option value="2">2nd quarter</option>
+          <option value="3">3rd quarter</option>
+          <option value="4" selected>4th quarter</option>
+        </select>
+        <label>Tajweed focus</label>
+        <div class="tags" id="s_tajweed"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sabaq Dhor</h2>
+        <span class="sub">recent revision</span>
+        <label>Zone (auto)</label>
+        <div class="computed-zone" id="sd_zone">—</div>
+        <label>Tajweed focus</label>
+        <div class="tags" id="sd_tajweed"></div>
+        <label>Mistakes (optional)</label>
+        <input type="number" id="sd_mistakes" placeholder="0" />
+      </div>
+
+      <div class="card">
+        <h2>Dhor</h2>
+        <span class="sub">old revision</span>
+        <div class="computed-zone" id="d_zone">—</div>
+        <label>Half-juz' covered today</label>
+        <div class="row2 mini">
+          <div><select id="d_from"></select></div>
+          <div><select id="d_to"></select></div>
+        </div>
+        <label>Tajweed focus</label>
+        <div class="tags" id="d_tajweed"></div>
+        <label>Mistakes</label>
+        <input type="number" id="d_mistakes" placeholder="0" />
+        <label>Time spent (minutes)</label>
+        <input type="number" id="d_time" placeholder="e.g. 30" />
+      </div>
+    </div>
+
+    <div class="section-block">
+      <h2>Tadabbur — reflection</h2>
+      <label style="margin-top:0">What did today's portion mean to you?</label>
+      <textarea id="reflection" placeholder="A few lines on what stood out..."></textarea>
+    </div>
+
+    <div class="section-block">
+      <h2>Note to your teacher</h2>
+      <textarea id="studentComment" placeholder="Anything you'd like your teacher to know?"></textarea>
+    </div>
+
+    <div class="section-block">
+      <h2>Teacher feedback</h2>
+      <div class="feedback-box" id="teacherFeedbackBox">Your teacher's feedback will appear here after review.</div>
+    </div>
+
+    <div class="save-bar">
+      <span class="save-status" id="saveStatus">saved ✓</span>
+      <button class="primary" id="saveBtn">Save today's entry</button>
+    </div>
+
+    <div class="ledger">
+      <h2>Journal history</h2>
+      <div id="entryList"></div>
+    </div>
+  </div>
+
+  <!-- ================= PROGRESS VIEW ================= -->
+  <div class="view" id="view-progress">
+    <div class="juz-wrap">
+      <div class="juz-head"><span class="label">What you've memorized</span></div>
+      <div class="zoom-toggle">
+        <button data-zoom="focus" class="active">Focus area</button>
+        <button data-zoom="juz30">Juz' 30</button>
+        <button data-zoom="juz29">Juz' 29</button>
+        <button data-zoom="full">Full (1–114)</button>
+      </div>
+      <div class="surah-grid" id="surahGrid"></div>
+    </div>
+    <div class="juz-wrap">
+      <div class="juz-head"><span class="label">By juz'</span><span class="hint">numeric order 1–30</span></div>
+      <div class="juz-strip" id="juzStripProgress"></div>
+    </div>
+  </div>
+
+  <!-- ================= ATTENDANCE VIEW ================= -->
+  <div class="view" id="view-attendance">
+    <div class="juz-wrap">
+      <div class="juz-head">
+        <span class="label" id="calMonthLabel">This month</span>
+        <span class="hint">tap a day to cycle present / absent / haidh</span>
+      </div>
+      <div class="cal-grid" id="calDow"></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="predict-form">
+        <label style="margin-top:0">Predict haidh (next ~90 days)</label>
+        <div class="row2 mini">
+          <div><input type="number" id="cycleLen" placeholder="cycle length (days)" /></div>
+          <div><input type="number" id="periodLen" placeholder="period length (days)" /></div>
+        </div>
+        <label>Last haidh start date</label>
+        <input type="text" id="lastHaidh" placeholder="YYYY-MM-DD" />
+        <div class="save-bar" style="margin-top:10px;">
+          <button class="primary" id="predictBtn">Generate prediction</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<nav class="tabs">
+  <button data-view="journal" class="active"><span class="icon">✎</span>Journal</button>
+  <button data-view="progress"><span class="icon">۞</span>Progress</button>
+  <button data-view="attendance"><span class="icon">▦</span>Attendance</button>
+</nav>
+
+<div class="overlay hidden" id="overlay">
+  <div class="detail-card">
+    <button class="close" id="closeDetail">×</button>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+<script src="../shared/data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

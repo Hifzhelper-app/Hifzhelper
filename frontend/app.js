@@ -1,0 +1,595 @@
+// ============================================================
+// Hifzhelper — Phase 1 student journal
+// Storage: localStorage (portable — works standalone, no backend)
+// Quran structural data (surahs, juz'/rub' boundaries) lives in data.js —
+// see CONVENTIONS.md principle 2. This file only holds app state/logic.
+// ============================================================
+
+const LS_ENTRIES = 'hh_entries';
+const LS_POSITION = 'hh_position';
+const LS_LASTDHOR = 'hh_lastDhor';
+const LS_ATTENDANCE = 'hh_attendance';
+const LS_TAJWEED_CUSTOM = 'hh_tajweed_custom';
+
+// Which reference (waterval/uthmani) this app instance is using — an app-state
+// preference (depends on localStorage), not Quran structural data, so it stays
+// here rather than in data.js.
+const RUB_REFERENCE_KEY = 'hh_rub_reference';
+function getRubReference(){ return lsGet(RUB_REFERENCE_KEY, 'waterval'); }
+function setRubReference(ref){ lsSet(RUB_REFERENCE_KEY, ref); }
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function formatDateNice(iso){
+  const d = new Date(iso+'T00:00:00');
+  return d.toLocaleDateString(undefined, { weekday:'short', year:'numeric', month:'short', day:'numeric' });
+}
+
+// ---------- local storage helpers ----------
+function lsGet(key, fallback){
+  try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch(e){ return fallback; }
+}
+function lsSet(key, value){
+  try{ localStorage.setItem(key, JSON.stringify(value)); }
+  catch(e){ console.error('storage failed', key, e); }
+}
+
+let entries = lsGet(LS_ENTRIES, []);
+let position = lsGet(LS_POSITION, { activeJuz: 30, studyOrder: [], juz: {} });
+let lastDhor = lsGet(LS_LASTDHOR, {});
+let attendance = lsGet(LS_ATTENDANCE, {}); // { date: 'present'|'absent'|'haidh'|'predicted-haidh' }
+let customTags = lsGet(LS_TAJWEED_CUSTOM, []);
+let selected = { sabaq: [], sabaqDhor: [], dhor: [] };
+
+// ---------- progress model ----------
+function getJuzEntry(juz){
+  if(!position.juz[juz]) position.juz[juz] = SURAH_TRACKED_JUZ[juz] ? { surahReached: null } : { quarter: 0 };
+  return position.juz[juz];
+}
+function getJuzFillFraction(juz){
+  const j = position.juz[juz];
+  if(!j) return 0;
+  if(SURAH_TRACKED_JUZ[juz]){
+    if(j.surahReached == null) return 0;
+    if(juz === 30){
+      const total = 114-78+1;
+      const done = 114 - j.surahReached + 1;
+      return Math.max(0, Math.min(1, done/total));
+    } else { // juz 29, ascending from 67
+      const total = 77-67+1;
+      const done = j.surahReached - 67 + 1;
+      return Math.max(0, Math.min(1, done/total));
+    }
+  }
+  return (j.quarter||0)/4;
+}
+function isJuzComplete(juz){ return getJuzFillFraction(juz) >= 1; }
+
+function touchJuz(juz){
+  if(!position.studyOrder.includes(juz)) position.studyOrder.push(juz);
+  position.activeJuz = juz;
+}
+
+// ---------- zones (sabaq dhor / dhor), based on actual study order ----------
+function computeZones(){
+  const seq = position.studyOrder || [];
+  if(seq.length === 0) return { sabaqDhorJuz: [], dhorJuz: [] };
+  const activeIdx = seq.indexOf(position.activeJuz);
+  const upTo = activeIdx >= 0 ? activeIdx+1 : seq.length;
+  const half = Math.ceil(upTo/2);
+  if(upTo <= half){
+    return { sabaqDhorJuz: seq.slice(0, upTo), dhorJuz: [] };
+  }
+  return { sabaqDhorJuz: seq.slice(half, upTo), dhorJuz: seq.slice(0, half) };
+}
+function juzListLabel(list){
+  if(!list.length) return '—';
+  return list.map(j => `Juz' ${j}`).join(', ');
+}
+function juzListToSegments(list, ref){
+  const segmentsPerJuz = RUB_BOUNDARIES[ref].length / 30;
+  const units = [];
+  list.forEach(j => {
+    for(let k=1;k<=segmentsPerJuz;k++) units.push((j-1)*segmentsPerJuz + k);
+  });
+  return units;
+}
+function segmentLabel(u, ref){
+  const segmentsPerJuz = RUB_BOUNDARIES[ref].length / 30;
+  const juz = Math.ceil(u/segmentsPerJuz);
+  const pos = ((u-1) % segmentsPerJuz) + 1;
+  return ref === 'waterval' ? `Juz' ${juz} — Quarter ${pos} of 4` : `Juz' ${juz} — 1/8 marker ${pos} of 8`;
+}
+
+// ---------- recency color ----------
+function daysSince(dateISO){
+  if(!dateISO) return null;
+  const then = new Date(dateISO+'T00:00:00');
+  const now = new Date(todayISO()+'T00:00:00');
+  return Math.round((now-then)/86400000);
+}
+function lerp(a,b,t){ return a+(b-a)*t; }
+function recencyColor(days){
+  const SAGE=[86,113,79], BRASS=[168,120,58], BURG=[125,50,50];
+  if(days===null) return 'rgb('+BURG.join(',')+')';
+  const t = Math.max(0, Math.min(1, days/30));
+  let c;
+  if(t<=0.5){ const t2=t/0.5; c=SAGE.map((v,i)=>Math.round(lerp(v,BRASS[i],t2))); }
+  else{ const t2=(t-0.5)/0.5; c=BRASS.map((v,i)=>Math.round(lerp(v,BURG[i],t2))); }
+  return 'rgb('+c.join(',')+')';
+}
+
+// ============================================================
+// RENDER: journal view
+// ============================================================
+function populateSurahSelect(){
+  const sel = document.getElementById('s_surah');
+  sel.innerHTML = SURAHS.map(([n,name]) => `<option value="${n}">${n}. ${name}</option>`).join('');
+  // sensible default based on where the student is
+  const j = position.activeJuz;
+  let def = juzStartSurah(j);
+  if(j === 30) def = 114;
+  if(j === 29) def = 67;
+  sel.value = def;
+}
+
+function renderTajweedTags(containerId, key){
+  const wrap = document.getElementById(containerId);
+  wrap.innerHTML = '';
+  const all = [...TAJWEED_DEFAULTS, ...customTags];
+  all.forEach(tag => {
+    const el = document.createElement('div');
+    el.className = 'tag' + (selected[key].includes(tag) ? ' active' : '');
+    el.textContent = tag;
+    el.tabIndex = 0;
+    el.setAttribute('role','button');
+    el.addEventListener('click', () => {
+      if(selected[key].includes(tag)) selected[key] = selected[key].filter(t=>t!==tag);
+      else selected[key].push(tag);
+      renderTajweedTags(containerId, key);
+    });
+    wrap.appendChild(el);
+  });
+}
+
+function renderJuzStripInto(containerId, { showLabelState } = {}){
+  const strip = document.getElementById(containerId);
+  strip.innerHTML = '';
+  for(let i=1;i<=30;i++){
+    const dot = document.createElement('div');
+    const frac = getJuzFillFraction(i);
+    dot.className = 'juz-dot' + (frac>=1 ? ' filled' : '') + (i===position.activeJuz ? ' current' : '');
+    if(frac>0 && frac<1){
+      dot.style.background = `linear-gradient(to right, var(--brass) ${frac*100}%, var(--bg-alt) ${frac*100}%)`;
+      dot.style.borderColor = 'var(--brass)';
+    }
+    dot.textContent = i;
+    dot.tabIndex = 0;
+    dot.setAttribute('role','button');
+    dot.setAttribute('aria-label', `Juz ${i} — ${Math.round(frac*100)}% memorized`);
+    dot.addEventListener('click', () => setJuzManual(i));
+    dot.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setJuzManual(i);} });
+    strip.appendChild(dot);
+  }
+}
+function renderJuzStrip(){ renderJuzStripInto('juzStrip'); }
+
+function setJuzManual(juz){
+  const frac = getJuzFillFraction(juz);
+  const j = getJuzEntry(juz);
+  if(frac >= 1){
+    if(SURAH_TRACKED_JUZ[juz]) j.surahReached = null; else j.quarter = 0;
+  } else {
+    if(SURAH_TRACKED_JUZ[juz]) j.surahReached = (juz===30 ? 78 : 77);
+    else j.quarter = 4;
+    touchJuz(juz);
+  }
+  lsSet(LS_POSITION, position);
+  renderAll();
+}
+
+function renderRevisionMap(){
+  const wrap = document.getElementById('revisionMap');
+  wrap.innerHTML = '';
+  const ref = getRubReference();
+  const segmentsPerJuz = RUB_BOUNDARIES[ref].length / 30;
+  const total = segmentsPerJuz * 30;
+  for(let u=1; u<=total; u++){
+    const juz = Math.ceil(u/segmentsPerJuz);
+    const posInJuz = ((u-1) % segmentsPerJuz) + 1;
+    const dot = document.createElement('div');
+    dot.className = 'juz-dot';
+    dot.style.fontSize = segmentsPerJuz > 4 ? '6.5px' : '7.5px';
+    dot.textContent = juz;
+    const frac = getJuzFillFraction(juz);
+    const reached = frac >= (posInJuz / segmentsPerJuz);
+    if(!reached){
+      dot.title = segmentLabel(u, ref)+': not yet memorized';
+    } else {
+      const days = daysSince(lastDhor[u]);
+      dot.style.background = recencyColor(days);
+      dot.style.borderColor = 'transparent';
+      dot.style.color = '#fff9ec';
+      dot.title = segmentLabel(u, ref) + (days===null ? ': not yet given dhor' : `: last dhor ${days} day${days===1?'':'s'} ago`);
+    }
+    wrap.appendChild(dot);
+  }
+}
+
+function updateRubDisplay(){
+  const surahNumber = parseInt(document.getElementById('s_surah').value)||1;
+  const ayah = document.getElementById('s_to').value || document.getElementById('s_from').value || 1;
+  const juz = getJuzForPosition(surahNumber, ayah);
+  const disp = document.getElementById('s_rub_display');
+  if(SURAH_TRACKED_JUZ[juz]){
+    disp.textContent = `Juz' ${juz} — tracked by surah`;
+  } else {
+    const ref = getRubReference();
+    const info = getRubInfo(surahNumber, ayah, ref);
+    if(ref === 'waterval'){
+      // auto-fill the 4-option quarter select from real boundary data — still editable to correct
+      document.getElementById('s_quarter').value = String(info.posInJuz);
+      disp.textContent = `Juz' ${juz} • Quarter ${info.posInJuz} of 4 (Waterval)`;
+    } else {
+      disp.textContent = `Juz' ${juz} • 1/8 marker ${info.posInJuz} of 8 (Uthmani)`;
+    }
+  }
+}
+
+function updateZoneDisplays(){
+  const zones = computeZones();
+  document.getElementById('sd_zone').textContent = zones.sabaqDhorJuz.length ? juzListLabel(zones.sabaqDhorJuz) : 'Log a sabaq to begin';
+  const dZone = document.getElementById('d_zone');
+  const dFrom = document.getElementById('d_from');
+  const dTo = document.getElementById('d_to');
+  const ref = getRubReference();
+  if(zones.dhorJuz.length){
+    dZone.textContent = `Old-revision zone: ${juzListLabel(zones.dhorJuz)} (${ref === 'waterval' ? 'quarters' : "1/8's"})`;
+    const units = juzListToSegments(zones.dhorJuz, ref);
+    const options = units.map(u => `<option value="${u}">${segmentLabel(u, ref)}</option>`).join('');
+    dFrom.innerHTML = options; dTo.innerHTML = options;
+    dFrom.disabled = false; dTo.disabled = false;
+    // default to the least-recently revised segment (spaced repetition nudge)
+    let oldest = units[0], oldestDays = -1;
+    units.forEach(u => { const d = daysSince(lastDhor[u]); const val = d===null ? 99999 : d; if(val>oldestDays){ oldestDays=val; oldest=u; } });
+    dFrom.value = oldest; dTo.value = oldest;
+  } else {
+    dZone.textContent = "Nothing in dhor rotation yet — complete more than one juz' to begin";
+    dFrom.innerHTML = ''; dTo.innerHTML = '';
+    dFrom.disabled = true; dTo.disabled = true;
+  }
+}
+
+function defaultAyahFrom(){
+  const surahNumber = parseInt(document.getElementById('s_surah').value)||1;
+  const last = entries.find(e => e.sabaq && e.sabaq.surahNumber === surahNumber);
+  if(last && last.sabaq.ayahTo){
+    return parseInt(last.sabaq.ayahTo)+1;
+  }
+  return '';
+}
+
+function fillFormFromEntry(entry){
+  document.getElementById('s_surah').value = entry.sabaq.surahNumber || '';
+  document.getElementById('s_from').value = entry.sabaq.ayahFrom || '';
+  document.getElementById('s_to').value = entry.sabaq.ayahTo || '';
+  document.getElementById('s_lines').value = entry.sabaq.lines || '';
+  document.getElementById('s_quarter').value = entry.sabaq.quarter || '4';
+  selected.sabaq = [...(entry.sabaq.tajweed||[])];
+  selected.sabaqDhor = [...(entry.sabaqDhor.tajweed||[])];
+  selected.dhor = [...(entry.dhor.tajweed||[])];
+  renderTajweedTags('s_tajweed','sabaq');
+  renderTajweedTags('sd_tajweed','sabaqDhor');
+  renderTajweedTags('d_tajweed','dhor');
+  document.getElementById('sd_mistakes').value = entry.sabaqDhor.mistakes || '';
+  document.getElementById('d_mistakes').value = entry.dhor.mistakes || '';
+  document.getElementById('d_time').value = entry.dhor.minutes || '';
+  if(entry.dhor.from){ document.getElementById('d_from').value = entry.dhor.from; }
+  if(entry.dhor.to){ document.getElementById('d_to').value = entry.dhor.to; }
+  const fb = document.getElementById('teacherFeedbackBox');
+  fb.textContent = (entry.teacherFeedback && entry.teacherFeedback.trim()) ? entry.teacherFeedback : "Your teacher's feedback will appear here after review.";
+  document.getElementById('reflection').value = entry.reflection || '';
+  document.getElementById('studentComment').value = entry.studentComment || '';
+  updateRubDisplay();
+}
+
+function clearFormDefaults(){
+  document.getElementById('s_from').value = defaultAyahFrom();
+  document.getElementById('s_to').value = '';
+  document.getElementById('s_lines').value = '';
+  document.getElementById('s_quarter').value = '4';
+  document.getElementById('sd_mistakes').value = '';
+  document.getElementById('d_mistakes').value = '';
+  document.getElementById('d_time').value = '';
+  selected.sabaq = []; selected.sabaqDhor = []; selected.dhor = [];
+  renderTajweedTags('s_tajweed','sabaq');
+  renderTajweedTags('sd_tajweed','sabaqDhor');
+  renderTajweedTags('d_tajweed','dhor');
+  document.getElementById('teacherFeedbackBox').textContent = "Your teacher's feedback will appear here after review.";
+  document.getElementById('reflection').value = '';
+  document.getElementById('studentComment').value = '';
+  updateRubDisplay();
+}
+
+// ---------- save ----------
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const date = todayISO();
+  const existing = entries.find(e => e.date === date);
+  const surahSelect = document.getElementById('s_surah');
+  const surahNumber = parseInt(surahSelect.value)||1;
+  const quarterVal = parseInt(document.getElementById('s_quarter').value)||1;
+  const ayahTo = document.getElementById('s_to').value;
+  const ayahFrom = document.getElementById('s_from').value;
+  const reachedAyah = ayahTo || ayahFrom;
+
+  const zones = computeZones();
+  const dFromVal = document.getElementById('d_from').value;
+  const dToVal = document.getElementById('d_to').value;
+
+  const entry = {
+    date,
+    sabaq: {
+      surahNumber, surah: surahName(surahNumber),
+      ayahFrom, ayahTo,
+      lines: document.getElementById('s_lines').value,
+      quarter: document.getElementById('s_quarter').value,
+      tajweed: [...selected.sabaq]
+    },
+    sabaqDhor: {
+      zoneJuz: [...zones.sabaqDhorJuz],
+      tajweed: [...selected.sabaqDhor],
+      mistakes: document.getElementById('sd_mistakes').value
+    },
+    dhor: {
+      from: dFromVal, to: dToVal, ref: getRubReference(),
+      tajweed: [...selected.dhor],
+      mistakes: document.getElementById('d_mistakes').value,
+      minutes: document.getElementById('d_time').value
+    },
+    reflection: document.getElementById('reflection').value,
+    studentComment: document.getElementById('studentComment').value,
+    teacherFeedback: existing ? (existing.teacherFeedback||'') : ''
+  };
+
+  // update progress model
+  if(reachedAyah){
+    const computedJuz = getJuzForPosition(surahNumber, reachedAyah);
+    touchJuz(computedJuz);
+    const j = getJuzEntry(computedJuz);
+    if(SURAH_TRACKED_JUZ[computedJuz]){
+      if(computedJuz===30) j.surahReached = (j.surahReached==null) ? surahNumber : Math.min(j.surahReached, surahNumber);
+      else j.surahReached = (j.surahReached==null) ? surahNumber : Math.max(j.surahReached, surahNumber);
+    } else {
+      j.quarter = Math.max(j.quarter||0, quarterVal);
+    }
+  }
+
+  // update dhor recency
+  if(dFromVal && dToVal){
+    const a = Math.min(parseInt(dFromVal), parseInt(dToVal));
+    const b = Math.max(parseInt(dFromVal), parseInt(dToVal));
+    for(let u=a; u<=b; u++) lastDhor[u] = date;
+  }
+
+  // attendance: any record today => present (unless already marked haidh manually)
+  if(attendance[date] !== 'haidh') attendance[date] = 'present';
+
+  if(existing) Object.assign(existing, entry); else entries.unshift(entry);
+  entries.sort((a,b) => b.date.localeCompare(a.date));
+
+  lsSet(LS_ENTRIES, entries);
+  lsSet(LS_POSITION, position);
+  lsSet(LS_LASTDHOR, lastDhor);
+  lsSet(LS_ATTENDANCE, attendance);
+  lsSet(LS_TAJWEED_CUSTOM, customTags);
+
+  renderAll();
+  const status = document.getElementById('saveStatus');
+  status.classList.add('show');
+  setTimeout(()=>status.classList.remove('show'), 1800);
+});
+
+// ---------- ledger ----------
+function renderLedger(){
+  const list = document.getElementById('entryList');
+  list.innerHTML = '';
+  if(entries.length===0){
+    list.innerHTML = '<div class="empty-state">No entries yet — today\'s log will be the first page.</div>';
+    return;
+  }
+  entries.forEach(e => {
+    const row = document.createElement('div');
+    row.className = 'entry-row';
+    const att = attendance[e.date] || 'present';
+    row.innerHTML = `
+      <div class="entry-date">${e.date}</div>
+      <div class="entry-summary"><span class="surah">${e.sabaq.surah||'—'}</span> ${e.sabaq.ayahFrom ? (e.sabaq.ayahFrom+'–'+(e.sabaq.ayahTo||'')) : ''}</div>
+      <div class="att-chip att-${att}">${att}</div>
+    `;
+    row.addEventListener('click', () => openDetail(e));
+    list.appendChild(row);
+  });
+}
+
+function openDetail(e){
+  const content = document.getElementById('detailContent');
+  content.innerHTML = `
+    <button class="close" id="closeDetail2">×</button>
+    <h3>${formatDateNice(e.date)}</h3>
+    <div class="detail-grid">
+      <div class="detail-sec"><div class="h">Sabaq</div><strong>${e.sabaq.surah||'—'}</strong> ${e.sabaq.ayahFrom?(e.sabaq.ayahFrom+'–'+(e.sabaq.ayahTo||'')):''} · ${e.sabaq.lines||0} lines${e.sabaq.tajweed&&e.sabaq.tajweed.length?' · '+e.sabaq.tajweed.join(', '):''}</div>
+      <div class="detail-sec"><div class="h">Sabaq Dhor</div>${e.sabaqDhor.zoneJuz&&e.sabaqDhor.zoneJuz.length?juzListLabel(e.sabaqDhor.zoneJuz):'—'} · ${e.sabaqDhor.mistakes||0} mistakes${e.sabaqDhor.tajweed&&e.sabaqDhor.tajweed.length?' · '+e.sabaqDhor.tajweed.join(', '):''}</div>
+      <div class="detail-sec"><div class="h">Dhor</div>${e.dhor.from?(segmentLabel(parseInt(e.dhor.from), e.dhor.ref||'waterval')+' → '+segmentLabel(parseInt(e.dhor.to), e.dhor.ref||'waterval')):'—'} · ${e.dhor.mistakes||0} mistakes · ${e.dhor.minutes||0} min${e.dhor.tajweed&&e.dhor.tajweed.length?' · '+e.dhor.tajweed.join(', '):''}</div>
+      ${e.reflection?`<div class="detail-sec"><div class="h">Tadabbur</div>${e.reflection}</div>`:''}
+      ${e.studentComment?`<div class="detail-sec"><div class="h">Note to teacher</div>${e.studentComment}</div>`:''}
+      <div class="detail-sec"><div class="h">Teacher feedback</div>${e.teacherFeedback&&e.teacherFeedback.trim()?e.teacherFeedback:'<em>Awaiting review.</em>'}</div>
+    </div>
+    <button class="delete-link" id="deleteEntry">Delete this entry</button>
+  `;
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('closeDetail2').addEventListener('click', closeDetail);
+  document.getElementById('deleteEntry').addEventListener('click', () => {
+    entries = entries.filter(en => en.date !== e.date);
+    lsSet(LS_ENTRIES, entries);
+    renderAll();
+    closeDetail();
+  });
+}
+function closeDetail(){ document.getElementById('overlay').classList.add('hidden'); }
+document.getElementById('closeDetail').addEventListener('click', closeDetail);
+document.getElementById('overlay').addEventListener('click', e => { if(e.target.id==='overlay') closeDetail(); });
+
+['s_surah','s_from','s_to','s_quarter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateRubDisplay);
+  document.getElementById(id).addEventListener('change', updateRubDisplay);
+});
+
+function renderRubRefToggle(){
+  const cur = getRubReference();
+  document.querySelectorAll('#rubRefToggle .tag').forEach(el => {
+    el.classList.toggle('active', el.dataset.ref === cur);
+  });
+}
+document.querySelectorAll('#rubRefToggle .tag').forEach(el => {
+  el.addEventListener('click', () => {
+    setRubReference(el.dataset.ref);
+    renderRubRefToggle();
+    updateRubDisplay();
+  });
+});
+
+// ============================================================
+// RENDER: progress view
+// ============================================================
+let currentZoom = 'focus';
+function renderProgressView(){
+  renderJuzStripInto('juzStripProgress');
+  const grid = document.getElementById('surahGrid');
+  grid.innerHTML = '';
+  let range;
+  if(currentZoom === 'full') range = { start:1, end:114 };
+  else if(currentZoom === 'juz30') range = getJuzSurahSpan(30);
+  else if(currentZoom === 'juz29') range = getJuzSurahSpan(29);
+  else { // focus: whatever juz is active
+    range = getJuzSurahSpan(position.activeJuz);
+  }
+  for(let n=range.start; n<=range.end; n++){
+    const juz = SURAH_TRACKED_JUZ[position.activeJuz] ? null : null;
+    // determine which juz this surah primarily belongs to (approx by span match)
+    let owningJuz = null;
+    for(let j=1;j<=30;j++){
+      const span = getJuzSurahSpan(j);
+      if(n>=span.start && n<=span.end){ owningJuz = j; break; }
+    }
+    const frac = owningJuz ? getJuzFillFraction(owningJuz) : 0;
+    const pill = document.createElement('div');
+    pill.className = 'surah-pill' + (frac>=1 ? ' done' : (frac>0 ? ' progress' : ''));
+    pill.textContent = n + '. ' + surahName(n);
+    pill.title = `Juz' ${owningJuz}`;
+    grid.appendChild(pill);
+  }
+}
+document.querySelectorAll('.zoom-toggle button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.zoom-toggle button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentZoom = btn.dataset.zoom;
+    renderProgressView();
+  });
+});
+
+// ============================================================
+// RENDER: attendance view
+// ============================================================
+let calMonth = new Date();
+function renderAttendance(){
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  document.getElementById('calMonthLabel').textContent = calMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+  const dowWrap = document.getElementById('calDow');
+  dowWrap.innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const firstDow = new Date(y,m,1).getDay();
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  for(let i=0;i<firstDow;i++){ const e=document.createElement('div'); e.className='cal-day empty'; grid.appendChild(e); }
+  for(let d=1; d<=daysInMonth; d++){
+    const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const state = attendance[iso];
+    const cell = document.createElement('div');
+    let cls = 'cal-day';
+    if(state==='present') cls += ' present';
+    else if(state==='absent') cls += ' absent';
+    else if(state==='haidh') cls += ' haidh';
+    else if(state==='predicted-haidh') cls += ' haidh predicted';
+    cell.className = cls;
+    cell.textContent = d;
+    cell.addEventListener('click', () => cycleAttendance(iso));
+    grid.appendChild(cell);
+  }
+}
+function cycleAttendance(iso){
+  const cur = attendance[iso];
+  const order = [undefined,'present','absent','haidh'];
+  const idx = order.indexOf(cur === 'predicted-haidh' ? 'haidh' : cur);
+  const next = order[(idx+1) % order.length];
+  if(next) attendance[iso] = next; else delete attendance[iso];
+  lsSet(LS_ATTENDANCE, attendance);
+  renderAttendance();
+}
+document.getElementById('predictBtn').addEventListener('click', () => {
+  const cycle = parseInt(document.getElementById('cycleLen').value);
+  const period = parseInt(document.getElementById('periodLen').value);
+  const lastStr = document.getElementById('lastHaidh').value;
+  if(!cycle || !period || !lastStr) return;
+  const last = new Date(lastStr+'T00:00:00');
+  if(isNaN(last.getTime())) return;
+  for(let cycleIdx=0; cycleIdx<4; cycleIdx++){
+    for(let d=0; d<period; d++){
+      const dt = new Date(last);
+      dt.setDate(dt.getDate() + cycleIdx*cycle + d);
+      const iso = dt.toISOString().slice(0,10);
+      if(!attendance[iso]) attendance[iso] = 'predicted-haidh';
+    }
+  }
+  lsSet(LS_ATTENDANCE, attendance);
+  renderAttendance();
+});
+
+// ============================================================
+// TAB NAV
+// ============================================================
+document.querySelectorAll('nav.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    const titles = { journal: "Today's Log", progress: 'Your Progress', attendance: 'Attendance' };
+    document.getElementById('viewTitle').textContent = titles[btn.dataset.view];
+    if(btn.dataset.view === 'progress') renderProgressView();
+    if(btn.dataset.view === 'attendance') renderAttendance();
+  });
+});
+
+// ============================================================
+// INIT
+// ============================================================
+function renderAll(){
+  renderJuzStrip();
+  renderRevisionMap();
+  updateZoneDisplays();
+  renderLedger();
+}
+
+(function init(){
+  document.getElementById('todayLine').textContent = formatDateNice(todayISO());
+  populateSurahSelect();
+  renderRubRefToggle();
+  renderTajweedTags('s_tajweed','sabaq');
+  renderTajweedTags('sd_tajweed','sabaqDhor');
+  renderTajweedTags('d_tajweed','dhor');
+  renderAll();
+  const todayEntry = entries.find(e => e.date === todayISO());
+  if(todayEntry) fillFormFromEntry(todayEntry);
+  else clearFormDefaults();
+})();
