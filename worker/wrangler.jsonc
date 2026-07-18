@@ -19,7 +19,7 @@
         {
           "binding": "DB",
           "database_name": "hifzhelper-maktab1",
-          "database_id": "<FILL_IN_PRODUCTION_DATABASE_ID>"
+          "database_id": "<256fea3f-9349-4665-a0f7-62f43c41fa2b>"
         }
       ]
     },
@@ -29,7 +29,7 @@
         {
           "binding": "DB",
           "database_name": "hifzhelper-maktab1-dev",
-          "database_id": "<FILL_IN_DEVELOPMENT_DATABASE_ID>"
+          "database_id": "<1bdb86cd-c077-4d56-8cee-9dfe8e8d34df>"
         }
       ]
     }
