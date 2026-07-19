@@ -16,6 +16,9 @@ end-to-end against the dev environment (login, repeat-login, wrong-PIN,
 5-attempt lockout, entry save/read, attendance auto-marking — all tested via
 Hoppscotch against `hifzhelper-api-dev`).
 
+See `TESTING.md` for the repeatable version of that same test sequence —
+worth re-running it against any future version before considering it done.
+
 **Everything in this delivery** (full repo, since this is the baseline):
 ```
 .gitignore
