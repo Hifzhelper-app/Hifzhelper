@@ -1,7 +1,7 @@
 import { json, error } from './utils.js';
 import { handleLogin, authenticate } from './auth.js';
-import { handleGetEntries, handleSaveEntry } from './entries.js';
-import { handleGetAttendance, handleSetAttendance, handlePredictHaidh } from './attendance.js';
+import { handleGetEntries, handleSaveEntry, handleDeleteEntry } from './entries.js';
+import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
 
 // Every handler returns { data } or { error, status } — this file's only job
@@ -20,7 +20,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+          'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
         }
       });
     }
@@ -40,9 +40,11 @@ export default {
 
       if (path === '/entries' && request.method === 'GET') return respond(await handleGetEntries(request, env, auth));
       if (path === '/entries' && request.method === 'POST') return respond(await handleSaveEntry(request, env, auth));
+      if (path === '/entries' && request.method === 'DELETE') return respond(await handleDeleteEntry(request, env, auth));
 
       if (path === '/attendance' && request.method === 'GET') return respond(await handleGetAttendance(request, env, auth));
       if (path === '/attendance' && request.method === 'POST') return respond(await handleSetAttendance(request, env, auth));
+      if (path === '/attendance' && request.method === 'DELETE') return respond(await handleDeleteAttendance(request, env, auth));
       if (path === '/attendance/predict' && request.method === 'POST') return respond(await handlePredictHaidh(request, env, auth));
 
       if (path === '/position' && request.method === 'GET') return respond(await handleGetPosition(request, env, auth));

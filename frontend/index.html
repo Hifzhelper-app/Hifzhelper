@@ -15,12 +15,32 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="app">
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1 class="title" style="margin-bottom:16px;">Sign in</h1>
+    <label style="margin-top:0">Your ID</label>
+    <input type="text" id="login_id" placeholder="e.g. K7M2QX" autocapitalize="characters" />
+    <label>4-digit PIN</label>
+    <input type="password" id="login_pin" placeholder="••••" inputmode="numeric" maxlength="4" pattern="[0-9]*" />
+    <div class="login-hint" id="loginHint">First time? Enter any 4-digit PIN — it becomes your PIN from now on.</div>
+    <div class="save-bar" style="margin-top:16px;">
+      <button class="primary" id="loginBtn" style="width:100%">Sign in</button>
+    </div>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
 
   <header class="top">
     <div class="eyebrow">Hifzhelper — student journal</div>
     <h1 class="title" id="viewTitle">Today's Log</h1>
-    <div class="date-line" id="todayLine"></div>
+    <div class="date-line-row">
+      <div class="date-line" id="todayLine"></div>
+      <button class="logout-link" id="logoutBtn">Sign out</button>
+    </div>
   </header>
 
   <!-- ================= JOURNAL VIEW ================= -->
@@ -28,6 +48,7 @@
 
     <div class="juz-wrap">
       <div class="juz-head">
+
         <span class="label">Manzil strip — juz' progress</span>
         <span class="hint">tap to correct manually</span>
       </div>
@@ -195,6 +216,7 @@ if('serviceWorker' in navigator){
 }
 </script>
 <script src="../shared/data.js"></script>
+<script src="api.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

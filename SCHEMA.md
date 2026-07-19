@@ -57,7 +57,7 @@ Composite primary key `(student_id, date)`.
 |---|---|---|
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
-| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh`. Auto-set to `present` when any entry is logged that day, unless already `haidh`. |
+| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh`. Auto-set to `present` whenever any entry is logged that day — sabaq always wins, overriding even a prior `haidh`. |
 
 ## Table: `position`
 

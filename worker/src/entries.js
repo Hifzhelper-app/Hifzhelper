@@ -23,9 +23,19 @@ export async function handleGetEntries(request, env, auth) {
   return { data: results };
 }
 
+// DELETE /entries?date=YYYY-MM-DD — a student can only delete their own.
+export async function handleDeleteEntry(request, env, auth) {
+  const url = new URL(request.url);
+  const date = url.searchParams.get('date');
+  if (!date) return { error: 'date query param is required', status: 400 };
+
+  await env.DB.prepare('DELETE FROM entries WHERE student_id = ? AND date = ?').bind(auth.id, date).run();
+  return { data: { deleted: true } };
+}
+
 // POST /entries — upsert today's (or a given date's) entry for the logged-in student.
-// Attendance is auto-marked "present" here per the rule agreed earlier — unless
-// already "haidh", which takes precedence and is never silently overwritten.
+// Attendance is auto-marked "present" here — sabaq always wins, so this
+// overrides even a day previously marked haidh.
 export async function handleSaveEntry(request, env, auth) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
@@ -54,15 +64,12 @@ export async function handleSaveEntry(request, env, auth) {
      ON CONFLICT(student_id, date) DO UPDATE SET ${updateClause}`
   ).bind(...values).run();
 
-  // Auto-mark present, unless already haidh (haidh always wins, never silently overwritten).
-  const existingAttendance = await env.DB.prepare('SELECT status FROM attendance WHERE student_id = ? AND date = ?')
-    .bind(studentId, body.date).first();
-  if (!existingAttendance || existingAttendance.status !== 'haidh') {
-    await env.DB.prepare(
-      `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
-       ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
-    ).bind(studentId, body.date).run();
-  }
+  // Sabaq always wins: any logged entry marks present, unconditionally —
+  // including overriding a day previously marked haidh.
+  await env.DB.prepare(
+    `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
+     ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
+  ).bind(studentId, body.date).run();
 
   return { data: { saved: true } };
 }
