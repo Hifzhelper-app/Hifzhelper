@@ -23,6 +23,16 @@ export async function handleGetEntries(request, env, auth) {
   return { data: results };
 }
 
+// DELETE /entries?date=YYYY-MM-DD — a student can only delete their own.
+export async function handleDeleteEntry(request, env, auth) {
+  const url = new URL(request.url);
+  const date = url.searchParams.get('date');
+  if (!date) return { error: 'date query param is required', status: 400 };
+
+  await env.DB.prepare('DELETE FROM entries WHERE student_id = ? AND date = ?').bind(auth.id, date).run();
+  return { data: { deleted: true } };
+}
+
 // POST /entries — upsert today's (or a given date's) entry for the logged-in student.
 // Attendance is auto-marked "present" here per the rule agreed earlier — unless
 // already "haidh", which takes precedence and is never silently overwritten.

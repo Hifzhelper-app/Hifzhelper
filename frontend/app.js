@@ -1,14 +1,14 @@
 // ============================================================
 // Hifzhelper — Phase 1 student journal
-// Storage: localStorage (portable — works standalone, no backend)
+// Storage: entries/position/lastDhor/attendance now live server-side
+// (Cloudflare D1, via api.js) — this used to be localStorage-only; that
+// gap is closed as of this revision. localStorage is still used for a few
+// genuinely local, non-synced things: the login token, which rub' reference
+// this device displays, and custom tajweed tags someone's added.
 // Quran structural data (surahs, juz'/rub' boundaries) lives in data.js —
 // see CONVENTIONS.md principle 2. This file only holds app state/logic.
 // ============================================================
 
-const LS_ENTRIES = 'hh_entries';
-const LS_POSITION = 'hh_position';
-const LS_LASTDHOR = 'hh_lastDhor';
-const LS_ATTENDANCE = 'hh_attendance';
 const LS_TAJWEED_CUSTOM = 'hh_tajweed_custom';
 
 // Which reference (waterval/uthmani) this app instance is using — an app-state
@@ -24,7 +24,7 @@ function formatDateNice(iso){
   return d.toLocaleDateString(undefined, { weekday:'short', year:'numeric', month:'short', day:'numeric' });
 }
 
-// ---------- local storage helpers ----------
+// ---------- local storage helpers (token, rub' preference, custom tags only) ----------
 function lsGet(key, fallback){
   try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
   catch(e){ return fallback; }
@@ -34,12 +34,38 @@ function lsSet(key, value){
   catch(e){ console.error('storage failed', key, e); }
 }
 
-let entries = lsGet(LS_ENTRIES, []);
-let position = lsGet(LS_POSITION, { activeJuz: 30, studyOrder: [], juz: {} });
-let lastDhor = lsGet(LS_LASTDHOR, {});
-let attendance = lsGet(LS_ATTENDANCE, {}); // { date: 'present'|'absent'|'haidh'|'predicted-haidh' }
+let entries = [];
+let position = { activeJuz: 30, studyOrder: [], juz: {} };
+let lastDhor = {};
+let attendance = {}; // { date: 'present'|'absent'|'haidh'|'predicted-haidh' }, for the currently-viewed month
 let customTags = lsGet(LS_TAJWEED_CUSTOM, []);
 let selected = { sabaq: [], sabaqDhor: [], dhor: [] };
+
+// Persists position + lastDhor together — call this after any mutation to
+// either, rather than assuming a save elsewhere will cover it.
+async function persistPosition(){
+  try{
+    await apiSavePosition(JSON.stringify(position), JSON.stringify(lastDhor));
+  }catch(e){
+    console.error('Could not save position', e);
+    showBanner("Couldn't save your progress — check your connection and try again.");
+  }
+}
+
+// A small, visible way to surface errors (CONVENTIONS.md principle 3 — no
+// silent fallbacks). Not fancy, just not invisible.
+function showBanner(message){
+  let el = document.getElementById('errorBanner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'errorBanner';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#7d3232;color:#fff;padding:10px 14px;font-family:monospace;font-size:12px;text-align:center;z-index:100;';
+    document.body.prepend(el);
+  }
+  el.textContent = message;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
 
 // ---------- progress model ----------
 function getJuzEntry(juz){
@@ -174,7 +200,7 @@ function renderJuzStripInto(containerId, { showLabelState } = {}){
 }
 function renderJuzStrip(){ renderJuzStripInto('juzStrip'); }
 
-function setJuzManual(juz){
+async function setJuzManual(juz){
   const frac = getJuzFillFraction(juz);
   const j = getJuzEntry(juz);
   if(frac >= 1){
@@ -184,8 +210,8 @@ function setJuzManual(juz){
     else j.quarter = 4;
     touchJuz(juz);
   }
-  lsSet(LS_POSITION, position);
   renderAll();
+  await persistPosition();
 }
 
 function renderRevisionMap(){
@@ -312,7 +338,60 @@ function clearFormDefaults(){
 }
 
 // ---------- save ----------
-document.getElementById('saveBtn').addEventListener('click', () => {
+// ---------- API <-> local entry shape ----------
+// The app's internal entry objects are nested (entry.sabaq.X, entry.dhor.X)
+// because so much of the rendering code depends on that shape. The API's
+// schema (SCHEMA.md) is flat, matching the D1 columns. These two functions
+// are the only place that translation happens — never build a flat payload
+// or parse a flat row anywhere else.
+function entryToApiPayload(entry){
+  return {
+    date: entry.date,
+    sabaq_surah: entry.sabaq.surahNumber || null,
+    sabaq_ayah_from: entry.sabaq.ayahFrom || null,
+    sabaq_ayah_to: entry.sabaq.ayahTo || null,
+    sabaq_lines: entry.sabaq.lines || null,
+    sabaq_quarter: entry.sabaq.quarter || null,
+    sabaq_tajweed: (entry.sabaq.tajweed||[]).join(','),
+    sabaqdhor_zone: entry.sabaqDhor.zoneJuz && entry.sabaqDhor.zoneJuz.length ? juzListLabel(entry.sabaqDhor.zoneJuz) : '',
+    sabaqdhor_tajweed: (entry.sabaqDhor.tajweed||[]).join(','),
+    sabaqdhor_mistakes: entry.sabaqDhor.mistakes || null,
+    dhor_from: entry.dhor.from || null,
+    dhor_to: entry.dhor.to || null,
+    dhor_ref: entry.dhor.ref || null,
+    dhor_tajweed: (entry.dhor.tajweed||[]).join(','),
+    dhor_mistakes: entry.dhor.mistakes || null,
+    dhor_minutes: entry.dhor.minutes || null,
+    reflection: entry.reflection || '',
+    student_comment: entry.studentComment || ''
+  };
+}
+function apiRowToEntry(row){
+  return {
+    date: row.date,
+    sabaq: {
+      surahNumber: row.sabaq_surah, surah: row.sabaq_surah ? surahName(row.sabaq_surah) : '',
+      ayahFrom: row.sabaq_ayah_from, ayahTo: row.sabaq_ayah_to,
+      lines: row.sabaq_lines, quarter: row.sabaq_quarter,
+      tajweed: row.sabaq_tajweed ? row.sabaq_tajweed.split(',').filter(Boolean) : []
+    },
+    sabaqDhor: {
+      zoneJuz: null, zoneLabel: row.sabaqdhor_zone || '',
+      tajweed: row.sabaqdhor_tajweed ? row.sabaqdhor_tajweed.split(',').filter(Boolean) : [],
+      mistakes: row.sabaqdhor_mistakes
+    },
+    dhor: {
+      from: row.dhor_from, to: row.dhor_to, ref: row.dhor_ref,
+      tajweed: row.dhor_tajweed ? row.dhor_tajweed.split(',').filter(Boolean) : [],
+      mistakes: row.dhor_mistakes, minutes: row.dhor_minutes
+    },
+    reflection: row.reflection || '',
+    studentComment: row.student_comment || '',
+    teacherFeedback: row.teacher_feedback || ''
+  };
+}
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
   const date = todayISO();
   const existing = entries.find(e => e.date === date);
   const surahSelect = document.getElementById('s_surah');
@@ -371,22 +450,30 @@ document.getElementById('saveBtn').addEventListener('click', () => {
     for(let u=a; u<=b; u++) lastDhor[u] = date;
   }
 
-  // attendance: any record today => present (unless already marked haidh manually)
+  // attendance: the Worker auto-marks present server-side on any saved entry
+  // (unless already haidh) — nothing to do here, just reflect it locally
+  // for the ledger chip without waiting on a re-fetch.
   if(attendance[date] !== 'haidh') attendance[date] = 'present';
 
-  if(existing) Object.assign(existing, entry); else entries.unshift(entry);
-  entries.sort((a,b) => b.date.localeCompare(a.date));
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  try{
+    await apiSaveEntry(entryToApiPayload(entry));
+    await persistPosition();
 
-  lsSet(LS_ENTRIES, entries);
-  lsSet(LS_POSITION, position);
-  lsSet(LS_LASTDHOR, lastDhor);
-  lsSet(LS_ATTENDANCE, attendance);
-  lsSet(LS_TAJWEED_CUSTOM, customTags);
+    if(existing) Object.assign(existing, entry); else entries.unshift(entry);
+    entries.sort((a,b) => b.date.localeCompare(a.date));
+    lsSet(LS_TAJWEED_CUSTOM, customTags);
 
-  renderAll();
-  const status = document.getElementById('saveStatus');
-  status.classList.add('show');
-  setTimeout(()=>status.classList.remove('show'), 1800);
+    renderAll();
+    const status = document.getElementById('saveStatus');
+    status.classList.add('show');
+    setTimeout(()=>status.classList.remove('show'), 1800);
+  } catch(e){
+    showBanner("Couldn't save: " + e.message);
+  } finally {
+    saveBtn.disabled = false;
+  }
 });
 
 // ---------- ledger ----------
@@ -418,7 +505,7 @@ function openDetail(e){
     <h3>${formatDateNice(e.date)}</h3>
     <div class="detail-grid">
       <div class="detail-sec"><div class="h">Sabaq</div><strong>${e.sabaq.surah||'—'}</strong> ${e.sabaq.ayahFrom?(e.sabaq.ayahFrom+'–'+(e.sabaq.ayahTo||'')):''} · ${e.sabaq.lines||0} lines${e.sabaq.tajweed&&e.sabaq.tajweed.length?' · '+e.sabaq.tajweed.join(', '):''}</div>
-      <div class="detail-sec"><div class="h">Sabaq Dhor</div>${e.sabaqDhor.zoneJuz&&e.sabaqDhor.zoneJuz.length?juzListLabel(e.sabaqDhor.zoneJuz):'—'} · ${e.sabaqDhor.mistakes||0} mistakes${e.sabaqDhor.tajweed&&e.sabaqDhor.tajweed.length?' · '+e.sabaqDhor.tajweed.join(', '):''}</div>
+      <div class="detail-sec"><div class="h">Sabaq Dhor</div>${e.sabaqDhor.zoneJuz&&e.sabaqDhor.zoneJuz.length?juzListLabel(e.sabaqDhor.zoneJuz):(e.sabaqDhor.zoneLabel||'—')} · ${e.sabaqDhor.mistakes||0} mistakes${e.sabaqDhor.tajweed&&e.sabaqDhor.tajweed.length?' · '+e.sabaqDhor.tajweed.join(', '):''}</div>
       <div class="detail-sec"><div class="h">Dhor</div>${e.dhor.from?(segmentLabel(parseInt(e.dhor.from), e.dhor.ref||'waterval')+' → '+segmentLabel(parseInt(e.dhor.to), e.dhor.ref||'waterval')):'—'} · ${e.dhor.mistakes||0} mistakes · ${e.dhor.minutes||0} min${e.dhor.tajweed&&e.dhor.tajweed.length?' · '+e.dhor.tajweed.join(', '):''}</div>
       ${e.reflection?`<div class="detail-sec"><div class="h">Tadabbur</div>${e.reflection}</div>`:''}
       ${e.studentComment?`<div class="detail-sec"><div class="h">Note to teacher</div>${e.studentComment}</div>`:''}
@@ -428,11 +515,15 @@ function openDetail(e){
   `;
   document.getElementById('overlay').classList.remove('hidden');
   document.getElementById('closeDetail2').addEventListener('click', closeDetail);
-  document.getElementById('deleteEntry').addEventListener('click', () => {
-    entries = entries.filter(en => en.date !== e.date);
-    lsSet(LS_ENTRIES, entries);
-    renderAll();
-    closeDetail();
+  document.getElementById('deleteEntry').addEventListener('click', async () => {
+    try{
+      await apiDeleteEntry(e.date);
+      entries = entries.filter(en => en.date !== e.date);
+      renderAll();
+      closeDetail();
+    } catch(err){
+      showBanner("Couldn't delete: " + err.message);
+    }
   });
 }
 function closeDetail(){ document.getElementById('overlay').classList.add('hidden'); }
@@ -502,7 +593,19 @@ document.querySelectorAll('.zoom-toggle button').forEach(btn => {
 // RENDER: attendance view
 // ============================================================
 let calMonth = new Date();
-function renderAttendance(){
+async function loadAttendanceForMonth(){
+  const y = calMonth.getFullYear(), m = calMonth.getMonth();
+  const monthStr = `${y}-${String(m+1).padStart(2,'0')}`;
+  try{
+    const rows = await apiGetAttendance(monthStr);
+    attendance = {};
+    (rows || []).forEach(r => { attendance[r.date] = r.status; });
+  } catch(e){
+    showBanner("Couldn't load attendance: " + e.message);
+  }
+}
+async function renderAttendance(){
+  await loadAttendanceForMonth();
   const y = calMonth.getFullYear(), m = calMonth.getMonth();
   document.getElementById('calMonthLabel').textContent = calMonth.toLocaleDateString(undefined,{month:'long', year:'numeric'});
   const dowWrap = document.getElementById('calDow');
@@ -527,32 +630,30 @@ function renderAttendance(){
     grid.appendChild(cell);
   }
 }
-function cycleAttendance(iso){
+async function cycleAttendance(iso){
   const cur = attendance[iso];
   const order = [undefined,'present','absent','haidh'];
   const idx = order.indexOf(cur === 'predicted-haidh' ? 'haidh' : cur);
   const next = order[(idx+1) % order.length];
-  if(next) attendance[iso] = next; else delete attendance[iso];
-  lsSet(LS_ATTENDANCE, attendance);
-  renderAttendance();
+  try{
+    if(next){ await apiSetAttendance(iso, next); attendance[iso] = next; }
+    else { await apiDeleteAttendance(iso); delete attendance[iso]; }
+    renderAttendance();
+  } catch(e){
+    showBanner("Couldn't update attendance: " + e.message);
+  }
 }
-document.getElementById('predictBtn').addEventListener('click', () => {
+document.getElementById('predictBtn').addEventListener('click', async () => {
   const cycle = parseInt(document.getElementById('cycleLen').value);
   const period = parseInt(document.getElementById('periodLen').value);
   const lastStr = document.getElementById('lastHaidh').value;
   if(!cycle || !period || !lastStr) return;
-  const last = new Date(lastStr+'T00:00:00');
-  if(isNaN(last.getTime())) return;
-  for(let cycleIdx=0; cycleIdx<4; cycleIdx++){
-    for(let d=0; d<period; d++){
-      const dt = new Date(last);
-      dt.setDate(dt.getDate() + cycleIdx*cycle + d);
-      const iso = dt.toISOString().slice(0,10);
-      if(!attendance[iso]) attendance[iso] = 'predicted-haidh';
-    }
+  try{
+    await apiPredictHaidh(cycle, period, lastStr);
+    renderAttendance();
+  } catch(e){
+    showBanner("Couldn't generate prediction: " + e.message);
   }
-  lsSet(LS_ATTENDANCE, attendance);
-  renderAttendance();
 });
 
 // ============================================================
@@ -581,15 +682,77 @@ function renderAll(){
   renderLedger();
 }
 
-(function init(){
+async function loadAppData(){
+  try{
+    const [entriesRows, positionRow] = await Promise.all([
+      apiGetEntries(),
+      apiGetPosition()
+    ]);
+    entries = (entriesRows || []).map(apiRowToEntry);
+    if(positionRow){
+      if(positionRow.position_json) position = JSON.parse(positionRow.position_json);
+      if(positionRow.last_dhor_json) lastDhor = JSON.parse(positionRow.last_dhor_json);
+    }
+  } catch(e){
+    showBanner("Couldn't load your data: " + e.message);
+  }
+}
+
+async function startApp(){
   document.getElementById('todayLine').textContent = formatDateNice(todayISO());
   populateSurahSelect();
   renderRubRefToggle();
   renderTajweedTags('s_tajweed','sabaq');
   renderTajweedTags('sd_tajweed','sabaqDhor');
   renderTajweedTags('d_tajweed','dhor');
+  await loadAppData();
   renderAll();
   const todayEntry = entries.find(e => e.date === todayISO());
   if(todayEntry) fillFormFromEntry(todayEntry);
   else clearFormDefaults();
+}
+
+function showMainApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+}
+function showLoginScreen(){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const id = document.getElementById('login_id').value.trim();
+  const pin = document.getElementById('login_pin').value.trim();
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if(!id || !/^\d{4}$/.test(pin)){
+    errEl.textContent = 'Enter your ID and a 4-digit PIN.';
+    return;
+  }
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  try{
+    await apiLogin(id, pin);
+    showMainApp();
+    await startApp();
+  } catch(e){
+    errEl.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  clearToken();
+  location.reload();
+});
+
+(function init(){
+  if(getToken()){
+    showMainApp();
+    startApp();
+  } else {
+    showLoginScreen();
+  }
 })();

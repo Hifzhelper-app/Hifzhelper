@@ -42,6 +42,17 @@ export async function handleSetAttendance(request, env, auth) {
   return { data: { saved: true } };
 }
 
+// DELETE /attendance?date=YYYY-MM-DD — clears a day back to "unset".
+export async function handleDeleteAttendance(request, env, auth) {
+  const url = new URL(request.url);
+  const date = url.searchParams.get('date');
+  if (!isValidDate(date)) return { error: 'date query param (YYYY-MM-DD) is required', status: 400 };
+
+  const studentId = auth.id;
+  await env.DB.prepare('DELETE FROM attendance WHERE student_id = ? AND date = ?').bind(studentId, date).run();
+  return { data: { deleted: true } };
+}
+
 // POST /attendance/predict — bulk-insert "predicted-haidh" rows, never overwriting
 // anything already set (a real recorded day always wins over a prediction).
 export async function handlePredictHaidh(request, env, auth) {

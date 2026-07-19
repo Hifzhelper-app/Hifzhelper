@@ -11,7 +11,7 @@ export function json(data, status = 200) {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*', // tighten to your real frontend origin once it has one
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
     }
   });
 }
