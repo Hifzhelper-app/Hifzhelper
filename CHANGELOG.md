@@ -7,6 +7,64 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V1.2 — new-account secret bug, resolved (2026-07-19)
+
+**Bug (new account only, not a code defect)**: after migrating to the new
+`hifzhelper-app` Cloudflare account, `hifzhelper-api-dev` returned a `500`
+on every login attempt — `DataError: Imported HMAC key length (0)...`. Root
+cause: `HH_AUTH_SECRET` had been saved with an empty value during initial
+setup (the dashboard showed it as configured either way, since it never
+displays the actual value back). Fixed by deleting and re-adding the secret
+with a genuine random value. Confirmed fixed by direct evidence — added a
+temporary `/debug/env` route reporting the secret's type/length (never its
+value) to get real ground truth instead of continuing to infer from side
+effects; removed again once resolved.
+
+**Production was unaffected** — tested cleanly on first attempt, confirming
+it was set up correctly from the start; this was a dev-environment-only
+mistake.
+
+**Files changed:**
+```
+worker/src/index.js
+```
+(temporary debug route added, then fully removed in the same version — net
+effect on this file is zero, but noting it here since two separate patches
+were shipped and reverted during the diagnosis)
+
+**Lesson for future setup**: a "Value encrypted" / secret-looks-configured
+display in the dashboard does not confirm the value is non-empty. Worth a
+quick `/debug/env`-style sanity check (or just an immediate login test)
+right after setting secrets on any new environment, rather than assuming
+success from the save confirmation alone.
+
+---
+
+## V1.1.1 — new Cloudflare account/repo migration (2026-07-19)
+
+Moved Hifzhelper to its own dedicated repo and Cloudflare account
+(previously shared with other projects). No code logic changed — only
+the backend URLs the frontend points at, since the new account has a
+different Workers subdomain.
+
+**Files changed:**
+```
+frontend/api.js
+TESTING.md
+```
+
+**New URLs** (replacing the old `*.maktab4life.workers.dev` ones):
+- Dev: `https://hifzhelper-api-dev.hifzhelper-app.workers.dev`
+- Production: `https://hifzhelper-api.hifzhelper-app.workers.dev`
+
+**Still needed on the new account before this is testable** (see SETUP.md):
+migrations run against both new D1 databases, secrets set on both new
+Worker projects, Git integration connected for both, a fresh test student
+inserted into the new dev database. None of this carries over automatically
+just because the repo/code is identical.
+
+---
+
 ## V1.1 — attendance rule correction (2026-07-19)
 
 **Bug fix**: attendance was built with a "haidh takes precedence over a
