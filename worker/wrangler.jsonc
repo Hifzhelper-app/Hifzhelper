@@ -1,4 +1,4 @@
-
+{
   // Hifzhelper Worker config. Two environments, mirroring the main/dev
   // branch split agreed in chat — each with its own D1 database, so dev
   // testing never touches real maktab data.
@@ -34,3 +34,4 @@
       ]
     }
   }
+}
