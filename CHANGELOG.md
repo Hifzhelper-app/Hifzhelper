@@ -7,6 +7,28 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V1.1 — attendance rule correction (2026-07-19)
+
+**Bug fix**: attendance was built with a "haidh takes precedence over a
+logged entry" exception that was never actually part of the agreed rule —
+it was my own assumption layered on top of "any recorded activity marks
+present." The real rule is simpler: **sabaq always wins**. Logging an
+entry now unconditionally marks that day present, including overriding a
+day previously marked haidh manually.
+
+**Files changed:**
+```
+worker/src/entries.js
+SCHEMA.md
+TESTING.md
+```
+
+**Retest before merging to `main`**: re-run the "Manual override" row in
+`TESTING.md` §3 — mark a date `haidh`, then save an entry for that same
+date, then confirm via D1 console it now shows `present`, not `haidh`.
+
+---
+
 ## V1.0 — baseline (2026-07-19)
 
 The first fully working version: student journal PWA (localStorage removed,
