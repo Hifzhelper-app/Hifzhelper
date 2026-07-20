@@ -56,8 +56,8 @@ function apiGetEntries(params = {}){
 function apiSaveEntry(entry){
   return apiFetch('/entries', { method: 'POST', body: JSON.stringify(entry) });
 }
-function apiDeleteEntry(date){
-  return apiFetch('/entries?date=' + encodeURIComponent(date), { method: 'DELETE' });
+function apiDeleteEntry(date, entryNumber){
+  return apiFetch('/entries?date=' + encodeURIComponent(date) + '&entry_number=' + (entryNumber||1), { method: 'DELETE' });
 }
 
 function apiGetAttendance(month){

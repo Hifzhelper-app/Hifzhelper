@@ -17,23 +17,29 @@ export async function handleGetEntries(request, env, auth) {
   const params = [studentId];
   if (date) { query += ' AND date = ?'; params.push(date); }
   else if (since) { query += ' AND date >= ?'; params.push(since); }
-  query += ' ORDER BY date DESC';
+  query += ' ORDER BY date DESC, entry_number ASC';
 
   const { results } = await env.DB.prepare(query).bind(...params).all();
   return { data: results };
 }
 
-// DELETE /entries?date=YYYY-MM-DD — a student can only delete their own.
+// DELETE /entries?date=YYYY-MM-DD&entry_number=1|2 — a student can only delete their own.
+// entry_number defaults to 1 if omitted, for compatibility with anything not yet updated.
 export async function handleDeleteEntry(request, env, auth) {
   const url = new URL(request.url);
   const date = url.searchParams.get('date');
+  const entryNumber = parseInt(url.searchParams.get('entry_number')) || 1;
   if (!date) return { error: 'date query param is required', status: 400 };
+  if (![1, 2].includes(entryNumber)) return { error: 'entry_number must be 1 or 2', status: 400 };
 
-  await env.DB.prepare('DELETE FROM entries WHERE student_id = ? AND date = ?').bind(auth.id, date).run();
+  await env.DB.prepare('DELETE FROM entries WHERE student_id = ? AND date = ? AND entry_number = ?')
+    .bind(auth.id, date, entryNumber).run();
   return { data: { deleted: true } };
 }
 
-// POST /entries — upsert today's (or a given date's) entry for the logged-in student.
+// POST /entries — upsert a given date's entry for the logged-in student.
+// entry_number (1 or 2) identifies which of up to two entries per day this
+// is; defaults to 1 if omitted, so existing single-entry callers still work.
 // Attendance is auto-marked "present" here — sabaq always wins, so this
 // overrides even a day previously marked haidh.
 export async function handleSaveEntry(request, env, auth) {
@@ -42,6 +48,9 @@ export async function handleSaveEntry(request, env, auth) {
 
   const validationError = validateEntryBody(body);
   if (validationError) return { error: validationError, status: 400 };
+
+  const entryNumber = body.entry_number != null ? parseInt(body.entry_number) : 1;
+  if (![1, 2].includes(entryNumber)) return { error: 'entry_number must be 1 or 2', status: 400 };
 
   const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
 
@@ -54,18 +63,21 @@ export async function handleSaveEntry(request, env, auth) {
   // teacher_feedback is deliberately excluded here — students can't set their own
   // feedback; that's a separate, teacher-only endpoint (Phase 2).
 
-  const columns = ['student_id', 'date', ...fields];
+  const columns = ['student_id', 'date', 'entry_number', ...fields];
   const placeholders = columns.map(() => '?').join(',');
   const updateClause = fields.map(f => `${f} = excluded.${f}`).join(', ');
-  const values = [studentId, body.date, ...fields.map(f => body[f] ?? null)];
+  const values = [studentId, body.date, entryNumber, ...fields.map(f => body[f] ?? null)];
 
   await env.DB.prepare(
     `INSERT INTO entries (${columns.join(',')}) VALUES (${placeholders})
-     ON CONFLICT(student_id, date) DO UPDATE SET ${updateClause}`
+     ON CONFLICT(student_id, date, entry_number) DO UPDATE SET ${updateClause}`
   ).bind(...values).run();
 
   // Sabaq always wins: any logged entry marks present, unconditionally —
-  // including overriding a day previously marked haidh.
+  // including overriding a day previously marked haidh. This applies
+  // regardless of which entry_number was just saved — a second sabaq the
+  // same day doesn't need to re-confirm attendance, but doing it
+  // unconditionally here is simpler than branching, and idempotent either way.
   await env.DB.prepare(
     `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
      ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`

@@ -38,6 +38,7 @@ export function isInRange(n, min, max) {
 export function validateEntryBody(body) {
   if (!body || typeof body !== 'object') return 'Body must be a JSON object';
   if (!isValidDate(body.date)) return 'date must be YYYY-MM-DD';
+  if (body.entry_number != null && ![1, 2].includes(parseInt(body.entry_number))) return 'entry_number must be 1 or 2';
   if (body.sabaq_surah != null && !isInRange(body.sabaq_surah, 1, 114)) return 'sabaq_surah out of range';
   if (body.sabaq_ayah_from != null && !isInRange(body.sabaq_ayah_from, 1, 286)) return 'sabaq_ayah_from out of range';
   if (body.sabaq_ayah_to != null && !isInRange(body.sabaq_ayah_to, 1, 286)) return 'sabaq_ayah_to out of range';
