@@ -7,6 +7,45 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V1.3 — up to two entries per day (2026-07-19)
+
+Students can now log a second sabaq/sabaq dhor/dhor on the same day
+(capped at two). Design: `entries` gets an `entry_number` column (1 or 2),
+uniqueness changes from `(student_id, date)` to `(student_id, date,
+entry_number)`. Frontend shows a normal form for the first entry; once it
+exists, an "Add a second sabaq today" button appears; once both exist, a
+small Entry 1 / Entry 2 switcher replaces it.
+
+**Two real bugs fixed along the way, not just the new feature:**
+- The delete-entry handler (both Worker and frontend) previously matched
+  only on `date` — meaning deleting one entry would have deleted *both* of
+  a day's entries once this feature existed. Fixed to match on
+  `(date, entry_number)`.
+- The frontend's local attendance optimistic-update still had the old
+  "unless already haidh" exception from before the V1.1 fix — the server
+  was corrected months ago but this client-side mirror wasn't. Now matches:
+  sabaq always wins, unconditionally.
+
+**Files changed:**
+```
+worker/migrations/0003_two_entries_per_day.sql   (new)
+worker/src/entries.js
+worker/src/utils.js
+frontend/api.js
+frontend/app.js
+frontend/index.html
+frontend/styles.css
+SCHEMA.md
+TESTING.md
+```
+
+**Migration note**: 0003 rebuilds the `entries` table (SQLite can't ALTER a
+UNIQUE constraint in place) — existing rows are preserved with
+`entry_number = 1`. Run it on dev first, verify via `TESTING.md` §2, then
+production, same as every migration so far.
+
+---
+
 ## V1.2 — new-account secret bug, resolved (2026-07-19)
 
 **Bug (new account only, not a code defect)**: after migrating to the new

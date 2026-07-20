@@ -40,6 +40,7 @@ let lastDhor = {};
 let attendance = {}; // { date: 'present'|'absent'|'haidh'|'predicted-haidh' }, for the currently-viewed month
 let customTags = lsGet(LS_TAJWEED_CUSTOM, []);
 let selected = { sabaq: [], sabaqDhor: [], dhor: [] };
+let currentEntryNumber = 1; // which of today's entries (1 or 2) is loaded in the form
 
 // Persists position + lastDhor together — call this after any mutation to
 // either, rather than assuming a save elsewhere will cover it.
@@ -337,6 +338,48 @@ function clearFormDefaults(){
   updateRubDisplay();
 }
 
+// ---------- up-to-two-entries-per-day controls ----------
+function todaysEntries(){
+  const today = todayISO();
+  return entries.filter(e => e.date === today);
+}
+function loadEntryNumber(num){
+  currentEntryNumber = num;
+  const todays = todaysEntries();
+  const match = todays.find(e => (e.entryNumber||1) === num);
+  if(match) fillFormFromEntry(match);
+  else clearFormDefaults();
+  updateEntryControls();
+}
+function updateEntryControls(){
+  const todays = todaysEntries();
+  const hasEntry1 = todays.some(e => (e.entryNumber||1) === 1);
+  const hasEntry2 = todays.some(e => (e.entryNumber||1) === 2);
+  const addBtn = document.getElementById('addSecondEntryBtn');
+  const switcher = document.getElementById('entrySwitcher');
+
+  if(hasEntry1 && hasEntry2){
+    // both exist — show the switcher, hide the add button (cap of two reached)
+    addBtn.style.display = 'none';
+    switcher.style.display = 'flex';
+    document.getElementById('entryTab1').classList.toggle('active', currentEntryNumber===1);
+    document.getElementById('entryTab2').classList.toggle('active', currentEntryNumber===2);
+  } else if(hasEntry1){
+    // only the first exists — offer to add a second
+    addBtn.style.display = 'block';
+    switcher.style.display = 'none';
+  } else {
+    // nothing logged today yet
+    addBtn.style.display = 'none';
+    switcher.style.display = 'none';
+  }
+}
+document.getElementById('addSecondEntryBtn').addEventListener('click', () => {
+  loadEntryNumber(2);
+});
+document.getElementById('entryTab1').addEventListener('click', () => loadEntryNumber(1));
+document.getElementById('entryTab2').addEventListener('click', () => loadEntryNumber(2));
+
 // ---------- save ----------
 // ---------- API <-> local entry shape ----------
 // The app's internal entry objects are nested (entry.sabaq.X, entry.dhor.X)
@@ -347,6 +390,7 @@ function clearFormDefaults(){
 function entryToApiPayload(entry){
   return {
     date: entry.date,
+    entry_number: entry.entryNumber || 1,
     sabaq_surah: entry.sabaq.surahNumber || null,
     sabaq_ayah_from: entry.sabaq.ayahFrom || null,
     sabaq_ayah_to: entry.sabaq.ayahTo || null,
@@ -369,6 +413,7 @@ function entryToApiPayload(entry){
 function apiRowToEntry(row){
   return {
     date: row.date,
+    entryNumber: row.entry_number || 1,
     sabaq: {
       surahNumber: row.sabaq_surah, surah: row.sabaq_surah ? surahName(row.sabaq_surah) : '',
       ayahFrom: row.sabaq_ayah_from, ayahTo: row.sabaq_ayah_to,
@@ -393,7 +438,7 @@ function apiRowToEntry(row){
 
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const date = todayISO();
-  const existing = entries.find(e => e.date === date);
+  const existing = entries.find(e => e.date === date && (e.entryNumber||1) === currentEntryNumber);
   const surahSelect = document.getElementById('s_surah');
   const surahNumber = parseInt(surahSelect.value)||1;
   const quarterVal = parseInt(document.getElementById('s_quarter').value)||1;
@@ -407,6 +452,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
   const entry = {
     date,
+    entryNumber: currentEntryNumber,
     sabaq: {
       surahNumber, surah: surahName(surahNumber),
       ayahFrom, ayahTo,
@@ -450,10 +496,10 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     for(let u=a; u<=b; u++) lastDhor[u] = date;
   }
 
-  // attendance: the Worker auto-marks present server-side on any saved entry
-  // (unless already haidh) — nothing to do here, just reflect it locally
-  // for the ledger chip without waiting on a re-fetch.
-  if(attendance[date] !== 'haidh') attendance[date] = 'present';
+  // attendance: sabaq always wins — the Worker marks present unconditionally
+  // on any saved entry, including overriding haidh. Mirror that locally so
+  // the ledger chip reflects it without waiting on a re-fetch.
+  attendance[date] = 'present';
 
   const saveBtn = document.getElementById('saveBtn');
   saveBtn.disabled = true;
@@ -462,10 +508,11 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
     await persistPosition();
 
     if(existing) Object.assign(existing, entry); else entries.unshift(entry);
-    entries.sort((a,b) => b.date.localeCompare(a.date));
+    entries.sort((a,b) => b.date.localeCompare(a.date) || (a.entryNumber||1) - (b.entryNumber||1));
     lsSet(LS_TAJWEED_CUSTOM, customTags);
 
     renderAll();
+    updateEntryControls();
     const status = document.getElementById('saveStatus');
     status.classList.add('show');
     setTimeout(()=>status.classList.remove('show'), 1800);
@@ -488,9 +535,10 @@ function renderLedger(){
     const row = document.createElement('div');
     row.className = 'entry-row';
     const att = attendance[e.date] || 'present';
+    const entryTag = (e.entryNumber||1) === 2 ? '<span class="entry-num-tag">Entry 2</span>' : '';
     row.innerHTML = `
       <div class="entry-date">${e.date}</div>
-      <div class="entry-summary"><span class="surah">${e.sabaq.surah||'—'}</span> ${e.sabaq.ayahFrom ? (e.sabaq.ayahFrom+'–'+(e.sabaq.ayahTo||'')) : ''}</div>
+      <div class="entry-summary"><span class="surah">${e.sabaq.surah||'—'}</span> ${e.sabaq.ayahFrom ? (e.sabaq.ayahFrom+'–'+(e.sabaq.ayahTo||'')) : ''} ${entryTag}</div>
       <div class="att-chip att-${att}">${att}</div>
     `;
     row.addEventListener('click', () => openDetail(e));
@@ -500,9 +548,10 @@ function renderLedger(){
 
 function openDetail(e){
   const content = document.getElementById('detailContent');
+  const entryLabel = (e.entryNumber||1) === 2 ? ' — Entry 2' : '';
   content.innerHTML = `
     <button class="close" id="closeDetail2">×</button>
-    <h3>${formatDateNice(e.date)}</h3>
+    <h3>${formatDateNice(e.date)}${entryLabel}</h3>
     <div class="detail-grid">
       <div class="detail-sec"><div class="h">Sabaq</div><strong>${e.sabaq.surah||'—'}</strong> ${e.sabaq.ayahFrom?(e.sabaq.ayahFrom+'–'+(e.sabaq.ayahTo||'')):''} · ${e.sabaq.lines||0} lines${e.sabaq.tajweed&&e.sabaq.tajweed.length?' · '+e.sabaq.tajweed.join(', '):''}</div>
       <div class="detail-sec"><div class="h">Sabaq Dhor</div>${e.sabaqDhor.zoneJuz&&e.sabaqDhor.zoneJuz.length?juzListLabel(e.sabaqDhor.zoneJuz):(e.sabaqDhor.zoneLabel||'—')} · ${e.sabaqDhor.mistakes||0} mistakes${e.sabaqDhor.tajweed&&e.sabaqDhor.tajweed.length?' · '+e.sabaqDhor.tajweed.join(', '):''}</div>
@@ -517,10 +566,16 @@ function openDetail(e){
   document.getElementById('closeDetail2').addEventListener('click', closeDetail);
   document.getElementById('deleteEntry').addEventListener('click', async () => {
     try{
-      await apiDeleteEntry(e.date);
-      entries = entries.filter(en => en.date !== e.date);
+      await apiDeleteEntry(e.date, e.entryNumber||1);
+      // filter by date AND entry number — deleting entry 2 must not also
+      // remove entry 1 for the same day (a real bug before two-per-day existed).
+      entries = entries.filter(en => !(en.date === e.date && (en.entryNumber||1) === (e.entryNumber||1)));
       renderAll();
+      updateEntryControls();
       closeDetail();
+      if(e.date === todayISO() && (e.entryNumber||1) === currentEntryNumber){
+        loadEntryNumber(1);
+      }
     } catch(err){
       showBanner("Couldn't delete: " + err.message);
     }
@@ -707,9 +762,7 @@ async function startApp(){
   renderTajweedTags('d_tajweed','dhor');
   await loadAppData();
   renderAll();
-  const todayEntry = entries.find(e => e.date === todayISO());
-  if(todayEntry) fillFormFromEntry(todayEntry);
-  else clearFormDefaults();
+  loadEntryNumber(1);
 }
 
 function showMainApp(){

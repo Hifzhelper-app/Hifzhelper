@@ -9,8 +9,8 @@ Tool: any REST client works (Hoppscotch, Postman, curl). Examples below
 assume Hoppscotch, matching how V1.0 was actually tested.
 
 Base URLs:
-- Dev: `https://hifzhelper-api-dev.maktab4life.workers.dev`
-- Production: `https://hifzhelper-api.maktab4life.workers.dev`
+- Dev: `https://hifzhelper-api-dev.hifzhelper-app.workers.dev`
+- Production: `https://hifzhelper-api.hifzhelper-app.workers.dev`
 
 ---
 
@@ -48,10 +48,13 @@ Requires `Authorization: Bearer <token>` from a successful login above.
 
 | Test | Request | Expect |
 |---|---|---|
-| Save an entry | `POST /entries` `{"date":"2026-07-18","sabaq_surah":67,"sabaq_ayah_from":1,"sabaq_ayah_to":5,"sabaq_lines":10}` | `200 {"saved": true}` |
+| Save an entry | `POST /entries` `{"date":"2026-07-18","sabaq_surah":67,"sabaq_ayah_from":1,"sabaq_ayah_to":5,"sabaq_lines":10}` | `200 {"saved": true}` (defaults to `entry_number: 1`) |
 | Read it back | `GET /entries` | array containing that entry, fields matching what was sent |
-| Update same day | POST again with the same `date`, different `sabaq_lines` | `200`, then GET shows the *updated* value, not a second row |
-| Delete it | `DELETE /entries?date=2026-07-18` | `200 {"deleted": true}`, then GET no longer shows it |
+| Update same day, same entry_number | POST again with the same `date`, different `sabaq_lines` | `200`, then GET shows the *updated* value, not a second row |
+| Second entry, same day | `POST /entries` `{"date":"2026-07-18","entry_number":2,"sabaq_surah":68,"sabaq_ayah_from":1,"sabaq_ayah_to":3}` | `200`; GET now shows **two** rows for that date, `entry_number` 1 and 2 |
+| Invalid entry_number | `POST /entries` `{"date":"2026-07-18","entry_number":3,...}` | `400 entry_number must be 1 or 2` |
+| Delete one entry_number only | `DELETE /entries?date=2026-07-18&entry_number=2` | `200`; GET still shows `entry_number: 1` for that date — deleting entry 2 must never remove entry 1 |
+| Delete remaining entry | `DELETE /entries?date=2026-07-18&entry_number=1` (or omit `entry_number`, defaults to 1) | `200`; GET shows no rows for that date |
 | No token | any of the above, with the `Authorization` header removed | `401 Not authenticated` |
 
 ## 3. Attendance

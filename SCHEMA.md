@@ -24,12 +24,15 @@ human-readable reference for the same thing.
 
 ## Table: `entries`
 
-One row per student per day (`UNIQUE(student_id, date)` — saving is an upsert).
+Up to two rows per student per day (`UNIQUE(student_id, date, entry_number)`
+— saving is an upsert on that triple). `entry_number` distinguishes a
+second sabaq/sabaq dhor/dhor logged the same day; defaults to `1`.
 
 | Column | Type | Notes |
 |---|---|---|
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
+| `entry_number` | INTEGER | `1` or `2`. A student can log at most two entries per day. |
 | `sabaq_surah` | INTEGER | Surah number, 1–114. |
 | `sabaq_ayah_from` | INTEGER | |
 | `sabaq_ayah_to` | INTEGER | |

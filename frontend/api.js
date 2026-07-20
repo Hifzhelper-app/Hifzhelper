@@ -7,7 +7,7 @@
 // Point this at whichever Worker you're testing against. Dev for now —
 // change to the production URL once the frontend is actually being deployed
 // for real maktab use, not just testing.
-const API_BASE = 'https://hifzhelper-api-dev.maktab4life.workers.dev';
+const API_BASE = 'https://hifzhelper-api-dev.hifzhelper-app.workers.dev';
 
 const TOKEN_KEY = 'hh_token';
 function getToken(){ return localStorage.getItem(TOKEN_KEY); }
@@ -56,8 +56,8 @@ function apiGetEntries(params = {}){
 function apiSaveEntry(entry){
   return apiFetch('/entries', { method: 'POST', body: JSON.stringify(entry) });
 }
-function apiDeleteEntry(date){
-  return apiFetch('/entries?date=' + encodeURIComponent(date), { method: 'DELETE' });
+function apiDeleteEntry(date, entryNumber){
+  return apiFetch('/entries?date=' + encodeURIComponent(date) + '&entry_number=' + (entryNumber||1), { method: 'DELETE' });
 }
 
 function apiGetAttendance(month){
