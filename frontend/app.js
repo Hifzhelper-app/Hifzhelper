@@ -97,6 +97,23 @@ function touchJuz(juz){
   position.activeJuz = juz;
 }
 
+// Given a surah/ayah reached (and, for quarter-tracked juz', which quarter),
+// advances the progress model accordingly. Shared by the daily save handler
+// and the setup wizard — one place that knows how "reaching a position"
+// updates state, per CONVENTIONS.md principle 2.
+function applyReachedPosition(surahNumber, ayah, quarterVal){
+  const computedJuz = getJuzForPosition(surahNumber, ayah);
+  touchJuz(computedJuz);
+  const j = getJuzEntry(computedJuz);
+  if(SURAH_TRACKED_JUZ[computedJuz]){
+    if(computedJuz===30) j.surahReached = (j.surahReached==null) ? surahNumber : Math.min(j.surahReached, surahNumber);
+    else j.surahReached = (j.surahReached==null) ? surahNumber : Math.max(j.surahReached, surahNumber);
+  } else {
+    j.quarter = Math.max(j.quarter||0, quarterVal||4);
+  }
+  return computedJuz;
+}
+
 // ---------- zones (sabaq dhor / dhor), based on actual study order ----------
 function computeZones(){
   const seq = position.studyOrder || [];
@@ -179,7 +196,8 @@ function renderTajweedTags(containerId, key){
   });
 }
 
-function renderJuzStripInto(containerId, { showLabelState } = {}){
+function renderJuzStripInto(containerId, { onTap } = {}){
+  const tapHandler = onTap || setJuzManual;
   const strip = document.getElementById(containerId);
   strip.innerHTML = '';
   for(let i=1;i<=30;i++){
@@ -194,8 +212,8 @@ function renderJuzStripInto(containerId, { showLabelState } = {}){
     dot.tabIndex = 0;
     dot.setAttribute('role','button');
     dot.setAttribute('aria-label', `Juz ${i} — ${Math.round(frac*100)}% memorized`);
-    dot.addEventListener('click', () => setJuzManual(i));
-    dot.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setJuzManual(i);} });
+    dot.addEventListener('click', () => tapHandler(i));
+    dot.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tapHandler(i);} });
     strip.appendChild(dot);
   }
 }
@@ -478,15 +496,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
   // update progress model
   if(reachedAyah){
-    const computedJuz = getJuzForPosition(surahNumber, reachedAyah);
-    touchJuz(computedJuz);
-    const j = getJuzEntry(computedJuz);
-    if(SURAH_TRACKED_JUZ[computedJuz]){
-      if(computedJuz===30) j.surahReached = (j.surahReached==null) ? surahNumber : Math.min(j.surahReached, surahNumber);
-      else j.surahReached = (j.surahReached==null) ? surahNumber : Math.max(j.surahReached, surahNumber);
-    } else {
-      j.quarter = Math.max(j.quarter||0, quarterVal);
-    }
+    applyReachedPosition(surahNumber, reachedAyah, quarterVal);
   }
 
   // update dhor recency
@@ -592,15 +602,16 @@ document.getElementById('overlay').addEventListener('click', e => { if(e.target.
 
 function renderRubRefToggle(){
   const cur = getRubReference();
-  document.querySelectorAll('#rubRefToggle .tag').forEach(el => {
+  document.querySelectorAll('#rubRefToggle .tag, #setupRubRefToggle .tag').forEach(el => {
     el.classList.toggle('active', el.dataset.ref === cur);
   });
 }
-document.querySelectorAll('#rubRefToggle .tag').forEach(el => {
+document.querySelectorAll('#rubRefToggle .tag, #setupRubRefToggle .tag').forEach(el => {
   el.addEventListener('click', () => {
     setRubReference(el.dataset.ref);
     renderRubRefToggle();
     updateRubDisplay();
+    if(document.getElementById('setupScreen').style.display !== 'none') updateSetupRubDisplay();
   });
 });
 
@@ -728,6 +739,170 @@ document.querySelectorAll('nav.tabs button').forEach(btn => {
 });
 
 // ============================================================
+// SETUP WIZARD — first-login onboarding (name, gender, haidh preference,
+// which juz' are already complete, current sabaq, optional last-dhor dates)
+// ============================================================
+function populateSetupSurahSelect(){
+  const sel = document.getElementById('setup_surah');
+  sel.innerHTML = SURAHS.map(([n,name]) => `<option value="${n}">${n}. ${name}</option>`).join('');
+}
+
+function updateSetupRubDisplay(){
+  const surahNumber = parseInt(document.getElementById('setup_surah').value)||1;
+  const ayah = document.getElementById('setup_ayah').value || 1;
+  const juz = getJuzForPosition(surahNumber, ayah);
+  const disp = document.getElementById('setup_rub_display');
+  if(SURAH_TRACKED_JUZ[juz]){
+    disp.textContent = `Juz' ${juz} — tracked by surah`;
+  } else {
+    const ref = getRubReference();
+    const info = getRubInfo(surahNumber, ayah, ref);
+    if(ref === 'waterval') document.getElementById('setup_quarter').value = String(info.posInJuz);
+    disp.textContent = `Juz' ${juz} • ${ref === 'waterval' ? `Quarter ${info.posInJuz} of 4` : `1/8 marker ${info.posInJuz} of 8`} (${ref === 'waterval' ? 'Waterval' : 'Uthmani'})`;
+  }
+}
+['setup_surah','setup_ayah','setup_quarter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateSetupRubDisplay);
+  document.getElementById(id).addEventListener('change', updateSetupRubDisplay);
+});
+
+// Tapping a juz' during setup just marks it complete/incomplete locally —
+// no API call per tap (unlike the live journal's setJuzManual), since we
+// only want one save at the end of the wizard.
+function setupToggleJuz(juz){
+  const frac = getJuzFillFraction(juz);
+  const j = getJuzEntry(juz);
+  if(frac >= 1){
+    if(SURAH_TRACKED_JUZ[juz]) j.surahReached = null; else j.quarter = 0;
+  } else {
+    if(SURAH_TRACKED_JUZ[juz]) j.surahReached = (juz===30 ? 78 : 77);
+    else j.quarter = 4;
+    touchJuz(juz);
+  }
+  renderSetupJuzStrip();
+  renderSetupDhorMap();
+}
+function renderSetupJuzStrip(){
+  renderJuzStripInto('setupJuzStrip', { onTap: setupToggleJuz });
+}
+
+// Tapping a segment during setup prompts for an optional last-dhor date.
+// Uses a plain browser prompt rather than a custom date-picker modal —
+// a deliberate simplicity tradeoff for a one-time setup screen, not
+// something worth polishing further unless it turns out to matter.
+function renderSetupDhorMap(){
+  const wrap = document.getElementById('setupDhorMap');
+  wrap.innerHTML = '';
+  const ref = getRubReference();
+  const segmentsPerJuz = RUB_BOUNDARIES[ref].length / 30;
+  const total = segmentsPerJuz * 30;
+  for(let u=1; u<=total; u++){
+    const juz = Math.ceil(u/segmentsPerJuz);
+    const posInJuz = ((u-1) % segmentsPerJuz) + 1;
+    const dot = document.createElement('div');
+    dot.className = 'juz-dot';
+    dot.style.fontSize = segmentsPerJuz > 4 ? '6.5px' : '7.5px';
+    dot.textContent = juz;
+    const frac = getJuzFillFraction(juz);
+    const reached = frac >= (posInJuz / segmentsPerJuz);
+    if(!reached){
+      dot.title = segmentLabel(u, ref) + ': not yet memorized';
+    } else {
+      const days = daysSince(lastDhor[u]);
+      dot.style.background = recencyColor(days);
+      dot.style.borderColor = 'transparent';
+      dot.style.color = '#fff9ec';
+      dot.title = segmentLabel(u, ref) + (days===null ? ': tap to set last dhor date (optional)' : `: last dhor ${days} day${days===1?'':'s'} ago — tap to change`);
+      dot.style.cursor = 'pointer';
+      dot.addEventListener('click', () => {
+        const input = prompt(`${segmentLabel(u, ref)} — last dhor date (YYYY-MM-DD), or leave blank if unknown:`, lastDhor[u]||'');
+        if(input === null) return; // cancelled
+        if(input.trim() === ''){ delete lastDhor[u]; }
+        else if(/^\d{4}-\d{2}-\d{2}$/.test(input.trim())){ lastDhor[u] = input.trim(); }
+        else { showBanner('Date must be in YYYY-MM-DD format — not saved.'); return; }
+        renderSetupDhorMap();
+      });
+    }
+    wrap.appendChild(dot);
+  }
+}
+
+function showSetupScreen(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'flex';
+  populateSetupSurahSelect();
+  renderRubRefToggle();
+  renderSetupJuzStrip();
+  renderSetupDhorMap();
+  updateSetupRubDisplay();
+}
+
+document.getElementById('setup_gender').addEventListener('change', (e) => {
+  document.getElementById('setup_haidh_wrap').style.display = e.target.value === 'F' ? 'block' : 'none';
+});
+
+document.getElementById('finishSetupBtn').addEventListener('click', async () => {
+  const name = document.getElementById('setup_name').value.trim();
+  const gender = document.getElementById('setup_gender').value;
+  const errEl = document.getElementById('setupError');
+  errEl.textContent = '';
+  if(!name){ errEl.textContent = 'Please enter your name.'; return; }
+
+  const surahNumber = parseInt(document.getElementById('setup_surah').value)||1;
+  const ayah = document.getElementById('setup_ayah').value;
+  const quarterVal = parseInt(document.getElementById('setup_quarter').value)||4;
+  if(ayah){ applyReachedPosition(surahNumber, ayah, quarterVal); }
+
+  const btn = document.getElementById('finishSetupBtn');
+  btn.disabled = true;
+  try{
+    await apiSaveProfile({
+      name,
+      gender: gender || null,
+      track_haidh: gender === 'F' ? document.getElementById('setup_track_haidh').checked : false,
+      setup_complete: true
+    });
+    await persistPosition();
+    showMainApp();
+    await startApp();
+  } catch(e){
+    errEl.textContent = "Couldn't save setup: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// After login (or on returning with a valid token), check whether setup's
+// actually been completed before deciding whether to show it or the journal.
+async function checkProfileAndProceed(){
+  try{
+    const profile = await apiGetProfile();
+    if(!profile.setup_complete){
+      // resume any partially-entered position from a previous incomplete attempt
+      try{
+        const positionRow = await apiGetPosition();
+        if(positionRow && positionRow.position_json) position = JSON.parse(positionRow.position_json);
+        if(positionRow && positionRow.last_dhor_json) lastDhor = JSON.parse(positionRow.last_dhor_json);
+      } catch(e){ /* fine to ignore — fresh setup if nothing saved yet */ }
+      if(profile.name) document.getElementById('setup_name').value = profile.name;
+      if(profile.gender){
+        document.getElementById('setup_gender').value = profile.gender;
+        document.getElementById('setup_haidh_wrap').style.display = profile.gender === 'F' ? 'block' : 'none';
+      }
+      document.getElementById('setup_track_haidh').checked = !!profile.track_haidh;
+      showSetupScreen();
+    } else {
+      showMainApp();
+      await startApp();
+    }
+  } catch(e){
+    showBanner("Couldn't load your profile: " + e.message);
+    showLoginScreen();
+  }
+}
+
+// ============================================================
 // INIT
 // ============================================================
 function renderAll(){
@@ -767,10 +942,12 @@ async function startApp(){
 
 function showMainApp(){
   document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'block';
 }
 function showLoginScreen(){
   document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('mainApp').style.display = 'none';
 }
 
@@ -787,8 +964,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   btn.disabled = true;
   try{
     await apiLogin(id, pin);
-    showMainApp();
-    await startApp();
+    await checkProfileAndProceed();
   } catch(e){
     errEl.textContent = e.message;
   } finally {
@@ -803,8 +979,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 (function init(){
   if(getToken()){
-    showMainApp();
-    startApp();
+    checkProfileAndProceed();
   } else {
     showLoginScreen();
   }

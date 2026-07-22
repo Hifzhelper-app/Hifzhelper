@@ -7,6 +7,53 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V1.4 — self-onboarding setup page (2026-07-20)
+
+New students now walk through a one-time setup screen on first login,
+instead of starting from a completely blank journal. Decided against
+importing historical data from old systems (a real example — Umme's dhor
+log CSV — surfaced the design question, but the answer was: students
+self-enter where they're starting from, the app builds forward from there).
+
+**Setup collects**: name, gender (stored directly, may drive future
+styling), haidh-tracking preference (shown only for females, independent
+toggle — not auto-enabled by gender), Quran print preference (reuses the
+existing device-level toggle), current sabaq position, and which juz' are
+already complete (reuses the existing manzil strip, in a tap-to-mark-
+complete mode). Last-dhor dates are optional — enter them if known,
+otherwise a segment is simply treated as never-revised, no fabricated
+history.
+
+**Reused rather than rebuilt**: `POST /position` already accepted exactly
+the shape setup needs — no new endpoint for the juz'/dhor part. The
+position-update logic itself was extracted into a shared
+`applyReachedPosition()` function (used by both the daily save handler and
+setup), and `renderJuzStripInto()` was parameterized to accept a tap
+handler, so setup's "mark complete" mode doesn't trigger a live API call
+per tap the way the daily journal's does.
+
+**New**: `GET /profile` / `POST /profile` endpoints; `gender`,
+`track_haidh`, `setup_complete` columns on `students`.
+
+**Known shortcut, not a polish gap to ignore forever**: last-dhor date
+entry during setup uses a plain browser `prompt()`, not a custom date
+picker — deliberate simplicity for a one-time screen, worth revisiting if
+it turns out to feel rough in practice.
+
+**Files changed:**
+```
+worker/migrations/0004_profile_setup.sql   (new)
+worker/src/profile.js                       (new)
+worker/src/index.js
+frontend/api.js
+frontend/app.js
+frontend/index.html
+SCHEMA.md
+TESTING.md
+```
+
+---
+
 ## V1.3 — up to two entries per day (2026-07-19)
 
 Students can now log a second sabaq/sabaq dhor/dhor on the same day

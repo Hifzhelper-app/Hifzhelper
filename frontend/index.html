@@ -32,7 +32,71 @@
   </div>
 </div>
 
+<div class="login-screen" id="setupScreen" style="display:none; align-items:flex-start; padding-top:24px;">
+  <div class="login-card" style="max-width:520px;">
+    <div class="eyebrow">Hifzhelper — one-time setup</div>
+    <h1 class="title" style="margin-bottom:16px;">Tell us where you're starting from</h1>
+
+    <label style="margin-top:0">Your name</label>
+    <input type="text" id="setup_name" placeholder="e.g. Umme Abdullah" />
+
+    <label>Gender</label>
+    <select id="setup_gender">
+      <option value="">— select —</option>
+      <option value="F">Female</option>
+      <option value="M">Male</option>
+    </select>
+
+    <div id="setup_haidh_wrap" style="display:none;">
+      <label style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+        <input type="checkbox" id="setup_track_haidh" style="width:auto;" />
+        Track haidh in my attendance
+      </label>
+    </div>
+
+    <label style="margin-top:18px;">Quran print you use</label>
+    <div class="tags" id="setupRubRefToggle" style="margin-bottom:4px;">
+      <div class="tag" data-ref="waterval">Waterval</div>
+      <div class="tag" data-ref="uthmani">Uthmani</div>
+    </div>
+
+    <div class="section-block" style="margin-top:18px; padding:14px;">
+      <h2 style="font-size:14px;">Where is your current sabaq?</h2>
+      <label style="margin-top:0">Surah</label>
+      <select id="setup_surah"></select>
+      <label>Ayah reached</label>
+      <input type="number" id="setup_ayah" placeholder="e.g. 45" />
+      <div class="computed-zone" id="setup_rub_display" style="margin-top:8px;">—</div>
+      <label>Quarter reached (juz' 1–28 only)</label>
+      <select id="setup_quarter">
+        <option value="1">1st quarter</option>
+        <option value="2">2nd quarter</option>
+        <option value="3">3rd quarter</option>
+        <option value="4" selected>4th quarter</option>
+      </select>
+    </div>
+
+    <div class="section-block" style="margin-top:12px; padding:14px;">
+      <h2 style="font-size:14px;">Which juz' have you already completed?</h2>
+      <span class="login-hint" style="margin-top:0;">Tap to mark complete — your current sabaq juz' fills in automatically above.</span>
+      <div class="juz-strip" id="setupJuzStrip" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="section-block" style="margin-top:12px; padding:14px;">
+      <h2 style="font-size:14px;">Last dhor dates (optional)</h2>
+      <span class="login-hint" style="margin-top:0;">Only if you know them — tap a completed segment to enter a date. Leave anything you don't know untouched; it'll show as not-yet-revised.</span>
+      <div class="juz-strip" id="setupDhorMap" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="save-bar" style="margin-top:18px;">
+      <button class="primary" id="finishSetupBtn" style="width:100%">Finish setup</button>
+    </div>
+    <div class="login-error" id="setupError"></div>
+  </div>
+</div>
+
 <div class="app" id="mainApp" style="display:none;">
+
 
   <header class="top">
     <div class="eyebrow">Hifzhelper — student journal</div>

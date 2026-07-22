@@ -83,3 +83,10 @@ function apiGetPosition(){
 function apiSavePosition(position_json, last_dhor_json){
   return apiFetch('/position', { method: 'POST', body: JSON.stringify({ position_json, last_dhor_json }) });
 }
+
+function apiGetProfile(){
+  return apiFetch('/profile');
+}
+function apiSaveProfile(profile){
+  return apiFetch('/profile', { method: 'POST', body: JSON.stringify(profile) });
+}

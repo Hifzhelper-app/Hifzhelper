@@ -1,0 +1,3 @@
+ALTER TABLE students ADD COLUMN gender TEXT CHECK (gender IN ('M','F'));
+ALTER TABLE students ADD COLUMN track_haidh INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE students ADD COLUMN setup_complete INTEGER NOT NULL DEFAULT 0;

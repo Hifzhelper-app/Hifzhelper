@@ -21,6 +21,9 @@ human-readable reference for the same thing.
 | `active` | INTEGER | `1`/`0`. Disable without deleting history. |
 | `failed_attempts` | INTEGER | Added in migration 0002, for login rate-limiting. Resets to 0 on success. |
 | `locked_until` | TEXT | Added in migration 0002. ISO timestamp; NULL = not locked. |
+| `gender` | TEXT | Added in migration 0004. `M` or `F`. Stored directly (not just derived haidh eligibility) — may drive different styling later. |
+| `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Only ever shown as an option to females; not auto-set from gender. |
+| `setup_complete` | INTEGER | Added in migration 0004. `1`/`0`. Gates whether the setup wizard shows on login. |
 
 ## Table: `entries`
 

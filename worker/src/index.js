@@ -3,6 +3,7 @@ import { handleLogin, authenticate } from './auth.js';
 import { handleGetEntries, handleSaveEntry, handleDeleteEntry } from './entries.js';
 import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
+import { handleGetProfile, handleSaveProfile } from './profile.js';
 
 // Every handler returns { data } or { error, status } — this file's only job
 // is routing + turning that plain object into a real Response, and making
@@ -49,6 +50,9 @@ export default {
 
       if (path === '/position' && request.method === 'GET') return respond(await handleGetPosition(request, env, auth));
       if (path === '/position' && request.method === 'POST') return respond(await handleSavePosition(request, env, auth));
+
+      if (path === '/profile' && request.method === 'GET') return respond(await handleGetProfile(request, env, auth));
+      if (path === '/profile' && request.method === 'POST') return respond(await handleSaveProfile(request, env, auth));
 
       return error('Not found', 404);
     } catch (err) {

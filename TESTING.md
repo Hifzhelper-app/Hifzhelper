@@ -75,6 +75,16 @@ Requires `Authorization: Bearer <token>` from a successful login above.
 
 ---
 
+## 5. Profile & setup
+
+| Test | Request | Expect |
+|---|---|---|
+| Get profile before setup | `GET /profile` | `setup_complete: 0`, `gender`/`track_haidh` likely null/0 |
+| Complete setup | `POST /profile` `{"name":"Test Student","gender":"F","track_haidh":true,"setup_complete":true}` | `200 {"saved": true}` |
+| Confirm it stuck | `GET /profile` | `setup_complete: 1`, `gender: "F"`, `track_haidh: 1`, `name` updated |
+| Invalid gender | `POST /profile` `{"gender":"X"}` | `400 gender must be M or F` |
+| Partial update doesn't clobber | `POST /profile` `{"track_haidh":false}` (omit name/gender) | `200`; GET shows `name`/`gender` unchanged, only `track_haidh` flipped |
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
