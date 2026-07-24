@@ -1,0 +1,109 @@
+/* ============================================================
+   Hifzhelper — journal landing table
+   Matches the physical paper planner: Day/Date | Sabaq | Sabaq Dhor |
+   Dhor | Feedback, one row per day, Sage header for Date, Mauve header
+   for the log columns.
+   ============================================================ */
+
+.journal-wrap {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-table-border);
+}
+
+.journal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.journal-table th {
+  padding: var(--space-sm) var(--space-sm);
+  text-align: left;
+  font-weight: 700;
+  color: var(--color-table-header-text);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.journal-table th.col-date { background: var(--color-table-header-date); }
+.journal-table th.col-log  { background: var(--color-table-header-log); }
+
+/* Column headers double as navigation into the dedicated per-log pages —
+   icon + label, matching the app-wide icon-nav pattern, no extra chrome. */
+.journal-table th.col-log button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+.journal-table th.col-log svg { width: 14px; height: 14px; }
+
+.journal-table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-table-border);
+  vertical-align: top;
+}
+.journal-table tr:last-child td { border-bottom: none; }
+
+.journal-table .cell-date {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-ink);
+}
+.journal-table .cell-date .weekday {
+  display: block;
+  font-size: 10px;
+  color: var(--color-ink-faint);
+  font-weight: 400;
+}
+
+.journal-cell-empty {
+  color: var(--color-ink-faint);
+  font-style: italic;
+  cursor: pointer;
+}
+.journal-cell-empty:hover { color: var(--color-ink-soft); }
+
+/* A cell pre-populated from a plan — shown greyed/placeholder until the
+   student overwrites it with what actually happened. */
+.journal-cell-planned {
+  color: var(--color-ink-faint);
+  cursor: pointer;
+}
+.journal-cell-planned::before {
+  content: '';
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--color-ink-faint);
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+.journal-cell-filled {
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.journal-cell-filled .entry-count-badge {
+  font-size: 10px;
+  color: var(--color-ink-faint);
+  margin-left: 4px;
+}
+
+.journal-cell-feedback {
+  color: var(--color-ink-soft);
+  font-size: 12px;
+}
+
+/* Wider screens: a bit more padding, slightly larger type — same table,
+   not a different layout, per "consistent sizing for tablets/large screens" */
+@media (min-width: 720px) {
+  .journal-table { font-size: 14px; }
+  .journal-table td, .journal-table th { padding: var(--space-md); }
+}

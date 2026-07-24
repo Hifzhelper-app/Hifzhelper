@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hifzhelper</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/nav.css">
+<link rel="stylesheet" href="css/journal-table.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+<div id="errorBanner"></div>
+
+<!-- ================= LOGIN ================= -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1>Sign in</h1>
+    <label>Your ID</label>
+    <input type="text" id="login_id" placeholder="e.g. K7M2QX" autocapitalize="characters">
+    <label>4-digit PIN</label>
+    <input type="password" id="login_pin" placeholder="••••" inputmode="numeric" maxlength="4" pattern="[0-9]*">
+    <div class="form-hint">First time? Enter any 4-digit PIN — it becomes your PIN from now on.</div>
+    <div style="margin-top:16px;"><button class="primary" id="loginBtn">Sign in</button></div>
+    <div class="form-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appShell" style="display:none;">
+
+  <header id="authBand">
+    <span class="user-name"></span>
+    <button id="authBandToggle"></button>
+  </header>
+  <nav id="authDropdown"><div class="dropdown-inner" id="authDropdownNav"></div></nav>
+
+  <main id="appContent">
+
+    <!-- Home -->
+    <section class="screen" id="screen-home">
+      <h2>Home</h2>
+      <div id="homeGrid"></div>
+    </section>
+
+    <!-- Journal (landing) -->
+    <section class="screen hidden" id="screen-journal">
+      <h2>Journal</h2>
+      <div class="journal-wrap">
+        <table class="journal-table">
+          <thead>
+            <tr>
+              <th class="col-date">Date</th>
+              <th class="col-log"><button data-nav="sabaq" id="th_sabaq"><span>Sabaq</span></button></th>
+              <th class="col-log"><button data-nav="sabaqDhor" id="th_sabaqDhor"><span>Sabaq Dhor</span></button></th>
+              <th class="col-log"><button data-nav="dhor" id="th_dhor"><span>Dhor</span></button></th>
+              <th class="col-log">Feedback</th>
+            </tr>
+          </thead>
+          <tbody id="journalTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Placeholder for screens not yet built -->
+    <section class="screen hidden" id="screen-placeholder">
+      <h2 id="placeholderLabel"></h2>
+      <p class="form-hint">This page isn't built yet — coming in a follow-up.</p>
+    </section>
+
+  </main>
+</div>
+
+<script src="../shared/data.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/home.js"></script>
+<script src="js/journal.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
