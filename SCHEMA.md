@@ -25,35 +25,107 @@ human-readable reference for the same thing.
 | `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Only ever shown as an option to females; not auto-set from gender. |
 | `setup_complete` | INTEGER | Added in migration 0004. `1`/`0`. Gates whether the setup wizard shows on login. |
 
-## Table: `entries`
+## Tables: `sabaq_log`, `sabaq_dhor_log`, `dhor_log`, `reflections` (V2 — replaces `entries`)
 
-Up to two rows per student per day (`UNIQUE(student_id, date, entry_number)`
-— saving is an upsert on that triple). `entry_number` distinguishes a
-second sabaq/sabaq dhor/dhor logged the same day; defaults to `1`.
+Four independent logs, replacing the old single `entries` table (V1.x —
+see CHANGELOG V2.1 for why: Sabaq, Sabaq Dhor, and Dhor have genuinely
+independent lifespans — different people log them, at different times,
+at different lifelong frequencies, and a single shared row could never
+answer "how has my dhor time-per-session changed over a year"). No caps —
+any number of entries per day. `entered_by` records who actually logged it
+(the student, or a teacher on their behalf) — distinct from `student_id`
+(whose journal it belongs to). Exact-duplicate saves are allowed but
+flagged (`is_duplicate = 1`), never rejected or silently dropped.
+
+Each of `sabaq_log`, `sabaq_dhor_log`, and `dhor_log` carries the same
+comment/feedback shape — a student comment and a teacher feedback, each
+with its own `_by` (who wrote it) and `_at` (when), since a comment can
+be added later by a different person than whoever logged the entry.
+They also share the same privacy shape (added in migration 0006):
+`student_comment` (the student's own performance self-assessment, distinct
+from `teacher_feedback`) gets a simple `student_comment_private` flag;
+`teacher_feedback` gets a three-tier `teacher_feedback_visibility`
+(`all` / `teachers_only` / `private`) since multiple teachers viewing one
+student is real, not hypothetical — `private` restricts to the specific
+teacher who wrote it, `teachers_only` hides it from the student but shows
+any teacher, `all` shows everyone. Enforced in `logHelpers.js`'s
+`applyPrivacy()` at read time, not by hiding rows — a private field is
+redacted, the entry itself still shows.
+
+**`sabaq_log`**
 
 | Column | Type | Notes |
 |---|---|---|
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
-| `entry_number` | INTEGER | `1` or `2`. A student can log at most two entries per day. |
-| `sabaq_surah` | INTEGER | Surah number, 1–114. |
-| `sabaq_ayah_from` | INTEGER | |
-| `sabaq_ayah_to` | INTEGER | |
-| `sabaq_lines` | INTEGER | Lines completed. |
-| `sabaq_quarter` | INTEGER | 1–4, computed from rub' boundary data (see `shared/data.js`). |
-| `sabaq_tajweed` | TEXT | Comma-separated tags, e.g. `Ghunnah,Madd`. |
-| `sabaqdhor_zone` | TEXT | Computed juz' list, e.g. `Juz' 29, 30`. Stored for record, not re-derived. |
-| `sabaqdhor_tajweed` | TEXT | Comma-separated tags. |
-| `sabaqdhor_mistakes` | INTEGER | Optional — may be NULL. |
-| `dhor_from` | INTEGER | Segment unit — 1–120 (Waterval quarters) or 1–240 (Uthmani 1/8's), depending on `dhor_ref`. Can span across juz' boundaries. |
-| `dhor_to` | INTEGER | Same units as `dhor_from`. |
-| `dhor_ref` | TEXT | `waterval` or `uthmani` — which reference `dhor_from`/`dhor_to` are expressed in, recorded per-entry so history displays correctly even if the maktab's setting changes later. |
-| `dhor_tajweed` | TEXT | Comma-separated tags. |
-| `dhor_mistakes` | INTEGER | |
-| `dhor_minutes` | INTEGER | Time is only tracked on dhor, not sabaq/sabaq dhor. |
-| `reflection` | TEXT | Tadabbur. |
-| `student_comment` | TEXT | Note to teacher. |
-| `teacher_feedback` | TEXT | Filled in by the teacher (Phase 2), read-only to the student. |
+| `entered_by` | TEXT (FK) | → `students.id`. Who actually logged this. |
+| `surah` | INTEGER | Surah number, 1–114. The only canonical input — page, line, quarter, etc. are all computed at display time from `surah`/`ayah_from`/`ayah_to` (see `shared/data.js`). |
+| `ayah_from` | INTEGER | |
+| `ayah_to` | INTEGER | |
+| `tajweed_tags` | TEXT | Comma-separated tags, e.g. `Ghunnah,Madd`. |
+| `student_comment` / `_by` / `_at` | TEXT / TEXT (FK) / TEXT | |
+| `student_comment_private` | INTEGER | `1` = hidden from teachers, visible only to the student themself. |
+| `teacher_feedback` / `_by` / `_at` | TEXT / TEXT (FK) / TEXT | |
+| `teacher_feedback_visibility` | TEXT | `all` / `teachers_only` / `private`. Default `all`. |
+| `is_duplicate` | INTEGER | `1` if it exactly matches an existing entry for this student/date. |
+| `created_at` | TEXT | ISO timestamp. |
+
+**`sabaq_dhor_log`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` / `date` / `entered_by` | — | Same as `sabaq_log`. |
+| `zone` | TEXT | Computed juz' list at save time, e.g. `Juz' 29, 30` — not user-entered. |
+| `tajweed_tags` | TEXT | |
+| `mistakes` | INTEGER | |
+| `student_comment` / `_by` / `_at` / `_private`, `teacher_feedback` / `_by` / `_at` / `_visibility` | — | Same shape as `sabaq_log`. |
+| `is_duplicate`, `created_at` | — | Same as `sabaq_log`. |
+
+**`dhor_log`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` / `date` / `entered_by` | — | Same as `sabaq_log`. |
+| `segment_from` | INTEGER | Segment unit — 1–120 (13-line/IndoPak quarters) or 1–240 (Uthmani 1/8's), depending on `ref`. Can span across juz' boundaries. Dhor keeps its own quarter-granularity input — it does not use the flexible ayah/page/surah system that `sabaq_log` uses. |
+| `segment_to` | INTEGER | Same units as `segment_from`. |
+| `ref` | TEXT | `waterval` (internal key name — see naming note in CHANGELOG V2.0) or `uthmani`. Recorded per-entry so history displays correctly even if the setting changes later. |
+| `tajweed_tags` | TEXT | |
+| `mistakes` | INTEGER | |
+| `duration_seconds` | INTEGER | Renamed from `minutes` in migration 0006 — the timer feature needs real precision, not whole minutes. Time is only tracked on dhor, not sabaq/sabaq dhor. |
+| `lap_times` | TEXT | JSON array of true per-section durations in seconds, e.g. `[125,95,140]` — same "variable-length list as one column" pattern as `tajweed_tags`, not numbered columns or a separate table. Optional. |
+| `student_comment` / `_by` / `_at` / `_private`, `teacher_feedback` / `_by` / `_at` / `_visibility` | — | Same shape as `sabaq_log`. |
+| `is_duplicate`, `created_at` | — | Same as `sabaq_log`. |
+
+**`reflections`**
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` / `date` / `entered_by` | — | Same as above. |
+| `reflection` | TEXT | Tadabbur only — genuinely separate from teacher feedback, which lives on the three logs above, not here. |
+| `is_private` | INTEGER | `1` = hidden from teachers. Same idea as `student_comment_private`, but reflections have no teacher-feedback concept, so no visibility tiers needed. |
+| `created_at` | TEXT | |
+
+## Table: `plans`
+
+A plan is an intention, not a record of something that happened — genuinely
+different from the four logs above (no mistakes, no minutes, no comments;
+those only exist once something's actually occurred). The Dhor input
+screen's *default* view is driven by this table: a day with a plan shows it
+pre-filled to complete; a day without one falls back to the manual picker.
+
+| Column | Type | Notes |
+|---|---|---|
+| `student_id` | TEXT (FK) | → `students.id`. |
+| `entered_by` | TEXT (FK) | Student or teacher who created the plan. |
+| `plan_type` | TEXT | `dhor` / `sabaq` / `sabaq_dhor`. |
+| `target_date` | TEXT | A specific date, not a range — "next week" means several individually-dated plans. |
+| `segment_from` / `segment_to` / `ref` | INTEGER / INTEGER / TEXT | For `dhor` plans — same units as `dhor_log`. |
+| `surah` / `ayah_from` / `ayah_to` | INTEGER | For `sabaq` / `sabaq_dhor` plans. |
+| `notes` | TEXT | Optional free text. |
+| `status` | TEXT | `planned` / `completed` / `skipped`. |
+| `completed_log_id` | INTEGER | Set only if completed with full detail — links to the real `dhor_log`/`sabaq_log`/`sabaq_dhor_log` row that fulfilled it. Null if completed via the quick checkbox (both completion paths are supported). |
+| `completed_at` | TEXT | |
+| `created_at` | TEXT | |
 
 ## Table: `attendance`
 
@@ -86,9 +158,21 @@ in D1 — they ship as static data with the app instead:
 
 - `SURAHS` — the 114 surah names/numbers
 - `JUZ_BOUNDARIES` — standard 30 juz' start points (surah:ayah), print-independent
-- `RUB_BOUNDARIES.waterval` — 120 markers, verified from the maktab's own Waterval source file
+- `RUB_BOUNDARIES.waterval` — 120 markers for the 13-line (IndoPak) print (internal key name
+  predates the "stop calling it Waterval" naming correction — kept as-is for now, to be
+  properly renamed as part of the three-model selector rebuild rather than a piecemeal rename)
 - `RUB_BOUNDARIES.uthmani` — 240 markers (rub' al-hizb), verified from Quran Foundation metadata
 - `TAJWEED_DEFAULTS` — the default tajweed focus-area tags
+- `AYAH_WORD_RANGE` — all 6236 ayahs, `[surah, ayah, first_word_id, last_word_id]`, using the
+  universal word-ID scheme confirmed identical across the 15-line Madina and 13-line IndoPak
+  page-layout databases
+- `LINE13_RANGES` — 10769 real content lines for the 13-line print, `[page, line, first_word_id,
+  last_word_id]`. Verified 114/114 against the print's own surah-start markers; a broader
+  cross-check against the (fully verified) 15-line data found ~4% of arbitrary page-boundary
+  lookups differ by 1-2 ayahs — good enough for approximate line/page counts, not claimed as
+  exact as the 15-line mapping
+- `getLines13ForAyahRange(surah, ayahFrom, ayahTo)` — returns `{lineCount, pageCount, pages}`
+  for the 13-line print, given a canonical ayah range. Approximate by design, per the note above
 
 Each of these carries a source comment in `shared/data.js` per CONVENTIONS.md
 principle 6 — where it came from and that it's been verified, not guessed.

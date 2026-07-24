@@ -42,20 +42,32 @@ production testing entirely and rely on dev coverage + trusting the merge.
 | Lockout | repeat the wrong PIN 5 times total | 5th attempt: `429`, message names a lockout time |
 | Missing/malformed body | `{"id":"K7M2QX"}` (no pin) | `400` |
 
-## 2. Entries
+## 2. Sabaq / Sabaq Dhor / Dhor / Reflections (V2 — four independent logs)
 
 Requires `Authorization: Bearer <token>` from a successful login above.
+No caps in V2 — every `POST` is a new row (never an upsert), and `DELETE`
+identifies a row by its own `id`, not by date.
+
+**Sabaq**
 
 | Test | Request | Expect |
 |---|---|---|
-| Save an entry | `POST /entries` `{"date":"2026-07-18","sabaq_surah":67,"sabaq_ayah_from":1,"sabaq_ayah_to":5,"sabaq_lines":10}` | `200 {"saved": true}` (defaults to `entry_number: 1`) |
-| Read it back | `GET /entries` | array containing that entry, fields matching what was sent |
-| Update same day, same entry_number | POST again with the same `date`, different `sabaq_lines` | `200`, then GET shows the *updated* value, not a second row |
-| Second entry, same day | `POST /entries` `{"date":"2026-07-18","entry_number":2,"sabaq_surah":68,"sabaq_ayah_from":1,"sabaq_ayah_to":3}` | `200`; GET now shows **two** rows for that date, `entry_number` 1 and 2 |
-| Invalid entry_number | `POST /entries` `{"date":"2026-07-18","entry_number":3,...}` | `400 entry_number must be 1 or 2` |
-| Delete one entry_number only | `DELETE /entries?date=2026-07-18&entry_number=2` | `200`; GET still shows `entry_number: 1` for that date — deleting entry 2 must never remove entry 1 |
-| Delete remaining entry | `DELETE /entries?date=2026-07-18&entry_number=1` (or omit `entry_number`, defaults to 1) | `200`; GET shows no rows for that date |
-| No token | any of the above, with the `Authorization` header removed | `401 Not authenticated` |
+| Save | `POST /sabaq` `{"date":"2026-07-18","surah":67,"ayah_from":1,"ayah_to":5}` | `200 {"id": N, "isDuplicate": false}` |
+| Read | `GET /sabaq` | array containing that row |
+| Second entry, same day | `POST /sabaq` again, same date, different ayah range | `200`, a **new** `id` — GET now shows two rows for that date, not one updated row |
+| Exact duplicate | `POST /sabaq` with identical content to an existing row, same date | `200`, `isDuplicate: true` — still saved, just flagged, not rejected |
+| Add a comment later | `PATCH /sabaq` `{"id": N, "student_comment": "felt good today"}` | `200`; GET shows `student_comment` set, plus `student_comment_by`/`student_comment_at` populated |
+| Correct a mistake in the entry itself | `PATCH /sabaq` `{"id": N, "ayah_to": 8}` | `200`; GET shows the updated `ayah_to`, rest of the row unchanged — confirms edits aren't limited to comments (V2.3 correction) |
+| Edit content + comment in one call | `PATCH /sabaq` `{"id": N, "surah": 2, "student_comment": "fixed the surah"}` | `200`; both changes applied in the same row |
+| Delete by id | `DELETE /sabaq?id=N` | `200`; GET no longer shows that row (other rows for the same date untouched) |
+
+**Sabaq Dhor** — same shape via `/sabaq-dhor`, fields `zone`/`tajweed_tags`/`mistakes`.
+
+**Dhor** — same shape via `/dhor`, fields `segment_from`/`segment_to`/`ref`/`mistakes`/`minutes`. Also check: invalid `ref` (not `waterval`/`uthmani`) → `400`.
+
+**Reflections** — via `/reflections`, field `reflection` only. No `PATCH` (no comment concept) — confirm attempting one isn't expected to exist as a route.
+
+**Attendance side-effect**: saving any Sabaq/Sabaq Dhor/Dhor entry should mark that date `present` in the `attendance` table (check via D1 console) — reflections should **not** trigger this.
 
 ## 3. Attendance
 
@@ -84,6 +96,39 @@ Requires `Authorization: Bearer <token>` from a successful login above.
 | Confirm it stuck | `GET /profile` | `setup_complete: 1`, `gender: "F"`, `track_haidh: 1`, `name` updated |
 | Invalid gender | `POST /profile` `{"gender":"X"}` | `400 gender must be M or F` |
 | Partial update doesn't clobber | `POST /profile` `{"track_haidh":false}` (omit name/gender) | `200`; GET shows `name`/`gender` unchanged, only `track_haidh` flipped |
+
+## 6. Plans (V3.0)
+
+| Test | Request | Expect |
+|---|---|---|
+| Create a plan | `POST /plans` `{"plan_type":"dhor","target_date":"2026-08-01","segment_from":11,"segment_to":12,"ref":"waterval","notes":"Juz 3 Q3-4"}` | `200 {"id": N}` |
+| Read plans for that day | `GET /plans?date=2026-08-01` | array containing the plan, `status: "planned"` |
+| Quick-checkbox complete | `PATCH /plans` `{"id": N, "status": "completed"}` | `200`; GET shows `status: "completed"`, `completed_log_id: null` |
+| Full-detail complete | `POST /dhor` with `{"date":"2026-08-01","segment_from":11,"segment_to":12,"ref":"waterval","plan_id": M}` (a fresh plan) | `200`; `GET /plans?date=2026-08-01` shows that plan's `status: "completed"` and `completed_log_id` set to the new dhor_log row's id |
+| Invalid/foreign plan_id | Save a log with a `plan_id` that doesn't exist or belongs to another student | `200` (save still succeeds — linking is a bonus, never fails the save) |
+| Delete a plan | `DELETE /plans?id=N` | `200`; GET no longer shows it |
+
+## 7. Timer / lap (V3.0)
+
+| Test | Request | Expect |
+|---|---|---|
+| Save with lap times | `POST /dhor` `{"date":"2026-08-01","segment_from":1,"segment_to":1,"ref":"waterval","duration_seconds":320,"lap_times":[125,95,100]}` | `200` |
+| Read it back | `GET /dhor` | the entry's `lap_times` comes back as a real array `[125,95,100]`, not a JSON string |
+| Invalid lap_times | `POST /dhor` with `"lap_times": "not an array"` | `400` |
+| Negative lap value | `POST /dhor` with `"lap_times": [100, -5]` | `400` |
+
+## 8. Privacy (V3.0)
+
+Requires two things to test properly: a second **teacher** account, and
+checking responses as different requesters (not just as the student).
+
+| Test | Request | Expect |
+|---|---|---|
+| Private student_comment | `PATCH /sabaq` `{"id": N, "student_comment": "felt rushed", "student_comment_private": true}` | `200`; GET as the student shows the comment; GET as any teacher shows `student_comment: null` |
+| teacher_feedback visibility 'all' | `PATCH /sabaq` `{"id": N, "teacher_feedback": "well done", "teacher_feedback_visibility": "all"}` (as the teacher) | Student and any teacher both see it |
+| teacher_feedback visibility 'teachers_only' | Same, `"teacher_feedback_visibility": "teachers_only"` | Student sees `null`; any teacher sees the real value |
+| teacher_feedback visibility 'private' | Same, `"teacher_feedback_visibility": "private"` | Student sees `null`; the authoring teacher sees it; a **different** teacher sees `null` |
+| Private reflection | `POST /reflections` `{"date":"...","reflection":"...","is_private":true}` | Student sees it; any teacher's `GET /reflections?student_id=...` shows `reflection: null` for that row |
 
 ## Smoke test (quick re-check after a production merge)
 

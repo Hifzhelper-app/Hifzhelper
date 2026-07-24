@@ -1,0 +1,71 @@
+/* ============================================================
+   Hifzhelper — navigation: auth band, dropdown menu, home tiles
+   ============================================================ */
+
+/* ---- Auth band across the top ---- */
+#authBand {
+  background: var(--color-banner);
+  color: var(--color-banner-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+#authBand .user-name {
+  font-weight: 600;
+  font-size: 15px;
+}
+#authBandToggle {
+  color: var(--color-banner-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+}
+#authBandToggle svg { width: 20px; height: 20px; transition: transform 0.15s; }
+#authBandToggle.open svg { transform: rotate(180deg); }
+
+/* Slide-down menu — appears directly under the band */
+#authDropdown {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-table-border);
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+#authDropdown.open {
+  max-height: 400px;
+}
+#authDropdown .dropdown-inner {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+  padding: var(--space-md);
+}
+@media (min-width: 720px) {
+  #authDropdown .dropdown-inner { grid-template-columns: repeat(6, 1fr); }
+}
+#authDropdown .dropdown-divider {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--color-table-border);
+  margin: var(--space-xs) 0;
+}
+
+/* ---- Home page: icon tiles ---- */
+#homeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+}
+@media (min-width: 720px) {
+  #homeGrid { grid-template-columns: repeat(5, 1fr); }
+}
+#homeGrid .nav-icon-item {
+  font-size: 13px;
+  padding: var(--space-md) var(--space-sm);
+}
+#homeGrid .nav-icon-item svg { width: 36px; height: 36px; }

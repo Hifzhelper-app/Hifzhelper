@@ -1,6 +1,10 @@
 import { json, error } from './utils.js';
 import { handleLogin, authenticate } from './auth.js';
-import { handleGetEntries, handleSaveEntry, handleDeleteEntry } from './entries.js';
+import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq } from './sabaqLog.js';
+import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
+import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
+import { handleGetReflections, handleSaveReflection, handleUpdateReflection, handleDeleteReflection } from './reflections.js';
+import { handleGetPlans, handleCreatePlan, handleUpdatePlan, handleDeletePlan } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
 import { handleGetProfile, handleSaveProfile } from './profile.js';
@@ -21,7 +25,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS'
+          'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS'
         }
       });
     }
@@ -39,9 +43,35 @@ export default {
       const auth = await authenticate(request, env);
       if (!auth) return error('Not authenticated', 401);
 
-      if (path === '/entries' && request.method === 'GET') return respond(await handleGetEntries(request, env, auth));
-      if (path === '/entries' && request.method === 'POST') return respond(await handleSaveEntry(request, env, auth));
-      if (path === '/entries' && request.method === 'DELETE') return respond(await handleDeleteEntry(request, env, auth));
+      // V2: four independent logs, replacing the old single /entries route.
+      // GET/POST list+create; PATCH adds/updates a comment on an existing
+      // row (reflections has no comment concept, so no PATCH there);
+      // DELETE removes by id (no more date+entry_number — V2 has no caps,
+      // every row has its own real primary key).
+      if (path === '/sabaq' && request.method === 'GET') return respond(await handleGetSabaq(request, env, auth));
+      if (path === '/sabaq' && request.method === 'POST') return respond(await handleSaveSabaq(request, env, auth));
+      if (path === '/sabaq' && request.method === 'PATCH') return respond(await handleUpdateSabaq(request, env, auth));
+      if (path === '/sabaq' && request.method === 'DELETE') return respond(await handleDeleteSabaq(request, env, auth));
+
+      if (path === '/sabaq-dhor' && request.method === 'GET') return respond(await handleGetSabaqDhor(request, env, auth));
+      if (path === '/sabaq-dhor' && request.method === 'POST') return respond(await handleSaveSabaqDhor(request, env, auth));
+      if (path === '/sabaq-dhor' && request.method === 'PATCH') return respond(await handleUpdateSabaqDhor(request, env, auth));
+      if (path === '/sabaq-dhor' && request.method === 'DELETE') return respond(await handleDeleteSabaqDhor(request, env, auth));
+
+      if (path === '/dhor' && request.method === 'GET') return respond(await handleGetDhor(request, env, auth));
+      if (path === '/dhor' && request.method === 'POST') return respond(await handleSaveDhor(request, env, auth));
+      if (path === '/dhor' && request.method === 'PATCH') return respond(await handleUpdateDhor(request, env, auth));
+      if (path === '/dhor' && request.method === 'DELETE') return respond(await handleDeleteDhor(request, env, auth));
+
+      if (path === '/reflections' && request.method === 'GET') return respond(await handleGetReflections(request, env, auth));
+      if (path === '/reflections' && request.method === 'POST') return respond(await handleSaveReflection(request, env, auth));
+      if (path === '/reflections' && request.method === 'PATCH') return respond(await handleUpdateReflection(request, env, auth));
+      if (path === '/reflections' && request.method === 'DELETE') return respond(await handleDeleteReflection(request, env, auth));
+
+      if (path === '/plans' && request.method === 'GET') return respond(await handleGetPlans(request, env, auth));
+      if (path === '/plans' && request.method === 'POST') return respond(await handleCreatePlan(request, env, auth));
+      if (path === '/plans' && request.method === 'PATCH') return respond(await handleUpdatePlan(request, env, auth));
+      if (path === '/plans' && request.method === 'DELETE') return respond(await handleDeletePlan(request, env, auth));
 
       if (path === '/attendance' && request.method === 'GET') return respond(await handleGetAttendance(request, env, auth));
       if (path === '/attendance' && request.method === 'POST') return respond(await handleSetAttendance(request, env, auth));

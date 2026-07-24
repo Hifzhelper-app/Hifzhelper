@@ -1,0 +1,139 @@
+/* ============================================================
+   Hifzhelper — shared components: login, modals, forms, buttons
+   ============================================================ */
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+}
+.login-card .eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-ink-faint);
+}
+.login-card h1 {
+  font-size: 20px;
+  margin: var(--space-xs) 0 var(--space-md);
+}
+.login-card label {
+  display: block;
+  font-size: 12px;
+  color: var(--color-ink-soft);
+  margin-top: var(--space-md);
+  margin-bottom: 4px;
+}
+.login-card input, .login-card select {
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page-bg);
+}
+.form-hint {
+  font-size: 11px;
+  color: var(--color-ink-faint);
+  margin-top: var(--space-sm);
+  line-height: 1.5;
+}
+.form-error {
+  font-size: 12px;
+  color: var(--color-error);
+  margin-top: var(--space-sm);
+  min-height: 16px;
+}
+
+button.primary {
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-lg);
+  width: 100%;
+}
+@media (min-width: 720px) { button.primary { width: auto; } }
+button.primary:disabled { opacity: 0.5; }
+button.secondary {
+  font-weight: 600;
+  font-size: 13px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  width: 100%;
+}
+
+/* Modal — used for quick-entry forms tapped from the journal table */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(43,43,40,0.4);
+  display: flex; align-items: flex-end;
+  z-index: 300;
+}
+@media (min-width: 720px) {
+  .modal-overlay { align-items: center; justify-content: center; }
+}
+.modal-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  position: relative;
+}
+@media (min-width: 720px) {
+  .modal-card { border-radius: var(--radius-md); max-width: 480px; }
+}
+.modal-card .close-btn {
+  position: absolute; top: var(--space-md); right: var(--space-md);
+  font-size: 20px; color: var(--color-ink-faint);
+}
+.modal-card h2 { font-size: 16px; margin-bottom: var(--space-md); }
+.modal-card label {
+  display: block; font-size: 12px; color: var(--color-ink-soft);
+  margin-top: var(--space-md); margin-bottom: 4px;
+}
+.modal-card input, .modal-card select, .modal-card textarea {
+  width: 100%; padding: var(--space-sm);
+  border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
+}
+.modal-actions {
+  display: flex; gap: var(--space-sm); margin-top: var(--space-lg);
+}
+
+/* Swipe rail — horizontal-scrolling cards, used wherever there's more
+   than one card's worth of content to browse (multiple entries in a day,
+   archived reflections, graphical history views). */
+.swipe-rail {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: var(--space-sm);
+  -webkit-overflow-scrolling: touch;
+}
+.swipe-rail .rail-card {
+  flex: 0 0 85%;
+  scroll-snap-align: start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+@media (min-width: 720px) {
+  .swipe-rail .rail-card { flex: 0 0 340px; }
+}
