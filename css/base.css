@@ -1,0 +1,104 @@
+/* ============================================================
+   Hifzhelper — base styles
+   Mobile-first: base rules target phone widths; tablet/desktop widen via
+   min-width media queries, maximizing view area rather than centering a
+   fixed-width column (per the "maximize view areas" instruction).
+   ============================================================ */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--color-page-bg);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+h1, h2, h3 { margin: 0; font-weight: 700; }
+p { margin: 0; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+input, select, textarea {
+  font-family: inherit;
+  font-size: 16px; /* prevents iOS auto-zoom on focus */
+}
+
+.hidden { display: none !important; }
+
+/* App shell: banner fixed at top, content fills the rest */
+#appShell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+#appContent {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-md);
+}
+
+/* Tablet and up: a bit more breathing room, content can use a wider
+   max-width so long table rows/rings don't stretch uncomfortably thin,
+   but still no fixed narrow column wasting screen space. */
+@media (min-width: 720px) {
+  #appContent {
+    padding: var(--space-lg) var(--space-xl);
+  }
+}
+@media (min-width: 1200px) {
+  #appContent {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+/* Icon + label navigation — no background, no border, per the explicit
+   nav styling instruction. Used by both the Home page tiles and the
+   dropdown menu list. */
+.nav-icon-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm);
+  color: var(--color-ink);
+  text-align: center;
+  font-size: 12px;
+  background: none;
+  border: none;
+}
+.nav-icon-item svg { width: 28px; height: 28px; }
+.nav-icon-item:active { opacity: 0.6; }
+
+/* A visible, simple way to surface errors — never a silent failure
+   (CONVENTIONS.md principle 3). */
+#errorBanner {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--color-error);
+  color: #fff;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: center;
+  z-index: 200;
+  display: none;
+}
+#welcomeBanner {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--color-success);
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  z-index: 200;
+  display: none;
+}

@@ -1,0 +1,68 @@
+/* ============================================================
+   Hifzhelper — design tokens
+   Every color used anywhere in the app should reference one of these
+   variables, never a raw hex value in a component file. This is the one
+   place to look when adjusting the palette or the ring colors — per the
+   explicit instruction to keep these easy to change later.
+   ============================================================ */
+
+:root {
+  /* ---- Base palette (as provided) ---- */
+  --palette-lavender: #E3DADE;
+  --palette-sky:      #D0DBE7;
+  --palette-mauve:    #D8959B;
+  --palette-sage:     #829672;
+  --palette-evergreen:#344C3D;
+
+  /* ---- Semantic usage — map palette colors to what they're FOR.
+     Change the app's look by editing these lines, not by hunting through
+     component CSS for hardcoded colors. ---- */
+  --color-banner:            var(--palette-sage);
+  --color-banner-text:       #FFFFFF;
+
+  /* Journal table — matches the physical paper planner exactly */
+  --color-table-header-date: var(--palette-sage);
+  --color-table-header-log:  var(--palette-mauve);
+  --color-table-header-text: #2B2B28;
+  --color-table-bg:          #FFFFFF;
+  --color-table-border:      var(--palette-lavender);
+
+  /* Page background / general surfaces */
+  --color-page-bg:    #F1F1EC; /* cream, matches the planner's background */
+  --color-surface:    #FFFFFF;
+  --color-ink:        #2B2B28;
+  --color-ink-soft:   #6B6B63;
+  --color-ink-faint:  #9A9A90;
+  --color-accent:     var(--palette-evergreen);
+  --color-accent-soft:var(--palette-sky);
+
+  /* Status colors — deliberately separate from the palette above; these
+     carry fixed meaning (error, success) and shouldn't shift if the
+     palette is restyled later. */
+  --color-error:   #A6473F;
+  --color-success: var(--palette-sage);
+
+  /* ---- Gamified ring colors — PLACEHOLDERS ----
+     Deliberately left as a distinct, clearly-named block: one fixed color
+     per ring (frequency / mistakes / time), triadic scheme still to be
+     chosen. Progress is shown by how much of each ring is filled, not by
+     changing these colors — so these three values are the only thing
+     that ever needs to change once real colors are picked. */
+  --ring-frequency: var(--palette-mauve);   /* placeholder */
+  --ring-mistakes:  var(--palette-sage);    /* placeholder */
+  --ring-time:      var(--palette-evergreen); /* placeholder */
+  --ring-track:     #E8E6DF; /* the unfilled portion of any ring */
+
+  /* ---- Spacing / sizing — consistent across breakpoints ---- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Courier New', monospace;
+}
