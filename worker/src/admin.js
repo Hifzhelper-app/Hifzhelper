@@ -79,6 +79,57 @@ export async function handleChangeRole(request, env, auth) {
   return { data: { saved: true } };
 }
 
+// POST /admin/update-user — body: { id, name }. Extensible later for
+// whatsapp_number once that column exists (V3.3.3) — same partial-update
+// shape as the log tables' PATCH endpoints.
+export async function handleUpdateUser(request, env, auth) {
+  const denied = requireAdmin(auth);
+  if (denied) return denied;
+  let body;
+  try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
+  if (!body.id) return { error: 'id is required', status: 400 };
+
+  const row = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(body.id).first();
+  if (!row) return { error: 'Student not found', status: 404 };
+
+  const setClauses = [];
+  const values = [];
+  if (body.name != null) {
+    if (!body.name.trim()) return { error: 'name cannot be empty', status: 400 };
+    setClauses.push('name = ?');
+    values.push(body.name.trim());
+  }
+  if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };
+  values.push(body.id);
+  await env.DB.prepare(`UPDATE students SET ${setClauses.join(', ')} WHERE id = ?`).bind(...values).run();
+  return { data: { saved: true } };
+}
+
+// DELETE /admin/users?id=X — deliberately does NOT cascade-delete a
+// student's history. D1 already enforces the foreign key constraints on
+// attendance/position/sabaq_log/sabaq_dhor_log/dhor_log/reflections/plans
+// (confirmed directly during the 0007 migration's own table rebuild) — so
+// this will naturally fail with a clear error if the student has ANY
+// existing records, rather than silently destroying their whole history.
+// Only a student with zero activity can be deleted this way.
+export async function handleDeleteUser(request, env, auth) {
+  const denied = requireAdmin(auth);
+  if (denied) return denied;
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+  if (!id) return { error: 'id query param is required', status: 400 };
+
+  const row = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(id).first();
+  if (!row) return { error: 'Student not found', status: 404 };
+
+  try {
+    await env.DB.prepare('DELETE FROM students WHERE id = ?').bind(id).run();
+  } catch (e) {
+    return { error: 'Cannot delete — this student has existing records (journal entries, attendance, position, etc.). This is a deliberate safety measure to prevent accidental data loss.', status: 409 };
+  }
+  return { data: { deleted: true } };
+}
+
 // POST /admin/register-student — body: { name }. Creates a new student
 // with an app-generated unique ID, no PIN yet — same first-login flow as
 // every other account. Returns the new ID so the admin can hand it to

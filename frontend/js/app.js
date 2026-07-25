@@ -10,6 +10,15 @@ function showBanner(message){
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
+// A brief, friendly greeting shown once each time the app boots (login or
+// returning with a valid token) — the "Welcome, [Name]" finding.
+function showWelcome(name){
+  const el = document.getElementById('welcomeBanner');
+  el.textContent = `Welcome, ${name}`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
 // Screens not yet built (V3.2+) get an honest placeholder rather than a
 // broken or missing page — every nav destination goes somewhere.
 const SCREENS_BUILT = { home: true, journal: true, sabaq: true, sabaqDhor: true, dhor: true, admin: true };
@@ -40,6 +49,7 @@ async function bootApp(){
     currentUser = { name: profile.name || '', role: profile.role || 'student' };
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
+    showWelcome(currentUser.name || 'back');
     // NOTE: the V1.4 setup wizard (first-login onboarding) is not yet
     // reconciled against the V2/V3 schema — see CHANGELOG. For now we
     // land everyone straight on the journal regardless of setup_complete.

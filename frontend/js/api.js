@@ -99,3 +99,5 @@ function apiAdminListUsers(){ return apiFetch('/admin/users'); }
 function apiAdminResetPin(id){ return apiFetch('/admin/reset-pin', { method: 'POST', body: JSON.stringify({ id }) }); }
 function apiAdminChangeRole(id, role){ return apiFetch('/admin/change-role', { method: 'POST', body: JSON.stringify({ id, role }) }); }
 function apiAdminRegisterStudent(name){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name }) }); }
+function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
+function apiAdminDeleteUser(id){ return apiFetch('/admin/users?id=' + encodeURIComponent(id), { method: 'DELETE' }); }

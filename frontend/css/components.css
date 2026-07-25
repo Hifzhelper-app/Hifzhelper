@@ -2,6 +2,25 @@
    Hifzhelper — shared components: login, modals, forms, buttons
    ============================================================ */
 
+.pin-box-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+.pin-digit {
+  width: 100%;
+  aspect-ratio: 1;
+  text-align: center;
+  font-size: 22px;
+  padding: 0;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page-bg);
+}
+.pin-digit:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
 .login-screen {
   min-height: 100vh;
   display: flex;

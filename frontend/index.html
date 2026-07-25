@@ -16,6 +16,7 @@
 <body>
 
 <div id="errorBanner"></div>
+<div id="welcomeBanner"></div>
 
 <!-- ================= LOGIN ================= -->
 <div class="login-screen" id="loginScreen">
@@ -25,7 +26,12 @@
     <label>Your ID</label>
     <input type="text" id="login_id" placeholder="e.g. K7M2QX" autocapitalize="characters">
     <label>4-digit PIN</label>
-    <input type="password" id="login_pin" placeholder="••••" inputmode="numeric" maxlength="4" pattern="[0-9]*">
+    <div class="pin-box-row">
+      <input type="password" class="pin-digit" id="pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
     <div class="form-hint">First time? Enter any 4-digit PIN — it becomes your PIN from now on.</div>
     <div style="margin-top:16px;"><button class="primary" id="loginBtn">Sign in</button></div>
     <div class="form-error" id="loginError"></div>
@@ -153,12 +159,8 @@
         <div id="adminRegisterResult"></div>
       </div>
 
-      <table class="admin-users-table">
-        <thead>
-          <tr><th>ID</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody id="adminUsersTbody"></tbody>
-      </table>
+      <input type="text" id="admin_search" placeholder="Search by ID or name…">
+      <div class="admin-list-wrap" id="adminUsersList"></div>
     </section>
 
     <!-- Placeholder for screens not yet built -->

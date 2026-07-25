@@ -2,6 +2,20 @@
    Hifzhelper — admin screen
    ============================================================ */
 
+/* Container max-width: this screen's content (a search box + a list of
+   short rows) doesn't need a full ultra-wide desktop viewport — per the
+   "mobile-width units" convention (CONVENTIONS.md principle 9), cap it at
+   roughly 2 mobile-widths worth of comfortable reading width on large
+   screens, rather than stretching edge-to-edge. */
+#screen-admin {
+  max-width: 100%;
+}
+@media (min-width: 900px) {
+  #screen-admin {
+    max-width: 720px;
+  }
+}
+
 .admin-register-box {
   background: var(--color-surface);
   border: 1px solid var(--color-table-border);
@@ -14,41 +28,63 @@
   gap: var(--space-sm);
   align-items: flex-end;
 }
-.admin-register-box .inline-row input { flex: 1; }
-.admin-register-box .inline-row button { flex: 0 0 auto; }
+.admin-register-box .inline-row input { flex: 1; min-width: 0; }
+/* The actual overflow-bug fix (CONVENTIONS.md principle 9): button.primary's
+   own `width: 100%` rule becomes this button's flex-basis when nested in a
+   flex row, unless explicitly overridden here — without this line the
+   button tries to be 100% of the whole row, not just its own share of it. */
+.admin-register-box .inline-row button {
+  flex: 0 0 auto;
+  width: auto;
+}
 #adminRegisterResult {
   font-size: 12px;
   color: var(--color-success);
   margin-top: var(--space-sm);
 }
 
-.admin-users-table {
+/* ---- compact searchable user list ---- */
+#admin_search {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-table-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-.admin-users-table th {
-  background: var(--color-table-header-log);
-  color: var(--color-table-header-text);
-  text-align: left;
   padding: var(--space-sm);
-  font-size: 11px;
-  text-transform: uppercase;
-}
-.admin-users-table td {
-  padding: var(--space-sm);
-  border-bottom: 1px solid var(--color-table-border);
-}
-.admin-users-table .mono {
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-.admin-users-table select {
-  padding: 4px 6px;
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-sm);
+  margin-bottom: var(--space-sm);
+}
+.admin-list-empty {
+  text-align: center;
+  color: var(--color-ink-faint);
+  padding: var(--space-lg);
+}
+.admin-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-surface);
+  border: none;
+  border-bottom: 1px solid var(--color-table-border);
+  text-align: left;
+  color: var(--color-ink);
+}
+.admin-list-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.admin-list-row:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); border-bottom: none; }
+.admin-list-row .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink-faint);
+  flex: 0 0 auto;
+}
+.admin-list-name { flex: 1; font-size: 14px; }
+.admin-list-status {
+  font-size: 11px;
+  color: var(--color-success);
+  flex: 0 0 auto;
+}
+.admin-list-status.inactive { color: var(--color-ink-faint); }
+
+button.secondary.danger {
+  color: var(--color-error);
+  border-color: var(--color-error);
 }

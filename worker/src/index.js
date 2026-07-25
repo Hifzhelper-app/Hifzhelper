@@ -8,7 +8,7 @@ import { handleGetPlans, handleCreatePlan, handleUpdatePlan, handleDeletePlan } 
 import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
 import { handleGetProfile, handleSaveProfile } from './profile.js';
-import { handleListUsers, handleResetPin, handleChangeRole, handleRegisterStudent } from './admin.js';
+import { handleListUsers, handleResetPin, handleChangeRole, handleRegisterStudent, handleUpdateUser, handleDeleteUser } from './admin.js';
 
 // Every handler returns { data } or { error, status } — this file's only job
 // is routing + turning that plain object into a real Response, and making
@@ -89,6 +89,8 @@ export default {
       if (path === '/admin/reset-pin' && request.method === 'POST') return respond(await handleResetPin(request, env, auth));
       if (path === '/admin/change-role' && request.method === 'POST') return respond(await handleChangeRole(request, env, auth));
       if (path === '/admin/register-student' && request.method === 'POST') return respond(await handleRegisterStudent(request, env, auth));
+      if (path === '/admin/update-user' && request.method === 'POST') return respond(await handleUpdateUser(request, env, auth));
+      if (path === '/admin/users' && request.method === 'DELETE') return respond(await handleDeleteUser(request, env, auth));
 
       return error('Not found', 404);
     } catch (err) {

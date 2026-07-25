@@ -91,3 +91,14 @@ input, select, textarea {
   z-index: 200;
   display: none;
 }
+#welcomeBanner {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--color-success);
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  z-index: 200;
+  display: none;
+}

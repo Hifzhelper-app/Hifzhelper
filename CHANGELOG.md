@@ -7,6 +7,80 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.3.2.3 — conventions + admin findings batch (2026-07-25)
+
+Bismillah. `CONVENTIONS.md` extended first, then the buildable findings
+from the last several rounds of testing.
+
+**`CONVENTIONS.md`**: three new numbered principles, each grounded in a
+real bug found this session, not hypothetical — environment values living
+in one config spot (the stale `API_BASE` bug), never rendering UI against
+async state before it's actually arrived (the missing-Admin-tile boot
+order bug), and every component owning its own responsive behavior at
+*both* ends of the screen-size spectrum, not just mobile (the register
+button overflow + the desktop over-stretch, same underlying discipline,
+opposite symptoms). File structure section also brought up to date —
+it had drifted significantly behind the actual repo.
+
+**Admin: delete a user** (`DELETE /admin/users`) — deliberately does
+**not** cascade-delete history. D1's own foreign key enforcement (which
+we hit directly during the 0007 migration) does the real work here: a
+student with any existing records in `attendance`/`position`/any log
+table fails to delete with a clear, deliberate error, rather than
+silently destroying their history. Only a genuinely empty account can be
+removed this way.
+
+**Admin: edit name** (`POST /admin/update-user`) — same partial-update
+shape as the log tables' `PATCH` endpoints. WhatsApp editing is not in
+this pass — that column doesn't exist yet (arrives with V3.3.3).
+
+**Student list redesign**: compact searchable list (ID / Name / Status)
+replacing the old 5-column table — selecting a row opens a detail card
+with everything editable (name, role, reset PIN, delete). This resolves
+the mobile-overflow finding for the student list specifically by making
+the list itself simple enough to never need to overflow.
+
+**Both mobile-layout bugs actually fixed, not just documented**:
+- Register button: explicit `width: auto` override where it sits inside
+  a flex row — the exact fix CONVENTIONS.md principle 9 now documents
+- Admin screen container: capped at 720px on screens ≥900px wide,
+  rather than stretching to fill an ultra-wide monitor
+
+**4-digit PIN as separate boxes**: auto-advances as each fills, backspace
+on an empty box returns focus to the previous one — **tested directly**,
+not just written: simulated typing through all four boxes, confirmed
+correct advancing and that non-digit characters are filtered without
+advancing focus.
+
+**"Welcome, [Name]"**: a brief banner shown once each time the app boots
+successfully (fresh login or returning with a valid token) — implemented
+as a lightweight greeting rather than a full separate screen+navigation
+step, a deliberate simplification worth knowing about.
+
+**Deliberately not in this pass**: WhatsApp number editing (blocked on
+the column not existing until V3.3.3); the URL restructuring
+(`index.html` to the deployment root, `/UniqueID` path) — a genuinely
+different kind of change (deployment/routing structure, not application
+code) that deserves its own dedicated pass rather than being folded in
+here.
+
+**Files changed:**
+```
+CONVENTIONS.md
+worker/src/admin.js
+worker/src/index.js
+frontend/js/api.js
+frontend/js/adminPage.js
+frontend/css/admin.css
+frontend/js/auth.js
+frontend/css/components.css
+frontend/css/base.css
+frontend/js/app.js
+frontend/index.html
+```
+
+---
+
 ## V3.3.2.2 — hotfix: Admin tile missing from dropdown (2026-07-25)
 
 `bootApp()` rendered the dropdown nav (`setupAuthBandAndDropdown()`)

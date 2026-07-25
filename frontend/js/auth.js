@@ -74,10 +74,30 @@ function setupAuthBandAndDropdown(){
   });
 }
 
+// PIN entry: 4 separate digit boxes, auto-advancing as each fills, with
+// backspace on an empty box moving focus back to the previous one.
+['pin_1','pin_2','pin_3','pin_4'].forEach((id, i, arr) => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    el.value = el.value.replace(/[^0-9]/g, '').slice(0,1);
+    if(el.value && i < arr.length - 1) document.getElementById(arr[i+1]).focus();
+  });
+  el.addEventListener('keydown', (e) => {
+    if(e.key === 'Backspace' && !el.value && i > 0) document.getElementById(arr[i-1]).focus();
+  });
+});
+function readPinDigits(){
+  return ['pin_1','pin_2','pin_3','pin_4'].map(id => document.getElementById(id).value).join('');
+}
+function clearPinDigits(){
+  ['pin_1','pin_2','pin_3','pin_4'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('pin_1').focus();
+}
+
 // ---------- login screen ----------
 document.getElementById('loginBtn').addEventListener('click', async () => {
   const id = document.getElementById('login_id').value.trim();
-  const pin = document.getElementById('login_pin').value.trim();
+  const pin = readPinDigits();
   const errEl = document.getElementById('loginError');
   errEl.textContent = '';
   if(!id || !/^\d{4}$/.test(pin)){
@@ -91,6 +111,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     await bootApp();
   } catch(e){
     errEl.textContent = e.message;
+    clearPinDigits();
   } finally {
     btn.disabled = false;
   }
