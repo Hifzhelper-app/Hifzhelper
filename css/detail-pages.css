@@ -1,0 +1,80 @@
+/* ============================================================
+   Hifzhelper — detail pages: tajweed picker, timer, shared form bits
+   ============================================================ */
+
+.detail-page label {
+  display: block; font-size: 12px; color: var(--color-ink-soft);
+  margin-top: var(--space-md); margin-bottom: 4px;
+}
+.detail-page select, .detail-page input, .detail-page textarea {
+  width: 100%; padding: var(--space-sm);
+  border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+.picker-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);
+}
+
+/* Tajweed picker — pill buttons, major tags get a subtle marker (the •) */
+.tajweed-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  margin: 4px 6px 0 0;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+}
+.tajweed-tag.active {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+.tajweed-tag.major.active {
+  background: var(--color-error);
+  border-color: var(--color-error);
+}
+.tajweed-tag.tajweed-add {
+  border-style: dashed;
+  color: var(--color-ink-faint);
+}
+
+.teacher-feedback-box {
+  margin-top: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-page-bg);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+/* Timer */
+.timer-display {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  text-align: center;
+  padding: var(--space-md) 0;
+}
+.timer-laps {
+  max-height: 100px; overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-ink-soft);
+}
+.lap-row { padding: 2px 0; }
+.timer-controls {
+  display: flex; gap: var(--space-sm); margin-top: var(--space-sm);
+}
+.timer-controls button { flex: 1; }
+#dhorTimerSummary, #sabaqDhorTimerSummary {
+  font-size: 12px; color: var(--color-ink-soft); text-align: center; margin-top: var(--space-xs);
+}
+
+.save-status {
+  display: inline-block; opacity: 0; transition: opacity 0.2s;
+  color: var(--color-success); font-size: 12px; margin-right: var(--space-sm);
+}
+.save-status.show { opacity: 1; }
+
+.rail-card-date { font-size: 11px; color: var(--color-ink-faint); margin-bottom: 4px; }
+.rail-card-body { font-size: 13px; }

@@ -60,13 +60,18 @@ function openUserCard(id){
     <h2>${user.id}</h2>
     <label>Name</label>
     <input type="text" id="uc_name" value="${user.name}">
+    <label>WhatsApp number</label>
+    <input type="text" id="uc_whatsapp" value="${user.whatsapp_number || ''}" placeholder="Optional">
     <label>Role</label>
     <select id="uc_role">
       <option value="student" ${user.role==='student'?'selected':''}>Student</option>
       <option value="teacher" ${user.role==='teacher'?'selected':''}>Teacher</option>
       <option value="admin" ${user.role==='admin'?'selected':''}>Admin</option>
     </select>
-    <div class="form-hint">Status: ${user.active ? 'Active' : 'Inactive'}</div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+      <input type="checkbox" id="uc_active" style="width:auto;" ${user.active ? 'checked' : ''}>
+      Active
+    </label>
     <div class="form-error" id="uc_error"></div>
     <div class="modal-actions">
       <button class="secondary" id="uc_cancel">Cancel</button>
@@ -87,11 +92,18 @@ function openUserCard(id){
     const errEl = document.getElementById('uc_error');
     errEl.textContent = '';
     const newName = document.getElementById('uc_name').value.trim();
+    const newWhatsapp = document.getElementById('uc_whatsapp').value.trim();
     const newRole = document.getElementById('uc_role').value;
+    const newActive = document.getElementById('uc_active').checked;
     if(!newName){ errEl.textContent = 'Name cannot be empty.'; return; }
     if(newRole !== user.role && !confirm(`Change ${user.id}'s role to "${newRole}"?`)) return;
+    if(!newActive && user.active && !confirm(`Mark ${user.id} inactive? They won't be able to log in until reactivated.`)) return;
     try{
-      if(newName !== user.name) await apiAdminUpdateUser(user.id, { name: newName });
+      const fields = {};
+      if(newName !== user.name) fields.name = newName;
+      if(newWhatsapp !== (user.whatsapp_number || '')) fields.whatsapp_number = newWhatsapp;
+      if(newActive !== !!user.active) fields.active = newActive;
+      if(Object.keys(fields).length) await apiAdminUpdateUser(user.id, fields);
       if(newRole !== user.role) await apiAdminChangeRole(user.id, newRole);
       overlay.remove();
       await loadAdminUsers();

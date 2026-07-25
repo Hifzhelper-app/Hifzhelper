@@ -21,6 +21,26 @@
   border-color: var(--color-accent);
 }
 
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-md);
+}
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-size: 12px;
+  text-decoration: underline;
+  padding: 0;
+}
+#registerResult {
+  font-size: 13px;
+  color: var(--color-success);
+  margin-top: var(--space-sm);
+  line-height: 1.5;
+}
+
 .login-screen {
   min-height: 100vh;
   display: flex;

@@ -35,6 +35,28 @@
     <div class="form-hint">First time? Enter any 4-digit PIN — it becomes your PIN from now on.</div>
     <div style="margin-top:16px;"><button class="primary" id="loginBtn">Sign in</button></div>
     <div class="form-error" id="loginError"></div>
+    <div class="login-links">
+      <button type="button" class="link-btn" id="showRegisterBtn">New here? Register</button>
+      <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Lost%20PIN">Lost your PIN?</a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= REGISTER ================= -->
+<div class="login-screen hidden" id="registerScreen">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1>Register</h1>
+    <label>Your name</label>
+    <input type="text" id="register_name">
+    <label>WhatsApp number (optional)</label>
+    <input type="text" id="register_whatsapp" placeholder="Helps us tell similarly-named students apart">
+    <div style="margin-top:16px;"><button class="primary" id="registerBtn">Register</button></div>
+    <div class="form-error" id="registerError"></div>
+    <div id="registerResult"></div>
+    <div class="login-links">
+      <button type="button" class="link-btn" id="showLoginBtn">Back to sign in</button>
+    </div>
   </div>
 </div>
 

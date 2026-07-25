@@ -1,3 +1,5 @@
+import { generateUniqueId } from './utils.js';
+
 // Login: unique ID + 4-digit PIN (see the auth decision in chat).
 // Two things a 4-digit PIN needs, since it only has 10,000 possibilities:
 //  1. The ID itself must be random/non-guessable (it's the actual entropy).
@@ -110,4 +112,24 @@ export async function handleLogin(request, env) {
   await env.DB.prepare('UPDATE students SET failed_attempts = 0, locked_until = NULL WHERE id = ?').bind(id).run();
   const token = await signToken({ id: row.id, role: row.role, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
   return { data: { token, name: row.name, role: row.role, firstLogin: false } };
+}
+
+// POST /auth/register — public, no token required. Creates a student
+// account (self-registration always creates students only — teacher/
+// admin accounts stay an admin-only action, never self-service). name is
+// required; whatsapp_number is optional (its purpose is disambiguating
+// similarly-named students, not identity verification, so nothing here
+// enforces it). No PIN set — same first-login flow as every other account.
+export async function handleRegister(request, env) {
+  let body;
+  try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
+  if (!body.name || !body.name.trim()) return { error: 'name is required', status: 400 };
+
+  const id = await generateUniqueId(env);
+  const today = new Date().toISOString().slice(0, 10);
+  await env.DB.prepare(
+    'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
+  ).bind(id, body.name.trim(), 'student', today, body.whatsapp_number ? body.whatsapp_number.trim() : null).run();
+
+  return { data: { id, name: body.name.trim() } };
 }

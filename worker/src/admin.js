@@ -4,31 +4,11 @@
 // reachable by a student or teacher token, even if they guess the path.
 // ============================================================
 
+import { generateUniqueId } from './utils.js';
+
 function requireAdmin(auth) {
   if (!auth || auth.role !== 'admin') return { error: 'Not authorized', status: 403 };
   return null;
-}
-
-const ID_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-function randomId(length = 6) {
-  let id = '';
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-  for (let i = 0; i < length; i++) id += ID_CHARSET[bytes[i] % ID_CHARSET.length];
-  return id;
-}
-
-// Generates a unique student ID, checking against real collisions rather
-// than assuming the random draw is unique — the ID space is large enough
-// that a collision is very unlikely, but "very unlikely" isn't the same
-// as "impossible," and this is cheap to check properly (CONVENTIONS.md
-// principle 3 — no silent assumptions where a real check is this cheap).
-async function generateUniqueId(env) {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const candidate = randomId(6);
-    const existing = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(candidate).first();
-    if (!existing) return candidate;
-  }
-  throw new Error('Could not generate a unique ID after 20 attempts');
 }
 
 // GET /admin/users — list every student (any role), for the admin screen.
@@ -37,7 +17,7 @@ export async function handleListUsers(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
   const { results } = await env.DB.prepare(
-    'SELECT id, name, role, active, created_date, gender, setup_complete FROM students ORDER BY created_date DESC'
+    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number FROM students ORDER BY created_date DESC'
   ).all();
   return { data: results };
 }
@@ -79,9 +59,9 @@ export async function handleChangeRole(request, env, auth) {
   return { data: { saved: true } };
 }
 
-// POST /admin/update-user — body: { id, name }. Extensible later for
-// whatsapp_number once that column exists (V3.3.3) — same partial-update
-// shape as the log tables' PATCH endpoints.
+// POST /admin/update-user — body: { id, name?, whatsapp_number?, active? }.
+// Partial update — only touches whichever fields are actually present,
+// same pattern as the log tables' PATCH endpoints.
 export async function handleUpdateUser(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
@@ -98,6 +78,14 @@ export async function handleUpdateUser(request, env, auth) {
     if (!body.name.trim()) return { error: 'name cannot be empty', status: 400 };
     setClauses.push('name = ?');
     values.push(body.name.trim());
+  }
+  if (body.whatsapp_number != null) {
+    setClauses.push('whatsapp_number = ?');
+    values.push(body.whatsapp_number.trim() || null);
+  }
+  if (body.active != null) {
+    setClauses.push('active = ?');
+    values.push(body.active ? 1 : 0);
   }
   if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };
   values.push(body.id);
@@ -144,8 +132,8 @@ export async function handleRegisterStudent(request, env, auth) {
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
   await env.DB.prepare(
-    'INSERT INTO students (id, name, role, created_date, active) VALUES (?, ?, ?, ?, 1)'
-  ).bind(id, body.name.trim(), 'student', today).run();
+    'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
+  ).bind(id, body.name.trim(), 'student', today, body.whatsapp_number ? body.whatsapp_number.trim() : null).run();
 
   return { data: { id, name: body.name.trim() } };
 }

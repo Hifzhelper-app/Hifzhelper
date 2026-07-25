@@ -62,7 +62,7 @@ function setupAuthBandAndDropdown(){
     `<button class="nav-icon-item" id="logoutBtn">${iconHtml('logout')}<span>Sign out</span></button>` +
     `<button class="nav-icon-item" id="refreshBtn">${iconHtml('refresh')}<span>Refresh</span></button>`
   );
-  document.getElementById('authBandToggle').innerHTML = iconHtml('chevronDown');
+  document.getElementById('authBandToggle').innerHTML = iconHtml('menu');
   document.getElementById('authBandToggle').addEventListener('click', toggleAuthDropdown);
   document.getElementById('logoutBtn').addEventListener('click', () => {
     clearToken();
@@ -107,8 +107,9 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   const btn = document.getElementById('loginBtn');
   btn.disabled = true;
   try{
-    await apiLogin(id, pin);
+    const loginResult = await apiLogin(id, pin);
     await bootApp();
+    if(loginResult.firstLogin) showFirstLoginMessage();
   } catch(e){
     errEl.textContent = e.message;
     clearPinDigits();
@@ -118,10 +119,59 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
 });
 
 function showLoginScreen(){
+  document.getElementById('registerScreen').classList.add('hidden');
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('appShell').style.display = 'none';
 }
+function showRegisterScreen(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('registerScreen').classList.remove('hidden');
+  document.getElementById('registerScreen').style.display = 'flex';
+}
 function showAppShell(){
   document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('registerScreen').classList.add('hidden');
   document.getElementById('appShell').style.display = 'flex';
+}
+
+document.getElementById('showRegisterBtn').addEventListener('click', showRegisterScreen);
+document.getElementById('showLoginBtn').addEventListener('click', showLoginScreen);
+
+document.getElementById('registerBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('registerError');
+  const resultEl = document.getElementById('registerResult');
+  errEl.textContent = '';
+  resultEl.textContent = '';
+  const name = document.getElementById('register_name').value.trim();
+  const whatsapp = document.getElementById('register_whatsapp').value.trim();
+  if(!name){ errEl.textContent = 'Enter your name.'; return; }
+
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  try{
+    const result = await apiRegister(name, whatsapp || null);
+    resultEl.textContent = `Registered! Your ID is ${result.id} — enter it on the sign-in screen along with a new 4-digit PIN to get started.`;
+    document.getElementById('register_name').value = '';
+    document.getElementById('register_whatsapp').value = '';
+    document.getElementById('login_id').value = result.id;
+  } catch(e){
+    errEl.textContent = "Couldn't register: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// First-login: a one-time message to save the URL / add to home screen,
+// since there's no other account-recovery path if this browser tab is
+// the only place the login ever happens.
+function showFirstLoginMessage(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-card">
+    <h2>You're all set!</h2>
+    <p class="form-hint">Save this page's URL somewhere safe, or add it to your home screen now — that's how you'll come back to Hifzhelper next time.</p>
+    <div class="modal-actions"><button class="primary" id="firstLoginOkBtn">Got it</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('firstLoginOkBtn').addEventListener('click', () => overlay.remove());
 }

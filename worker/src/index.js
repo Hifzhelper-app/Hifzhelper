@@ -1,5 +1,5 @@
 import { json, error } from './utils.js';
-import { handleLogin, authenticate } from './auth.js';
+import { handleLogin, handleRegister, authenticate } from './auth.js';
 import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq } from './sabaqLog.js';
 import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
 import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
@@ -35,9 +35,12 @@ export default {
     const path = url.pathname;
 
     try {
-      // Public route — no auth required.
+      // Public routes — no auth required.
       if (path === '/auth/login' && request.method === 'POST') {
         return respond(await handleLogin(request, env));
+      }
+      if (path === '/auth/register' && request.method === 'POST') {
+        return respond(await handleRegister(request, env));
       }
 
       // Everything past this point requires a valid token.

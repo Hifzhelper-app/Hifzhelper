@@ -41,6 +41,13 @@ async function apiLogin(id, pin){
   return result;
 }
 
+// Public self-registration — no token needed. Not called from any screen
+// yet (the public registration UI is V3.3.4); the backend endpoint is
+// ready and tested now.
+function apiRegister(name, whatsapp_number){
+  return apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ name, whatsapp_number }) });
+}
+
 // ---------- the four independent logs ----------
 // Each follows the same shape: get(since), save(entry), update(id, fields), remove(id)
 function makeLogClient(path){

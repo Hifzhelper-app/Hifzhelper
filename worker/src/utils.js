@@ -38,3 +38,23 @@ export function validateAttendanceBody(body) {
   if (!['present', 'absent', 'haidh', 'predicted-haidh'].includes(body.status)) return 'invalid status';
   return null;
 }
+
+// Shared unique-ID generation (CONVENTIONS.md principle 2 — single source
+// of truth). Used by both admin-created students and self-registration —
+// same format, same collision-checking, one place to change either.
+const ID_CHARSET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+function randomId(length = 6) {
+  let id = '';
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  for (let i = 0; i < length; i++) id += ID_CHARSET[bytes[i] % ID_CHARSET.length];
+  return id;
+}
+
+export async function generateUniqueId(env) {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const candidate = randomId(6);
+    const existing = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(candidate).first();
+    if (!existing) return candidate;
+  }
+  throw new Error('Could not generate a unique ID after 20 attempts');
+}
