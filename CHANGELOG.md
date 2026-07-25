@@ -7,6 +7,28 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.3.2.2 — hotfix: Admin tile missing from dropdown (2026-07-25)
+
+`bootApp()` rendered the dropdown nav (`setupAuthBandAndDropdown()`)
+*before* fetching the profile that sets `currentUser.role` — so the
+dropdown always rendered against the default `role: 'student'`, no
+matter who was actually logged in. Reordered: profile fetch now happens
+first, dropdown renders after. Home page tiles were never affected —
+they render on-demand when navigated to, by which point the role is
+already correctly known.
+
+**Verified directly**, not just reasoned about: simulated both the old
+and new ordering — old order reproduces exactly 8 items with no Admin
+tile (matching the reported screenshot precisely), new order correctly
+shows 9 including Admin.
+
+**Files changed:**
+```
+frontend/js/app.js
+```
+
+---
+
 ## V3.3.2.1 — hotfix: frontend pointed at the wrong Worker (2026-07-25)
 
 `frontend/js/api.js`'s `API_BASE` was still the old dev Worker URL, left

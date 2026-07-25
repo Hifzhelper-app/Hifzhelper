@@ -35,10 +35,10 @@ async function showScreen(id){
 
 async function bootApp(){
   showAppShell();
-  setupAuthBandAndDropdown();
   try{
     const profile = await apiGetProfile();
     currentUser = { name: profile.name || '', role: profile.role || 'student' };
+    setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
     // NOTE: the V1.4 setup wizard (first-login onboarding) is not yet
     // reconciled against the V2/V3 schema — see CHANGELOG. For now we
