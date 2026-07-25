@@ -7,6 +7,118 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.3.1 — admin backend (2026-07-25)
+
+Bismillah. First piece of a genuine account-management system, replacing
+the "teacher inserts a row via the D1 console" habit we've been using for
+every test student this whole project — consistent with the explicit
+"no manual database changes" principle going forward.
+
+**Schema**: `role`'s `CHECK` constraint only allowed `student`/`teacher` —
+rebuilt the table (same pattern as migration 0003, since SQLite can't
+alter a `CHECK` constraint in place) to allow `admin` too. Seeded one
+bootstrap account in the migration itself — `ABCDEFG` / `ADMIN-01`,
+**no `pin_hash` set**, so it goes through the exact same first-login flow
+every other account uses (whatever PIN gets typed in first becomes the
+real one) — nothing pre-hashed, since the pepper needed for that isn't
+available at migration-write time by design.
+
+**Four new endpoints, all gated to `role === 'admin'`** (`worker/src/admin.js`):
+- `GET /admin/users` — list every student, never returns `pin_hash`
+- `POST /admin/reset-pin` — clears a student's PIN, same recovery mechanic
+- `POST /admin/change-role` — student/teacher/admin
+- `POST /admin/register-student` — creates a new student with an
+  app-generated unique ID (6-char, same format as existing IDs),
+  collision-checked against the real database rather than assumed unique
+  — **tested**: generated 1000 sample IDs, confirmed correct format and
+  zero collisions among them, consistent with the ~2.18 billion possible
+  IDs in that space
+
+**Deliberately not in this pass**: the admin frontend (V3.3.2), self-
+registration (V3.3.3/4) — this is backend only, same "backend first,
+frontend as its own pass" sequencing as everything else.
+
+**Files changed:**
+```
+worker/migrations/0007_admin_role.sql   (new)
+worker/src/admin.js                     (new)
+worker/src/index.js
+TESTING.md
+```
+
+---
+
+## V3.2 — dedicated per-log-type pages (2026-07-24)
+
+The three pages reached via the journal table's column headers — replacing
+their "not built yet" placeholders from V3.1. Written fresh, shared logic
+factored out rather than repeated three times.
+
+**New shared components** (used across all three pages):
+- `tajweed.js` — the tag picker, extendable, major/minor aware.
+  `TAJWEED_DEFAULTS` (`shared/data.js`) restructured from a flat string
+  list into `{tag, major}` objects — added the three major categories
+  agreed in design (Substitution, Omission, Addition), kept the existing
+  eight as minor. Custom tags a student adds default to minor.
+- `commentPrivacy.js` — the student-comment block with its private
+  toggle, plus a read-only teacher-feedback display when present.
+- `timer.js` — the real start/lap/stop timer.
+  **Tested the actual invariant before shipping**: sum of lap times must
+  exactly equal total duration. Verified with a simulated multi-lap
+  sequence (15s total, three laps summing to exactly 15) before wiring it
+  into the UI. A session with no explicit lap tap sends a plain
+  `duration_seconds` with `lap_times: null` — never a trivial one-element
+  array — per "make inputs optional wherever possible."
+
+**Dhor page** (the richest of the three): reference selector, a juz'+
+position+amount (quarter/half/full-juz') picker that computes
+`segment_from`/`segment_to` correctly for whichever reference is active —
+**tested this conversion directly**: waterval quarter/half/full = 1/2/4
+markers, uthmani = 2/4/8, and confirmed real juz'-boundary examples
+compute the right marker ranges, not just the unit counts in isolation.
+Plus the timer, tajweed picker, mistakes, and comment block.
+
+**Sabaq and Sabaq Dhor pages**: same shared components, their own fields.
+**Known, flagged gap**: Sabaq Dhor's `zone` field is meant to be computed
+automatically from the student's position/study-order data — that
+computation isn't wired into the V3 frontend yet (nothing fetches
+`position.json` anywhere in this codebase so far), so it's a manual text
+field for now rather than a faked computation.
+
+**All three pages** also show a swipe rail of recent entries (the last 14
+days), reusing the swipe-rail CSS pattern from V3.1.
+
+**Deliberately still not in this pass:**
+- The gamified three-ring visual map — still the single biggest remaining
+  piece
+- Plans aren't wired into these pages yet — no plan-prepopulation, no way
+  to create a plan, and no `plan_id` gets sent even though the Worker
+  already supports it
+- The three-model selector (13-line/Madina/Hybrid) — Dhor's reference
+  picker here is the old simple two-option version, not the full model
+  system
+- Editing an existing entry from the recent-entries rail (currently
+  read-only — tapping a rail card doesn't do anything yet)
+- Privacy enforcement is visible (the toggle exists and saves) but
+  nothing yet reads it back differently for a teacher view, since no
+  teacher-facing screen exists
+
+**Files changed/added:**
+```
+shared/data.js                      (TAJWEED_DEFAULTS restructured)
+frontend/index.html
+frontend/css/detail-pages.css       (new)
+frontend/js/tajweed.js              (new)
+frontend/js/commentPrivacy.js       (new)
+frontend/js/timer.js                (new)
+frontend/js/dhorPage.js             (new)
+frontend/js/sabaqPage.js            (new)
+frontend/js/sabaqDhorPage.js        (new)
+frontend/js/app.js
+```
+
+---
+
 ## V3.1 — frontend foundation (2026-07-24)
 
 Bismillah. The first piece of the frontend rebuild against the V2/V3

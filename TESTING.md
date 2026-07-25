@@ -130,6 +130,24 @@ checking responses as different requesters (not just as the student).
 | teacher_feedback visibility 'private' | Same, `"teacher_feedback_visibility": "private"` | Student sees `null`; the authoring teacher sees it; a **different** teacher sees `null` |
 | Private reflection | `POST /reflections` `{"date":"...","reflection":"...","is_private":true}` | Student sees it; any teacher's `GET /reflections?student_id=...` shows `reflection: null` for that row |
 
+## 9. Admin (V3.3.1)
+
+Requires logging in as `ABCDEFG` (bootstrap admin, PIN `1234` on first login)
+to get an admin token. Every test below should also be tried once with a
+**student's** token, to confirm the `403 Not authorized` gate actually works,
+not just that the admin path works.
+
+| Test | Request | Expect |
+|---|---|---|
+| List users (as admin) | `GET /admin/users` | array of all students, no `pin_hash` field present |
+| List users (as student) | same, with a student token | `403 Not authorized` |
+| Reset a PIN | `POST /admin/reset-pin` `{"id":"K7M2QX"}` | `200 {"reset": true}`; that student's next login is treated as first-login again (whatever PIN they submit becomes the new one) |
+| Reset unknown ID | `POST /admin/reset-pin` `{"id":"ZZZZZZ"}` | `404 Student not found` |
+| Change role | `POST /admin/change-role` `{"id":"K7M2QX","role":"teacher"}` | `200`; `GET /admin/users` shows the updated role |
+| Invalid role | `POST /admin/change-role` `{"id":"K7M2QX","role":"bogus"}` | `400` |
+| Register a new student | `POST /admin/register-student` `{"name":"Test Two"}` | `200 {"id": "<6-char code>", "name": "Test Two"}`; that new ID can then log in for the first time exactly like any other account |
+| Register with no name | `POST /admin/register-student` `{}` | `400` |
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
