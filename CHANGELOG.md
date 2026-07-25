@@ -7,6 +7,145 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## Reconciliation — repo had drifted significantly behind (2026-07-25)
+
+Bismillah. Triggered by a question about whether the `frontend/` folder
+move had actually happened — checking the real uploaded repo directly
+(rather than continuing to assume) revealed the gap was much larger than
+that one question: **9 files missing entirely, 11 present but stale
+(predating V3.3.3/V3.3.4), 1 stray duplicate migration file** sitting at
+the repo root outside `worker/`.
+
+**Missing entirely**: `css/detail-pages.css`, `manifest.json`, migration
+`0008_whatsapp_number.sql`, and six JS files that `index.html` actively
+references — `commentPrivacy.js`, `dhorPage.js`, `sabaqDhorPage.js`,
+`sabaqPage.js`, `tajweed.js`, `timer.js`. Their absence meant the Sabaq/
+Sabaq Dhor/Dhor detail pages and the PWA manifest were genuinely broken
+on the live site, not just out of date.
+
+**Stale (present, but predating recent work)**: `admin.js`, `auth.js`,
+`index.js`, `utils.js` (worker), `adminPage.js`, `api.js`, `auth.js`,
+`icons.js`, `index.html`, `components.css`, `shared/data.js` (frontend).
+
+**Confirmed NOT a gap, despite showing up in the raw comparison**:
+`worker/src/entries.js`'s absence is correct — it was deliberately
+deleted back in V2.2; the file only appeared "missing" because my own
+scratch working copy had never been cleaned of it either.
+
+**Fix delivered**: one complete package (45 real files) rather than
+another incremental delta, given a delta-based approach is what let this
+gap accumulate unnoticed in the first place — every current frontend
+file, every worker source file, every migration, all syntax-checked
+before delivery (26 JS files, all passing).
+
+**Still needed on the user's end**: delete the stray root-level
+`migrations/0007_admin_role.sql`, and run migration 0008 against
+production (it was never applied — the file itself never made it into
+the repo before now). Migration 0007 itself is unaffected by any of this
+— confirmed already applied and working (verified earlier via a real
+`ABCDEFG` login returning `role: admin`).
+
+**Process note, worth carrying forward**: this happened at least in part
+because recent deliveries (V3.3.2's follow-on patches, V3.3.3, V3.3.4)
+weren't consistently making it fully into the live repo, and there was
+no periodic check to catch that until a folder-structure question
+prompted one. Worth periodically diffing the actual repo against the
+working state, not just assuming each delivery landed cleanly.
+
+---
+
+## V3.3.4 — self-registration frontend + Lucide icons (2026-07-25)
+
+Bismillah. The actual public registration screen, plus two more findings
+that naturally belonged on the same login screen while it was already
+being touched.
+
+**Registration screen**: name + optional WhatsApp number, reachable via
+a "New here? Register" link from the sign-in screen. On success, shows
+the new ID clearly and pre-fills it into the login screen's ID field —
+one less thing to copy by hand before setting a PIN.
+
+**First-login "save this URL" message** — a real gap closed, not just
+documented: `firstLogin` came back from the login API from the very
+start of this project, but nothing in the frontend ever did anything
+with it. Now, the first time anyone logs in (fresh registration or an
+admin-created account), a one-time message appears encouraging them to
+save the page or add it to their home screen — since there's no other
+account-recovery path if that's the only place they ever log in from.
+
+**Lost-PIN mailto link** — also previously only documented, not built.
+A plain `mailto:hifzhelper.app@gmail.com` link on the sign-in screen,
+pre-filled with a "Lost PIN" subject line. Zero backend, zero cost, per
+the earlier decision.
+
+**Lucide icon set** — `sabaq`/`sabaqDhor`/`dhor` now use Lucide's
+`ellipsis`/`grip-horizontal`/`grip` icons (already correctly built with
+`currentColor` and a `24x24` viewBox, matching every other icon in the
+set) — **verified directly**: confirmed exact circle counts per icon (3/
+6/9) and that all three correctly use `currentColor` + the standard
+viewBox, not just eyeballed against the source files.
+
+**Files changed:**
+```
+frontend/js/icons.js
+frontend/js/auth.js
+frontend/js/api.js (apiRegister — added in V3.3.3, now actually used)
+frontend/css/components.css
+frontend/index.html
+```
+
+---
+
+## V3.3.3 — self-registration backend + carried-forward findings (2026-07-25)
+
+Bismillah. Backend for self-registration, plus the two items explicitly
+carried forward to this version.
+
+**`POST /auth/register`** (public, no token) — creates a student account
+(self-registration always creates students only, never teacher/admin —
+that stays an admin-only action). `name` required, `whatsapp_number`
+optional (its purpose is disambiguating similarly-named students, not
+identity verification, so nothing enforces it). No PIN set — same
+first-login flow as every other account.
+
+**ID generation consolidated to one place** (`utils.js`) — it was
+duplicated in `admin.js` before this; now both admin-created and
+self-registered students generate IDs through the same function
+(CONVENTIONS.md principle 2).
+
+**`whatsapp_number` column added** (migration 0008) — admin-created
+students can now optionally get one too, and `POST /admin/update-user`
+can edit it on any existing student, alongside the carried-forward
+**editable active status** (a checkbox now, not read-only text) — both
+using the same partial-update pattern as everything else, verified
+directly: tested the field-diffing logic against realistic scenarios
+(nothing changed, only WhatsApp changed, cleared, toggled inactive),
+including the null-vs-empty-string edge case for a student who never
+had a number set.
+
+**Hamburger icon** replaces the down-chevron on the auth banner's
+dropdown toggle — the other carried-forward item.
+
+**Deliberately not in this pass**: the actual public self-registration
+*screen* — that's V3.3.4, kept separate per the established backend-
+first sequencing. The API client function (`apiRegister`) is ready and
+tested, just not called from any UI yet.
+
+**Files changed:**
+```
+worker/migrations/0008_whatsapp_number.sql  (new)
+worker/src/utils.js
+worker/src/admin.js
+worker/src/auth.js
+worker/src/index.js
+frontend/js/icons.js
+frontend/js/auth.js
+frontend/js/api.js
+frontend/js/adminPage.js
+```
+
+---
+
 ## V3.3.2.4 — prep for moving index.html to the deployment root (2026-07-25)
 
 Not deployed yet — this is ready for whenever the folder move actually
