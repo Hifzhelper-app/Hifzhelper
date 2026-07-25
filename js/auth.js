@@ -156,8 +156,8 @@ function showCreatePinScreen(name){
   hideAllLoginScreens();
   document.getElementById('createPinGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
   document.getElementById('createPinScreen').classList.remove('hidden');
-  clearPinGroup(CREATE_PIN_IDS);
   clearPinGroup(CONFIRM_PIN_IDS);
+  clearPinGroup(CREATE_PIN_IDS);
 }
 function showRegisterScreen(){
   hideAllLoginScreens();
@@ -215,8 +215,8 @@ setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
   const firstPin = readPinGroup(CREATE_PIN_IDS);
   if(firstPin !== confirmPin){
     errEl.textContent = "PINs didn't match — try again.";
-    clearPinGroup(CREATE_PIN_IDS);
     clearPinGroup(CONFIRM_PIN_IDS);
+    clearPinGroup(CREATE_PIN_IDS);
     return;
   }
   try{
@@ -224,8 +224,8 @@ setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
     await bootApp();
   } catch(e){
     errEl.textContent = e.message;
-    clearPinGroup(CREATE_PIN_IDS);
     clearPinGroup(CONFIRM_PIN_IDS);
+    clearPinGroup(CREATE_PIN_IDS);
   }
 });
 
