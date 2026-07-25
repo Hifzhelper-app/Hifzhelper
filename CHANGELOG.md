@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.3.2.1 — hotfix: frontend pointed at the wrong Worker (2026-07-25)
+
+`frontend/js/api.js`'s `API_BASE` was still the old dev Worker URL, left
+over from V3.1 — from before the decision to work directly on production
+and delete the dev repo. Every account created since then (including
+`ABCDEFG`) only exists in production's database, so login was failing
+correctly, just against the wrong target. Updated to the production
+Worker URL.
+
+**Files changed:**
+```
+frontend/js/api.js
+```
+
+---
+
 ## V3.3.2 — admin frontend (2026-07-25)
 
 The user-list screen — reset PIN, change role, and register a new student,

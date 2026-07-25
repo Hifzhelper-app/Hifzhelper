@@ -4,7 +4,7 @@
 // reason as shared/data.js. Loaded before every other JS file.
 // ============================================================
 
-const API_BASE = 'https://hifzhelper-api-dev.hifzhelper-app.workers.dev';
+const API_BASE = 'https://hifzhelper-api.hifzhelper-app.workers.dev';
 
 const TOKEN_KEY = 'hh_token';
 function getToken(){ return localStorage.getItem(TOKEN_KEY); }
