@@ -1,6 +1,6 @@
-const CACHE_NAME = 'hifzhelper-v3.1'; // bumped so V3.1's new file structure actually replaces old cached assets
+const CACHE_NAME = 'hifzhelper-v3.3.2.4'; // bumped: index.html/manifest.json/sw.js moved to the deployment root
 const ASSETS = [
-  './index.html', './manifest.json', '../shared/data.js',
+  './index.html', './manifest.json', 'shared/data.js',
   './css/tokens.css', './css/base.css', './css/nav.css', './css/journal-table.css', './css/components.css',
   './js/icons.js', './js/api.js', './js/auth.js', './js/home.js', './js/journal.js', './js/app.js'
 ];

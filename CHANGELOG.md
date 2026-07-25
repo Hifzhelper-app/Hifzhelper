@@ -7,6 +7,42 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.3.2.4 — prep for moving index.html to the deployment root (2026-07-25)
+
+Not deployed yet — this is ready for whenever the folder move actually
+happens on your end. Confirmed approach: the **whole** `frontend/`
+folder's contents move to the repo root (no `frontend/` folder at all),
+not `index.html` alone — this keeps every existing `css/`/`js/` reference
+inside `index.html` working unchanged, since they all move together
+maintaining the same relative relationship. The only thing that actually
+needed fixing: the `shared/data.js` reference, since `shared/` stays
+where it is and becomes a sibling of the new root instead of the old
+`frontend/` folder.
+
+**Two files needed the fix, not one** — `index.html`'s script tag, and
+`sw.js`'s own cached-asset list had the identical stale `../shared/data.js`
+reference. Cache version bumped too, so browsers don't keep serving the
+old cached files after the structure changes.
+
+**Checked and confirmed unaffected**: `manifest.json`'s `start_url:
+"./index.html"` needs no change — it's relative to `manifest.json`
+itself, and the two move together. Also noted in passing: `sw.js` isn't
+actually registered anywhere in the current code (no
+`navigator.serviceWorker.register()` call exists) — a separate, real
+finding, not part of this fix.
+
+**Files changed:**
+```
+frontend/index.html
+frontend/sw.js
+```
+
+**When you're ready to actually do the move**: upload these two (already-
+fixed) versions to the new root location, alongside moving `css/`, `js/`,
+and `manifest.json` there too.
+
+---
+
 ## V3.3.2.3 — conventions + admin findings batch (2026-07-25)
 
 Bismillah. `CONVENTIONS.md` extended first, then the buildable findings
