@@ -109,7 +109,7 @@ const CONFIRM_PIN_IDS = ['cf_pin_1','cf_pin_2','cf_pin_3','cf_pin_4'];
 // ---------- screen switching ----------
 const ALL_LOGIN_SCREENS = ['loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen'];
 function hideAllLoginScreens(){
-  ALL_LOGIN_SCREENS.forEach(id => { document.getElementById(id).style.display = 'none'; });
+  ALL_LOGIN_SCREENS.forEach(id => { document.getElementById(id).classList.add('hidden'); });
 }
 function showAppShell(){
   hideAllLoginScreens();
@@ -144,18 +144,18 @@ async function routeToLoginScreen(){
 
 function showLoginScreenFallback(){
   hideAllLoginScreens();
-  document.getElementById('loginScreenFallback').style.display = 'flex';
+  document.getElementById('loginScreenFallback').classList.remove('hidden');
 }
 function showLoginScreenPersonal(name){
   hideAllLoginScreens();
   document.getElementById('personalGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
-  document.getElementById('loginScreenPersonal').style.display = 'flex';
+  document.getElementById('loginScreenPersonal').classList.remove('hidden');
   clearPinGroup(PERSONAL_PIN_IDS);
 }
 function showCreatePinScreen(name){
   hideAllLoginScreens();
   document.getElementById('createPinGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
-  document.getElementById('createPinScreen').style.display = 'flex';
+  document.getElementById('createPinScreen').classList.remove('hidden');
   clearPinGroup(CREATE_PIN_IDS);
   clearPinGroup(CONFIRM_PIN_IDS);
 }
@@ -163,7 +163,7 @@ function showRegisterScreen(){
   hideAllLoginScreens();
   document.getElementById('registerFormWrap').classList.remove('hidden');
   document.getElementById('registerMatchPrompt').classList.add('hidden');
-  document.getElementById('registerScreen').style.display = 'flex';
+  document.getElementById('registerScreen').classList.remove('hidden');
 }
 
 document.getElementById('showRegisterBtn').addEventListener('click', showRegisterScreen);
@@ -283,7 +283,7 @@ function showRegisteredScreen(id, name){
   const url = window.location.origin + '/' + id;
   document.getElementById('registeredMessage').textContent = REGISTRATION_CONFIRMATION_TEXT;
   document.getElementById('registeredUrl').value = url;
-  document.getElementById('registeredScreen').style.display = 'flex';
+  document.getElementById('registeredScreen').classList.remove('hidden');
   document.getElementById('registeredContinueBtn').onclick = () => { window.location.href = url; };
 }
 
