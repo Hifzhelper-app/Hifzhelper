@@ -58,7 +58,7 @@ async function bootApp(){
   } catch(e){
     showBanner("Couldn't load your profile: " + e.message);
     clearToken();
-    showLoginScreen();
+    routeToLoginScreen();
   }
 }
 
@@ -73,6 +73,6 @@ async function bootApp(){
   if(getToken()){
     bootApp();
   } else {
-    showLoginScreen();
+    routeToLoginScreen();
   }
 })();

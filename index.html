@@ -16,29 +16,69 @@
 <body>
 
 <div id="errorBanner"></div>
-<div id="welcomeBanner"></div>
 
-<!-- ================= LOGIN ================= -->
-<div class="login-screen" id="loginScreen">
+<!-- ================= LOGIN (fallback: no unique ID in the URL, an ID
+     that doesn't exist, or an ID that exists but isn't active) ================= -->
+<div class="login-screen" id="loginScreenFallback">
   <div class="login-card">
     <div class="eyebrow">Hifzhelper</div>
     <h1>Sign in</h1>
     <label>Your ID</label>
-    <input type="text" id="login_id" placeholder="e.g. K7M2QX" autocapitalize="characters">
-    <label>4-digit PIN</label>
+    <input type="text" id="fallback_login_id" placeholder="e.g. K7M2QX" autocapitalize="characters">
+    <label>PIN</label>
     <div class="pin-box-row">
-      <input type="password" class="pin-digit" id="pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
-      <input type="password" class="pin-digit" id="pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
-      <input type="password" class="pin-digit" id="pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
-      <input type="password" class="pin-digit" id="pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
     </div>
-    <div class="form-hint">First time? Enter any 4-digit PIN — it becomes your PIN from now on.</div>
-    <div style="margin-top:16px;"><button class="primary" id="loginBtn">Sign in</button></div>
-    <div class="form-error" id="loginError"></div>
+    <div class="form-error" id="fallbackLoginError"></div>
     <div class="login-links">
-      <button type="button" class="link-btn" id="showRegisterBtn">New here? Register</button>
-      <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Lost%20PIN">Lost your PIN?</a>
+      <button type="button" class="link-btn" id="showRegisterBtn">New Registration</button>
     </div>
+    <div class="form-hint">Forgot your pin or ID? Send us an email <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Forgot%20PIN%20or%20ID">hifzhelper.app@gmail.com</a> with your name and whatsapp number.</div>
+  </div>
+</div>
+
+<!-- ================= LOGIN (personalized: unique ID known from the URL,
+     PIN already set) ================= -->
+<div class="login-screen hidden" id="loginScreenPersonal">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1 id="personalGreeting">Ahlan wa Sahlan</h1>
+    <div class="form-hint" style="margin-top:0;">Enter your pin to sign in</div>
+    <div class="pin-box-row" style="margin-top:var(--space-md);">
+      <input type="password" class="pin-digit" id="p_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="p_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="p_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="p_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <div class="form-error" id="personalLoginError"></div>
+    <div class="form-hint">Lost pin: Send us an email <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Lost%20PIN">hifzhelper.app@gmail.com</a> with your name and whatsapp number to reset your pin.</div>
+  </div>
+</div>
+
+<!-- ================= CREATE PIN (first login via a personal URL) ================= -->
+<div class="login-screen hidden" id="createPinScreen">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1 id="createPinGreeting">Ahlan wa Sahlan</h1>
+    <div class="form-hint" style="margin-top:0;">Create a PIN to secure your journal</div>
+    <label>New PIN</label>
+    <div class="pin-box-row">
+      <input type="password" class="pin-digit" id="cr_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cr_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cr_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cr_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <label>Confirm PIN</label>
+    <div class="pin-box-row">
+      <input type="password" class="pin-digit" id="cf_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cf_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cf_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cf_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <div class="form-error" id="createPinError"></div>
   </div>
 </div>
 
@@ -47,16 +87,40 @@
   <div class="login-card">
     <div class="eyebrow">Hifzhelper</div>
     <h1>Register</h1>
-    <label>Your name</label>
-    <input type="text" id="register_name">
-    <label>WhatsApp number (optional)</label>
-    <input type="text" id="register_whatsapp" placeholder="Helps us tell similarly-named students apart">
-    <div style="margin-top:16px;"><button class="primary" id="registerBtn">Register</button></div>
-    <div class="form-error" id="registerError"></div>
-    <div id="registerResult"></div>
+    <div id="registerFormWrap">
+      <label>Your name</label>
+      <input type="text" id="register_name">
+      <label>WhatsApp number</label>
+      <input type="text" id="register_whatsapp" placeholder="+CODE 123456789">
+      <div style="margin-top:16px;"><button class="primary" id="registerBtn">Register</button></div>
+      <div class="form-error" id="registerError"></div>
+    </div>
+    <div id="registerMatchPrompt" class="hidden">
+      <div class="form-hint" style="margin-top:0;">We found an existing journal with this name and WhatsApp number. What would you like to do?</div>
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="registerCreateAnywayBtn">Create a new journal anyway</button>
+        <button type="button" class="secondary" id="registerResetPinBtn">Reset PIN for the existing journal</button>
+      </div>
+    </div>
     <div class="login-links">
       <button type="button" class="link-btn" id="showLoginBtn">Back to sign in</button>
     </div>
+  </div>
+</div>
+
+<!-- ================= REGISTERED (confirmation shown right after
+     successful registration) ================= -->
+<div class="login-screen hidden" id="registeredScreen">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1>Registered!</h1>
+    <p class="form-hint" id="registeredMessage" style="white-space:pre-line;"></p>
+    <label>Your personal URL</label>
+    <div class="url-copy-row">
+      <input type="text" id="registeredUrl" readonly>
+      <button type="button" class="icon-btn" id="copyRegisteredUrlBtn" aria-label="Copy URL"></button>
+    </div>
+    <div style="margin-top:16px;"><button class="primary" id="registeredContinueBtn">Continue</button></div>
   </div>
 </div>
 
@@ -67,6 +131,7 @@
     <span class="user-name"></span>
     <button id="authBandToggle"></button>
   </header>
+  <div id="welcomeBanner"></div>
   <nav id="authDropdown"><div class="dropdown-inner" id="authDropdownNav"></div></nav>
 
   <main id="appContent">

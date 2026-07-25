@@ -7,6 +7,85 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.4 — URL-based personalized login + registration duplicate-check (2026-07-25)
+
+Bismillah. A login-flow rework built around one idea: a student's personal
+URL is the "lock" for their journal (kept private, never memorized), and
+their PIN is the "key" — not reasonable to expect a student to remember a
+random ID as well as a PIN.
+
+**Registration**: WhatsApp label/placeholder cleaned up ("WhatsApp number",
+hint placeholder `+CODE 123456789`); before creating an account, a matching
+NAME+WHATSAPP combination against an existing *active* student (normalized —
+trimmed/case-insensitive name, digits-only WhatsApp, so formatting
+differences don't hide a real match) now offers a choice instead of silently
+creating a possible duplicate: "Create a new journal anyway" or "Reset PIN
+for the existing journal" (opens a pre-filled `mailto:`). On success, auto-
+navigates to a new "Registered!" screen showing the exact confirmed
+onboarding message plus the student's personal URL as copyable text next to
+a copy icon-button.
+
+**URL-based login** (new `GET /auth/lookup?id=` endpoint, public, returns
+just `{name, hasPin}` for an active ID — 404 for anything else, deliberately
+vague like the login endpoint): visiting `/<uniqueID>` now skips the ID
+field entirely and greets the student by name ("Ahlan wa Sahlan, [name]"),
+either on a plain PIN-entry sign-in (PIN already set) or a new create-PIN
+screen (first login — PIN entered twice to confirm). Every PIN entry point
+across all three login screens now auto-submits on the 4th digit — no
+Sign-in button anywhere.
+
+**Fallback screen kept** for anyone reaching the app with no unique ID in
+the URL, an ID that doesn't exist, or one that exists but isn't active —
+same ID+PIN screen, with the "4-digit PIN"/"First time..." text and Sign-in
+button removed, "New here? Register" → "New Registration", and its lost-
+access message changed to "Forgot your pin or ID?" (the personalized
+screens keep the original "Lost pin" wording — deliberately different
+messages for the two contexts).
+
+**Bug fix, not just a copy change**: the "content hidden behind the auth
+banner" report traced to `#welcomeBanner` — `position: fixed` with a higher
+z-index than `#authBand`, firing on *every* boot (not just first login), so
+it covered the band and page content for 3 seconds on every load. Moved into
+normal document flow inside `#appShell`, right after the auth band, so it
+pushes content down instead of overlapping it.
+
+**Also**: `sw.js`'s cache-name bumped and its precache list completed (it
+was missing `detail-pages.css`, `admin.css`, and six page-specific JS files
+that already existed — found while touching this file, unrelated to the
+banner bug itself, which private-browsing testing had already ruled out as
+a caching issue).
+
+**Deferred, on purpose**: the Sabaq/Sabaq Dhor/Dhor detail-page container
+width, the "Recent" rail sizing, and the three commentPrivacy.js tweaks —
+holding until history and mushaf/model selection are sorted out first.
+
+**New file needed on the Cloudflare Pages side**: `_redirects` (repo root)
+— `/* /index.html 200` — so any path (`/<uniqueID>`) serves `index.html`
+instead of a 404; the frontend then reads the path itself.
+
+**Files changed:**
+```
+index.html
+css/base.css
+css/components.css
+js/icons.js
+js/api.js
+js/auth.js
+js/app.js
+sw.js
+worker/src/auth.js
+worker/src/index.js
+_redirects (new)
+```
+
+**Retest before merging to `main`**: the manual browser walkthrough in
+`TESTING.md` §10, plus a private/incognito pass on the personalized and
+create-PIN screens specifically, since the fallback/personalized split
+depends on `/auth/lookup` behaving correctly for all three of "no ID",
+"unknown ID", and "inactive ID".
+
+---
+
 ## Reconciliation — repo had drifted significantly behind (2026-07-25)
 
 Bismillah. Triggered by a question about whether the `frontend/` folder

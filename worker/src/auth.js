@@ -114,22 +114,70 @@ export async function handleLogin(request, env) {
   return { data: { token, name: row.name, role: row.role, firstLogin: false } };
 }
 
+// Normalizes a name for duplicate comparison — trimmed, lowercased, so
+// "Umme " and "umme" compare equal.
+function normalizeName(n) {
+  return (n || '').trim().toLowerCase();
+}
+// Normalizes a WhatsApp number for duplicate comparison — digits only, so
+// "+966 555-123456" and "966555123456" compare equal regardless of the
+// formatting the student happened to type (see chat: item 1, V3.4).
+function normalizeWhatsapp(w) {
+  return (w || '').replace(/\D/g, '');
+}
+
 // POST /auth/register — public, no token required. Creates a student
 // account (self-registration always creates students only — teacher/
 // admin accounts stay an admin-only action, never self-service). name is
 // required; whatsapp_number is optional (its purpose is disambiguating
 // similarly-named students, not identity verification, so nothing here
 // enforces it). No PIN set — same first-login flow as every other account.
+//
+// Duplicate guard (V3.4, item 1): a matching NAME+WHATSAPP combination
+// together — not either alone — is a strong "this might be the same
+// student registering again" signal. Only checked when a whatsapp number
+// was actually given (nothing reliable to compare otherwise), and only
+// against active accounts. On a match, nothing is created yet — the
+// frontend shows the student a choice, and re-calls this with force:true
+// if they choose to create a separate journal anyway.
 export async function handleRegister(request, env) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.name || !body.name.trim()) return { error: 'name is required', status: 400 };
 
+  const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
+
+  if (whatsapp && !body.force) {
+    const normWhatsapp = normalizeWhatsapp(whatsapp);
+    if (normWhatsapp) {
+      const candidates = await env.DB.prepare(
+        'SELECT whatsapp_number FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL AND active = 1'
+      ).bind(normalizeName(body.name)).all();
+      const match = (candidates.results || []).some(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
+      if (match) return { data: { matched: true } };
+    }
+  }
+
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
   await env.DB.prepare(
     'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
-  ).bind(id, body.name.trim(), 'student', today, body.whatsapp_number ? body.whatsapp_number.trim() : null).run();
+  ).bind(id, body.name.trim(), 'student', today, whatsapp).run();
 
   return { data: { id, name: body.name.trim() } };
+}
+
+// GET /auth/lookup?id=XXX — public, no token. Lets the frontend personalize
+// the login screen when a unique ID arrives via the URL path (V3.4, items
+// 3/6/7/10): returns just the name and whether a PIN has been set yet, never
+// anything else. A nonexistent ID and an inactive account both come back as
+// a plain 404 — same "don't reveal more than necessary" posture as the
+// login endpoint's deliberately-vague error.
+export async function handleLookup(request, env) {
+  const url = new URL(request.url);
+  const id = (url.searchParams.get('id') || '').trim();
+  if (!id) return { error: 'id is required', status: 400 };
+  const row = await env.DB.prepare('SELECT name, pin_hash, active FROM students WHERE id = ?').bind(id).first();
+  if (!row || !row.active) return { error: 'Not found', status: 404 };
+  return { data: { name: row.name, hasPin: !!row.pin_hash } };
 }

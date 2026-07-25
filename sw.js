@@ -1,8 +1,11 @@
-const CACHE_NAME = 'hifzhelper-v3.3.2.4'; // bumped: index.html/manifest.json/sw.js moved to the deployment root
+const CACHE_NAME = 'hifzhelper-v3.4'; // bumped for the V3.4 release
 const ASSETS = [
   './index.html', './manifest.json', 'shared/data.js',
-  './css/tokens.css', './css/base.css', './css/nav.css', './css/journal-table.css', './css/components.css',
-  './js/icons.js', './js/api.js', './js/auth.js', './js/home.js', './js/journal.js', './js/app.js'
+  './css/tokens.css', './css/base.css', './css/nav.css', './css/journal-table.css',
+  './css/components.css', './css/detail-pages.css', './css/admin.css',
+  './js/icons.js', './js/api.js', './js/auth.js', './js/home.js', './js/tajweed.js',
+  './js/commentPrivacy.js', './js/timer.js', './js/journal.js', './js/dhorPage.js',
+  './js/sabaqPage.js', './js/sabaqDhorPage.js', './js/adminPage.js', './js/app.js'
 ];
 
 self.addEventListener('install', (event) => {

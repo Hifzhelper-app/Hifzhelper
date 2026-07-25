@@ -74,74 +74,165 @@ function setupAuthBandAndDropdown(){
   });
 }
 
-// PIN entry: 4 separate digit boxes, auto-advancing as each fills, with
-// backspace on an empty box moving focus back to the previous one.
-['pin_1','pin_2','pin_3','pin_4'].forEach((id, i, arr) => {
-  const el = document.getElementById(id);
-  el.addEventListener('input', () => {
-    el.value = el.value.replace(/[^0-9]/g, '').slice(0,1);
-    if(el.value && i < arr.length - 1) document.getElementById(arr[i+1]).focus();
+// ---------- generic 4-digit PIN box group ----------
+// Auto-advances focus as each digit fills; backspace on an empty box moves
+// focus back to the previous one; calls onComplete(pin) the instant the
+// last digit lands — every PIN entry point auto-submits now, so no screen
+// needs a Sign-in button (V3.4 items 12/13).
+function setupPinGroup(ids, onComplete){
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      el.value = el.value.replace(/[^0-9]/g, '').slice(0,1);
+      if(el.value && i < ids.length - 1){
+        document.getElementById(ids[i+1]).focus();
+      } else if(el.value && i === ids.length - 1){
+        onComplete(readPinGroup(ids));
+      }
+    });
+    el.addEventListener('keydown', (e) => {
+      if(e.key === 'Backspace' && !el.value && i > 0) document.getElementById(ids[i-1]).focus();
+    });
   });
-  el.addEventListener('keydown', (e) => {
-    if(e.key === 'Backspace' && !el.value && i > 0) document.getElementById(arr[i-1]).focus();
-  });
-});
-function readPinDigits(){
-  return ['pin_1','pin_2','pin_3','pin_4'].map(id => document.getElementById(id).value).join('');
 }
-function clearPinDigits(){
-  ['pin_1','pin_2','pin_3','pin_4'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('pin_1').focus();
+function readPinGroup(ids){ return ids.map(id => document.getElementById(id).value).join(''); }
+function clearPinGroup(ids){
+  ids.forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById(ids[0]).focus();
 }
 
-// ---------- login screen ----------
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const id = document.getElementById('login_id').value.trim();
-  const pin = readPinDigits();
-  const errEl = document.getElementById('loginError');
-  errEl.textContent = '';
-  if(!id || !/^\d{4}$/.test(pin)){
-    errEl.textContent = 'Enter your ID and a 4-digit PIN.';
-    return;
-  }
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  try{
-    const loginResult = await apiLogin(id, pin);
-    await bootApp();
-    if(loginResult.firstLogin) showFirstLoginMessage();
-  } catch(e){
-    errEl.textContent = e.message;
-    clearPinDigits();
-  } finally {
-    btn.disabled = false;
-  }
-});
+const FALLBACK_PIN_IDS = ['fb_pin_1','fb_pin_2','fb_pin_3','fb_pin_4'];
+const PERSONAL_PIN_IDS = ['p_pin_1','p_pin_2','p_pin_3','p_pin_4'];
+const CREATE_PIN_IDS = ['cr_pin_1','cr_pin_2','cr_pin_3','cr_pin_4'];
+const CONFIRM_PIN_IDS = ['cf_pin_1','cf_pin_2','cf_pin_3','cf_pin_4'];
 
-function showLoginScreen(){
-  document.getElementById('registerScreen').classList.add('hidden');
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('appShell').style.display = 'none';
-}
-function showRegisterScreen(){
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('registerScreen').classList.remove('hidden');
-  document.getElementById('registerScreen').style.display = 'flex';
+// ---------- screen switching ----------
+const ALL_LOGIN_SCREENS = ['loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen'];
+function hideAllLoginScreens(){
+  ALL_LOGIN_SCREENS.forEach(id => { document.getElementById(id).style.display = 'none'; });
 }
 function showAppShell(){
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('registerScreen').classList.add('hidden');
+  hideAllLoginScreens();
   document.getElementById('appShell').style.display = 'flex';
 }
 
-document.getElementById('showRegisterBtn').addEventListener('click', showRegisterScreen);
-document.getElementById('showLoginBtn').addEventListener('click', showLoginScreen);
+// The unique ID read from the URL path, once a lookup for it succeeds —
+// used by the personalized login screen and the create-PIN screen so they
+// never need their own ID input (V3.4 item 6).
+let urlLoginId = null;
 
+// Decides which login screen to show. A unique-ID URL is looked up FIRST,
+// and no screen is shown until that resolves either way (CONVENTIONS.md #8
+// — never render state-dependent UI ahead of the async fetch it depends
+// on); a missing/unknown/inactive ID all fall back to the plain ID+PIN
+// screen identically (V3.4 item 15), same as a bare URL with no ID at all.
+async function routeToLoginScreen(){
+  const seg = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ''));
+  if(seg){
+    try{
+      const info = await apiLookup(seg);
+      urlLoginId = seg;
+      if(info.hasPin) showLoginScreenPersonal(info.name);
+      else showCreatePinScreen(info.name);
+      return;
+    } catch(e){
+      // not found / inactive / network hiccup — same as no ID in the URL
+    }
+  }
+  showLoginScreenFallback();
+}
+
+function showLoginScreenFallback(){
+  hideAllLoginScreens();
+  document.getElementById('loginScreenFallback').style.display = 'flex';
+}
+function showLoginScreenPersonal(name){
+  hideAllLoginScreens();
+  document.getElementById('personalGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
+  document.getElementById('loginScreenPersonal').style.display = 'flex';
+  clearPinGroup(PERSONAL_PIN_IDS);
+}
+function showCreatePinScreen(name){
+  hideAllLoginScreens();
+  document.getElementById('createPinGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
+  document.getElementById('createPinScreen').style.display = 'flex';
+  clearPinGroup(CREATE_PIN_IDS);
+  clearPinGroup(CONFIRM_PIN_IDS);
+}
+function showRegisterScreen(){
+  hideAllLoginScreens();
+  document.getElementById('registerFormWrap').classList.remove('hidden');
+  document.getElementById('registerMatchPrompt').classList.add('hidden');
+  document.getElementById('registerScreen').style.display = 'flex';
+}
+
+document.getElementById('showRegisterBtn').addEventListener('click', showRegisterScreen);
+document.getElementById('showLoginBtn').addEventListener('click', routeToLoginScreen);
+
+// ---------- fallback screen: ID + PIN, auto-submits on the 4th PIN digit ----------
+setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
+  const id = document.getElementById('fallback_login_id').value.trim();
+  const errEl = document.getElementById('fallbackLoginError');
+  errEl.textContent = '';
+  if(!id){
+    errEl.textContent = 'Enter your ID and a 4-digit PIN.';
+    clearPinGroup(FALLBACK_PIN_IDS);
+    return;
+  }
+  try{
+    const loginResult = await apiLogin(id, pin);
+    await bootApp();
+    // Unlike the URL-based flow, there's no personal link already on
+    // screen to save here, so the save-this-page reminder still earns
+    // its place on first login through the fallback screen.
+    if(loginResult.firstLogin) showFirstLoginMessage();
+  } catch(e){
+    errEl.textContent = e.message;
+    clearPinGroup(FALLBACK_PIN_IDS);
+  }
+});
+
+// ---------- personalized screen: PIN only, ID already known from the URL ----------
+setupPinGroup(PERSONAL_PIN_IDS, async (pin) => {
+  const errEl = document.getElementById('personalLoginError');
+  errEl.textContent = '';
+  try{
+    await apiLogin(urlLoginId, pin);
+    await bootApp();
+  } catch(e){
+    errEl.textContent = e.message;
+    clearPinGroup(PERSONAL_PIN_IDS);
+  }
+});
+
+// ---------- create-PIN screen: entered twice to confirm, then logs in ----------
+setupPinGroup(CREATE_PIN_IDS, () => {
+  document.getElementById(CONFIRM_PIN_IDS[0]).focus();
+});
+setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
+  const errEl = document.getElementById('createPinError');
+  errEl.textContent = '';
+  const firstPin = readPinGroup(CREATE_PIN_IDS);
+  if(firstPin !== confirmPin){
+    errEl.textContent = "PINs didn't match — try again.";
+    clearPinGroup(CREATE_PIN_IDS);
+    clearPinGroup(CONFIRM_PIN_IDS);
+    return;
+  }
+  try{
+    await apiLogin(urlLoginId, confirmPin); // no pin_hash yet server-side, so this sets it
+    await bootApp();
+  } catch(e){
+    errEl.textContent = e.message;
+    clearPinGroup(CREATE_PIN_IDS);
+    clearPinGroup(CONFIRM_PIN_IDS);
+  }
+});
+
+// ---------- registration ----------
 document.getElementById('registerBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('registerError');
-  const resultEl = document.getElementById('registerResult');
   errEl.textContent = '';
-  resultEl.textContent = '';
   const name = document.getElementById('register_name').value.trim();
   const whatsapp = document.getElementById('register_whatsapp').value.trim();
   if(!name){ errEl.textContent = 'Enter your name.'; return; }
@@ -149,11 +240,12 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
   const btn = document.getElementById('registerBtn');
   btn.disabled = true;
   try{
-    const result = await apiRegister(name, whatsapp || null);
-    resultEl.textContent = `Registered! Your ID is ${result.id} — enter it on the sign-in screen along with a new 4-digit PIN to get started.`;
-    document.getElementById('register_name').value = '';
-    document.getElementById('register_whatsapp').value = '';
-    document.getElementById('login_id').value = result.id;
+    const result = await apiRegister(name, whatsapp || null, false);
+    if(result.matched){
+      showRegisterMatchPrompt(name, whatsapp);
+    } else {
+      showRegisteredScreen(result.id, result.name);
+    }
   } catch(e){
     errEl.textContent = "Couldn't register: " + e.message;
   } finally {
@@ -161,9 +253,60 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
   }
 });
 
-// First-login: a one-time message to save the URL / add to home screen,
-// since there's no other account-recovery path if this browser tab is
-// the only place the login ever happens.
+// A matching name+WhatsApp already exists — offer the choice rather than
+// silently creating a possible duplicate account (V3.4 item 1).
+function showRegisterMatchPrompt(name, whatsapp){
+  document.getElementById('registerFormWrap').classList.add('hidden');
+  document.getElementById('registerMatchPrompt').classList.remove('hidden');
+  document.getElementById('registerCreateAnywayBtn').onclick = async () => {
+    const result = await apiRegister(name, whatsapp || null, true);
+    showRegisteredScreen(result.id, result.name);
+  };
+  document.getElementById('registerResetPinBtn').onclick = () => {
+    const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}`);
+    window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Reset%20PIN&body=${body}`;
+  };
+}
+
+// Exact confirmed wording (see chat) — shown verbatim, never reworded.
+const REGISTRATION_CONFIRMATION_TEXT =
+`This is your personal URL to access your Hifzhelper Journal. Do not share the link.
+1. For the best experience on phones install as an app on your phone.
+2. CREATE an easy to remember pin
+3. LOGIN with your pin
+Please contact hifzhelper.app@gmail.com for any queries or if you need to reset your PIN
+May Allah bless you on this journey and make your path to Jannah easy
+Wassalam`;
+
+function showRegisteredScreen(id, name){
+  hideAllLoginScreens();
+  const url = window.location.origin + '/' + id;
+  document.getElementById('registeredMessage').textContent = REGISTRATION_CONFIRMATION_TEXT;
+  document.getElementById('registeredUrl').value = url;
+  document.getElementById('registeredScreen').style.display = 'flex';
+  document.getElementById('registeredContinueBtn').onclick = () => { window.location.href = url; };
+}
+
+document.getElementById('copyRegisteredUrlBtn').innerHTML = iconHtml('copy');
+document.getElementById('copyRegisteredUrlBtn').addEventListener('click', async () => {
+  const input = document.getElementById('registeredUrl');
+  try{
+    await navigator.clipboard.writeText(input.value);
+  } catch(e){
+    input.select();
+    document.execCommand('copy');
+  }
+  const btn = document.getElementById('copyRegisteredUrlBtn');
+  btn.innerHTML = iconHtml('check');
+  btn.classList.add('copied');
+  setTimeout(() => { btn.innerHTML = iconHtml('copy'); btn.classList.remove('copied'); }, 1500);
+});
+
+// First-login: a one-time message to save the URL / add to home screen —
+// only shown via the fallback ID+PIN screen now (see its handler above).
+// The URL-based flow doesn't need this: the registration-confirmation
+// screen already covered saving the link, and by definition they're
+// already sitting on their personal URL by the time they reach it.
 function showFirstLoginMessage(){
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';

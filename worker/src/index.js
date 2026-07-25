@@ -1,5 +1,5 @@
 import { json, error } from './utils.js';
-import { handleLogin, handleRegister, authenticate } from './auth.js';
+import { handleLogin, handleRegister, handleLookup, authenticate } from './auth.js';
 import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq } from './sabaqLog.js';
 import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
 import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
@@ -41,6 +41,9 @@ export default {
       }
       if (path === '/auth/register' && request.method === 'POST') {
         return respond(await handleRegister(request, env));
+      }
+      if (path === '/auth/lookup' && request.method === 'GET') {
+        return respond(await handleLookup(request, env));
       }
 
       // Everything past this point requires a valid token.

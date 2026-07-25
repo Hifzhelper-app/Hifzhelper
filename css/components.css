@@ -151,7 +151,45 @@ button.secondary {
   border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
 }
 .modal-actions {
-  display: flex; gap: var(--space-sm); margin-top: var(--space-lg);
+  display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-lg);
+}
+@media (min-width: 720px) {
+  /* Side-by-side once there's room; button.primary/secondary's own
+     width:100% would otherwise become a flex-basis and overflow a narrow
+     row (CONVENTIONS.md #9), so it's overridden here rather than on the
+     button classes themselves. */
+  .modal-actions { flex-direction: row; }
+  .modal-actions button { flex: 1; width: auto; }
+}
+
+/* Icon-as-button (V3.4 design philosophy going forward): no container,
+   no border — just an icon, sized as a comfortable tap target. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  color: var(--color-ink-soft);
+  background: none;
+  border: none;
+}
+.icon-btn svg { width: 20px; height: 20px; }
+.icon-btn:active { opacity: 0.6; }
+.icon-btn.copied { color: var(--color-success); }
+
+/* Registration-confirmation screen: the student's personal URL, shown as
+   read-only text next to a copy icon-button. */
+.url-copy-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.url-copy-row input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 13px;
 }
 
 /* Swipe rail — horizontal-scrolling cards, used wherever there's more

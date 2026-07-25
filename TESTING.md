@@ -148,6 +148,32 @@ not just that the admin path works.
 | Register a new student | `POST /admin/register-student` `{"name":"Test Two"}` | `200 {"id": "<6-char code>", "name": "Test Two"}`; that new ID can then log in for the first time exactly like any other account |
 | Register with no name | `POST /admin/register-student` `{}` | `400` |
 
+## 10. Self-registration duplicate-check & lookup (V3.4)
+
+| Test | Request | Expect |
+|---|---|---|
+| Register, no WhatsApp | `POST /auth/register` `{"name":"Test Three"}` | `200 {"id": "<6-char code>", "name": "Test Three"}` |
+| Register, WhatsApp, no existing match | `POST /auth/register` `{"name":"Test Four","whatsapp_number":"+1 555-0100"}` | `200`, real row created |
+| Duplicate name+WhatsApp (different formatting) | `POST /auth/register` `{"name":"test four","whatsapp_number":"15550100"}` | `200 {"matched": true}` — **no new row created** |
+| Force past a duplicate | Same body as above, plus `"force": true` | `200`, a second, separate row created for the same name+WhatsApp |
+| Duplicate check ignores inactive accounts | Deactivate the "Test Four" account (`active = 0` via admin), then repeat the duplicate request without `force` | `200`, a fresh account created directly — no match prompt |
+| Lookup an active ID with no PIN yet | `GET /auth/lookup?id=<Test Three's ID>` | `200 {"name": "Test Three", "hasPin": false}` |
+| Lookup an active ID with a PIN set | Log in once as that ID first, then repeat the lookup | `200`, `hasPin: true` |
+| Lookup a nonexistent ID | `GET /auth/lookup?id=ZZZZZZ` | `404` |
+| Lookup an inactive ID | `GET /auth/lookup?id=<a deactivated student's ID>` | `404` — identical to nonexistent, doesn't reveal the account exists |
+| Lookup with no id param | `GET /auth/lookup` | `400` |
+
+**Frontend, manual (needs a browser, not just the REST client):**
+1. Visit `/<a real, active ID with no PIN yet>` → lands on the create-PIN screen with "Ahlan wa Sahlan, [name]", not the ID+PIN screen.
+2. Enter a 4-digit PIN → focus jumps to the confirm row automatically, no button tapped.
+3. Enter a *different* 4-digit PIN in the confirm row → error shown, both rows clear, focus returns to the first box.
+4. Enter matching PINs in both rows → logs straight into the journal, no button tapped either time.
+5. Log out, revisit the same URL → now lands on the personalized sign-in screen (PIN only, no ID field), and entering the correct PIN signs in automatically on the 4th digit.
+6. Visit the bare domain with no path, or a made-up path like `/ZZZZZZ` → lands on the fallback ID+PIN screen, with "New Registration", no "4-digit PIN"/"First time" text, and the "Forgot your pin or ID?" message instead of "Lost your PIN?".
+7. Register a brand new student → auto-navigates to the "Registered!" screen showing the exact confirmation message and the personal URL with a working copy button, not back to the register form.
+8. From the register screen, submit a name+WhatsApp that already matches an existing student → the two-choice prompt appears instead of silently registering; "Create a new journal anyway" proceeds to register; "Reset PIN for the existing journal" opens a pre-filled `mailto:` link instead.
+9. On the journal landing page, refresh a few times → the green "Welcome" banner pushes the page content down while visible instead of covering the auth band/heading.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

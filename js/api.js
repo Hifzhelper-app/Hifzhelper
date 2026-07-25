@@ -41,11 +41,17 @@ async function apiLogin(id, pin){
   return result;
 }
 
-// Public self-registration — no token needed. Not called from any screen
-// yet (the public registration UI is V3.3.4); the backend endpoint is
-// ready and tested now.
-function apiRegister(name, whatsapp_number){
-  return apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ name, whatsapp_number }) });
+// Public self-registration — no token needed. force=true bypasses the
+// backend's name+whatsapp duplicate check (V3.4, item 1).
+function apiRegister(name, whatsapp_number, force){
+  return apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force }) });
+}
+
+// Public, no token — given a unique ID from the URL path, returns just the
+// name and whether a PIN has been set yet, so the login screen can be
+// personalized before any PIN is entered (V3.4, items 3/6/7/10).
+function apiLookup(id){
+  return apiFetch('/auth/lookup?id=' + encodeURIComponent(id));
 }
 
 // ---------- the four independent logs ----------

@@ -91,14 +91,19 @@ input, select, textarea {
   z-index: 200;
   display: none;
 }
+/* Was position:fixed with a higher z-index than #authBand, so it covered
+   the band and page content on every single boot (showWelcome() fires on
+   every login AND every reload, not just first-login) instead of pushing
+   content down — the root cause of the "content hidden behind the banner"
+   bug (V3.4 item 5). Now lives in normal flow, right after #authBand in
+   the #appShell markup, so showing it pushes #appContent down instead of
+   overlapping it. */
 #welcomeBanner {
-  position: fixed; top: 0; left: 0; right: 0;
   background: var(--color-success);
   color: #fff;
   padding: 10px 14px;
   font-weight: 600;
   font-size: 14px;
   text-align: center;
-  z-index: 200;
   display: none;
 }
