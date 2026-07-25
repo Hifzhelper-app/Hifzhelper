@@ -1,0 +1,54 @@
+/* ============================================================
+   Hifzhelper — admin screen
+   ============================================================ */
+
+.admin-register-box {
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.admin-register-box .inline-row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-end;
+}
+.admin-register-box .inline-row input { flex: 1; }
+.admin-register-box .inline-row button { flex: 0 0 auto; }
+#adminRegisterResult {
+  font-size: 12px;
+  color: var(--color-success);
+  margin-top: var(--space-sm);
+}
+
+.admin-users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.admin-users-table th {
+  background: var(--color-table-header-log);
+  color: var(--color-table-header-text);
+  text-align: left;
+  padding: var(--space-sm);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.admin-users-table td {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--color-table-border);
+}
+.admin-users-table .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.admin-users-table select {
+  padding: 4px 6px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+}

@@ -93,3 +93,9 @@ function apiSavePosition(position_json, last_dhor_json){
 // ---------- profile ----------
 function apiGetProfile(){ return apiFetch('/profile'); }
 function apiSaveProfile(profile){ return apiFetch('/profile', { method: 'POST', body: JSON.stringify(profile) }); }
+
+// ---------- admin ----------
+function apiAdminListUsers(){ return apiFetch('/admin/users'); }
+function apiAdminResetPin(id){ return apiFetch('/admin/reset-pin', { method: 'POST', body: JSON.stringify({ id }) }); }
+function apiAdminChangeRole(id, role){ return apiFetch('/admin/change-role', { method: 'POST', body: JSON.stringify({ id, role }) }); }
+function apiAdminRegisterStudent(name){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name }) }); }

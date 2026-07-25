@@ -12,8 +12,8 @@ function showBanner(message){
 
 // Screens not yet built (V3.2+) get an honest placeholder rather than a
 // broken or missing page — every nav destination goes somewhere.
-const SCREENS_BUILT = { home: true, journal: true };
-const SCREEN_LABELS = { sabaq: 'Sabaq', sabaqDhor: 'Sabaq Dhor', dhor: 'Dhor', reflections: 'Reflections', plans: 'Plans', progress: 'Progress', settings: 'Settings' };
+const SCREENS_BUILT = { home: true, journal: true, sabaq: true, sabaqDhor: true, dhor: true, admin: true };
+const SCREEN_LABELS = { reflections: 'Reflections', plans: 'Plans', progress: 'Progress', settings: 'Settings' };
 
 async function showScreen(id){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
@@ -27,6 +27,10 @@ async function showScreen(id){
   target.classList.remove('hidden');
   if(id === 'home') renderHomeScreen();
   if(id === 'journal') await renderJournalScreen();
+  if(id === 'sabaq') await renderSabaqScreen();
+  if(id === 'sabaqDhor') await renderSabaqDhorScreen();
+  if(id === 'dhor') await renderDhorScreen();
+  if(id === 'admin') await renderAdminScreen();
 }
 
 async function bootApp(){

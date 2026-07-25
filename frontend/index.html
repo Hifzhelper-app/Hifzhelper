@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="css/nav.css">
 <link rel="stylesheet" href="css/journal-table.css">
 <link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/detail-pages.css">
+<link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
 
@@ -66,6 +68,99 @@
       </div>
     </section>
 
+    <!-- Sabaq detail page -->
+    <section class="screen hidden detail-page" id="screen-sabaq">
+      <h2>Sabaq</h2>
+      <label>Surah</label><select id="sabaq_surah"></select>
+      <div class="picker-row">
+        <div><label>Ayah from</label><input type="number" id="sabaq_ayah_from"></div>
+        <div><label>Ayah to</label><input type="number" id="sabaq_ayah_to"></div>
+      </div>
+      <label>Tajweed</label>
+      <div id="sabaqTajweedPicker"></div>
+      <div id="sabaqCommentBlock"></div>
+      <div class="form-error" id="sabaqError"></div>
+      <div style="margin-top:16px;display:flex;align-items:center;">
+        <span class="save-status" id="sabaqSaveStatus">saved ✓</span>
+        <button class="primary" id="sabaqSaveBtn">Save entry</button>
+      </div>
+      <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
+      <div class="swipe-rail" id="sabaqRecentRail"></div>
+    </section>
+
+    <!-- Sabaq Dhor detail page -->
+    <section class="screen hidden detail-page" id="screen-sabaqDhor">
+      <h2>Sabaq Dhor</h2>
+      <label>Zone</label><input type="text" id="sabaqDhor_zone" placeholder="e.g. Juz' 29, 30">
+      <label>Mistakes</label><input type="number" id="sabaqDhor_mistakes">
+      <label>Tajweed</label>
+      <div id="sabaqDhorTajweedPicker"></div>
+      <div id="sabaqDhorCommentBlock"></div>
+      <div class="form-error" id="sabaqDhorError"></div>
+      <div style="margin-top:16px;display:flex;align-items:center;">
+        <span class="save-status" id="sabaqDhorSaveStatus">saved ✓</span>
+        <button class="primary" id="sabaqDhorSaveBtn">Save entry</button>
+      </div>
+      <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
+      <div class="swipe-rail" id="sabaqDhorRecentRail"></div>
+    </section>
+
+    <!-- Dhor detail page -->
+    <section class="screen hidden detail-page" id="screen-dhor">
+      <h2>Dhor</h2>
+      <label>Reference</label>
+      <select id="dhor_ref">
+        <option value="waterval">13-line (IndoPak)</option>
+        <option value="uthmani">Uthmani</option>
+      </select>
+      <div class="picker-row">
+        <div><label>Juz'</label><select id="dhor_juz"></select></div>
+        <div><label>Starting at</label><select id="dhor_position"></select></div>
+      </div>
+      <label>Amount</label>
+      <select id="dhor_unit">
+        <option value="quarter">Quarter</option>
+        <option value="half">Half juz'</option>
+        <option value="full">Full juz'</option>
+      </select>
+      <label>Mistakes</label><input type="number" id="dhor_mistakes">
+      <label>Timer</label>
+      <div id="dhorTimerWrap"></div>
+      <div id="dhorTimerSummary"></div>
+      <label>Tajweed</label>
+      <div id="dhorTajweedPicker"></div>
+      <div id="dhorCommentBlock"></div>
+      <div class="form-error" id="dhorError"></div>
+      <div style="margin-top:16px;display:flex;align-items:center;">
+        <span class="save-status" id="dhorSaveStatus">saved ✓</span>
+        <button class="primary" id="dhorSaveBtn">Save entry</button>
+      </div>
+      <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
+      <div class="swipe-rail" id="dhorRecentRail"></div>
+    </section>
+
+    <!-- Admin screen -->
+    <section class="screen hidden" id="screen-admin">
+      <h2>Admin</h2>
+
+      <div class="admin-register-box">
+        <label>Register a new student</label>
+        <div class="inline-row">
+          <input type="text" id="admin_new_name" placeholder="Student's name">
+          <button class="primary" id="adminRegisterBtn">Register</button>
+        </div>
+        <div class="form-error" id="adminRegisterError"></div>
+        <div id="adminRegisterResult"></div>
+      </div>
+
+      <table class="admin-users-table">
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="adminUsersTbody"></tbody>
+      </table>
+    </section>
+
     <!-- Placeholder for screens not yet built -->
     <section class="screen hidden" id="screen-placeholder">
       <h2 id="placeholderLabel"></h2>
@@ -80,7 +175,14 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/home.js"></script>
+<script src="js/tajweed.js"></script>
+<script src="js/commentPrivacy.js"></script>
+<script src="js/timer.js"></script>
 <script src="js/journal.js"></script>
+<script src="js/dhorPage.js"></script>
+<script src="js/sabaqPage.js"></script>
+<script src="js/sabaqDhorPage.js"></script>
+<script src="js/adminPage.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

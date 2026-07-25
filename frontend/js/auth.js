@@ -18,10 +18,18 @@ const NAV_ITEMS = [
   { id: 'progress', label: 'Progress', icon: 'progress' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
 ];
+// Admin-only destination — appended conditionally, not shown to students/
+// teachers even though the backend already 403s them regardless (this is
+// just about not showing a button that would only ever fail for them).
+const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
+
+function visibleNavItems(){
+  return currentUser.role === 'admin' ? NAV_ITEMS.concat([ADMIN_NAV_ITEM]) : NAV_ITEMS;
+}
 
 function renderNavItemsInto(containerId, extraItemsHtml){
   const el = document.getElementById(containerId);
-  el.innerHTML = NAV_ITEMS.map(item =>
+  el.innerHTML = visibleNavItems().map(item =>
     `<button class="nav-icon-item" data-nav="${item.id}">${iconHtml(item.icon)}<span>${item.label}</span></button>`
   ).join('') + (extraItemsHtml || '');
   el.querySelectorAll('[data-nav]').forEach(btn => {

@@ -7,6 +7,44 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.3.2 — admin frontend (2026-07-25)
+
+The user-list screen — reset PIN, change role, and register a new student,
+all three together as agreed, since they share the same screen.
+
+**Nav gating, tested not just asserted**: the "Admin" tile only appears for
+`role === 'admin'` — verified directly (not just by inspection) that
+students and teachers both get exactly 8 nav items with no admin tile,
+while an admin gets 9. The backend already 403s non-admins on every
+`/admin/*` endpoint regardless — this is purely about not showing a
+button that would only ever fail for everyone else.
+
+**Reset PIN and change-role both confirm before acting** — a plain
+`confirm()` dialog, since both are real, immediate account-affecting
+actions (reset PIN locks someone out until they set a new one; role
+change is a genuine permission escalation if going to teacher/admin).
+Declining a role-change reverts the dropdown back to its actual current
+value rather than leaving it visually wrong.
+
+**Register-student** shows the newly-generated ID clearly on screen after
+creation, since that's the one piece of information the admin actually
+needs to hand to the real student.
+
+**Files changed/added:**
+```
+frontend/css/admin.css   (new)
+frontend/js/adminPage.js (new)
+frontend/js/icons.js
+frontend/js/auth.js
+frontend/js/api.js
+frontend/js/app.js
+frontend/index.html
+```
+
+**Still ahead**: V3.3.3/3.3.4 — self-registration (backend then frontend).
+
+---
+
 ## V3.3.1 — admin backend (2026-07-25)
 
 Bismillah. First piece of a genuine account-management system, replacing
