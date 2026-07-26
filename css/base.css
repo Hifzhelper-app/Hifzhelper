@@ -57,12 +57,12 @@ input, select, textarea {
 /* Tablet and up: a bit more breathing room, content can use a wider
    max-width so long table rows/rings don't stretch uncomfortably thin,
    but still no fixed narrow column wasting screen space. */
-@media (min-width: 391px) {
+@media (min-width: 720px) {
   #appContent {
     padding: var(--space-lg) var(--space-xl);
   }
 }
-@media (min-width: 1025px) {
+@media (min-width: 1200px) {
   #appContent {
     max-width: 1400px;
     margin: 0 auto;
