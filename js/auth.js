@@ -156,13 +156,18 @@ function showCreatePinScreen(name){
   hideAllLoginScreens();
   document.getElementById('createPinGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
   document.getElementById('createPinScreen').classList.remove('hidden');
+  document.getElementById('createPinReminderMessage').textContent = REGISTRATION_CONFIRMATION_TEXT;
+  document.getElementById('createPinUrl').value = window.location.origin + '/' + urlLoginId;
+  document.getElementById('confirmPinWrap').classList.add('hidden');
   clearPinGroup(CONFIRM_PIN_IDS);
   clearPinGroup(CREATE_PIN_IDS);
 }
 function showRegisterScreen(){
   hideAllLoginScreens();
-  document.getElementById('registerFormWrap').classList.remove('hidden');
-  document.getElementById('registerMatchPrompt').classList.add('hidden');
+  cancelRegisterMatch();
+  document.getElementById('register_name').value = '';
+  document.getElementById('register_whatsapp').value = '';
+  document.getElementById('registerError').textContent = '';
   document.getElementById('registerScreen').classList.remove('hidden');
 }
 
@@ -207,6 +212,7 @@ setupPinGroup(PERSONAL_PIN_IDS, async (pin) => {
 
 // ---------- create-PIN screen: entered twice to confirm, then logs in ----------
 setupPinGroup(CREATE_PIN_IDS, () => {
+  document.getElementById('confirmPinWrap').classList.remove('hidden');
   document.getElementById(CONFIRM_PIN_IDS[0]).focus();
 });
 setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
@@ -215,6 +221,7 @@ setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
   const firstPin = readPinGroup(CREATE_PIN_IDS);
   if(firstPin !== confirmPin){
     errEl.textContent = "PINs didn't match — try again.";
+    document.getElementById('confirmPinWrap').classList.add('hidden');
     clearPinGroup(CONFIRM_PIN_IDS);
     clearPinGroup(CREATE_PIN_IDS);
     return;
@@ -224,55 +231,64 @@ setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
     await bootApp();
   } catch(e){
     errEl.textContent = e.message;
+    document.getElementById('confirmPinWrap').classList.add('hidden');
     clearPinGroup(CONFIRM_PIN_IDS);
     clearPinGroup(CREATE_PIN_IDS);
   }
 });
 
 // ---------- registration ----------
-document.getElementById('registerBtn').addEventListener('click', async () => {
+// The form fields stay visible and editable the whole time (V3.4.2) —
+// Continue always re-submits with whatever is CURRENTLY in the fields, so
+// editing them first (to fix a typo, or so it no longer collides with
+// anything) and then hitting Continue naturally becomes an ordinary
+// registration instead of a forced duplicate.
+document.getElementById('registerBtn').addEventListener('click', () => attemptRegister(false));
+document.getElementById('registerContinueBtn').addEventListener('click', async () => {
+  const name = document.getElementById('register_name').value.trim();
+  const whatsapp = document.getElementById('register_whatsapp').value.trim();
+  // Deactivating the OLD journal isn't self-service here — the "match" is
+  // just a self-reported name+WhatsApp claim, not verified identity, so it
+  // routes through email for a human to actually check (V3.4.1).
+  if(confirm('Would you also like to request that the old journal be deactivated? This sends an email — it will not happen automatically.')){
+    const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}\n\nA new journal was just created for this name/WhatsApp — please deactivate the existing one.`);
+    window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Deactivate%20old%20journal&body=${body}`;
+  }
+  await attemptRegister(true);
+});
+document.getElementById('registerCancelBtn').addEventListener('click', cancelRegisterMatch);
+document.getElementById('registerResetPinBtn').addEventListener('click', () => {
+  const name = document.getElementById('register_name').value.trim();
+  const whatsapp = document.getElementById('register_whatsapp').value.trim();
+  const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}`);
+  window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Reset%20PIN&body=${body}`;
+});
+
+async function attemptRegister(force){
   const errEl = document.getElementById('registerError');
   errEl.textContent = '';
   const name = document.getElementById('register_name').value.trim();
   const whatsapp = document.getElementById('register_whatsapp').value.trim();
   if(!name){ errEl.textContent = 'Enter your name.'; return; }
 
-  const btn = document.getElementById('registerBtn');
-  btn.disabled = true;
   try{
-    const result = await apiRegister(name, whatsapp || null, false);
+    const result = await apiRegister(name, whatsapp || null, force);
     if(result.matched){
-      showRegisterMatchPrompt(name, whatsapp);
+      document.getElementById('registerMatchHint').classList.remove('hidden');
+      document.getElementById('registerNormalActions').classList.add('hidden');
+      document.getElementById('registerMatchActions').classList.remove('hidden');
     } else {
       showRegisteredScreen(result.id, result.name);
     }
   } catch(e){
     errEl.textContent = "Couldn't register: " + e.message;
-  } finally {
-    btn.disabled = false;
   }
-});
+}
 
-// A matching name+WhatsApp already exists — offer the choice rather than
-// silently creating a possible duplicate account (V3.4 item 1).
-function showRegisterMatchPrompt(name, whatsapp){
-  document.getElementById('registerFormWrap').classList.add('hidden');
-  document.getElementById('registerMatchPrompt').classList.remove('hidden');
-  document.getElementById('registerCreateAnywayBtn').onclick = async () => {
-    // Deactivating the OLD journal isn't self-service here — the "match"
-    // is just a self-reported name+WhatsApp claim, not verified identity,
-    // so it routes through email for a human to actually check (V3.4.1).
-    if(confirm('Would you also like to request that the old journal be deactivated? This sends an email — it will not happen automatically.')){
-      const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}\n\nA new journal was just created for this name/WhatsApp — please deactivate the existing one.`);
-      window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Deactivate%20old%20journal&body=${body}`;
-    }
-    const result = await apiRegister(name, whatsapp || null, true);
-    showRegisteredScreen(result.id, result.name);
-  };
-  document.getElementById('registerResetPinBtn').onclick = () => {
-    const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}`);
-    window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Reset%20PIN&body=${body}`;
-  };
+function cancelRegisterMatch(){
+  document.getElementById('registerMatchHint').classList.add('hidden');
+  document.getElementById('registerMatchActions').classList.add('hidden');
+  document.getElementById('registerNormalActions').classList.remove('hidden');
 }
 
 // Exact confirmed wording (see chat) — shown verbatim, never reworded.
@@ -297,20 +313,27 @@ function showRegisteredScreen(id, name){
   };
 }
 
-document.getElementById('copyRegisteredUrlBtn').innerHTML = iconHtml('copy');
-document.getElementById('copyRegisteredUrlBtn').addEventListener('click', async () => {
-  const input = document.getElementById('registeredUrl');
-  try{
-    await navigator.clipboard.writeText(input.value);
-  } catch(e){
-    input.select();
-    document.execCommand('copy');
-  }
-  const btn = document.getElementById('copyRegisteredUrlBtn');
-  btn.innerHTML = iconHtml('check');
-  btn.classList.add('copied');
-  setTimeout(() => { btn.innerHTML = iconHtml('copy'); btn.classList.remove('copied'); }, 1500);
-});
+// Generic copy-to-clipboard icon button: shared by the Registered screen
+// and the create-PIN screen's URL reminder (V3.4.2 item 10) — one place
+// to change the copy/check-icon-swap behavior rather than duplicating it.
+function wireCopyButton(buttonId, inputId){
+  const btn = document.getElementById(buttonId);
+  btn.innerHTML = iconHtml('copy');
+  btn.addEventListener('click', async () => {
+    const input = document.getElementById(inputId);
+    try{
+      await navigator.clipboard.writeText(input.value);
+    } catch(e){
+      input.select();
+      document.execCommand('copy');
+    }
+    btn.innerHTML = iconHtml('check');
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = iconHtml('copy'); btn.classList.remove('copied'); }, 1500);
+  });
+}
+wireCopyButton('copyRegisteredUrlBtn', 'registeredUrl');
+wireCopyButton('copyCreatePinUrlBtn', 'createPinUrl');
 
 // First-login: a one-time message to save the URL / add to home screen —
 // only shown via the fallback ID+PIN screen now (see its handler above).

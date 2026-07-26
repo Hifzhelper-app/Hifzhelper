@@ -9,7 +9,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* padding-top adds the device's safe-area inset (the iOS notch/status
+     bar) on top of the normal spacing — confirmed Safari-only issue
+     (Android was fine): viewport-fit=cover lets the band's background
+     extend under the status bar for a full-bleed look, but without this
+     the actual TEXT inside it (and by extension #welcomeBanner/#appContent
+     right below it) rendered under the notch too. env() falls back to 0px
+     on browsers/devices without a safe area, so this is a no-op there. */
   padding: var(--space-sm) var(--space-md);
+  padding-top: calc(var(--space-sm) + env(safe-area-inset-top, 0px));
   position: sticky;
   top: 0;
   z-index: 100;

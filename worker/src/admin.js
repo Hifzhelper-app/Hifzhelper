@@ -5,7 +5,7 @@
 // ============================================================
 
 import { generateUniqueId } from './utils.js';
-import { normalizeName, normalizeWhatsapp, nextDisambiguatedName } from './auth.js';
+import { nextDisambiguatedName, findDuplicateMatch } from './auth.js';
 
 function requireAdmin(auth) {
   if (!auth || auth.role !== 'admin') return { error: 'Not authorized', status: 403 };
@@ -121,14 +121,14 @@ export async function handleDeleteUser(request, env, auth) {
 
 // POST /admin/register-student — body: { name, whatsapp_number?, force? }.
 // Creates a new student with an app-generated unique ID, no PIN yet — same
-// first-login flow as every other account. Runs the same name+WhatsApp
-// duplicate check as self-registration (V3.4.1) — a warning only, never a
-// block; unlike self-registration, this returns the matched student's own
-// ID (safe here since admin already sees every student via /admin/users),
-// so the admin panel can offer a direct Reset PIN or deactivate action
-// instead of routing through email. force:true bypasses the check and
-// auto-numbers the new record's name to keep it distinguishable
-// (same helper/behavior as self-registration).
+// first-login flow as every other account. Runs the same duplicate check
+// as self-registration (V3.4/V3.4.2, see findDuplicateMatch in auth.js) —
+// a warning only, never a block; unlike self-registration, this returns
+// the matched student's own ID (safe here since admin already sees every
+// student via /admin/users), so the admin panel can offer a direct Reset
+// PIN or deactivate action instead of routing through email. force:true
+// bypasses surfacing the match and auto-numbers the new record's name to
+// keep it distinguishable (same helper/behavior as self-registration).
 export async function handleRegisterStudent(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
@@ -139,18 +139,10 @@ export async function handleRegisterStudent(request, env, auth) {
   const trimmedName = body.name.trim();
   const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
 
-  if (whatsapp && !body.force) {
-    const normWhatsapp = normalizeWhatsapp(whatsapp);
-    if (normWhatsapp) {
-      const candidates = await env.DB.prepare(
-        'SELECT id, whatsapp_number FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL AND active = 1'
-      ).bind(normalizeName(trimmedName)).all();
-      const match = (candidates.results || []).find(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
-      if (match) return { data: { matched: true, matchedId: match.id } };
-    }
-  }
+  const matchedId = await findDuplicateMatch(env, trimmedName, whatsapp);
+  if (matchedId && !body.force) return { data: { matched: true, matchedId } };
 
-  const finalName = body.force ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
+  const finalName = matchedId ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
 
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);

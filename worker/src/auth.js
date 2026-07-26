@@ -140,6 +140,29 @@ export async function nextDisambiguatedName(env, trimmedName) {
   return results.length ? `${trimmedName} ${results.length + 1}` : trimmedName;
 }
 
+// Checks for an existing ACTIVE student that collides with the given
+// name/whatsapp — name+whatsapp together when a whatsapp was actually
+// given (the strongest signal), or name ALONE when no whatsapp was given
+// at all (V3.4.2 — previously skipped entirely in that case, so two
+// same-named students with no WhatsApp on file went completely
+// undetected). Returns the matched student's id, or null.
+export async function findDuplicateMatch(env, trimmedName, whatsapp) {
+  const normName = normalizeName(trimmedName);
+  if (whatsapp) {
+    const normWhatsapp = normalizeWhatsapp(whatsapp);
+    if (!normWhatsapp) return null;
+    const candidates = await env.DB.prepare(
+      'SELECT id, whatsapp_number FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL AND active = 1'
+    ).bind(normName).all();
+    const match = (candidates.results || []).find(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
+    return match ? match.id : null;
+  }
+  const row = await env.DB.prepare(
+    'SELECT id FROM students WHERE LOWER(TRIM(name)) = ? AND active = 1 LIMIT 1'
+  ).bind(normName).first();
+  return row ? row.id : null;
+}
+
 // POST /auth/register — public, no token required. Creates a student
 // account (self-registration always creates students only — teacher/
 // admin accounts stay an admin-only action, never self-service). name is
@@ -147,16 +170,17 @@ export async function nextDisambiguatedName(env, trimmedName) {
 // similarly-named students, not identity verification, so nothing here
 // enforces it). No PIN set — same first-login flow as every other account.
 //
-// Duplicate guard (V3.4, item 1): a matching NAME+WHATSAPP combination
-// together — not either alone — is a strong "this might be the same
-// student registering again" signal. Only checked when a whatsapp number
-// was actually given (nothing reliable to compare otherwise), and only
-// against active accounts. On a match, nothing is created yet — the
-// frontend shows the student a choice, and re-calls this with force:true
-// if they choose to create a separate journal anyway, at which point the
-// new record's name gets an auto-appended disambiguating number
-// (V3.4.1) since two students can otherwise be indistinguishable in any
-// admin-facing list except by their random ID.
+// Duplicate guard (V3.4/V3.4.2): see findDuplicateMatch() above for the
+// matching rule. On a match, nothing is created yet — the frontend shows
+// a choice (Cancel/Continue/Reset PIN, form stays editable), and re-calls
+// this with force:true to create anyway regardless of what's currently in
+// the fields — force only skips SURFACING the warning; the match check
+// itself still runs against whatever was actually submitted, so editing
+// the name/WhatsApp before continuing naturally becomes a normal
+// registration if it no longer collides with anything. On a force-created
+// match, the new record's name gets an auto-appended disambiguating
+// number (V3.4.1) since two students can otherwise be indistinguishable
+// in any admin-facing list except by their random ID.
 export async function handleRegister(request, env) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
@@ -165,20 +189,10 @@ export async function handleRegister(request, env) {
   const trimmedName = body.name.trim();
   const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
 
-  let matched = false;
-  if (whatsapp) {
-    const normWhatsapp = normalizeWhatsapp(whatsapp);
-    if (normWhatsapp) {
-      const candidates = await env.DB.prepare(
-        'SELECT whatsapp_number FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL AND active = 1'
-      ).bind(normalizeName(trimmedName)).all();
-      matched = (candidates.results || []).some(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
-    }
-  }
+  const matchedId = await findDuplicateMatch(env, trimmedName, whatsapp);
+  if (matchedId && !body.force) return { data: { matched: true } };
 
-  if (matched && !body.force) return { data: { matched: true } };
-
-  const finalName = matched ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
+  const finalName = matchedId ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
 
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);

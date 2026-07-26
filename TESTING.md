@@ -194,6 +194,28 @@ not just that the admin path works.
 6. In the admin student list, mark a student inactive → their name greys out in the list; no separate "Inactive" text appears anywhere in the row.
 7. Register a new student via self-registration → on the "Registered!" screen, tap "Copy and Continue" without touching the copy icon first → still navigates to the create-PIN screen, and pasting anywhere confirms the URL was copied regardless.
 
+## 12. Session hardening, duplicate-check gap, protocol changes (V3.4.2)
+
+| Test | Request | Expect |
+|---|---|---|
+| No-WhatsApp duplicate, self-registration | `POST /auth/register` `{"name":"Test Six"}`, then again with the same name, no whatsapp_number | Second call: `200 {"matched": true}` — no new row created |
+| No-WhatsApp duplicate, force-create | Same second call plus `"force": true` | `200`, new row created as "Test Six 2" |
+| No-WhatsApp duplicate, admin registration | `POST /admin/register-student` (as admin), same name twice, no whatsapp_number | Second call: `200 {"matched": true, "matchedId": "<first ID>"}` |
+| WhatsApp still takes priority when given | Register "Test Seven" with a WhatsApp number, then register a *different* name with that same WhatsApp number | No match — name must also match, WhatsApp alone isn't enough (unchanged from V3.4.1) |
+
+**Frontend, manual:**
+1. Log in, press back once → banner reads "Press back again to log out," still on the journal. Press back again immediately → now logged out, on a login screen.
+2. Log in via a personal URL, then manually edit the ID in the address bar to a *different* valid student's ID and press enter → does NOT keep showing the first student's journal; drops to a login/create-PIN screen for the new ID instead.
+3. Self-register with a name matching an existing student but leave WhatsApp blank → match prompt still appears (this is the gap being closed). Edit the name slightly so it's no longer a match, then press Continue → registers normally, no duplicate warning, no auto-numbering.
+4. From the admin panel, trigger a duplicate match, then edit the WhatsApp number in the form before pressing Continue → if the edited value no longer matches, creates a plain new student, not a numbered duplicate.
+5. Trigger the "also deactivate?" prompt (admin Continue) and the Reset PIN confirm → both read "CANCEL: Both journals remain active ; OK: mark existing journal INACTIVE" / similar, not a bare generic question.
+6. WhatsApp fields (admin registration form, admin user-detail card) show no "optional" text anywhere, and both still submit fine when left blank.
+7. Resize a login/register/admin screen across breakpoints → mobile fills the width, ~600-899px shows 50% width centered, ≥900px shows 25% width centered, on both `.login-card` screens and the admin screen.
+8. General text throughout the app (labels, error messages, button text) reads noticeably larger than before — compare against a pre-V3.4.2 screenshot if unsure.
+9. On the fallback login screen, "New Registration" sits at the bottom of the card now, below the "Forgot your pin or ID?" text.
+10. Visit a personal URL for an account with no PIN set yet → the create-PIN screen shows the full "This is your personal URL..." message and a copyable URL, and the "Confirm PIN" row is invisible until all 4 "New PIN" digits are entered.
+11. **On an actual iOS Safari device** (not just a desktop browser — this can't be verified there): the top of the journal/auth band is no longer obscured by the notch/status bar. Re-check Android too, to confirm it's still fine (it already was).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

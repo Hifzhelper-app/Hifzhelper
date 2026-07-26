@@ -10,6 +10,7 @@ html, body { margin: 0; padding: 0; }
 
 body {
   font-family: var(--font-body);
+  font-size: var(--font-size-base);
   background: var(--color-page-bg);
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;

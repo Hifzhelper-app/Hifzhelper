@@ -7,6 +7,49 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.4.2 — session hardening, duplicate-check gap, typography/responsive protocol (2026-07-26)
+
+Bismillah. Fourteen items from a round of V3.4.1 testing, built together.
+
+**Session/back-guard, refined**: the back-guard now takes two presses instead of one — the first shows "Press back again to log out" (not silent), the second actually logs out. Separately, `bootApp()` now verifies the loaded profile's own ID actually matches the unique ID in the URL, closing a real gap: editing the ID directly in the address bar and pressing enter is a fresh page load, not a back/forward history traversal, so the back-guard's `popstate` listener never saw it and a stale token kept showing whichever account it belonged to regardless of the URL. Both fixes are separate and complementary — one covers history navigation, one covers direct navigation.
+
+**Duplicate-check gap closed**: the name+WhatsApp check only ever ran when a WhatsApp number was actually given — leave it blank and two same-named students went completely undetected. A shared `findDuplicateMatch()` helper (used by both self- and admin-registration) now falls back to a name-only check against active students when WhatsApp is absent.
+
+**Duplicate-match UI restructured, both registration paths**: the form fields now stay visible and editable throughout — no more hiding the inputs behind a separate prompt. Three buttons on a match: **Cancel** (dismiss, form stays as typed), **Continue** (always resubmits with whatever's *currently* in the fields — if unedited, creates the duplicate with an auto-appended number; if edited to no longer collide, becomes an ordinary registration), **Reset PIN** (unchanged, always targets whichever student was matched when the prompt first appeared, regardless of later edits). Admin's "also deactivate?" confirm, and the reset-PIN confirm, now read "CANCEL: Both journals remain active ; OK: mark existing journal INACTIVE" instead of the native dialog's generic Cancel/OK with no context.
+
+**Admin panel**: "optional" removed from both WhatsApp placeholders (registration form and the user-detail card) — the field itself is still optional, just not labeled as such.
+
+**Typography**: new `--font-size-base: 14px` root variable (tokens.css) — body text, form labels, error/result messages, and both button classes now read off it, so a future size change cascades from one place instead of being hunted down across files. Fine-print elements (`.eyebrow`, `.form-hint`, monospace IDs, nav tile labels) stay deliberately smaller by design.
+
+**Responsive width protocol, refined**: replaces the old ~1/3 (33%) cap with exact breakpoints — mobile fills the available width, tablet is 50% (two fit side by side), desktop is 25% (four fit side by side), all centered. Applied to `.login-card` (every login/register/create-PIN/registered screen shares it) and `#screen-admin`. The percentage values live in shared `--width-tablet`/`--width-desktop` tokens; the breakpoints themselves (600px/900px) are necessarily repeated as literals since media queries can't consume CSS custom properties in their condition.
+
+**Fallback screen**: "New Registration" moved from inline with the "Sign in" heading down to the bottom of the card, below the "Forgot your pin or ID?" text.
+
+**Create-PIN screen**: now shows the full registration-confirmation message plus the personal URL and a copy icon (as a reminder — reuses the same message and a new shared `wireCopyButton()` helper, not a duplicate of the "Registered!" screen's Continue button). The "Confirm PIN" row stays hidden until "New PIN" is fully entered, and re-hides if the two don't match.
+
+**Safari fix**: `#authBand` now adds `env(safe-area-inset-top)` on top of its normal padding — confirmed Safari-only (Android was unaffected), consistent with `viewport-fit=cover` letting content render under the notch/status bar without it.
+
+**Files changed:**
+```
+index.html
+css/tokens.css
+css/base.css
+css/components.css
+css/detail-pages.css
+css/admin.css
+css/nav.css
+js/app.js
+js/auth.js
+js/adminPage.js
+sw.js
+worker/src/auth.js
+worker/src/admin.js
+```
+
+**Retest before merging to `main`**: `TESTING.md` §12 has the full checklist — the two-press back-guard timing, the URL-edit-while-logged-in case, the no-WhatsApp duplicate case for both registration paths, and a visual pass on a real Safari/iOS device for the safe-area fix specifically (nothing else in this delivery can be verified from a desktop browser alone).
+
+---
+
 ## V3.4.1 — session security, duplicate-registration handling, admin list polish (2026-07-25)
 
 Bismillah. Five items queued up across several rounds of testing/discussion

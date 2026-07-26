@@ -22,10 +22,7 @@
 <div class="login-screen hidden" id="loginScreenFallback">
   <div class="login-card">
     <div class="eyebrow">Hifzhelper</div>
-    <div class="login-header-row">
-      <h1>Sign in</h1>
-      <button type="button" class="primary" id="showRegisterBtn">New Registration</button>
-    </div>
+    <h1>Sign in</h1>
     <label>Your ID</label>
     <input type="text" id="fallback_login_id" placeholder="e.g. K7M2QX" autocapitalize="characters">
     <label>PIN</label>
@@ -37,6 +34,7 @@
     </div>
     <div class="form-error" id="fallbackLoginError"></div>
     <div class="form-hint">Forgot your pin or ID? Send us an email <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Forgot%20PIN%20or%20ID">hifzhelper.app@gmail.com</a> with your name and whatsapp number.</div>
+    <div style="margin-top:var(--space-md);"><button type="button" class="primary" id="showRegisterBtn">New Registration</button></div>
   </div>
 </div>
 
@@ -71,14 +69,22 @@
       <input type="password" class="pin-digit" id="cr_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
       <input type="password" class="pin-digit" id="cr_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
     </div>
-    <label>Confirm PIN</label>
-    <div class="pin-box-row">
-      <input type="password" class="pin-digit" id="cf_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
-      <input type="password" class="pin-digit" id="cf_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
-      <input type="password" class="pin-digit" id="cf_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
-      <input type="password" class="pin-digit" id="cf_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    <div id="confirmPinWrap" class="hidden">
+      <label>Confirm PIN</label>
+      <div class="pin-box-row">
+        <input type="password" class="pin-digit" id="cf_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+        <input type="password" class="pin-digit" id="cf_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+        <input type="password" class="pin-digit" id="cf_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+        <input type="password" class="pin-digit" id="cf_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      </div>
     </div>
     <div class="form-error" id="createPinError"></div>
+    <p class="form-hint" id="createPinReminderMessage" style="white-space:pre-line;"></p>
+    <label>Your personal URL</label>
+    <div class="url-copy-row">
+      <input type="text" id="createPinUrl" readonly>
+      <button type="button" class="icon-btn" id="copyCreatePinUrlBtn" aria-label="Copy URL"></button>
+    </div>
   </div>
 </div>
 
@@ -87,21 +93,18 @@
   <div class="login-card">
     <div class="eyebrow">Hifzhelper</div>
     <h1>Register</h1>
-    <div id="registerFormWrap">
-      <label>Your name</label>
-      <input type="text" id="register_name">
-      <label>WhatsApp number</label>
-      <input type="text" id="register_whatsapp" placeholder="+CODE 123456789">
-      <div style="margin-top:16px;"><button class="primary" id="registerBtn">Register</button></div>
-      <div class="form-error" id="registerError"></div>
+    <label>Your name</label>
+    <input type="text" id="register_name">
+    <label>WhatsApp number</label>
+    <input type="text" id="register_whatsapp" placeholder="+CODE 123456789">
+    <div class="form-hint hidden" id="registerMatchHint" style="margin-top:var(--space-md);">We found an existing active student with this name and WhatsApp number. What would you like to do?</div>
+    <div style="margin-top:16px;" id="registerNormalActions"><button class="primary" id="registerBtn">Register</button></div>
+    <div class="modal-actions hidden" id="registerMatchActions">
+      <button type="button" class="secondary" id="registerCancelBtn">Cancel</button>
+      <button type="button" class="secondary" id="registerContinueBtn">Continue</button>
+      <button type="button" class="secondary" id="registerResetPinBtn">Reset PIN</button>
     </div>
-    <div id="registerMatchPrompt" class="hidden">
-      <div class="form-hint" style="margin-top:0;">We found an existing journal with this name and WhatsApp number. What would you like to do?</div>
-      <div class="modal-actions">
-        <button type="button" class="secondary" id="registerCreateAnywayBtn">Create a new journal anyway</button>
-        <button type="button" class="secondary" id="registerResetPinBtn">Reset PIN for the existing journal</button>
-      </div>
-    </div>
+    <div class="form-error" id="registerError"></div>
     <div class="login-links">
       <button type="button" class="link-btn" id="showLoginBtn">Back to sign in</button>
     </div>
@@ -238,20 +241,17 @@
 
       <div class="admin-register-box">
         <label>Register a new student</label>
-        <div id="adminRegisterFormWrap">
-          <input type="text" id="admin_new_name" placeholder="Student's name">
-          <input type="text" id="admin_new_whatsapp" placeholder="WhatsApp (optional)" style="margin-top:var(--space-sm);">
-          <div style="margin-top:var(--space-sm);"><button class="primary" id="adminRegisterBtn">Register</button></div>
-          <div class="form-error" id="adminRegisterError"></div>
-          <div id="adminRegisterResult"></div>
+        <input type="text" id="admin_new_name" placeholder="Student's name">
+        <input type="text" id="admin_new_whatsapp" placeholder="WhatsApp" style="margin-top:var(--space-sm);">
+        <div class="form-hint hidden" id="adminRegisterMatchHint" style="margin-top:var(--space-sm);">We found an existing active student with this name and WhatsApp number. What would you like to do?</div>
+        <div style="margin-top:var(--space-sm);" id="adminRegisterNormalActions"><button class="primary" id="adminRegisterBtn">Register</button></div>
+        <div class="modal-actions hidden" id="adminRegisterMatchActions">
+          <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
+          <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
+          <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset PIN</button>
         </div>
-        <div id="adminRegisterMatchPrompt" class="hidden">
-          <div class="form-hint" style="margin-top:0;">We found an existing active student with this name and WhatsApp number. What would you like to do?</div>
-          <div class="modal-actions">
-            <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
-            <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset PIN</button>
-          </div>
-        </div>
+        <div class="form-error" id="adminRegisterError"></div>
+        <div id="adminRegisterResult"></div>
       </div>
 
       <input type="text" id="admin_search" placeholder="Search by ID or name…">

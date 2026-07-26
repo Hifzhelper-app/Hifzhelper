@@ -13,8 +13,7 @@ async function renderAdminScreen(){
   document.getElementById('adminRegisterResult').textContent = '';
   document.getElementById('admin_new_name').value = '';
   document.getElementById('admin_new_whatsapp').value = '';
-  document.getElementById('adminRegisterFormWrap').classList.remove('hidden');
-  document.getElementById('adminRegisterMatchPrompt').classList.add('hidden');
+  cancelAdminMatch();
   document.getElementById('admin_search').value = '';
   await loadAdminUsers();
 }
@@ -87,7 +86,7 @@ function openUserCard(id){
     <label>Name</label>
     <input type="text" id="uc_name" value="${user.name}">
     <label>WhatsApp number</label>
-    <input type="text" id="uc_whatsapp" value="${user.whatsapp_number || ''}" placeholder="Optional">
+    <input type="text" id="uc_whatsapp" value="${user.whatsapp_number || ''}">
     <label>Role</label>
     <select id="uc_role">
       <option value="student" ${user.role==='student'?'selected':''}>Student</option>
@@ -163,7 +162,40 @@ function openUserCard(id){
 }
 
 // ---------- register new student ----------
-document.getElementById('adminRegisterBtn').addEventListener('click', async () => {
+// Matches self-registration's structure (V3.4.2): the form fields stay
+// visible and editable the whole time — Continue always re-submits with
+// whatever is CURRENTLY in the fields, so editing them first (to fix a
+// typo, or to no longer collide with anything) and then hitting Continue
+// naturally becomes an ordinary registration instead of a forced
+// duplicate. adminMatchedId always refers to whichever student was
+// matched when the prompt first appeared, regardless of any edits made
+// afterward — that's who Reset PIN and the deactivate option act on.
+let adminMatchedId = null;
+
+document.getElementById('adminRegisterBtn').addEventListener('click', () => attemptAdminRegister(false));
+document.getElementById('adminRegisterContinueBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('adminRegisterError');
+  errEl.textContent = '';
+  if(adminMatchedId && confirm('CANCEL: Both journals remain active ; OK: mark existing journal INACTIVE')){
+    try{ await apiAdminUpdateUser(adminMatchedId, { active: false }); }
+    catch(e){ errEl.textContent = "Couldn't deactivate the existing student: " + e.message; }
+  }
+  await attemptAdminRegister(true);
+});
+document.getElementById('adminRegisterCancelBtn').addEventListener('click', cancelAdminMatch);
+document.getElementById('adminRegisterResetPinBtn').addEventListener('click', async () => {
+  if(!adminMatchedId) return;
+  if(!confirm("Reset the existing student's PIN?")) return;
+  try{
+    await apiAdminResetPin(adminMatchedId);
+    showBanner('PIN reset for the existing student.');
+    cancelAdminMatch();
+  } catch(e){
+    showBanner("Couldn't reset PIN: " + e.message);
+  }
+});
+
+async function attemptAdminRegister(force){
   const errEl = document.getElementById('adminRegisterError');
   const resultEl = document.getElementById('adminRegisterResult');
   errEl.textContent = '';
@@ -173,62 +205,32 @@ document.getElementById('adminRegisterBtn').addEventListener('click', async () =
   if(!name){ errEl.textContent = 'Enter a name.'; return; }
 
   try{
-    const result = await apiAdminRegisterStudent(name, whatsapp || null, false);
+    const result = await apiAdminRegisterStudent(name, whatsapp || null, force);
     if(result.matched){
-      showAdminRegisterMatchPrompt(name, whatsapp, result.matchedId);
+      adminMatchedId = result.matchedId;
+      document.getElementById('adminRegisterMatchHint').classList.remove('hidden');
+      document.getElementById('adminRegisterNormalActions').classList.add('hidden');
+      document.getElementById('adminRegisterMatchActions').classList.remove('hidden');
     } else {
       finishAdminRegisterUI(result);
     }
   } catch(e){
     errEl.textContent = "Couldn't register: " + e.message;
   }
-});
+}
 
-// A matching name+WhatsApp already exists among active students — offer
-// Continue (register anyway, with an option to also deactivate the old
-// one — a direct action here, since admin already has that capability) or
-// Reset PIN on the existing student directly (V3.4.1).
-function showAdminRegisterMatchPrompt(name, whatsapp, matchedId){
-  document.getElementById('adminRegisterFormWrap').classList.add('hidden');
-  document.getElementById('adminRegisterMatchPrompt').classList.remove('hidden');
-
-  document.getElementById('adminRegisterContinueBtn').onclick = async () => {
-    const errEl = document.getElementById('adminRegisterError');
-    errEl.textContent = '';
-    if(confirm('Also mark the existing student inactive?')){
-      try{ await apiAdminUpdateUser(matchedId, { active: false }); }
-      catch(e){ errEl.textContent = "Registered the new student, but couldn't deactivate the existing one: " + e.message; }
-    }
-    try{
-      const result = await apiAdminRegisterStudent(name, whatsapp || null, true);
-      finishAdminRegisterUI(result);
-    } catch(e){
-      errEl.textContent = "Couldn't register: " + e.message;
-    }
-  };
-
-  document.getElementById('adminRegisterResetPinBtn').onclick = async () => {
-    if(!confirm("Reset the existing student's PIN?")) return;
-    try{
-      await apiAdminResetPin(matchedId);
-      showBanner('PIN reset for the existing student.');
-      resetAdminRegisterForm();
-    } catch(e){
-      showBanner("Couldn't reset PIN: " + e.message);
-    }
-  };
+function cancelAdminMatch(){
+  adminMatchedId = null;
+  document.getElementById('adminRegisterMatchHint').classList.add('hidden');
+  document.getElementById('adminRegisterMatchActions').classList.add('hidden');
+  document.getElementById('adminRegisterNormalActions').classList.remove('hidden');
 }
 
 function finishAdminRegisterUI(result){
-  resetAdminRegisterForm();
+  cancelAdminMatch();
+  document.getElementById('admin_new_name').value = '';
+  document.getElementById('admin_new_whatsapp').value = '';
   document.getElementById('adminRegisterResult').textContent =
     `Created — ID: ${result.id}. Share this with ${result.name} so they can log in for the first time.`;
   loadAdminUsers();
-}
-
-function resetAdminRegisterForm(){
-  document.getElementById('adminRegisterFormWrap').classList.remove('hidden');
-  document.getElementById('adminRegisterMatchPrompt').classList.add('hidden');
-  document.getElementById('admin_new_name').value = '';
-  document.getElementById('admin_new_whatsapp').value = '';
 }

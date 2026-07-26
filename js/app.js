@@ -46,6 +46,19 @@ async function bootApp(){
   showAppShell();
   try{
     const profile = await apiGetProfile();
+    // V3.4.2 item 2: a valid token alone isn't enough — it must also
+    // belong to the account the current URL actually points to. Without
+    // this, editing the unique ID in the address bar and pressing enter
+    // (a fresh page load, not a back/forward history traversal, so the
+    // back-guard's popstate listener never even sees it) silently kept
+    // showing whichever account's token was already stored, ignoring the
+    // URL entirely.
+    const urlId = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ''));
+    if(urlId && profile.id && urlId !== profile.id){
+      clearToken();
+      routeToLoginScreen();
+      return;
+    }
     currentUser = { name: profile.name || '', role: profile.role || 'student' };
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
@@ -63,19 +76,28 @@ async function bootApp(){
   }
 }
 
-// Back/forward guard (V3.4.1): while authenticated, ANY history navigation
-// (back or forward — the browser doesn't distinguish which in a popstate
-// event) logs out and drops back to a fresh login screen rather than
-// silently continuing whatever session happens to still be active. This is
-// what stops one account's session from carrying over onto a different
-// account's URL via the browser's own back/forward buttons. Meant to catch
-// an accidental press, not trap anyone — it still does something (logs
-// out) rather than blocking navigation outright.
+// Back/forward guard (V3.4.1, refined in V3.4.2 to take TWO presses): while
+// authenticated, history navigation (back or forward — a popstate event
+// doesn't distinguish which) logs out and drops back to a fresh login
+// screen instead of silently continuing whatever session happens to still
+// be active — this is what stops one account's session from carrying over
+// onto a different account's URL via the browser's own back/forward
+// buttons. The first press only warns (and quietly re-arms the guard); a
+// second press right after is what actually logs out. Meant to catch an
+// accidental press, not trap anyone — it still does something on the
+// first press (a visible warning) rather than silently absorbing it.
+let backGuardWarned = false;
 function armBackGuard(){
+  backGuardWarned = false;
   history.pushState({ hifzhelperGuard: true }, '', location.href);
 }
 window.addEventListener('popstate', () => {
-  if(getToken()){
+  if(!getToken()) return;
+  if(!backGuardWarned){
+    backGuardWarned = true;
+    showBanner('Press back again to log out.');
+    history.pushState({ hifzhelperGuard: true }, '', location.href);
+  } else {
     clearToken();
     routeToLoginScreen();
   }

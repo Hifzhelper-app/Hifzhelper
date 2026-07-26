@@ -2,18 +2,18 @@
    Hifzhelper — admin screen
    ============================================================ */
 
-/* Container max-width: this screen's content (a search box + a list of
-   short rows) doesn't need a full ultra-wide desktop viewport — per the
-   "mobile-width units" convention (CONVENTIONS.md principle 9), cap it at
-   roughly 2 mobile-widths worth of comfortable reading width on large
-   screens, rather than stretching edge-to-edge. */
+/* Container width: app-wide responsive protocol (V3.4.2, see
+   --width-tablet/--width-desktop in tokens.css) — fills mobile, 50% on
+   tablet, 25% on desktop. Unlike .login-card, this isn't inside a
+   flex-centering parent, so it needs its own margin:auto. */
 #screen-admin {
   max-width: 100%;
 }
+@media (min-width: 600px) and (max-width: 899px) {
+  #screen-admin { max-width: var(--width-tablet); margin: 0 auto; }
+}
 @media (min-width: 900px) {
-  #screen-admin {
-    max-width: 720px;
-  }
+  #screen-admin { max-width: var(--width-desktop); margin: 0 auto; }
 }
 
 .admin-register-box {
@@ -24,7 +24,7 @@
   margin-bottom: var(--space-lg);
 }
 #adminRegisterResult {
-  font-size: 12px;
+  font-size: var(--font-size-base);
   color: var(--color-success);
   margin-top: var(--space-sm);
 }

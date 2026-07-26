@@ -3,7 +3,7 @@
    ============================================================ */
 
 .detail-page label {
-  display: block; font-size: 12px; color: var(--color-ink-soft);
+  display: block; font-size: var(--font-size-base); color: var(--color-ink-soft);
   margin-top: var(--space-md); margin-bottom: 4px;
 }
 .detail-page select, .detail-page input, .detail-page textarea {

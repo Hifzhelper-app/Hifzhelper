@@ -65,4 +65,25 @@
 
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'SF Mono', 'Courier New', monospace;
+
+  /* Base "normal" text size — everything from body copy to form labels
+     reads off this single variable (V3.4.2), so a future adjustment
+     cascades everywhere at once rather than needing hardcoded sizes
+     hunted down one by one. Raised to ~match button text (14px) per the
+     "text is too small to read" finding. Fine-print-style elements
+     (.eyebrow, .form-hint, .mono IDs, nav tile labels) stay deliberately
+     smaller by design — this variable governs the PRIMARY reading size,
+     not every size in the app. */
+  --font-size-base: 14px;
+
+  /* App-wide responsive width protocol (V3.4.1, refined further in
+     V3.4.2): a centered single-column container (login cards, the admin
+     screen, and similar) fills the available width on mobile, and is
+     capped at these fractions on larger screens — tablet fits ~2 side by
+     side, desktop ~4. The breakpoints themselves (600px/900px) can't be
+     shared via a CSS variable — media query conditions don't support
+     var() — so they're repeated as literals wherever this is used; only
+     the percentage VALUES are centralized here. */
+  --width-tablet: 50%;
+  --width-desktop: 25%;
 }
