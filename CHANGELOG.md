@@ -7,6 +7,71 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.5 — PWA Level 1: installability (2026-07-26)
+
+Bismillah. Scoped deliberately to core Web App Manifest + responsive web +
+HTTPS + Android/Apple install conventions — stopping short of registering
+the service worker or any offline behavior (that's Level 2, separate future
+work).
+
+**Manifest icon paths, actually fixed**: `manifest.json` declared
+`icon-192.png` and `icon-512.png` at the repo root — neither file has ever
+existed anywhere in this repo, so Chrome's install criteria (which require
+a valid 192px and 512px icon) were failing silently. Now points at the real
+files in `appicons/`.
+
+**New maskable icon**: `appicons/maskable-icon-512x512.png`, added as a new
+`purpose: "maskable"` manifest entry. The existing badge artwork
+(`android-chrome-512x512.png`) fills its canvas edge-to-edge with no safe
+margin, so reusing it directly would get clipped by Android's adaptive-icon
+mask. The new asset instead places the transparent logo mark
+(`appicons/logo.png`) on a `--palette-sage` (#829672) background, scaled so
+the mark's bounding-box corners sit ~188px from center — comfortably inside
+the ~205px safe-zone radius (80% of the 512px canvas).
+
+**Apple Home Screen conventions**: `index.html`'s `<head>` gained
+`apple-touch-icon` (the file already existed in `appicons/`, it just wasn't
+referenced anywhere), `apple-mobile-web-app-capable`,
+`apple-mobile-web-app-status-bar-style` (set to `black-translucent`, so the
+status bar blends with the Sage banner once launched standalone), and
+`apple-mobile-web-app-title`.
+
+**Favicon links**: `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`
+also already existed in `appicons/` but were never linked from `<head>` —
+fixed, so the browser tab icon now actually shows.
+
+**Cleanup**: removed `appicons/site.webmanifest` — an orphaned,
+auto-generated manifest never linked from `index.html`, with blank `name`
+fields and icon paths pointing at the domain root rather than `appicons/`.
+Kept for reference only until now; safe to delete since nothing referenced
+it.
+
+**Deliberately unchanged**: `sw.js` — it still exists but is not registered
+anywhere. Registering it (plus any actual offline caching behavior) is
+Level 2, not part of this delivery.
+
+**Files changed:**
+```
+manifest.json
+index.html
+```
+**New asset:**
+```
+appicons/maskable-icon-512x512.png
+```
+**Removed:**
+```
+appicons/site.webmanifest
+```
+
+**Retest before merging to `main`**: `TESTING.md` §14 — this is a
+device/browser-only check, no backend involved. Needs a real Android Chrome
+device/desktop Chrome and a real iOS Safari device to confirm properly;
+DevTools can confirm the manifest itself is valid but not the actual
+install/home-screen behavior.
+
+---
+
 ## V3.4.3 — duplicate-flow correctness, inactive-student search, styling fixes (2026-07-26)
 
 Bismillah. Eleven items from a second round of testing on V3.4.2, built together.

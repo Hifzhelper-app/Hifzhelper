@@ -240,6 +240,31 @@ not just that the admin path works.
 9. Auth dropdown menu: "Log out" (not "Sign out") appears after "Refresh," and only its icon (not its text) is red.
 10. The Hifzhelper logo appears above the existing content on the fallback, personalized login, registration, and create-PIN screens — check on a narrow phone width that it shrinks to fit rather than overflowing.
 
+## 14. PWA Level 1 — installability (V3.5)
+
+No backend requests involved — this is a manifest/HTML/asset-only change,
+so every check here needs an actual browser (DevTools can confirm the
+manifest is well-formed, but not real install/home-screen behavior).
+
+1. Chrome DevTools → Application → Manifest → no red validation errors; all
+   three icons (192, 512, and the maskable 512) load, none show a 404.
+2. Desktop Chrome or Android Chrome → address bar install icon / ⋮ menu →
+   an Install option is offered; the installed app icon shows the Sage-green
+   logo, not a broken/missing icon.
+3. After installing on Android → check the home-screen/launcher icon under
+   the device's adaptive-icon mask shape (circle or squircle depending on
+   device) → the logo mark isn't clipped or cut off.
+4. iOS Safari → Share sheet → "Add to Home Screen" → the resulting icon
+   matches `appicons/apple-touch-icon.png`, not a screenshot of the page.
+5. Launch from that iOS home-screen icon → opens standalone (no Safari
+   address bar/toolbar); the status bar is translucent, with the app's
+   content visible underneath it rather than a solid color bar.
+6. Any browser tab → shows the actual favicon, not a blank/generic page
+   icon.
+7. DevTools → Application → Service Workers → confirm this is still empty —
+   `sw.js` is intentionally NOT registered as part of this delivery
+   (Level 2, separate future work).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
