@@ -69,10 +69,9 @@
 /* App-wide responsive width protocol (V3.4.2, refined V3.4.3 — see
    --width-tablet/--width-desktop in tokens.css): centered by the parent
    .login-screen's flex centering, so no margin:auto needed here.
-   Threshold raised past 1024px (V3.4.3) because a real iPad 2 in
-   landscape is 1024px wide in CSS pixels and was landing in the desktop
-   bucket instead of the intended tablet one — known limit: an iPad Pro
-   12.9" landscape (1366px) still lands in desktop under this threshold. */
+   Threshold raised past 1024px (V3.4.3) because tablet  in
+   landscape is 1180px wide in CSS pixels and was landing in the desktop
+   bucket instead of the intended tablet one —  */
 @media (min-width: 768px) and (max-width: 1179px) {
   .login-card { width: var(--width-tablet); }
 }
