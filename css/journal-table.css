@@ -7,9 +7,10 @@
 
 .journal-wrap {
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
   overflow: hidden;
   border: 1px solid var(--color-table-border);
+  border-top: none;
 }
 
 .journal-table {
@@ -18,30 +19,45 @@
   font-size: 13px;
 }
 
-.journal-table th {
-  padding: var(--space-sm) var(--space-sm);
-  text-align: left;
+/* Header row now lives in its own container, sibling to .journal-wrap,
+   rather than inside the table (V3.4.3 follow-up) — this fixed a Safari
+   issue where the sticky header (previously position:sticky on <th>
+   inside the table) ended up visually covering the first data row.
+   Column widths are kept aligned with the table below via matching
+   nth-child percentages here and an explicit <colgroup> on the table —
+   the two are separate elements now, so nothing keeps them in sync
+   automatically the way a single <table>'s layout algorithm would. */
+.journal-header-row {
+  display: flex;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  overflow: hidden;
+  position: sticky;
+  top: var(--auth-band-height, 0px);
+  z-index: 10;
+}
+.journal-header-cell {
+  padding: var(--space-sm);
   font-weight: 700;
   color: var(--color-table-header-text);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
-  /* Sticks right under the auth band while scrolling through rows.
-     --auth-band-height is set in JS (fixJournalTopPaint(), app.js) from
-     the band's real measured height rather than a hardcoded value, since
-     that height varies (e.g. the iOS safe-area-inset padding) and a
-     wrong static guess would either leave a gap or sit under the band. */
-  position: sticky;
-  top: var(--auth-band-height, 0px);
-  z-index: 10;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.journal-table th.col-date { background: var(--color-table-header-date); }
-.journal-table th.col-log  { background: var(--color-table-header-log); }
+.journal-header-cell.col-date { background: var(--color-table-header-date); }
+.journal-header-cell.col-log  { background: var(--color-table-header-log); }
+/* Matches the <colgroup> widths in index.html exactly. */
+.journal-header-row > *:nth-child(1) { flex: 0 0 18%; }
+.journal-header-row > *:nth-child(2) { flex: 0 0 21%; }
+.journal-header-row > *:nth-child(3) { flex: 0 0 24%; }
+.journal-header-row > *:nth-child(4) { flex: 0 0 19%; }
+.journal-header-row > *:nth-child(5) { flex: 0 0 18%; }
 
 /* Column headers double as navigation into the dedicated per-log pages —
    icon + label, matching the app-wide icon-nav pattern, no extra chrome. */
-.journal-table th.col-log button {
+.journal-header-cell.col-log button {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -50,7 +66,21 @@
   text-transform: inherit;
   letter-spacing: inherit;
 }
-.journal-table th.col-log svg { width: 14px; height: 14px; }
+.journal-header-cell.col-log svg { width: 14px; height: 14px; }
+
+/* Header row and the rows container bleed to the edges of the screen
+   (V3.4.3 follow-up) — cancels out #appContent's own left/right padding
+   rather than requiring #appContent itself to lose padding everywhere. */
+.journal-header-row, .journal-wrap {
+  margin-left: calc(-1 * var(--space-md) + var(--space-xs));
+  margin-right: calc(-1 * var(--space-md) + var(--space-xs));
+}
+@media (min-width: 720px) {
+  .journal-header-row, .journal-wrap {
+    margin-left: calc(-1 * var(--space-xl) + var(--space-xs));
+    margin-right: calc(-1 * var(--space-xl) + var(--space-xs));
+  }
+}
 
 .journal-table td {
   padding: var(--space-sm);
@@ -113,5 +143,6 @@
    not a different layout, per "consistent sizing for tablets/large screens" */
 @media (min-width: 720px) {
   .journal-table { font-size: 14px; }
-  .journal-table td, .journal-table th { padding: var(--space-md); }
+  .journal-table td { padding: var(--space-md); }
+  .journal-header-cell { padding: var(--space-md); }
 }

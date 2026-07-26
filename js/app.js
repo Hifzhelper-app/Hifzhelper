@@ -133,7 +133,7 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_sabaq').innerHTML = iconHtml('sabaq') + '<span>Sabaq</span>';
   document.getElementById('th_sabaqDhor').innerHTML = iconHtml('sabaqDhor') + '<span>Sabaq Dhor</span>';
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
-  document.querySelectorAll('.journal-table th button[data-nav]').forEach(btn => {
+  document.querySelectorAll('.journal-header-row button[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => showScreen(btn.dataset.nav));
   });
 

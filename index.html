@@ -151,18 +151,18 @@
 
     <!-- Journal (landing) -->
     <section class="screen hidden" id="screen-journal">
-      <h2>Journal</h2>
+      <div class="journal-header-row">
+        <div class="journal-header-cell col-date">Date</div>
+        <div class="journal-header-cell col-log"><button data-nav="sabaq" id="th_sabaq"><span>Sabaq</span></button></div>
+        <div class="journal-header-cell col-log"><button data-nav="sabaqDhor" id="th_sabaqDhor"><span>Sabaq Dhor</span></button></div>
+        <div class="journal-header-cell col-log"><button data-nav="dhor" id="th_dhor"><span>Dhor</span></button></div>
+        <div class="journal-header-cell col-log">Feedback</div>
+      </div>
       <div class="journal-wrap">
         <table class="journal-table">
-          <thead>
-            <tr>
-              <th class="col-date">Date</th>
-              <th class="col-log"><button data-nav="sabaq" id="th_sabaq"><span>Sabaq</span></button></th>
-              <th class="col-log"><button data-nav="sabaqDhor" id="th_sabaqDhor"><span>Sabaq Dhor</span></button></th>
-              <th class="col-log"><button data-nav="dhor" id="th_dhor"><span>Dhor</span></button></th>
-              <th class="col-log">Feedback</th>
-            </tr>
-          </thead>
+          <colgroup>
+            <col style="width:18%"><col style="width:21%"><col style="width:24%"><col style="width:19%"><col style="width:18%">
+          </colgroup>
           <tbody id="journalTbody"></tbody>
         </table>
       </div>
