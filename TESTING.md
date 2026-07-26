@@ -234,7 +234,8 @@ not just that the admin path works.
 5. Admin registration box: "Student's name" and "WhatsApp" fields stack vertically and fill the box width at every screen size, never sitting inline/misaligned.
 6. The duplicate-match hint and the registration-confirmation message ("This is your personal URL...") both read visibly larger than before — same size as labels/buttons.
 7. Journal table: weekday abbreviation under the date is a little larger; "+ add" text unchanged.
-8. **On an actual iPhone Safari** (not simulable elsewhere): the journal/detail-page content shows immediately on load, no longer requiring a scroll to appear.
+8. **On an actual iPhone Safari** (not simulable elsewhere): the journal content shows immediately on load, no longer requiring a scroll to appear — the fix changed after this was first tested (see CHANGELOG "Correction" note under V3.4.3), so this needs re-confirming, not just re-reading.
+8b. Scroll down the journal table on any device — the Date/Sabaq/Sabaq Dhor/Dhor/Feedback column headers stick to the top of the screen, positioned right below the auth band (not overlapping it, not leaving a gap).
 9. Auth dropdown menu: "Log out" (not "Sign out") appears after "Refresh," and only its icon (not its text) is red.
 10. The Hifzhelper logo appears above the existing content on the fallback, personalized login, registration, and create-PIN screens — check on a narrow phone width that it shrinks to fit rather than overflowing.
 

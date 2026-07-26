@@ -35,11 +35,37 @@ async function showScreen(id){
   }
   target.classList.remove('hidden');
   if(id === 'home') renderHomeScreen();
-  if(id === 'journal') await renderJournalScreen();
+  if(id === 'journal'){ await renderJournalScreen(); fixJournalTopPaint(); }
   if(id === 'sabaq') await renderSabaqScreen();
   if(id === 'sabaqDhor') await renderSabaqDhorScreen();
   if(id === 'dhor') await renderDhorScreen();
   if(id === 'admin') await renderAdminScreen();
+}
+
+// Safari-only "journal invisible until scroll" bug: the V3.4.3 CSS-only
+// attempt (translateZ(0) on #appContent) didn't fix it. Rather than add a
+// blind fixed-height margin (which would double up with the already-
+// correct flex layout once painted, creating a visible gap on every
+// device), this measures the ACTUAL gap between the auth band's bottom
+// edge and wherever the journal content is really rendering, and only
+// corrects it if one truly exists. The read+write of layout values here
+// is also what forces Safari through a synchronous layout+paint pass —
+// that's what actually resolves the invisible-until-scroll symptom, the
+// margin correction itself is closer to a side effect / safety net.
+// Also publishes --auth-band-height, which the sticky table headers
+// below use for their own offset, since the band's real height varies
+// (e.g. the iOS safe-area-inset padding) and a hardcoded value would be
+// wrong on some devices.
+function fixJournalTopPaint(){
+  requestAnimationFrame(() => {
+    const band = document.getElementById('authBand');
+    if(!band) return;
+    document.documentElement.style.setProperty('--auth-band-height', band.getBoundingClientRect().height + 'px');
+    const target = document.getElementById('screen-journal');
+    if(!target) return;
+    const gap = band.getBoundingClientRect().bottom - target.getBoundingClientRect().top;
+    target.style.marginTop = gap > 0 ? gap + 'px' : '';
+  });
 }
 
 async function bootApp(){
