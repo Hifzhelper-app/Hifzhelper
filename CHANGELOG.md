@@ -7,6 +7,49 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.6 — real cache-busting (2026-07-26)
+
+Bismillah. Closes the gap identified while debugging a medium/large-screen
+rendering report: `sw.js`'s `CACHE_NAME` bump on every release only ever
+evicted the *service worker's* own cache — it never touched the browser's
+ordinary HTTP cache or Cloudflare's edge cache, both of which will keep
+serving an old file under an unchanged URL indefinitely.
+
+**Version-string query params**: every local `<link rel="stylesheet">` and
+`<script src="...">` in `index.html` now carries `?v=3.6.0`
+(`css/tokens.css?v=3.6.0`, `js/app.js?v=3.6.0`, etc.) — `sw.js`'s own
+`ASSETS` list updated to match, so it stays correct for whenever it's
+actually registered (Level 2, still not done, no behavior change here).
+New convention documented in `CONVENTIONS.md` #10: bump this version string
+across every reference, together, whenever any CSS/JS file changes — this
+is manual discipline, there's no build step generating it.
+
+**New `_headers` file** (Cloudflare Pages convention, didn't exist before):
+`css/`, `js/`, and `shared/` get `Cache-Control: public, max-age=31536000,
+immutable` — safe now that their URLs change whenever their content does.
+`appicons/` gets a more moderate week-long cache (not query-string
+versioned). `index.html`, `manifest.json`, and `sw.js` are explicitly set to
+`no-cache, must-revalidate` — these are the entry points that reference
+everything else, so they must always be fetched fresh or the browser never
+learns a new version string exists in the first place.
+
+**Files changed:**
+```
+index.html
+sw.js
+CONVENTIONS.md
+```
+**New file:**
+```
+_headers
+```
+
+**Retest before merging to `main`**: `TESTING.md` §15. This needs an actual
+deployed preview (Cloudflare Pages) to verify — `_headers` has no effect
+served from a plain local file open in a browser.
+
+---
+
 ## V3.5 — PWA Level 1: installability (2026-07-26)
 
 Bismillah. Scoped deliberately to core Web App Manifest + responsive web +

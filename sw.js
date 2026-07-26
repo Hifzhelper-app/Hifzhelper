@@ -1,11 +1,15 @@
-const CACHE_NAME = 'hifzhelper-v3.4.3'; // bumped for the V3.4.3 release
+const CACHE_NAME = 'hifzhelper-v3.6.0'; // bumped for the V3.6 release
+// Kept in sync with index.html's ?v= query strings (V3.6) so this list
+// stays correct for whenever this service worker is actually registered
+// (Level 2, not yet done) — it is currently inert, this is a
+// no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', 'shared/data.js', './appicons/logo.png',
-  './css/tokens.css', './css/base.css', './css/nav.css', './css/journal-table.css',
-  './css/components.css', './css/detail-pages.css', './css/admin.css',
-  './js/icons.js', './js/api.js', './js/auth.js', './js/home.js', './js/tajweed.js',
-  './js/commentPrivacy.js', './js/timer.js', './js/journal.js', './js/dhorPage.js',
-  './js/sabaqPage.js', './js/sabaqDhorPage.js', './js/adminPage.js', './js/app.js'
+  './index.html', './manifest.json', 'shared/data.js?v=3.6.0', './appicons/logo.png',
+  './css/tokens.css?v=3.6.0', './css/base.css?v=3.6.0', './css/nav.css?v=3.6.0', './css/journal-table.css?v=3.6.0',
+  './css/components.css?v=3.6.0', './css/detail-pages.css?v=3.6.0', './css/admin.css?v=3.6.0',
+  './js/icons.js?v=3.6.0', './js/api.js?v=3.6.0', './js/auth.js?v=3.6.0', './js/home.js?v=3.6.0', './js/tajweed.js?v=3.6.0',
+  './js/commentPrivacy.js?v=3.6.0', './js/timer.js?v=3.6.0', './js/journal.js?v=3.6.0', './js/dhorPage.js?v=3.6.0',
+  './js/sabaqPage.js?v=3.6.0', './js/sabaqDhorPage.js?v=3.6.0', './js/adminPage.js?v=3.6.0', './js/app.js?v=3.6.0'
 ];
 
 self.addEventListener('install', (event) => {

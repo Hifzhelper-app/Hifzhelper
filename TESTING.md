@@ -265,6 +265,33 @@ manifest is well-formed, but not real install/home-screen behavior).
    `sw.js` is intentionally NOT registered as part of this delivery
    (Level 2, separate future work).
 
+## 15. Real cache-busting (V3.6)
+
+Needs an actual deployed Cloudflare Pages preview/production URL —
+`_headers` has no effect at all when `index.html` is just opened as a
+local file, and DevTools' "Disable cache" checkbox will mask the very
+thing this is supposed to fix (it bypasses the browser cache entirely,
+so re-test with that checkbox OFF).
+
+1. DevTools → Network tab (cache enabled, not disabled) → load the site →
+   click on `css/tokens.css` (or any CSS/JS request) → Response Headers
+   shows `Cache-Control: public, max-age=31536000, immutable`.
+2. Same check on the page request itself (`index.html`, or `/`) →
+   `Cache-Control: no-cache, must-revalidate` — NOT a long max-age.
+3. Change one character in any CSS file, bump `?v=` in `index.html` (and
+   `sw.js`'s `ASSETS` list) to a new value, deploy → reload the page →
+   confirm the new CSS actually applies immediately, not after a hard
+   refresh.
+4. Without bumping `?v=` at all, reload the page a few times → confirm
+   `css/*`/`js/*` requests show "(disk cache)" or a `304`/no new download
+   in the Network tab — i.e. confirm the long cache is actually being
+   honored, not accidentally bypassed.
+5. Re-check the original medium/large-screen rendering report from before
+   this delivery, on a fresh load with cache enabled — if it was in fact a
+   stale-CSS issue, this should resolve it; if it still reproduces after a
+   confirmed-fresh load, the cause is something else and needs the
+   Elements/Computed-styles screenshot requested earlier.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

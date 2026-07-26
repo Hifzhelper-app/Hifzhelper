@@ -122,6 +122,29 @@ columns, because nothing constrained its container's max-width. Same
 underlying discipline, two different symptoms depending on screen size —
 worth checking both, not just the one that happens to get noticed first.
 
+## 10. Every CSS/JS reference carries a version query string — bump it on every change
+
+`index.html`'s `<link>`/`<script>` tags (and `sw.js`'s own `ASSETS` list, kept
+in sync) point at `css/*.css?v=X.Y.Z` / `js/*.js?v=X.Y.Z`, not bare
+filenames. Whenever ANY of those files changes, the version string bumps
+across all of them together — not just the one file that changed. There's
+no build step generating this automatically; it's manual discipline.
+
+*Why this is here:* `sw.js`'s `CACHE_NAME` was already bumped on every
+release, but that only ever evicts the *service worker's own* cache — it
+does nothing for the browser's ordinary HTTP cache or Cloudflare's edge
+cache, which will happily keep serving an old `nav.css` under that same
+unversioned URL forever. The `_headers` file (V3.6) now tells both of
+those to cache CSS/JS aggressively (`immutable`, one year) specifically
+*because* the URL changes whenever the content does — so skipping the
+version bump on a release isn't a cosmetic miss, it's the one thing that
+makes the aggressive caching safe in the first place.
+
+**In practice:** `index.html`, `manifest.json`, and `sw.js` themselves are
+deliberately NOT versioned and stay on `no-cache` (see `_headers`) — they're
+the entry points that reference everything else, so they must always be
+re-fetched fresh, or the browser never learns a new version string exists.
+
 ## File structure
 
 ```

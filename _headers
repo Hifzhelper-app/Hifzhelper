@@ -1,0 +1,36 @@
+# Hifzhelper — cache-busting policy (V3.6)
+#
+# CSS/JS/shared data are referenced from index.html with a ?v=X.Y.Z query
+# string (see CONVENTIONS.md). Because the URL itself changes whenever the
+# content does, these are safe to cache aggressively — the browser will
+# never reuse stale content under an unchanged URL.
+#
+# index.html, manifest.json, and sw.js are the entry points that reference
+# everything else — they must NEVER be cached, or the browser has no way
+# to learn that a new ?v= even exists. This is the piece that was missing
+# before: bumping sw.js's own CACHE_NAME only ever affected the service
+# worker's cache, never the browser's HTTP cache or Cloudflare's edge cache.
+
+/css/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/js/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/shared/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Icons/logo aren't query-string versioned, so a moderate cache (not a full
+# year) is used instead — long enough to matter, short enough that a future
+# icon change doesn't stay stuck indefinitely.
+/appicons/*
+  Cache-Control: public, max-age=604800
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/manifest.json
+  Cache-Control: no-cache, must-revalidate
+
+/sw.js
+  Cache-Control: no-cache, must-revalidate
