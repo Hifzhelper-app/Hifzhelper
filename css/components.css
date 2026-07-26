@@ -73,10 +73,10 @@
    landscape is 1024px wide in CSS pixels and was landing in the desktop
    bucket instead of the intended tablet one — known limit: an iPad Pro
    12.9" landscape (1366px) still lands in desktop under this threshold. */
-@media (min-width: 600px) and (max-width: 1299px) {
+@media (min-width: 768px) and (max-width: 1179px) {
   .login-card { width: var(--width-tablet); }
 }
-@media (min-width: 1300px) {
+@media (min-width: 1180px) {
   .login-card { width: var(--width-desktop); }
 }
 .login-card .eyebrow {
