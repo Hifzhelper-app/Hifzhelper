@@ -292,6 +292,48 @@ so re-test with that checkbox OFF).
    confirmed-fresh load, the cause is something else and needs the
    Elements/Computed-styles screenshot requested earlier.
 
+## 16. Unified day-log view (V3.6.1)
+
+1. From the journal, tap the "Sabaq" column header → lands on the new
+   combined screen with the Sabaq card in view (mobile/tablet) or visible
+   in the grid (desktop). Tap "Sabaq Dhor" from the journal instead →
+   same screen, but starts on/scrolled to the Sabaq Dhor card. Same for
+   "Dhor".
+2. **Desktop width (≥1180px)**: all 4 cards (Sabaq, Sabaq Dhor, Dhor,
+   Tadabbur) visible at once in a single row, no horizontal scrolling, no
+   dot indicators shown.
+3. **Tablet width (768–1179px)**: swiping the rail shows 2 cards at a
+   time; dots are visible and the correct one highlights as you swipe.
+4. **Mobile width (<768px)**: swiping shows 1 card at a time; dots
+   visible and tracking correctly. Tapping a dot smooth-scrolls to that
+   card.
+5. Each card's content (fields + Recent history) scrolls independently
+   within that card if it overflows — the card itself doesn't grow the
+   whole page.
+6. **Independent date selectors**: on the Sabaq card, change the date to
+   3 days ago and save an entry with distinctive content → confirm via
+   the Recent rail (or D1) it saved under that date, NOT today. Confirm
+   the Sabaq Dhor and Dhor cards' date fields are unaffected and still
+   show today.
+7. **Tajweed picker, all 3 cards open together** (this is the specific
+   condition that was previously broken): tap "+ add" on the Sabaq Dhor
+   card's tajweed picker and add a custom tag → confirm the new tag
+   appears on the SABAQ DHOR card, not silently on the Sabaq card. Repeat
+   for the Dhor card.
+8. **Comment block, all 3 cards open together**: type different text into
+   the Sabaq card's comment box and the Dhor card's comment box → save
+   each → confirm (via D1 or the Recent rail) each saved its OWN comment
+   text, not one overwriting the other or both ending up with the same
+   value.
+9. **Tadabbur card**: write a reflection and save → reload the page,
+   return to this screen → confirm the same reflection loads back
+   (prefilled), and saving again updates it in place rather than creating
+   a second row (check via D1: still only one `reflections` row for
+   today).
+10. Dhor card's timer still works normally (start/lap/stop) — this card
+    is the only one of the 4 with a timer, so it wasn't touched by the
+    container-scoping fix, but worth confirming nothing regressed.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

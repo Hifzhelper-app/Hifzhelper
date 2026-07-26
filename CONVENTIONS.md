@@ -145,6 +145,30 @@ deliberately NOT versioned and stay on `no-cache` (see `_headers`) — they're
 the entry points that reference everything else, so they must always be
 re-fetched fresh, or the browser never learns a new version string exists.
 
+## 11. Shared components scope their internal lookups to their own container, never a fixed global id
+
+A shared render function (`renderTajweedPicker`, `renderCommentBlock`, etc.)
+that's ever mounted more than once in the same document must find its own
+buttons/inputs via `containerElement.querySelector(...)`, not
+`document.getElementById('someFixedId')` — even for elements it creates
+itself inside its own markup.
+
+*Why this is here:* `tajweed.js`'s "+ add" button and `commentPrivacy.js`'s
+comment textarea/checkbox both used fixed ids (`tajweedAddBtn`,
+`cb_comment`, `cb_private`). This was invisible for two years because only
+one detail page was ever mounted at a time — but `document.getElementById`
+always resolves to the FIRST matching id in the whole document, and the
+unified day-log view (V3.6.1) mounts all 3 log cards' pickers/comment
+blocks simultaneously. Without this fix, tapping "+ add" on the Sabaq Dhor
+or Dhor card would have silently wired itself to the SABAQ card's button
+instead — a bug that would only ever surface by someone testing the 2nd or
+3rd card specifically, not by reading either file in isolation.
+
+**In practice:** if a render function takes a `containerId` and creates
+child elements with their own logic, look them up via `querySelector`
+scoped to that container — never assume there's only one instance of
+yourself in the document, even if that's true today.
+
 ## File structure
 
 ```
@@ -160,20 +184,29 @@ re-fetched fresh, or the browser never learns a new version string exists.
     nav.css           — auth band, dropdown, Home page tiles
     journal-table.css — the physical-planner-style landing table
     components.css    — login screen, modals, forms, buttons, swipe rails
-    detail-pages.css  — tajweed picker, timer, the 3 detail-page forms
+    detail-pages.css  — tajweed picker, timer, the unified day-log view's
+                        4-card grid/rail layout (V3.6.1 — previously "the
+                        3 detail-page forms", before they were merged)
     admin.css         — admin screen (user list, register form)
   js/
     icons.js          — shared inline SVG icon set
     api.js            — fetch wrapper + every endpoint client function
     auth.js           — login screen, auth band, dropdown, nav item list
     home.js           — Home page tile grid
-    tajweed.js        — shared tajweed tag picker (major/minor aware)
-    commentPrivacy.js — shared student-comment + privacy block
+    tajweed.js        — shared tajweed tag picker (major/minor aware),
+                        container-scoped (V3.6.1 — see principle 11)
+    commentPrivacy.js — shared student-comment + privacy block,
+                        container-scoped (V3.6.1 — see principle 11)
     timer.js          — the real start/lap/stop Dhor timer
     journal.js        — the landing journal table + quick-add modal
-    dhorPage.js        — dedicated Dhor page (picker, timer, tajweed)
-    sabaqPage.js        — dedicated Sabaq page
-    sabaqDhorPage.js    — dedicated Sabaq Dhor page
+    dhorPage.js         — Dhor card: picker, timer, tajweed, own date
+                          selector (one of 4 cards, V3.6.1)
+    sabaqPage.js        — Sabaq card, own date selector (one of 4 cards)
+    sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4)
+    reflectionCard.js   — Tadabbur card (V3.6.1, new) — one reflection
+                          per day, no date selector, upserts in place
+    logDetailScreen.js  — orchestrates the 4 cards into one screen:
+                          renders all 4, rail scroll position, dot sync
     adminPage.js        — admin user-list screen
     app.js              — bootstrap, screen routing (see principle 8)
 

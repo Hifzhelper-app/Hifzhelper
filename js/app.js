@@ -21,10 +21,13 @@ function showWelcome(name){
 
 // Screens not yet built (V3.2+) get an honest placeholder rather than a
 // broken or missing page — every nav destination goes somewhere.
-const SCREENS_BUILT = { home: true, journal: true, sabaq: true, sabaqDhor: true, dhor: true, admin: true };
+// V3.6.1: 'sabaq'/'sabaqDhor'/'dhor' are no longer separate screens — all
+// three now open 'logDetail' (the unified 4-card day-log view); the old
+// ids are still used as the `param` telling it which card to open on.
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true };
 const SCREEN_LABELS = { reflections: 'Reflections', plans: 'Plans', progress: 'Progress', settings: 'Settings' };
 
-async function showScreen(id){
+async function showScreen(id, param){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
   const target = document.getElementById('screen-' + id) || document.getElementById('screen-placeholder');
 
@@ -36,9 +39,7 @@ async function showScreen(id){
   target.classList.remove('hidden');
   if(id === 'home') renderHomeScreen();
   if(id === 'journal'){ await renderJournalScreen(); fixJournalTopPaint(); }
-  if(id === 'sabaq') await renderSabaqScreen();
-  if(id === 'sabaqDhor') await renderSabaqDhorScreen();
-  if(id === 'dhor') await renderDhorScreen();
+  if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
 }
 
@@ -134,7 +135,7 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_sabaqDhor').innerHTML = iconHtml('sabaqDhor') + '<span>Sabaq Dhor</span>';
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
   document.querySelectorAll('.journal-header-row button[data-nav]').forEach(btn => {
-    btn.addEventListener('click', () => showScreen(btn.dataset.nav));
+    btn.addEventListener('click', () => showScreen('logDetail', btn.dataset.nav));
   });
 
   if(getToken()){

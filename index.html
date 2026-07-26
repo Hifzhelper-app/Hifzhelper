@@ -18,13 +18,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hifzhelper">
 
-<link rel="stylesheet" href="css/tokens.css?v=3.6.0">
-<link rel="stylesheet" href="css/base.css?v=3.6.0">
-<link rel="stylesheet" href="css/nav.css?v=3.6.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.6.0">
-<link rel="stylesheet" href="css/components.css?v=3.6.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.6.0">
-<link rel="stylesheet" href="css/admin.css?v=3.6.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.6.1">
+<link rel="stylesheet" href="css/base.css?v=3.6.1">
+<link rel="stylesheet" href="css/nav.css?v=3.6.1">
+<link rel="stylesheet" href="css/journal-table.css?v=3.6.1">
+<link rel="stylesheet" href="css/components.css?v=3.6.1">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.6.1">
+<link rel="stylesheet" href="css/admin.css?v=3.6.1">
 </head>
 <body>
 
@@ -181,75 +181,122 @@
       </div>
     </section>
 
-    <!-- Sabaq detail page -->
-    <section class="screen hidden detail-page" id="screen-sabaq">
-      <h2>Sabaq</h2>
-      <label>Surah</label><select id="sabaq_surah"></select>
-      <div class="picker-row">
-        <div><label>Ayah from</label><input type="number" id="sabaq_ayah_from"></div>
-        <div><label>Ayah to</label><input type="number" id="sabaq_ayah_to"></div>
-      </div>
-      <label>Tajweed</label>
-      <div id="sabaqTajweedPicker"></div>
-      <div id="sabaqCommentBlock"></div>
-      <div class="form-error" id="sabaqError"></div>
-      <div style="margin-top:16px;display:flex;align-items:center;">
-        <span class="save-status" id="sabaqSaveStatus">saved ✓</span>
-        <button class="primary" id="sabaqSaveBtn">Save entry</button>
-      </div>
-      <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
-      <div class="swipe-rail" id="sabaqRecentRail"></div>
-    </section>
+    <!-- Unified day-log view (V3.6.1) — replaces the old separate
+         Sabaq / Sabaq Dhor / Dhor screens. All 3 journal column headers
+         open this same screen now; 4 cards: Sabaq, Sabaq Dhor, Dhor,
+         Tadabbur. Large screens show all 4 as a static grid; tablet/
+         mobile show a swipeable rail (2-in-view / 1-in-view) with dot
+         indicators — see log-detail rules in css/detail-pages.css. -->
+    <section class="screen hidden" id="screen-logDetail">
+      <div class="log-detail-rail" id="logDetailRail">
 
-    <!-- Sabaq Dhor detail page -->
-    <section class="screen hidden detail-page" id="screen-sabaqDhor">
-      <h2>Sabaq Dhor</h2>
-      <label>Zone</label><input type="text" id="sabaqDhor_zone" placeholder="e.g. Juz' 29, 30">
-      <label>Mistakes</label><input type="number" id="sabaqDhor_mistakes">
-      <label>Tajweed</label>
-      <div id="sabaqDhorTajweedPicker"></div>
-      <div id="sabaqDhorCommentBlock"></div>
-      <div class="form-error" id="sabaqDhorError"></div>
-      <div style="margin-top:16px;display:flex;align-items:center;">
-        <span class="save-status" id="sabaqDhorSaveStatus">saved ✓</span>
-        <button class="primary" id="sabaqDhorSaveBtn">Save entry</button>
-      </div>
-      <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
-      <div class="swipe-rail" id="sabaqDhorRecentRail"></div>
-    </section>
+        <!-- Sabaq card -->
+        <div class="log-detail-card detail-page" id="card-sabaq">
+          <div class="card-scroll">
+            <h2>Sabaq</h2>
+            <label>Date</label><input type="date" id="sabaq_date">
+            <label>Surah</label><select id="sabaq_surah"></select>
+            <div class="picker-row">
+              <div><label>Ayah from</label><input type="number" id="sabaq_ayah_from"></div>
+              <div><label>Ayah to</label><input type="number" id="sabaq_ayah_to"></div>
+            </div>
+            <label>Tajweed</label>
+            <div id="sabaqTajweedPicker"></div>
+            <div id="sabaqCommentBlock"></div>
+            <div class="form-error" id="sabaqError"></div>
+            <div style="margin-top:16px;display:flex;align-items:center;">
+              <span class="save-status" id="sabaqSaveStatus">saved ✓</span>
+              <button class="primary" id="sabaqSaveBtn">Save entry</button>
+            </div>
+            <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
+            <div class="swipe-rail" id="sabaqRecentRail"></div>
+          </div>
+        </div>
 
-    <!-- Dhor detail page -->
-    <section class="screen hidden detail-page" id="screen-dhor">
-      <h2>Dhor</h2>
-      <label>Reference</label>
-      <select id="dhor_ref">
-        <option value="waterval">13-line (IndoPak)</option>
-        <option value="uthmani">Uthmani</option>
-      </select>
-      <div class="picker-row">
-        <div><label>Juz'</label><select id="dhor_juz"></select></div>
-        <div><label>Starting at</label><select id="dhor_position"></select></div>
+        <!-- Sabaq Dhor card -->
+        <div class="log-detail-card detail-page" id="card-sabaqDhor">
+          <div class="card-scroll">
+            <h2>Sabaq Dhor</h2>
+            <label>Date</label><input type="date" id="sabaqDhor_date">
+            <label>Zone</label><input type="text" id="sabaqDhor_zone" placeholder="e.g. Juz' 29, 30">
+            <label>Mistakes</label><input type="number" id="sabaqDhor_mistakes">
+            <label>Tajweed</label>
+            <div id="sabaqDhorTajweedPicker"></div>
+            <div id="sabaqDhorCommentBlock"></div>
+            <div class="form-error" id="sabaqDhorError"></div>
+            <div style="margin-top:16px;display:flex;align-items:center;">
+              <span class="save-status" id="sabaqDhorSaveStatus">saved ✓</span>
+              <button class="primary" id="sabaqDhorSaveBtn">Save entry</button>
+            </div>
+            <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
+            <div class="swipe-rail" id="sabaqDhorRecentRail"></div>
+          </div>
+        </div>
+
+        <!-- Dhor card -->
+        <div class="log-detail-card detail-page" id="card-dhor">
+          <div class="card-scroll">
+            <h2>Dhor</h2>
+            <label>Date</label><input type="date" id="dhor_date">
+            <label>Reference</label>
+            <select id="dhor_ref">
+              <option value="waterval">13-line (IndoPak)</option>
+              <option value="uthmani">Uthmani</option>
+            </select>
+            <div class="picker-row">
+              <div><label>Juz'</label><select id="dhor_juz"></select></div>
+              <div><label>Starting at</label><select id="dhor_position"></select></div>
+            </div>
+            <label>Amount</label>
+            <select id="dhor_unit">
+              <option value="quarter">Quarter</option>
+              <option value="half">Half juz'</option>
+              <option value="full">Full juz'</option>
+            </select>
+            <label>Mistakes</label><input type="number" id="dhor_mistakes">
+            <label>Timer</label>
+            <div id="dhorTimerWrap"></div>
+            <div id="dhorTimerSummary"></div>
+            <label>Tajweed</label>
+            <div id="dhorTajweedPicker"></div>
+            <div id="dhorCommentBlock"></div>
+            <div class="form-error" id="dhorError"></div>
+            <div style="margin-top:16px;display:flex;align-items:center;">
+              <span class="save-status" id="dhorSaveStatus">saved ✓</span>
+              <button class="primary" id="dhorSaveBtn">Save entry</button>
+            </div>
+            <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
+            <div class="swipe-rail" id="dhorRecentRail"></div>
+          </div>
+        </div>
+
+        <!-- Tadabbur/reflection card — new in V3.6.1. One per day by
+             design (unlike the 3 log cards above), so no date selector
+             and no Recent rail here. -->
+        <div class="log-detail-card detail-page" id="card-tadabbur">
+          <div class="card-scroll">
+            <h2>Tadabbur</h2>
+            <label>Reflection</label>
+            <textarea id="tadabbur_text" rows="8"></textarea>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+              <input type="checkbox" id="tadabbur_private" style="width:auto;">
+              Keep this private (hidden from teachers)
+            </label>
+            <div class="form-error" id="tadabburError"></div>
+            <div style="margin-top:16px;display:flex;align-items:center;">
+              <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
+              <button class="primary" id="tadabburSaveBtn">Save</button>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <label>Amount</label>
-      <select id="dhor_unit">
-        <option value="quarter">Quarter</option>
-        <option value="half">Half juz'</option>
-        <option value="full">Full juz'</option>
-      </select>
-      <label>Mistakes</label><input type="number" id="dhor_mistakes">
-      <label>Timer</label>
-      <div id="dhorTimerWrap"></div>
-      <div id="dhorTimerSummary"></div>
-      <label>Tajweed</label>
-      <div id="dhorTajweedPicker"></div>
-      <div id="dhorCommentBlock"></div>
-      <div class="form-error" id="dhorError"></div>
-      <div style="margin-top:16px;display:flex;align-items:center;">
-        <span class="save-status" id="dhorSaveStatus">saved ✓</span>
-        <button class="primary" id="dhorSaveBtn">Save entry</button>
+      <div class="log-detail-dots" id="logDetailDots">
+        <button type="button" class="dot" data-index="0" aria-label="Sabaq"></button>
+        <button type="button" class="dot" data-index="1" aria-label="Sabaq Dhor"></button>
+        <button type="button" class="dot" data-index="2" aria-label="Dhor"></button>
+        <button type="button" class="dot" data-index="3" aria-label="Tadabbur"></button>
       </div>
-      <h3 style="margin-top:24px;font-size:14px;">Recent</h3>
-      <div class="swipe-rail" id="dhorRecentRail"></div>
     </section>
 
     <!-- Admin screen -->
@@ -284,19 +331,21 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.6.0"></script>
-<script src="js/icons.js?v=3.6.0"></script>
-<script src="js/api.js?v=3.6.0"></script>
-<script src="js/auth.js?v=3.6.0"></script>
-<script src="js/home.js?v=3.6.0"></script>
-<script src="js/tajweed.js?v=3.6.0"></script>
-<script src="js/commentPrivacy.js?v=3.6.0"></script>
-<script src="js/timer.js?v=3.6.0"></script>
-<script src="js/journal.js?v=3.6.0"></script>
-<script src="js/dhorPage.js?v=3.6.0"></script>
-<script src="js/sabaqPage.js?v=3.6.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.6.0"></script>
-<script src="js/adminPage.js?v=3.6.0"></script>
-<script src="js/app.js?v=3.6.0"></script>
+<script src="shared/data.js?v=3.6.1"></script>
+<script src="js/icons.js?v=3.6.1"></script>
+<script src="js/api.js?v=3.6.1"></script>
+<script src="js/auth.js?v=3.6.1"></script>
+<script src="js/home.js?v=3.6.1"></script>
+<script src="js/tajweed.js?v=3.6.1"></script>
+<script src="js/commentPrivacy.js?v=3.6.1"></script>
+<script src="js/timer.js?v=3.6.1"></script>
+<script src="js/journal.js?v=3.6.1"></script>
+<script src="js/dhorPage.js?v=3.6.1"></script>
+<script src="js/sabaqPage.js?v=3.6.1"></script>
+<script src="js/sabaqDhorPage.js?v=3.6.1"></script>
+<script src="js/reflectionCard.js?v=3.6.1"></script>
+<script src="js/logDetailScreen.js?v=3.6.1"></script>
+<script src="js/adminPage.js?v=3.6.1"></script>
+<script src="js/app.js?v=3.6.1"></script>
 </body>
 </html>

@@ -23,13 +23,21 @@ function addCustomTajweedTag(tagName){
 // tag-name strings — the caller reads it back at save time. Re-renders
 // itself on every tap, since the "is this tag major" veto needs to be
 // visible immediately, not just computed at save time.
+// V3.6.1: the "+ add" button used to be looked up via a fixed
+// document.getElementById('tajweedAddBtn') — harmless while only one
+// tajweed picker was ever mounted at a time, but the unified day-log view
+// mounts 3 of these simultaneously (Sabaq/Sabaq Dhor/Dhor), and
+// getElementById always resolves to the FIRST matching id in the
+// document — so "+ add" on the 2nd/3rd picker silently wired itself to
+// the 1st picker's button instead. Scoped to `el` (this picker's own
+// container) via querySelector on the existing .tajweed-add class instead.
 function renderTajweedPicker(containerId, selected){
   const vocab = getTajweedVocabulary();
   const el = document.getElementById(containerId);
   el.innerHTML = vocab.map(t => {
     const active = selected.includes(t.tag);
     return `<button type="button" class="tajweed-tag${active?' active':''}${t.major?' major':''}" data-tag="${t.tag}">${t.tag}${t.major?' •':''}</button>`;
-  }).join('') + `<button type="button" class="tajweed-tag tajweed-add" id="tajweedAddBtn">+ add</button>`;
+  }).join('') + `<button type="button" class="tajweed-tag tajweed-add">+ add</button>`;
 
   el.querySelectorAll('.tajweed-tag[data-tag]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -39,7 +47,7 @@ function renderTajweedPicker(containerId, selected){
       renderTajweedPicker(containerId, selected);
     });
   });
-  document.getElementById('tajweedAddBtn').addEventListener('click', () => {
+  el.querySelector('.tajweed-add').addEventListener('click', () => {
     const name = prompt('New tajweed tag name:');
     if(name && name.trim()){
       addCustomTajweedTag(name.trim());

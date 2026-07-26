@@ -7,6 +7,86 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.6.1 — unified day-log view (2026-07-26)
+
+Bismillah. Replaces the 3 separate Sabaq / Sabaq Dhor / Dhor screens with
+one screen holding all 4 cards (Sabaq, Sabaq Dhor, Dhor, and a new
+Tadabbur/reflection card) — all 3 journal column headers now open this
+same screen, starting on whichever card matches the header clicked.
+
+**Layout**: large/desktop screens show all 4 cards as a static 1×4 grid,
+no scrolling. Tablet shows a swipeable rail, 2 cards in view. Mobile shows
+a swipeable rail, 1 card in view. Dot indicators track position on the
+rail (hidden on the desktop grid, where there's nothing to indicate a
+position within). Each card is independently vertically scrollable, so
+its fields + Recent history fit without growing the card unboundedly.
+
+**Recent history**: each of the 3 log cards' existing "Recent" swipe rail
+(past entries of that type) moved to the bottom of its own card — same
+feature as before, just relocated.
+
+**Independent per-card date selectors**: Sabaq, Sabaq Dhor, and Dhor each
+get their own `<input type="date">`, defaulting to today every time the
+screen opens. Changing one card's date only changes which date THAT
+card's next save uses — the other 3 cards stay on whatever date they're
+each individually set to. This is genuinely new: every save previously
+hardcoded `date: todayISO()`, so there was no way to log a missed day at
+all before this. Note this only affects what date a NEW entry saves
+under — it does not load an existing entry for editing (multiple entries
+per day are deliberately allowed app-wide, see SCHEMA.md, so there's no
+single "the" entry for a date to load).
+
+**Tadabbur card, new**: the `reflections` table and `apiReflections` API
+client already existed with no frontend — this is the first UI for it.
+Deliberately different from the other 3 cards: reflections are meant to be
+ONE per day, so this card loads today's existing reflection (if any) on
+open and updates it in place on save, rather than always creating a new
+row. No date selector, no Recent rail on this card, per spec.
+
+**Two latent bugs fixed, exposed by mounting cards simultaneously**: both
+`tajweed.js`'s "+ add" button and `commentPrivacy.js`'s comment
+textarea/checkbox used fixed, non-unique ids (`tajweedAddBtn`,
+`cb_comment`, `cb_private`). This was invisible while only one detail page
+was ever mounted at a time, but the unified view mounts all 3 log cards'
+pickers/comment blocks at once — `document.getElementById` always
+resolves to the FIRST matching id in the document, so the 2nd/3rd card's
+"+ add"/comment controls would have silently wired themselves to the 1st
+card's elements instead. Both now scope their lookups to their own
+container via `querySelector`, documented as new `CONVENTIONS.md`
+principle #11.
+
+**Files changed:**
+```
+index.html
+js/app.js
+js/tajweed.js
+js/commentPrivacy.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+js/dhorPage.js
+css/detail-pages.css
+sw.js
+CONVENTIONS.md
+```
+**New files:**
+```
+js/reflectionCard.js
+js/logDetailScreen.js
+```
+
+**Version bump**: every CSS/JS reference in `index.html` moved from
+`?v=3.6.0` to `?v=3.6.1` (per the `CONVENTIONS.md` #10 discipline from
+V3.6) since multiple files changed; `sw.js`'s `ASSETS` list and
+`CACHE_NAME` updated to match — still not registered, no behavior change
+there.
+
+**Retest before merging to `main`**: `TESTING.md` §16. The per-card date
+selectors and the container-scoping fixes both specifically need testing
+with all 3 log cards open together (not one at a time), since that's
+exactly the condition that was previously untested.
+
+---
+
 ## V3.6 — real cache-busting (2026-07-26)
 
 Bismillah. Closes the gap identified while debugging a medium/large-screen

@@ -1,5 +1,5 @@
 // ============================================================
-// Hifzhelper — Dhor detail page
+// Hifzhelper — Dhor card (one of 4 in the unified day-log view, V3.6.1)
 // Segment picker (quarter/half/full-juz', in whichever reference is
 // active), the real timer/lap feature, tajweed tags, mistakes, comment.
 //
@@ -10,6 +10,9 @@
 //
 // Plan-as-default (pre-filling from a planned Dhor session) is NOT yet
 // wired into this page — it's still a clear next step, not done here.
+//
+// Has its own independent date selector (defaults to today on every open)
+// — same reasoning as the other two log cards.
 // ============================================================
 
 const DHOR_REF_KEY = 'hh_dhor_ref';
@@ -45,6 +48,7 @@ function renderDhorPicker(){
 async function renderDhorScreen(){
   dhorSelectedTags = [];
   dhorTimerResult = null;
+  document.getElementById('dhor_date').value = todayISO();
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz' ${i+1}</option>`).join('');
   renderDhorPicker();
   document.getElementById('dhor_unit').value = 'quarter';
@@ -82,12 +86,12 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   const { segment_from, segment_to } = computeSegmentRange(juz, position, ref, unit);
 
   const payload = {
-    date: todayISO(),
+    date: document.getElementById('dhor_date').value || todayISO(),
     segment_from, segment_to, ref,
     tajweed_tags: dhorSelectedTags.join(','),
     mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
     ...(dhorTimerResult || {}),
-    ...readCommentBlock()
+    ...readCommentBlock('dhorCommentBlock')
   };
 
   try{
@@ -100,9 +104,9 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   }
 });
 
-// Shared across the three detail pages — a swipe rail of recent entries
-// for that log type, tapped to view (read-only for now; editing an
-// existing entry from here is a follow-up, not built in this pass).
+// Shared across the log cards — a swipe rail of recent entries for that
+// log type, tapped to view (read-only for now; editing an existing entry
+// from here is a follow-up, not built in this pass).
 async function renderRecentEntries(type, client, railId){
   const rail = document.getElementById(railId);
   try{

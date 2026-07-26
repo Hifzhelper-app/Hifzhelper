@@ -78,3 +78,72 @@
 
 .rail-card-date { font-size: 11px; color: var(--color-ink-faint); margin-bottom: 4px; }
 .rail-card-body { font-size: 13px; }
+
+/* ============================================================
+   Unified day-log view (V3.6.1) — 4 cards: Sabaq / Sabaq Dhor / Dhor /
+   Tadabbur. Mobile: swipeable rail, 1 card in view. Tablet: swipeable
+   rail, 2 in view. Desktop: static 1x4 grid, no swiping — breakpoints
+   match the app-wide tablet/desktop convention already used for
+   .login-card/#screen-admin (768/1180), not journal-table.css's older
+   720px one.
+   ============================================================ */
+.log-detail-rail {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.log-detail-card {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* .card-scroll below does the actual scrolling */
+}
+.log-detail-card .card-scroll {
+  overflow-y: auto;
+  padding: var(--space-md);
+  flex: 1;
+  min-height: 0; /* flexbox gotcha: without this, a flex:1 child with
+                    overflow-y:auto won't actually scroll — it just grows
+                    past its container instead of shrinking to fit it. */
+}
+
+@media (min-width: 768px) and (max-width: 1179px) {
+  .log-detail-card { flex: 0 0 calc(50% - (var(--space-md) / 2)); }
+}
+@media (min-width: 1180px) {
+  .log-detail-rail {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .log-detail-card { height: 75vh; }
+}
+
+/* Dot indicators — only meaningful while the rail actually swipes;
+   hidden entirely on the desktop grid, where all 4 cards are visible at
+   once and there's nothing to indicate a position within. */
+.log-detail-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+.log-detail-dots .dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--ring-track);
+}
+.log-detail-dots .dot.active { background: var(--color-accent); }
+@media (min-width: 1180px) {
+  .log-detail-dots { display: none; }
+}
