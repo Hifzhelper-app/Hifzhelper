@@ -9,10 +9,10 @@
 #screen-admin {
   max-width: 100%;
 }
-@media (min-width: 600px) and (max-width: 1299px) {
+@media (min-width: 400px) and (max-width: 1023px) {
   #screen-admin { max-width: var(--width-tablet); margin: 0 auto; }
 }
-@media (min-width: 1300px) {
+@media (min-width: 1025px) {
   #screen-admin { max-width: var(--width-desktop); margin: 0 auto; }
 }
 
