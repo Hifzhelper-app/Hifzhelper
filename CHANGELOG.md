@@ -7,6 +7,54 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.6.2 — cache policy reversed: nothing cached, anywhere (2026-07-26)
+
+Bismillah. V3.6 paired the `?v=` versioning with `_headers` set to
+`immutable, max-age=31536000` for `css/js/shared` — the standard pattern
+production build tools use, safe specifically because their deploys are
+atomic (a new version string can't appear before every file behind it has
+landed). This project's deploys are manual, file-by-file uploads with no
+such guarantee, and that gap was hit directly: a browser loaded
+`app.js?v=3.6.1` mid-deploy, before the full V3.6.1 file set had actually
+landed, got the old code back, and cached it *immutably* — meaning no
+later deploy under that same version string could ever fix it for that
+browser. `reflectionCard.js`'s 404 during the same window got cached the
+same way.
+
+**Reversed, not tuned:** rather than picking a shorter-but-still-nonzero
+cache duration, `_headers` now sets `Cache-Control: no-store` for
+everything, project-wide — no caching at all, anywhere, by any browser or
+intermediate cache. For a project at this stage (active development,
+changing minute to minute, no atomic deploy step, and no real user traffic
+yet where cache-hit-rate would matter), there's essentially nothing to
+gain from caching and a full year of blast radius to lose if this gap
+gets hit again. `CONVENTIONS.md` #10 updated with the full reasoning for
+future reference, including when it might be worth reintroducing (atomic
+deploys, or real production traffic).
+
+**What stays:** the `?v=` query-string versioning on every CSS/JS
+reference — it isn't what caused this, and it's still what breaks a cache
+that forms somewhere outside this project's control (a stray proxy, a CDN
+that ignores `_headers`), plus what any future reintroduced caching would
+key off.
+
+**Version bump**: `?v=3.6.1` → `?v=3.6.2` across every reference in
+`index.html`, and `sw.js`'s `ASSETS`/`CACHE_NAME` to match — this is what
+actually clears the currently-stuck bad cache, since `no-store` alone
+doesn't undo a cache entry that already exists under the old URL.
+
+**Files changed:**
+```
+_headers
+index.html
+sw.js
+CONVENTIONS.md
+```
+
+**Retest before merging to `main`**: `TESTING.md` §17.
+
+---
+
 ## V3.6.1 — unified day-log view (2026-07-26)
 
 Bismillah. Replaces the 3 separate Sabaq / Sabaq Dhor / Dhor screens with

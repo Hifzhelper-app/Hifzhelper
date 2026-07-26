@@ -334,6 +334,29 @@ so re-test with that checkbox OFF).
     is the only one of the 4 with a timer, so it wasn't touched by the
     container-scoping fix, but worth confirming nothing regressed.
 
+## 17. Cache policy reversed — nothing cached (V3.6.2)
+
+Needs an actual deployed Cloudflare Pages URL, same as §15.
+
+1. DevTools → Network tab (cache enabled, not disabled — same caveat as
+   §15) → load the site → click on `css/tokens.css` or any `js/*` request
+   → Response Headers shows `Cache-Control: no-store`, not a long
+   `max-age`.
+2. Reload the page a few times → confirm `css/*`/`js/*` requests show as
+   fresh network fetches every time (not "(disk cache)"/"(memory
+   cache)"/304) — this is the opposite check from §15's step 4, since the
+   policy itself reversed.
+3. This is also the fix for the earlier stuck-cache bug: reload the site
+   now and confirm the unified day-log view (V3.6.1) actually loads —
+   `screen-logDetail`, not the "not built yet" placeholder — and that
+   `js/reflectionCard.js`/`js/logDetailScreen.js` both return 200, not
+   404, in the Network tab.
+4. If any of the above still shows old behavior, the browser used for
+   testing likely still holds the OLD stuck cache entry from before this
+   fix — that's expected for `no-store` going forward but doesn't undo an
+   entry that was already cached under the old `?v=3.6.1` URL; a one-time
+   hard refresh clears it, and it shouldn't be needed again after that.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

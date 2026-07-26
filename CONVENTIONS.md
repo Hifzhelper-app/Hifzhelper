@@ -132,18 +132,30 @@ no build step generating this automatically; it's manual discipline.
 
 *Why this is here:* `sw.js`'s `CACHE_NAME` was already bumped on every
 release, but that only ever evicts the *service worker's own* cache — it
-does nothing for the browser's ordinary HTTP cache or Cloudflare's edge
-cache, which will happily keep serving an old `nav.css` under that same
-unversioned URL forever. The `_headers` file (V3.6) now tells both of
-those to cache CSS/JS aggressively (`immutable`, one year) specifically
-*because* the URL changes whenever the content does — so skipping the
-version bump on a release isn't a cosmetic miss, it's the one thing that
-makes the aggressive caching safe in the first place.
+does nothing for the browser's ordinary HTTP cache or a CDN edge cache,
+either of which could otherwise keep serving an old `nav.css` under that
+same unversioned URL indefinitely. The version bump is what makes a stale
+copy visibly wrong (new URL, so a genuinely different request) instead of
+silently reused, regardless of what any cache along the way decides to do.
 
-**In practice:** `index.html`, `manifest.json`, and `sw.js` themselves are
-deliberately NOT versioned and stay on `no-cache` (see `_headers`) — they're
-the entry points that reference everything else, so they must always be
-re-fetched fresh, or the browser never learns a new version string exists.
+**V3.6 → V3.6.2, reversed:** V3.6 paired this with `_headers` set to
+`immutable, max-age=31536000` for `css/js/shared` — the standard pattern
+build tools like Webpack/Vite use, which is safe *only* because their
+deploys are atomic (a new version string can never appear before every
+file behind it has landed). This project's deploys are manual and
+file-by-file, so that atomicity doesn't hold — a browser hitting a URL
+mid-deploy caught the old `app.js` under the new `?v=`, and because
+`immutable` means "never revalidate," no future deploy under that same
+version string could ever fix it for that browser. `_headers` now sets
+`Cache-Control: no-store` across the board instead — nothing gets cached
+by anyone, anywhere, so every load is always current. The version query
+strings stay regardless: they're what breaks a cache that forms somewhere
+outside this project's control (a stray proxy, a CDN that ignores the
+header), and they're what long-lived caching would key off if it's ever
+worth reintroducing — once deploys are atomic, or this ships to real
+users where cache-hit-rate actually matters for performance. Neither is
+true yet, so there's currently nothing to gain from caching and a full
+year of blast radius to lose if the same gap recurs.
 
 ## 11. Shared components scope their internal lookups to their own container, never a fixed global id
 

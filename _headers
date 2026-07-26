@@ -1,36 +1,23 @@
-# Hifzhelper — cache-busting policy (V3.6)
+# Hifzhelper — cache policy (V3.6.2)
 #
-# CSS/JS/shared data are referenced from index.html with a ?v=X.Y.Z query
-# string (see CONVENTIONS.md). Because the URL itself changes whenever the
-# content does, these are safe to cache aggressively — the browser will
-# never reuse stale content under an unchanged URL.
+# This project is under active development, deployed manually and
+# file-by-file (no atomic build step) — the state of the live site can
+# change minute to minute, mid-deploy. V3.6 originally cached css/js/
+# shared aggressively (immutable, one year), the standard pattern build
+# tools like Webpack/Vite use — but that pattern is only safe when
+# deploys are atomic, which this project's aren't. A browser that hit a
+# versioned URL mid-deploy got stuck with the wrong content for a full
+# year, with no way to fix it short of yet another version bump. See
+# CONVENTIONS.md #10 for the full account.
 #
-# index.html, manifest.json, and sw.js are the entry points that reference
-# everything else — they must NEVER be cached, or the browser has no way
-# to learn that a new ?v= even exists. This is the piece that was missing
-# before: bumping sw.js's own CACHE_NAME only ever affected the service
-# worker's cache, never the browser's HTTP cache or Cloudflare's edge cache.
+# So: nothing is cached, anywhere, at all, for now. Every request always
+# re-fetches from the origin. The ?v= query-string versioning in
+# index.html/sw.js stays regardless — it's what breaks a cache that forms
+# somewhere outside this project's control (a stray proxy, a CDN that
+# ignores this header), and it's what long-lived caching would key off if
+# it's ever worth reintroducing — once deploys are atomic, or this ships
+# to real users where cache-hit-rate actually matters for performance.
+# Neither is true yet.
 
-/css/*
-  Cache-Control: public, max-age=31536000, immutable
-
-/js/*
-  Cache-Control: public, max-age=31536000, immutable
-
-/shared/*
-  Cache-Control: public, max-age=31536000, immutable
-
-# Icons/logo aren't query-string versioned, so a moderate cache (not a full
-# year) is used instead — long enough to matter, short enough that a future
-# icon change doesn't stay stuck indefinitely.
-/appicons/*
-  Cache-Control: public, max-age=604800
-
-/index.html
-  Cache-Control: no-cache, must-revalidate
-
-/manifest.json
-  Cache-Control: no-cache, must-revalidate
-
-/sw.js
-  Cache-Control: no-cache, must-revalidate
+/*
+  Cache-Control: no-store
