@@ -167,20 +167,29 @@ function openUserCard(id){
 // whatever is CURRENTLY in the fields, so editing them first (to fix a
 // typo, or to no longer collide with anything) and then hitting Continue
 // naturally becomes an ordinary registration instead of a forced
-// duplicate. adminMatchedId always refers to whichever student was
-// matched when the prompt first appeared, regardless of any edits made
-// afterward — that's who Reset PIN and the deactivate option act on.
+// duplicate. V3.4.3: Continue reads the match info back from that SAME
+// force:true call rather than the adminMatchedId variable, so it can
+// never act on a stale match — adminMatchedId is kept only for Reset PIN,
+// which intentionally always targets whichever student was matched when
+// the prompt first appeared, regardless of any edits made afterward.
 let adminMatchedId = null;
 
-document.getElementById('adminRegisterBtn').addEventListener('click', () => attemptAdminRegister(false));
+document.getElementById('adminRegisterBtn').addEventListener('click', attemptAdminRegister);
 document.getElementById('adminRegisterContinueBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('adminRegisterError');
   errEl.textContent = '';
-  if(adminMatchedId && confirm('CANCEL: Both journals remain active ; OK: mark existing journal INACTIVE')){
-    try{ await apiAdminUpdateUser(adminMatchedId, { active: false }); }
-    catch(e){ errEl.textContent = "Couldn't deactivate the existing student: " + e.message; }
+  const name = document.getElementById('admin_new_name').value.trim();
+  const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
+  try{
+    const result = await apiAdminRegisterStudent(name, whatsapp || null, true);
+    if(result.matchedId && confirm('CANCEL: Both journals remain active ; OK: mark existing journal INACTIVE')){
+      try{ await apiAdminUpdateUser(result.matchedId, { active: false }); }
+      catch(e){ errEl.textContent = "Registered, but couldn't deactivate the existing student: " + e.message; }
+    }
+    finishAdminRegisterUI(result);
+  } catch(e){
+    errEl.textContent = "Couldn't register: " + e.message;
   }
-  await attemptAdminRegister(true);
 });
 document.getElementById('adminRegisterCancelBtn').addEventListener('click', cancelAdminMatch);
 document.getElementById('adminRegisterResetPinBtn').addEventListener('click', async () => {
@@ -195,7 +204,7 @@ document.getElementById('adminRegisterResetPinBtn').addEventListener('click', as
   }
 });
 
-async function attemptAdminRegister(force){
+async function attemptAdminRegister(){
   const errEl = document.getElementById('adminRegisterError');
   const resultEl = document.getElementById('adminRegisterResult');
   errEl.textContent = '';
@@ -205,9 +214,13 @@ async function attemptAdminRegister(force){
   if(!name){ errEl.textContent = 'Enter a name.'; return; }
 
   try{
-    const result = await apiAdminRegisterStudent(name, whatsapp || null, force);
+    const result = await apiAdminRegisterStudent(name, whatsapp || null, false);
     if(result.matched){
       adminMatchedId = result.matchedId;
+      // V3.4.3 item 5: identifies the actual matched student, since the
+      // admin list can have several similarly-named entries.
+      document.getElementById('adminRegisterMatchHint').textContent =
+        `Student: ${name}, WhatsApp number: ${whatsapp || '(none given)'} has the same details and is currently ${result.matchedActive ? 'active' : 'inactive'}. How do you want to proceed?`;
       document.getElementById('adminRegisterMatchHint').classList.remove('hidden');
       document.getElementById('adminRegisterNormalActions').classList.add('hidden');
       document.getElementById('adminRegisterMatchActions').classList.remove('hidden');

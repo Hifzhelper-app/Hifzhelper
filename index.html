@@ -21,6 +21,7 @@
      that doesn't exist, or an ID that exists but isn't active) ================= -->
 <div class="login-screen hidden" id="loginScreenFallback">
   <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
     <div class="eyebrow">Hifzhelper</div>
     <h1>Sign in</h1>
     <label>Your ID</label>
@@ -42,6 +43,7 @@
      PIN already set) ================= -->
 <div class="login-screen hidden" id="loginScreenPersonal">
   <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
     <div class="eyebrow">Hifzhelper</div>
     <h1 id="personalGreeting">Ahlan wa Sahlan</h1>
     <div class="form-hint" style="margin-top:0;">Enter your pin to sign in</div>
@@ -59,6 +61,7 @@
 <!-- ================= CREATE PIN (first login via a personal URL) ================= -->
 <div class="login-screen hidden" id="createPinScreen">
   <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
     <div class="eyebrow">Hifzhelper</div>
     <h1 id="createPinGreeting">Ahlan wa Sahlan</h1>
     <div class="form-hint" style="margin-top:0;">Create a PIN to secure your journal</div>
@@ -91,13 +94,14 @@
 <!-- ================= REGISTER ================= -->
 <div class="login-screen hidden" id="registerScreen">
   <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
     <div class="eyebrow">Hifzhelper</div>
     <h1>Register</h1>
     <label>Your name</label>
     <input type="text" id="register_name">
     <label>WhatsApp number</label>
     <input type="text" id="register_whatsapp" placeholder="+CODE 123456789">
-    <div class="form-hint hidden" id="registerMatchHint" style="margin-top:var(--space-md);">We found an existing active student with this name and WhatsApp number. What would you like to do?</div>
+    <div class="form-hint hidden" id="registerMatchHint" style="margin-top:var(--space-md);">We found an existing student with this name and WhatsApp number. What would you like to do?</div>
     <div style="margin-top:16px;" id="registerNormalActions"><button class="primary" id="registerBtn">Register</button></div>
     <div class="modal-actions hidden" id="registerMatchActions">
       <button type="button" class="secondary" id="registerCancelBtn">Cancel</button>
@@ -243,7 +247,7 @@
         <label>Register a new student</label>
         <input type="text" id="admin_new_name" placeholder="Student's name">
         <input type="text" id="admin_new_whatsapp" placeholder="WhatsApp" style="margin-top:var(--space-sm);">
-        <div class="form-hint hidden" id="adminRegisterMatchHint" style="margin-top:var(--space-sm);">We found an existing active student with this name and WhatsApp number. What would you like to do?</div>
+        <div class="form-hint hidden" id="adminRegisterMatchHint" style="margin-top:var(--space-sm);">Student: [name], WhatsApp number: [number] has the same details and is currently [active/inactive]. How do you want to proceed?</div>
         <div style="margin-top:var(--space-sm);" id="adminRegisterNormalActions"><button class="primary" id="adminRegisterBtn">Register</button></div>
         <div class="modal-actions hidden" id="adminRegisterMatchActions">
           <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>

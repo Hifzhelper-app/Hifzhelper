@@ -56,13 +56,27 @@
   border-radius: var(--radius-md);
   padding: var(--space-lg);
 }
-/* App-wide responsive width protocol (V3.4.2, see --width-tablet/
-   --width-desktop in tokens.css): centered by the parent .login-screen's
-   flex centering, so no margin:auto needed here. */
-@media (min-width: 600px) and (max-width: 899px) {
+/* Logo shown above the card's own content on the login/register/create-
+   PIN/fallback screens (V3.4.3 item 11) — capped near 400px but scales
+   down on narrow phones rather than overflowing the card. */
+.login-card .login-logo {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  margin: 0 auto var(--space-lg);
+}
+/* App-wide responsive width protocol (V3.4.2, refined V3.4.3 — see
+   --width-tablet/--width-desktop in tokens.css): centered by the parent
+   .login-screen's flex centering, so no margin:auto needed here.
+   Threshold raised past 1024px (V3.4.3) because a real iPad 2 in
+   landscape is 1024px wide in CSS pixels and was landing in the desktop
+   bucket instead of the intended tablet one — known limit: an iPad Pro
+   12.9" landscape (1366px) still lands in desktop under this threshold. */
+@media (min-width: 600px) and (max-width: 1299px) {
   .login-card { width: var(--width-tablet); }
 }
-@media (min-width: 900px) {
+@media (min-width: 1300px) {
   .login-card { width: var(--width-desktop); }
 }
 .login-card .eyebrow {
@@ -90,7 +104,7 @@
   background: var(--color-page-bg);
 }
 .form-hint {
-  font-size: 11px;
+  font-size: var(--font-size-base);
   color: var(--color-ink-faint);
   margin-top: var(--space-sm);
   line-height: 1.5;

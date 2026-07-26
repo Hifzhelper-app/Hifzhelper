@@ -59,8 +59,8 @@ function closeAuthDropdown(){
 function setupAuthBandAndDropdown(){
   renderNavItemsInto('authDropdownNav',
     '<div class="dropdown-divider"></div>' +
-    `<button class="nav-icon-item" id="logoutBtn">${iconHtml('logout')}<span>Sign out</span></button>` +
-    `<button class="nav-icon-item" id="refreshBtn">${iconHtml('refresh')}<span>Refresh</span></button>`
+    `<button class="nav-icon-item" id="refreshBtn">${iconHtml('refresh')}<span>Refresh</span></button>` +
+    `<button class="nav-icon-item" id="logoutBtn">${iconHtml('logout')}<span>Log out</span></button>`
   );
   document.getElementById('authBandToggle').innerHTML = iconHtml('menu');
   document.getElementById('authBandToggle').addEventListener('click', toggleAuthDropdown);
@@ -242,19 +242,40 @@ setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
 // Continue always re-submits with whatever is CURRENTLY in the fields, so
 // editing them first (to fix a typo, or so it no longer collides with
 // anything) and then hitting Continue naturally becomes an ordinary
-// registration instead of a forced duplicate.
-document.getElementById('registerBtn').addEventListener('click', () => attemptRegister(false));
+// registration instead of a forced duplicate. V3.4.3: Continue reads the
+// match info back from that SAME force:true call rather than trusting any
+// earlier-stored flag, so it can never act on a stale match.
+document.getElementById('registerBtn').addEventListener('click', attemptRegister);
 document.getElementById('registerContinueBtn').addEventListener('click', async () => {
+  const errEl = document.getElementById('registerError');
+  errEl.textContent = '';
   const name = document.getElementById('register_name').value.trim();
   const whatsapp = document.getElementById('register_whatsapp').value.trim();
-  // Deactivating the OLD journal isn't self-service here — the "match" is
-  // just a self-reported name+WhatsApp claim, not verified identity, so it
-  // routes through email for a human to actually check (V3.4.1).
-  if(confirm('Would you also like to request that the old journal be deactivated? This sends an email — it will not happen automatically.')){
-    const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}\n\nA new journal was just created for this name/WhatsApp — please deactivate the existing one.`);
-    window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Deactivate%20old%20journal&body=${body}`;
+  try{
+    const result = await apiRegister(name, whatsapp || null, true);
+    if(result.matched){
+      if(result.matchedActive){
+        // Deactivating the OLD journal isn't self-service here — the
+        // "match" is just a self-reported name+WhatsApp claim, not
+        // verified identity, so it routes through email for a human to
+        // actually check (V3.4.1).
+        if(confirm('Would you also like to request that the old journal be deactivated? This sends an email — it will not happen automatically.')){
+          const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}\n\nA new journal was just created for this name/WhatsApp — please deactivate the existing one.`);
+          window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Deactivate%20old%20journal&body=${body}`;
+        }
+      } else {
+        // The matched journal is already inactive — deactivating makes no
+        // sense; offer to request reactivation instead (V3.4.3 item 6).
+        if(confirm("The existing journal with these details is currently inactive. Would you like to request that it's made active again instead?")){
+          const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}\n\nA new journal was just created for this name/WhatsApp, but an existing INACTIVE journal with the same details was found — please consider reactivating it (and resetting its PIN if needed).`);
+          window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Reactivate%20existing%20journal&body=${body}`;
+        }
+      }
+    }
+    showRegisteredScreen(result.id, result.name);
+  } catch(e){
+    errEl.textContent = "Couldn't register: " + e.message;
   }
-  await attemptRegister(true);
 });
 document.getElementById('registerCancelBtn').addEventListener('click', cancelRegisterMatch);
 document.getElementById('registerResetPinBtn').addEventListener('click', () => {
@@ -264,7 +285,7 @@ document.getElementById('registerResetPinBtn').addEventListener('click', () => {
   window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Reset%20PIN&body=${body}`;
 });
 
-async function attemptRegister(force){
+async function attemptRegister(){
   const errEl = document.getElementById('registerError');
   errEl.textContent = '';
   const name = document.getElementById('register_name').value.trim();
@@ -272,8 +293,13 @@ async function attemptRegister(force){
   if(!name){ errEl.textContent = 'Enter your name.'; return; }
 
   try{
-    const result = await apiRegister(name, whatsapp || null, force);
+    const result = await apiRegister(name, whatsapp || null, false);
     if(result.matched){
+      // V3.4.3 item 6: the duplicate-check now also searches inactive
+      // students, so this can no longer assume the match is active.
+      document.getElementById('registerMatchHint').textContent = result.matchedActive
+        ? 'We found an existing student with this name and WhatsApp number. What would you like to do?'
+        : 'We found an existing but INACTIVE journal with this name and WhatsApp number. What would you like to do?';
       document.getElementById('registerMatchHint').classList.remove('hidden');
       document.getElementById('registerNormalActions').classList.add('hidden');
       document.getElementById('registerMatchActions').classList.remove('hidden');

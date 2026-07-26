@@ -61,6 +61,9 @@
   border-top: 1px solid var(--color-table-border);
   margin: var(--space-xs) 0;
 }
+/* Sets it apart as the one different-in-kind action in this menu — only
+   the icon turns red, the "Log out" label stays the normal ink color. */
+#logoutBtn svg { color: var(--color-error); }
 
 /* ---- Home page: icon tiles ---- */
 #homeGrid {

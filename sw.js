@@ -1,6 +1,6 @@
-const CACHE_NAME = 'hifzhelper-v3.4.2'; // bumped for the V3.4.2 release
+const CACHE_NAME = 'hifzhelper-v3.4.3'; // bumped for the V3.4.3 release
 const ASSETS = [
-  './index.html', './manifest.json', 'shared/data.js',
+  './index.html', './manifest.json', 'shared/data.js', './appicons/logo.png',
   './css/tokens.css', './css/base.css', './css/nav.css', './css/journal-table.css',
   './css/components.css', './css/detail-pages.css', './css/admin.css',
   './js/icons.js', './js/api.js', './js/auth.js', './js/home.js', './js/tajweed.js',

@@ -58,7 +58,7 @@
 }
 .journal-table .cell-date .weekday {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-ink-faint);
   font-weight: 400;
 }

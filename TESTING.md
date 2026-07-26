@@ -216,6 +216,28 @@ not just that the admin path works.
 10. Visit a personal URL for an account with no PIN set yet → the create-PIN screen shows the full "This is your personal URL..." message and a copyable URL, and the "Confirm PIN" row is invisible until all 4 "New PIN" digits are entered.
 11. **On an actual iOS Safari device** (not just a desktop browser — this can't be verified there): the top of the journal/auth band is no longer obscured by the notch/status bar. Re-check Android too, to confirm it's still fine (it already was).
 
+## 13. Duplicate-flow correctness, inactive search, deactivate-resets-PIN (V3.4.3)
+
+| Test | Request | Expect |
+|---|---|---|
+| Inactive student now matches | Deactivate an existing student via `/admin/update-user` `{"id":"...","active":false}`, then register (self or admin) with that same name+WhatsApp, no force | `200 {"matched": true, ...}`, with `matchedActive: false` |
+| Deactivating resets the PIN | Log in once as a student (sets a PIN), then `POST /admin/update-user` `{"id":"...","active":false}`, then check via `/auth/lookup?id=...` | `hasPin: false` — confirms pin_hash was cleared automatically |
+| Admin match response includes status | Trigger a match against an active student via `/admin/register-student` | Response includes `matchedId` AND `matchedActive: true` |
+| Force-create response includes match info | `POST /admin/register-student` with `force:true` against a name+WhatsApp that still collides | Created response includes `matchedId`/`matchedActive` for the collision, even though force was set |
+| Self-registration force-create, no longer matches | Trigger a self-registration match, then force-create with a DIFFERENT WhatsApp number | `200`, plain new record — response has `matched: false`, no auto-numbered name |
+
+**Frontend, manual:**
+1. Trigger an admin duplicate match, then edit the WhatsApp field to a clearly different number, then press Continue → registers normally, **no** "mark existing journal inactive?" prompt appears (this was the reported V3.4.2 bug).
+2. Deactivate a student, then self-register or admin-register with that same name+WhatsApp → the match prompt appears and explicitly says the existing journal is inactive; self-registration's Continue offers a reactivation-request email instead of a deactivate question.
+3. Admin's match hint text reads "Student: [name], WhatsApp number: [number] has the same details and is currently active/inactive..." with the actual values filled in, not a generic message.
+4. Resize a login/register/admin screen through 1024–1300px (simulating an iPad landscape) → now lands in the 50% tablet bucket, not the 25% desktop one.
+5. Admin registration box: "Student's name" and "WhatsApp" fields stack vertically and fill the box width at every screen size, never sitting inline/misaligned.
+6. The duplicate-match hint and the registration-confirmation message ("This is your personal URL...") both read visibly larger than before — same size as labels/buttons.
+7. Journal table: weekday abbreviation under the date is a little larger; "+ add" text unchanged.
+8. **On an actual iPhone Safari** (not simulable elsewhere): the journal/detail-page content shows immediately on load, no longer requiring a scroll to appear.
+9. Auth dropdown menu: "Log out" (not "Sign out") appears after "Refresh," and only its icon (not its text) is red.
+10. The Hifzhelper logo appears above the existing content on the fallback, personalized login, registration, and create-PIN screens — check on a narrow phone width that it shrinks to fit rather than overflowing.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

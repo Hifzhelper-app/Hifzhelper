@@ -87,6 +87,13 @@ export async function handleUpdateUser(request, env, auth) {
   if (body.active != null) {
     setClauses.push('active = ?');
     values.push(body.active ? 1 : 0);
+    // Deactivating automatically resets the PIN too (V3.4.3) — mirrors
+    // handleResetPin's own reset, so a later reactivation always starts
+    // the student on a fresh first-login flow rather than silently
+    // keeping whatever PIN was set before deactivation.
+    if (!body.active) {
+      setClauses.push('pin_hash = NULL', 'failed_attempts = 0', 'locked_until = NULL');
+    }
   }
   if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };
   values.push(body.id);
@@ -139,10 +146,10 @@ export async function handleRegisterStudent(request, env, auth) {
   const trimmedName = body.name.trim();
   const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
 
-  const matchedId = await findDuplicateMatch(env, trimmedName, whatsapp);
-  if (matchedId && !body.force) return { data: { matched: true, matchedId } };
+  const match = await findDuplicateMatch(env, trimmedName, whatsapp);
+  if (match && !body.force) return { data: { matched: true, matchedId: match.id, matchedActive: match.active } };
 
-  const finalName = matchedId ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
+  const finalName = match ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
 
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
@@ -150,5 +157,5 @@ export async function handleRegisterStudent(request, env, auth) {
     'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
   ).bind(id, finalName, 'student', today, whatsapp).run();
 
-  return { data: { id, name: finalName } };
+  return { data: { id, name: finalName, matchedId: match ? match.id : undefined, matchedActive: match ? match.active : undefined } };
 }

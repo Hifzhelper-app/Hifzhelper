@@ -7,6 +7,42 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.4.3 — duplicate-flow correctness, inactive-student search, styling fixes (2026-07-26)
+
+Bismillah. Eleven items from a second round of testing on V3.4.2, built together.
+
+**Duplicate-check correctness**: the Continue button on both registration paths now makes a single `force:true` call and reacts to the match info THAT call returns, instead of trusting a flag stored from the original match — the real bug this fixes: editing the WhatsApp number to a genuinely different value and then pressing Continue was still asking "mark existing journal inactive?" even though the edited value no longer collided with anything. The duplicate search itself now also searches inactive students, not just active ones — previously a match against a retired journal went undetected entirely. Since self-registration has no direct admin actions, matching an inactive journal now offers a "request reactivation" email instead of the (now-inapplicable) "deactivate" question. The admin duplicate-match hint text now echoes back the actual matched name, WhatsApp number, and active/inactive status, rather than a generic message — useful now that the admin list can have several similarly-named test entries. Deactivating any student (via the admin toggle or either duplicate-flow's deactivate action) now automatically resets their PIN too, so a later reactivation always starts fresh.
+
+**Styling/layout fixes**: the tablet/desktop breakpoint moves from 900px to 1300px — a real iPad 2 in landscape (1024px CSS width) was landing in the desktop 25%-width bucket instead of the intended tablet 50%-width bucket (known remaining edge case: a 12.9" iPad Pro in landscape, at 1366px, still lands in desktop under this threshold). The admin registration box's label/input regained the `display:block`/full-width styling every other form already has — it only looked right before because a since-removed wrapping `<div>` was accidentally forcing the line break. `.form-hint` (used for the actual explanatory text — the duplicate-match message, the registration-confirmation message) now reads off `--font-size-base` like labels/errors/buttons already do; it was wrongly left at 11px in V3.4.2. The journal table's weekday abbreviation (Sat/Sun) is a little bigger; the "+ add" placeholder text was confirmed already correct and untouched.
+
+**Safari fix, root cause this time**: the "journal hidden under the banner" report turned out to not be a notch/safe-area issue at all — live inspection on an actual iPhone showed the DOM fully populated with real data and no console errors, but nothing painted until the page was scrolled. This is a known WebKit compositing bug: a `position: sticky` flex sibling (`#authBand`) before a `flex: 1` sibling (`#appContent`) computes layout correctly but doesn't paint it until a reflow forces it. Fixed by promoting `#appContent` onto its own compositing layer via `transform: translateZ(0)`. The safe-area-inset fix already shipped in V3.4.2 stays in place — it addresses genuine notch clearance, a separate concern from this paint bug.
+
+**Auth dropdown menu**: "Sign out" renamed to "Log out," moved to the end of the menu (after Refresh), and its icon (only the icon, not the label) is now red to set it apart as the one different-in-kind action in that list.
+
+**Branding**: a new `appicons/logo.png` (added to the repo directly) now appears above the existing content on the personalized login, fallback login, registration, and create-PIN screens — centered, capped near 400px wide but scales down responsively so it can't overflow a narrow phone's card.
+
+**Files changed:**
+```
+index.html
+css/tokens.css
+css/base.css
+css/components.css
+css/journal-table.css
+css/admin.css
+css/nav.css
+js/auth.js
+js/adminPage.js
+sw.js
+worker/src/auth.js
+worker/src/admin.js
+```
+
+**New asset expected in the repo (not part of this zip)**: `appicons/logo.png` — the user has already added this directly; this delivery only references it.
+
+**Retest before merging to `main`**: `TESTING.md` §13 has the full checklist, including the D1-only tests for inactive-student matching and the auto-reset-on-deactivate rule, plus a manual pass confirming the Continue-button fix (edit the WhatsApp to something new, then Continue, and confirm no deactivate prompt appears).
+
+---
+
 ## V3.4.2 — session hardening, duplicate-check gap, typography/responsive protocol (2026-07-26)
 
 Bismillah. Fourteen items from a round of V3.4.1 testing, built together.

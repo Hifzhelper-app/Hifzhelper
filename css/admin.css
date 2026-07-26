@@ -2,17 +2,17 @@
    Hifzhelper — admin screen
    ============================================================ */
 
-/* Container width: app-wide responsive protocol (V3.4.2, see
-   --width-tablet/--width-desktop in tokens.css) — fills mobile, 50% on
-   tablet, 25% on desktop. Unlike .login-card, this isn't inside a
+/* Container width: app-wide responsive protocol (V3.4.2, refined V3.4.3
+   — see --width-tablet/--width-desktop in tokens.css, and the threshold
+   note in components.css). Unlike .login-card, this isn't inside a
    flex-centering parent, so it needs its own margin:auto. */
 #screen-admin {
   max-width: 100%;
 }
-@media (min-width: 600px) and (max-width: 899px) {
+@media (min-width: 600px) and (max-width: 1299px) {
   #screen-admin { max-width: var(--width-tablet); margin: 0 auto; }
 }
-@media (min-width: 900px) {
+@media (min-width: 1300px) {
   #screen-admin { max-width: var(--width-desktop); margin: 0 auto; }
 }
 
@@ -22,6 +22,25 @@
   border-radius: var(--radius-md);
   padding: var(--space-md);
   margin-bottom: var(--space-lg);
+}
+/* V3.4.3 item 2: restores the block/full-width styling every other form
+   in the app already has for its labels/inputs. This box never had its
+   own rule — it looked fine before only because a wrapping <div> (removed
+   in the V3.4.2 restructuring) forced a line break as a side effect, not
+   because the label/input were actually styled to stack. */
+.admin-register-box label {
+  display: block;
+  font-size: var(--font-size-base);
+  color: var(--color-ink-soft);
+  margin-top: var(--space-md);
+  margin-bottom: 4px;
+}
+.admin-register-box input {
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page-bg);
 }
 #adminRegisterResult {
   font-size: var(--font-size-base);

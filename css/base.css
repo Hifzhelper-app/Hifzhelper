@@ -44,6 +44,14 @@ input, select, textarea {
   flex: 1;
   width: 100%;
   padding: var(--space-md);
+  /* V3.4.3: a position:sticky sibling (#authBand) before a flex:1 sibling
+     in a flex column is a known WebKit compositing quirk — Safari computed
+     this element's layout correctly but didn't PAINT it until something
+     forced a reflow (confirmed via live inspection: content was fully
+     present in the DOM, just invisible until scrolling). Promoting it to
+     its own compositing layer makes Safari paint it immediately instead
+     of waiting. Confirmed Safari-only; doesn't affect Android/Chrome. */
+  transform: translateZ(0);
 }
 
 /* Tablet and up: a bit more breathing room, content can use a wider

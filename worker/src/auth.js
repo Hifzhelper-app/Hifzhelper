@@ -140,27 +140,28 @@ export async function nextDisambiguatedName(env, trimmedName) {
   return results.length ? `${trimmedName} ${results.length + 1}` : trimmedName;
 }
 
-// Checks for an existing ACTIVE student that collides with the given
-// name/whatsapp — name+whatsapp together when a whatsapp was actually
-// given (the strongest signal), or name ALONE when no whatsapp was given
-// at all (V3.4.2 — previously skipped entirely in that case, so two
-// same-named students with no WhatsApp on file went completely
-// undetected). Returns the matched student's id, or null.
+// Checks for an existing student — active OR inactive — that collides
+// with the given name/whatsapp: name+whatsapp together when a whatsapp was
+// actually given (the strongest signal), or name ALONE when no whatsapp
+// was given at all (V3.4.2). V3.4.3: now searches inactive students too
+// (previously active-only), so a match against a retired journal can
+// still be surfaced rather than silently missed. Returns
+// { id, active } for a match, or null.
 export async function findDuplicateMatch(env, trimmedName, whatsapp) {
   const normName = normalizeName(trimmedName);
   if (whatsapp) {
     const normWhatsapp = normalizeWhatsapp(whatsapp);
     if (!normWhatsapp) return null;
     const candidates = await env.DB.prepare(
-      'SELECT id, whatsapp_number FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL AND active = 1'
+      'SELECT id, whatsapp_number, active FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL'
     ).bind(normName).all();
     const match = (candidates.results || []).find(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
-    return match ? match.id : null;
+    return match ? { id: match.id, active: !!match.active } : null;
   }
   const row = await env.DB.prepare(
-    'SELECT id FROM students WHERE LOWER(TRIM(name)) = ? AND active = 1 LIMIT 1'
+    'SELECT id, active FROM students WHERE LOWER(TRIM(name)) = ? LIMIT 1'
   ).bind(normName).first();
-  return row ? row.id : null;
+  return row ? { id: row.id, active: !!row.active } : null;
 }
 
 // POST /auth/register — public, no token required. Creates a student
@@ -189,10 +190,10 @@ export async function handleRegister(request, env) {
   const trimmedName = body.name.trim();
   const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
 
-  const matchedId = await findDuplicateMatch(env, trimmedName, whatsapp);
-  if (matchedId && !body.force) return { data: { matched: true } };
+  const match = await findDuplicateMatch(env, trimmedName, whatsapp);
+  if (match && !body.force) return { data: { matched: true, matchedActive: match.active } };
 
-  const finalName = matchedId ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
+  const finalName = match ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
 
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
@@ -200,7 +201,7 @@ export async function handleRegister(request, env) {
     'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
   ).bind(id, finalName, 'student', today, whatsapp).run();
 
-  return { data: { id, name: finalName } };
+  return { data: { id, name: finalName, matched: !!match, matchedActive: match ? match.active : undefined } };
 }
 
 // GET /auth/lookup?id=XXX — public, no token. Lets the frontend personalize
