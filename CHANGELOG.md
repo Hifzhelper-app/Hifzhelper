@@ -7,6 +7,76 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.4.1 — session security, duplicate-registration handling, admin list polish (2026-07-25)
+
+Bismillah. Five items queued up across several rounds of testing/discussion
+on V3.4, built together.
+
+**Session security**: the login token moved from `localStorage` to
+`sessionStorage` — it's cleared automatically the moment the tab/app
+actually closes, so reopening always requires signing in again, given the
+journal contents is considered valuable enough to be worth that tradeoff.
+Alongside it, a back/forward guard: right after a successful login, one
+extra history entry is pushed, so pressing back (or forward) while
+authenticated always logs out and drops back to a fresh login screen
+instead of silently continuing whatever session happens to still be
+active — this is what directly stops one account's session from carrying
+over onto a different account's URL via the browser's own back/forward
+buttons. It only interrupts an authenticated session; it never traps
+anyone or blocks navigation outright.
+
+**Admin registration gets a WhatsApp field** — previously name-only even
+though the backend already stored WhatsApp; the admin panel's register
+form now collects it too.
+
+**Duplicate-registration handling, for both self- and admin-registration**:
+a matching name+WhatsApp against an existing *active* student surfaces a
+warning, never a block. Self-registration keeps "Create a new journal
+anyway" / "Reset PIN for the existing journal" (email); admin gets
+"Continue" / "Reset PIN" (a direct action — no email needed, admin already
+has that capability). Both flows now also offer marking the old/matched
+journal inactive when continuing anyway — self-registration routes that
+through email too (the "match" is just a self-reported claim, not verified
+identity), admin gets a direct action. When continuing past a match, the
+new record's name gets an auto-appended disambiguating number ("John
+Smith" → "John Smith 2", then "John Smith 3", ...) via a shared
+`nextDisambiguatedName()` helper used by both registration paths.
+
+**Admin student list**: each row now has copy and native-share icon
+buttons for that student's personal URL (share is feature-detected and
+simply hidden on browsers without `navigator.share`, e.g. desktop Firefox
+— no fallback, it just isn't there). Inactive students' names are greyed
+out instead of a separate "Active"/"Inactive" text label, which is
+removed — keeps rows more compact. Row markup changed from one big
+`<button>` to a clickable name/ID button plus sibling icon-buttons,
+since a `<button>` can't legally contain another `<button>`.
+
+**Registration-confirmation screen**: the "Continue" button is now "Copy
+and Continue" — it copies the personal URL to clipboard and then
+navigates, so pressing the big button without using the copy icon first
+doesn't leave anyone without their URL. The standalone copy icon is
+unchanged.
+
+**Files changed:**
+```
+js/api.js
+js/app.js
+js/auth.js
+js/adminPage.js
+js/icons.js
+index.html
+css/admin.css
+sw.js
+worker/src/auth.js
+worker/src/admin.js
+```
+
+**Retest before merging to `main`**: the manual walkthrough in
+`TESTING.md` §11, plus the D1-only duplicate-check/auto-numbering tests
+for both registration paths.
+
+---
+
 ## V3.4 — URL-based personalized login + registration duplicate-check (2026-07-25)
 
 Bismillah. A login-flow rework built around one idea: a student's personal
@@ -62,6 +132,26 @@ holding until history and mushaf/model selection are sorted out first.
 **New file needed on the Cloudflare Pages side**: `_redirects` (repo root)
 — `/* /index.html 200` — so any path (`/<uniqueID>`) serves `index.html`
 instead of a 404; the frontend then reads the path itself.
+
+**Fix applied before merge**: the first pass of this delivery had a real
+bug, not a config issue — screen switching used inline `style.display`,
+but every login screen except the fallback carries a `hidden` class whose
+CSS rule is `display: none !important`, which silently wins over an inline
+style. Result: the fallback screen (no `hidden` class) rendered by default
+and then hid itself once the URL lookup resolved, but nothing else could
+ever show — a brief flash of the wrong screen, then blank. Fixed by
+toggling the `hidden` class consistently everywhere instead (and giving
+the fallback screen the same class as the others, so nothing shows until
+JS explicitly picks one).
+
+**Second fix, same delivery**: on the create-PIN screen, `clearPinGroup()`
+was being called on the create row and then the confirm row right after —
+since it always focuses the first box of whichever group it's called on,
+the second call's focus silently won, so both the initial screen load and
+a PIN-mismatch retry left the cursor in the confirm row instead of the
+create row. Fixed by clearing confirm first, create last, in all three
+places this happens (initial load, mismatch retry, and the server-error
+retry after a successful match).
 
 **Files changed:**
 ```

@@ -12,6 +12,9 @@ async function renderAdminScreen(){
   document.getElementById('adminRegisterError').textContent = '';
   document.getElementById('adminRegisterResult').textContent = '';
   document.getElementById('admin_new_name').value = '';
+  document.getElementById('admin_new_whatsapp').value = '';
+  document.getElementById('adminRegisterFormWrap').classList.remove('hidden');
+  document.getElementById('adminRegisterMatchPrompt').classList.add('hidden');
   document.getElementById('admin_search').value = '';
   await loadAdminUsers();
 }
@@ -33,16 +36,39 @@ function renderAdminUsersList(){
     !query || u.id.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)
   );
   const list = document.getElementById('adminUsersList');
+  const canShare = typeof navigator.share === 'function';
   list.innerHTML = filtered.map(u => `
-    <button class="admin-list-row" data-open-user="${u.id}">
-      <span class="mono">${u.id}</span>
-      <span class="admin-list-name">${u.name}</span>
-      <span class="admin-list-status ${u.active ? '' : 'inactive'}">${u.active ? 'Active' : 'Inactive'}</span>
-    </button>
+    <div class="admin-list-row">
+      <button type="button" class="admin-list-open" data-open-user="${u.id}">
+        <span class="mono">${u.id}</span>
+        <span class="admin-list-name ${u.active ? '' : 'inactive'}">${u.name}</span>
+      </button>
+      <button type="button" class="icon-btn" data-copy-url="${u.id}" aria-label="Copy personal URL"></button>
+      ${canShare ? `<button type="button" class="icon-btn" data-share-url="${u.id}" aria-label="Share personal URL"></button>` : ''}
+    </div>
   `).join('') || `<div class="admin-list-empty">No matching users.</div>`;
 
   list.querySelectorAll('[data-open-user]').forEach(btn => {
     btn.addEventListener('click', () => openUserCard(btn.dataset.openUser));
+  });
+  list.querySelectorAll('[data-copy-url]').forEach(btn => {
+    btn.innerHTML = iconHtml('copy');
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const url = window.location.origin + '/' + btn.dataset.copyUrl;
+      try{ await navigator.clipboard.writeText(url); } catch(err){ /* nothing else to fall back to inline here */ }
+      btn.innerHTML = iconHtml('check');
+      btn.classList.add('copied');
+      setTimeout(() => { btn.innerHTML = iconHtml('copy'); btn.classList.remove('copied'); }, 1500);
+    });
+  });
+  list.querySelectorAll('[data-share-url]').forEach(btn => {
+    btn.innerHTML = iconHtml('share');
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const url = window.location.origin + '/' + btn.dataset.shareUrl;
+      try{ await navigator.share({ url }); } catch(err){ /* user cancelled, or share failed — not shown as an error */ }
+    });
   });
 }
 
@@ -143,14 +169,66 @@ document.getElementById('adminRegisterBtn').addEventListener('click', async () =
   errEl.textContent = '';
   resultEl.textContent = '';
   const name = document.getElementById('admin_new_name').value.trim();
+  const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
   if(!name){ errEl.textContent = 'Enter a name.'; return; }
 
   try{
-    const result = await apiAdminRegisterStudent(name);
-    resultEl.textContent = `Created — ID: ${result.id}. Share this with ${result.name} so they can log in for the first time.`;
-    document.getElementById('admin_new_name').value = '';
-    await loadAdminUsers();
+    const result = await apiAdminRegisterStudent(name, whatsapp || null, false);
+    if(result.matched){
+      showAdminRegisterMatchPrompt(name, whatsapp, result.matchedId);
+    } else {
+      finishAdminRegisterUI(result);
+    }
   } catch(e){
     errEl.textContent = "Couldn't register: " + e.message;
   }
 });
+
+// A matching name+WhatsApp already exists among active students — offer
+// Continue (register anyway, with an option to also deactivate the old
+// one — a direct action here, since admin already has that capability) or
+// Reset PIN on the existing student directly (V3.4.1).
+function showAdminRegisterMatchPrompt(name, whatsapp, matchedId){
+  document.getElementById('adminRegisterFormWrap').classList.add('hidden');
+  document.getElementById('adminRegisterMatchPrompt').classList.remove('hidden');
+
+  document.getElementById('adminRegisterContinueBtn').onclick = async () => {
+    const errEl = document.getElementById('adminRegisterError');
+    errEl.textContent = '';
+    if(confirm('Also mark the existing student inactive?')){
+      try{ await apiAdminUpdateUser(matchedId, { active: false }); }
+      catch(e){ errEl.textContent = "Registered the new student, but couldn't deactivate the existing one: " + e.message; }
+    }
+    try{
+      const result = await apiAdminRegisterStudent(name, whatsapp || null, true);
+      finishAdminRegisterUI(result);
+    } catch(e){
+      errEl.textContent = "Couldn't register: " + e.message;
+    }
+  };
+
+  document.getElementById('adminRegisterResetPinBtn').onclick = async () => {
+    if(!confirm("Reset the existing student's PIN?")) return;
+    try{
+      await apiAdminResetPin(matchedId);
+      showBanner('PIN reset for the existing student.');
+      resetAdminRegisterForm();
+    } catch(e){
+      showBanner("Couldn't reset PIN: " + e.message);
+    }
+  };
+}
+
+function finishAdminRegisterUI(result){
+  resetAdminRegisterForm();
+  document.getElementById('adminRegisterResult').textContent =
+    `Created — ID: ${result.id}. Share this with ${result.name} so they can log in for the first time.`;
+  loadAdminUsers();
+}
+
+function resetAdminRegisterForm(){
+  document.getElementById('adminRegisterFormWrap').classList.remove('hidden');
+  document.getElementById('adminRegisterMatchPrompt').classList.add('hidden');
+  document.getElementById('admin_new_name').value = '';
+  document.getElementById('admin_new_whatsapp').value = '';
+}

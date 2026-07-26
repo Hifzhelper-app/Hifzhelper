@@ -50,6 +50,7 @@ async function bootApp(){
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
     showWelcome(currentUser.name || 'back');
+    armBackGuard();
     // NOTE: the V1.4 setup wizard (first-login onboarding) is not yet
     // reconciled against the V2/V3 schema — see CHANGELOG. For now we
     // land everyone straight on the journal regardless of setup_complete.
@@ -61,6 +62,24 @@ async function bootApp(){
     routeToLoginScreen();
   }
 }
+
+// Back/forward guard (V3.4.1): while authenticated, ANY history navigation
+// (back or forward — the browser doesn't distinguish which in a popstate
+// event) logs out and drops back to a fresh login screen rather than
+// silently continuing whatever session happens to still be active. This is
+// what stops one account's session from carrying over onto a different
+// account's URL via the browser's own back/forward buttons. Meant to catch
+// an accidental press, not trap anyone — it still does something (logs
+// out) rather than blocking navigation outright.
+function armBackGuard(){
+  history.pushState({ hifzhelperGuard: true }, '', location.href);
+}
+window.addEventListener('popstate', () => {
+  if(getToken()){
+    clearToken();
+    routeToLoginScreen();
+  }
+});
 
 (function init(){
   document.getElementById('th_sabaq').innerHTML = iconHtml('sabaq') + '<span>Sabaq</span>';

@@ -259,6 +259,13 @@ function showRegisterMatchPrompt(name, whatsapp){
   document.getElementById('registerFormWrap').classList.add('hidden');
   document.getElementById('registerMatchPrompt').classList.remove('hidden');
   document.getElementById('registerCreateAnywayBtn').onclick = async () => {
+    // Deactivating the OLD journal isn't self-service here — the "match"
+    // is just a self-reported name+WhatsApp claim, not verified identity,
+    // so it routes through email for a human to actually check (V3.4.1).
+    if(confirm('Would you also like to request that the old journal be deactivated? This sends an email — it will not happen automatically.')){
+      const body = encodeURIComponent(`Name: ${name}\nWhatsApp: ${whatsapp}\n\nA new journal was just created for this name/WhatsApp — please deactivate the existing one.`);
+      window.location.href = `mailto:hifzhelper.app@gmail.com?subject=Deactivate%20old%20journal&body=${body}`;
+    }
     const result = await apiRegister(name, whatsapp || null, true);
     showRegisteredScreen(result.id, result.name);
   };
@@ -284,7 +291,10 @@ function showRegisteredScreen(id, name){
   document.getElementById('registeredMessage').textContent = REGISTRATION_CONFIRMATION_TEXT;
   document.getElementById('registeredUrl').value = url;
   document.getElementById('registeredScreen').classList.remove('hidden');
-  document.getElementById('registeredContinueBtn').onclick = () => { window.location.href = url; };
+  document.getElementById('registeredContinueBtn').onclick = async () => {
+    try{ await navigator.clipboard.writeText(url); } catch(e){ /* falls through to navigating regardless */ }
+    window.location.href = url;
+  };
 }
 
 document.getElementById('copyRegisteredUrlBtn').innerHTML = iconHtml('copy');

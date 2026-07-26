@@ -115,15 +115,29 @@ export async function handleLogin(request, env) {
 }
 
 // Normalizes a name for duplicate comparison — trimmed, lowercased, so
-// "Umme " and "umme" compare equal.
-function normalizeName(n) {
+// "Umme " and "umme" compare equal. Exported so admin.js's registration
+// path uses the exact same comparison (CONVENTIONS.md #2).
+export function normalizeName(n) {
   return (n || '').trim().toLowerCase();
 }
 // Normalizes a WhatsApp number for duplicate comparison — digits only, so
 // "+966 555-123456" and "966555123456" compare equal regardless of the
 // formatting the student happened to type (see chat: item 1, V3.4).
-function normalizeWhatsapp(w) {
+export function normalizeWhatsapp(w) {
   return (w || '').replace(/\D/g, '');
+}
+
+// Given a base name, counts existing students whose name is that name or
+// "that name N" already, and returns the next disambiguating suffix to use
+// (V3.4.1) — "John Smith" existing alone means the next one becomes
+// "John Smith 2", a third becomes "John Smith 3", and so on. Exported so
+// admin.js's registration path uses identical numbering.
+export async function nextDisambiguatedName(env, trimmedName) {
+  const norm = normalizeName(trimmedName);
+  const { results } = await env.DB.prepare(
+    'SELECT name FROM students WHERE LOWER(TRIM(name)) = ? OR LOWER(TRIM(name)) LIKE ?'
+  ).bind(norm, norm + ' %').all();
+  return results.length ? `${trimmedName} ${results.length + 1}` : trimmedName;
 }
 
 // POST /auth/register — public, no token required. Creates a student
@@ -139,32 +153,40 @@ function normalizeWhatsapp(w) {
 // was actually given (nothing reliable to compare otherwise), and only
 // against active accounts. On a match, nothing is created yet — the
 // frontend shows the student a choice, and re-calls this with force:true
-// if they choose to create a separate journal anyway.
+// if they choose to create a separate journal anyway, at which point the
+// new record's name gets an auto-appended disambiguating number
+// (V3.4.1) since two students can otherwise be indistinguishable in any
+// admin-facing list except by their random ID.
 export async function handleRegister(request, env) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.name || !body.name.trim()) return { error: 'name is required', status: 400 };
 
+  const trimmedName = body.name.trim();
   const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
 
-  if (whatsapp && !body.force) {
+  let matched = false;
+  if (whatsapp) {
     const normWhatsapp = normalizeWhatsapp(whatsapp);
     if (normWhatsapp) {
       const candidates = await env.DB.prepare(
         'SELECT whatsapp_number FROM students WHERE LOWER(TRIM(name)) = ? AND whatsapp_number IS NOT NULL AND active = 1'
-      ).bind(normalizeName(body.name)).all();
-      const match = (candidates.results || []).some(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
-      if (match) return { data: { matched: true } };
+      ).bind(normalizeName(trimmedName)).all();
+      matched = (candidates.results || []).some(row => normalizeWhatsapp(row.whatsapp_number) === normWhatsapp);
     }
   }
+
+  if (matched && !body.force) return { data: { matched: true } };
+
+  const finalName = matched ? await nextDisambiguatedName(env, trimmedName) : trimmedName;
 
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
   await env.DB.prepare(
     'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
-  ).bind(id, body.name.trim(), 'student', today, whatsapp).run();
+  ).bind(id, finalName, 'student', today, whatsapp).run();
 
-  return { data: { id, name: body.name.trim() } };
+  return { data: { id, name: finalName } };
 }
 
 // GET /auth/lookup?id=XXX — public, no token. Lets the frontend personalize

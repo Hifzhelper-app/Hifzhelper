@@ -7,9 +7,13 @@
 const API_BASE = 'https://hifzhelper-api.hifzhelper-app.workers.dev';
 
 const TOKEN_KEY = 'hh_token';
-function getToken(){ return localStorage.getItem(TOKEN_KEY); }
-function setToken(t){ localStorage.setItem(TOKEN_KEY, t); }
-function clearToken(){ localStorage.removeItem(TOKEN_KEY); }
+// sessionStorage, not localStorage — clears automatically the moment the
+// tab/app actually closes, so reopening always requires signing in again.
+// Confirmed in chat (V3.4.1): the journal contents is valuable enough that
+// this is worth the tradeoff over a longer-lived persistent session.
+function getToken(){ return sessionStorage.getItem(TOKEN_KEY); }
+function setToken(t){ sessionStorage.setItem(TOKEN_KEY, t); }
+function clearToken(){ sessionStorage.removeItem(TOKEN_KEY); }
 
 // Every call surfaces real errors rather than returning something that
 // looks like empty/default data — callers must expect this to throw.
@@ -111,6 +115,6 @@ function apiSaveProfile(profile){ return apiFetch('/profile', { method: 'POST', 
 function apiAdminListUsers(){ return apiFetch('/admin/users'); }
 function apiAdminResetPin(id){ return apiFetch('/admin/reset-pin', { method: 'POST', body: JSON.stringify({ id }) }); }
 function apiAdminChangeRole(id, role){ return apiFetch('/admin/change-role', { method: 'POST', body: JSON.stringify({ id, role }) }); }
-function apiAdminRegisterStudent(name){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name }) }); }
+function apiAdminRegisterStudent(name, whatsapp_number, force){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force }) }); }
 function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminDeleteUser(id){ return apiFetch('/admin/users?id=' + encodeURIComponent(id), { method: 'DELETE' }); }

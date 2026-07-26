@@ -174,6 +174,26 @@ not just that the admin path works.
 8. From the register screen, submit a name+WhatsApp that already matches an existing student → the two-choice prompt appears instead of silently registering; "Create a new journal anyway" proceeds to register; "Reset PIN for the existing journal" opens a pre-filled `mailto:` link instead.
 9. On the journal landing page, refresh a few times → the green "Welcome" banner pushes the page content down while visible instead of covering the auth band/heading.
 
+## 11. Session security, duplicate handling, admin list (V3.4.1)
+
+| Test | Request | Expect |
+|---|---|---|
+| Self-registration duplicate | `POST /auth/register` with a name+WhatsApp matching an existing active student | `200 {"matched": true}` — no row created |
+| Self-registration force-create | Same body plus `"force": true` | `200`, new row created with name auto-numbered, e.g. `"John Smith 2"` |
+| Third duplicate, auto-numbering | Force-create a THIRD student sharing that same name | Name becomes `"John Smith 3"`, not `"John Smith 2"` again |
+| Admin registration duplicate | `POST /admin/register-student` (as admin) with a name+WhatsApp matching an existing active student | `200 {"matched": true, "matchedId": "<existing ID>"}` |
+| Admin registration force-create | Same body plus `"force": true` | `200`, new row created, name auto-numbered same as self-registration |
+| Admin registration, no WhatsApp given | `POST /admin/register-student` `{"name": "Test Five"}` | `200`, created normally — duplicate check only runs when a WhatsApp is given |
+
+**Frontend, manual:**
+1. Log in as a student, then press the browser's back button → immediately logged out, back on a login screen — never silently shows a different account's journal.
+2. Log in, close the tab entirely, reopen the same URL → asks to sign in again (token didn't survive the close).
+3. Self-register with a name+WhatsApp that already matches an existing student → the two-choice prompt appears; choosing "Create a new journal anyway" asks about deactivating the old one (Yes opens a prefilled email, either way the new journal still gets created with an auto-numbered name).
+4. From the admin panel, register a student whose name+WhatsApp matches an existing one → "Continue"/"Reset PIN" prompt appears; "Reset PIN" resets the *existing* student directly (check via a subsequent login, no email involved); "Continue" creates the new one and, if confirmed, also deactivates the existing one.
+5. In the admin student list, tap the copy icon on a row → URL copied, icon briefly shows a checkmark. On a browser that supports `navigator.share` (e.g. mobile Safari/Chrome), a share icon is also present and opens the native share sheet; on desktop Firefox, the share icon isn't there at all.
+6. In the admin student list, mark a student inactive → their name greys out in the list; no separate "Inactive" text appears anywhere in the row.
+7. Register a new student via self-registration → on the "Registered!" screen, tap "Copy and Continue" without touching the copy icon first → still navigates to the create-PIN screen, and pasting anywhere confirms the URL was copied regardless.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
