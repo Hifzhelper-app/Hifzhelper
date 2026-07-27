@@ -1,5 +1,5 @@
 // ============================================================
-// Hifzhelper — Setup screen (V3.7.0)
+// Hifzhelper — Setup screen (V3.7.0/V3.7.1)
 // Profile section only: view-only name/ID/URL, editable journal name,
 // gender, and mushaf choice. History capture, default targets, Dhor
 // planning, and haidh tracking are separate, later deliveries — this
@@ -9,7 +9,12 @@
 // on a new user's first login, before setup_complete is set (see
 // bootApp() in app.js) — the same screen either way, just a different
 // entry point.
+//
+// V3.7.1: Save moved from a bottom-of-form text button to an icon-only
+// button on the right of the header row (icon-over-button preference).
 // ============================================================
+
+document.getElementById('setupSaveBtn').innerHTML = iconHtml('save');
 
 let setupSelectedMushaf = null;
 

@@ -7,6 +7,49 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.7.1 — Setup screen: sizing fix + save icon (2026-07-27)
+
+Bismillah. Both findings documented against V3.7.0, now actioned.
+
+**Desktop container width**: `--width-desktop` (tokens.css) bumped 25% →
+30%. Separately, `#screen-settings` never actually had the width-cap rule
+that `.login-card`/`#screen-admin` already carry — it's a single-container
+form, same category as those two, and should have had this from the start.
+Added the same `max-width: var(--width-tablet)` (768–1179px) /
+`max-width: var(--width-desktop)` (≥1180px) rule, mirroring their exact
+pattern. Both pieces were needed together — the token bump alone wouldn't
+have fixed the reported stretching, since the screen was never wired into
+the system in the first place.
+
+**Save icon**: the Setup screen's bottom-of-form text "Save" button moved
+to an icon-only button on the right of the header row, next to the "Setup"
+title — icon-over-button preference (already on file, reiterated for this
+screen specifically). New `save` icon added to `icons.js`, converted from
+the uploaded `save.svg` to match this file's existing format; stroke-width
+normalized to `1.8` to match most of the current set (the source file used
+`1`), same normalization already applied to `home.svg` in the same round
+of uploads.
+
+**Explicitly out of scope for this delivery**: the broader icons-folder
+migration (item 5 from the nav/icon restructuring discussion) — still a
+separate, not-yet-fully-scoped delivery (`close.svg`'s intended use is
+still unconfirmed, among other things). This delivery only actions the
+two specific V3.7.0 findings.
+
+**Files changed:**
+```
+index.html
+css/tokens.css
+css/settings.css
+js/icons.js
+js/settingsScreen.js
+sw.js
+```
+
+**Retest before merging to `main`**: `TESTING.md` §19.
+
+---
+
 ## V3.7.0 — Setup screen: profile section (2026-07-27)
 
 Bismillah. First piece of the bigger 4-area onboarding design discussed in

@@ -85,5 +85,5 @@
      var() — so they're repeated as literals wherever this is used; only
      the percentage VALUES are centralized here. */
   --width-tablet: 50%;
-  --width-desktop: 25%;
+  --width-desktop: 30%;
 }
