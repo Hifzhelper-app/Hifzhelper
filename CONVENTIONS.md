@@ -200,6 +200,7 @@ yourself in the document, even if that's true today.
                         4-card grid/rail layout (V3.6.1 — previously "the
                         3 detail-page forms", before they were merged)
     admin.css         — admin screen (user list, register form)
+    settings.css      — Setup screen (V3.7.0, profile section only)
   js/
     icons.js          — shared inline SVG icon set
     api.js            — fetch wrapper + every endpoint client function
@@ -220,6 +221,10 @@ yourself in the document, even if that's true today.
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
                           renders all 4, rail scroll position, dot sync
     adminPage.js        — admin user-list screen
+    settingsScreen.js   — Setup screen (V3.7.0, profile section only) —
+                          view-only name/ID/URL, editable journal name/
+                          gender/mushaf; reached via "Settings" nav or
+                          automatically pre-setup_complete (see app.js)
     app.js              — bootstrap, screen routing (see principle 8)
 
 /shared/

@@ -24,6 +24,8 @@ human-readable reference for the same thing.
 | `gender` | TEXT | Added in migration 0004. `M` or `F`. Stored directly (not just derived haidh eligibility) — may drive different styling later. |
 | `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Only ever shown as an option to females; not auto-set from gender. |
 | `setup_complete` | INTEGER | Added in migration 0004. `1`/`0`. Gates whether the setup wizard shows on login. |
+| `journal_name` | TEXT | Added in migration 0009. A custom title for the student's own journal — not their real name. |
+| `mushaf` | TEXT | Added in migration 0009. `13line` / `15line_madani`. A 3rd option (Hybrid) is shown in the UI but disabled/unselectable — not yet a valid stored value, added once Hybrid is actually built. |
 
 ## Tables: `sabaq_log`, `sabaq_dhor_log`, `dhor_log`, `reflections` (V2 — replaces `entries`)
 

@@ -7,6 +7,61 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.7.0 — Setup screen: profile section (2026-07-27)
+
+Bismillah. First piece of the bigger 4-area onboarding design discussed in
+chat (profile, history+targets, Dhor planning, haidh tracking) — deliberately
+scoped to JUST the profile section this delivery, kept separate from the
+other 3 so a broad change doesn't land in the same delivery as a big new
+feature (the exact mistake behind the V3.6/V3.6.2 incident).
+
+**New Setup screen** (`screen-settings`), reached two ways: the existing
+"Settings" nav item (was a placeholder until now), and automatically on a
+new user's first login, before `setup_complete` is set — `bootApp()` in
+`app.js` now checks `profile.setup_complete` instead of always going
+straight to the journal.
+
+**View-only header**: name, Unique ID, URL (with the existing copy-button
+pattern reused from the create-PIN/registered screens).
+
+**Editable**: journal name (a custom title for the journal, not the
+student's real name — new `journal_name` column), gender (already existed
+as a field, just never had setup-screen UI), and mushaf choice — all 3
+options shown (13 line / 15 line Madani / Hybrid), Hybrid rendered
+disabled/unselectable since it isn't built yet (new `mushaf` column,
+constrained to the 2 real values; the server rejects `hybrid` as a value
+for the same reason the UI doesn't offer it).
+
+**Backend**: migration 0009 adds `journal_name` and `mushaf` to `students`.
+`profile.js`'s existing GET/POST (already handled name/gender/track_haidh/
+setup_complete from the V1.4-era work) extended to include both.
+
+**Deliberately NOT in this delivery**: history capture, default targets,
+Dhor planning, haidh tracking, and the icons-folder/nav-label
+restructuring — all separate, later work.
+
+**Files changed:**
+```
+index.html
+js/app.js
+worker/src/profile.js
+SCHEMA.md
+CONVENTIONS.md
+sw.js
+```
+**New files:**
+```
+worker/migrations/0009_setup_profile_fields.sql
+css/settings.css
+js/settingsScreen.js
+```
+
+**Retest before merging to `main`**: `TESTING.md` §18. Needs the migration
+applied to D1 before the new fields will actually save — this is a real
+schema change, not just frontend.
+
+---
+
 ## V3.6.2 — cache policy reversed: nothing cached, anywhere (2026-07-26)
 
 Bismillah. V3.6 paired the `?v=` versioning with `_headers` set to

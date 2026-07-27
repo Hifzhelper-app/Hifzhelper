@@ -24,8 +24,9 @@ function showWelcome(name){
 // V3.6.1: 'sabaq'/'sabaqDhor'/'dhor' are no longer separate screens — all
 // three now open 'logDetail' (the unified 4-card day-log view); the old
 // ids are still used as the `param` telling it which card to open on.
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true };
-const SCREEN_LABELS = { reflections: 'Reflections', plans: 'Plans', progress: 'Progress', settings: 'Settings' };
+// V3.7.0: 'settings' is now built (Setup screen, profile section only).
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true };
+const SCREEN_LABELS = { reflections: 'Reflections', plans: 'Plans', progress: 'Progress' };
 
 async function showScreen(id, param){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
@@ -41,6 +42,7 @@ async function showScreen(id, param){
   if(id === 'journal'){ await renderJournalScreen(); fixJournalTopPaint(); }
   if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
+  if(id === 'settings') await renderSettingsScreen();
 }
 
 // Safari-only "journal invisible until scroll" bug: the V3.4.3 CSS-only
@@ -91,11 +93,10 @@ async function bootApp(){
     renderAuthBand();
     showWelcome(currentUser.name || 'back');
     armBackGuard();
-    // NOTE: the V1.4 setup wizard (first-login onboarding) is not yet
-    // reconciled against the V2/V3 schema — see CHANGELOG. For now we
-    // land everyone straight on the journal regardless of setup_complete.
-    // This is a known, flagged gap, not an oversight.
-    showScreen('journal');
+    // V3.7.0: a new user (setup_complete still 0) lands on Setup first —
+    // returning users go straight to the journal as before. Setup itself
+    // is also reachable any time afterward via the "Settings" nav item.
+    showScreen(profile.setup_complete ? 'journal' : 'settings');
   } catch(e){
     showBanner("Couldn't load your profile: " + e.message);
     clearToken();

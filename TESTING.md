@@ -357,6 +357,36 @@ Needs an actual deployed Cloudflare Pages URL, same as §15.
    entry that was already cached under the old `?v=3.6.1` URL; a one-time
    hard refresh clears it, and it shouldn't be needed again after that.
 
+## 18. Setup screen — profile section (V3.7.0)
+
+Needs the migration (0009) actually applied to D1 first, or the new fields
+will 400/fail to save.
+
+1. A brand-new student (fresh registration, first PIN creation, never
+   completed setup before) → logs in → lands on the Setup screen
+   automatically, NOT the journal.
+2. Name/Unique ID/URL at the top are correct and NOT editable (no input
+   box — plain text/read-only). Copy button next to the URL actually
+   copies it (same behavior as the create-PIN/registered screens' copy
+   buttons).
+3. Enter a journal name, pick a gender, pick "13 line" → Save → reload the
+   page → Setup screen (via Settings nav) shows the same 3 values still
+   set correctly.
+4. Try "15 line Madani" instead → saves correctly, only one mushaf option
+   shows as selected/active at a time.
+5. The "Hybrid" button is visibly greyed out and does nothing when
+   clicked — confirm via Network tab that no request fires and via D1
+   that `mushaf` never becomes `'hybrid'`.
+6. After Save (with `setup_complete` now true), log out and log back in →
+   lands on the journal this time, NOT Setup — confirms the one-time
+   redirect only applies before setup is completed.
+7. From the journal, open the dropdown/Home tile menu → "Settings" → the
+   same Setup screen loads (not a placeholder), with whatever was
+   previously saved shown correctly.
+8. Confirm history capture, default targets, Dhor planning, and haidh
+   tracking are genuinely absent from this screen — this delivery is
+   scoped to profile only, on purpose.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

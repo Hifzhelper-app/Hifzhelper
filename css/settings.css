@@ -1,0 +1,38 @@
+/* ============================================================
+   Hifzhelper — Setup screen (V3.7.0)
+   Profile section only for now — history/default-targets, Dhor
+   planning, and haidh tracking are separate, later deliveries.
+   Reuses .detail-page (detail-pages.css) for label/input/select
+   styling, and .tajweed-tag (detail-pages.css) for the mushaf picker
+   buttons — same pill look, single-select instead of the tajweed
+   picker's multi-select, wired in js/settingsScreen.js.
+   ============================================================ */
+
+.profile-readonly-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-table-border);
+}
+.profile-readonly-label {
+  flex: 0 0 100px;
+  font-size: 13px;
+  color: var(--color-ink-faint);
+}
+.profile-readonly-value {
+  flex: 1;
+  font-size: 14px;
+}
+/* The URL row reuses .url-copy-row (components.css) for the input+copy
+   button pairing, but this is a read-only display, not an editable
+   field — strip the input's normal bordered look so it reads as plain
+   text with a copy button next to it. */
+.profile-readonly-value.url-copy-row input {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-ink);
+}
+
+#setup_mushaf_picker { margin-bottom: var(--space-md); }

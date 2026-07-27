@@ -39,6 +39,12 @@
   border-style: dashed;
   color: var(--color-ink-faint);
 }
+/* V3.7.0: reused (single-select, not multi-select) for the Setup screen's
+   mushaf picker, where the Hybrid option is shown but not yet selectable. */
+.tajweed-tag:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
 .teacher-feedback-box {
   margin-top: var(--space-md);
