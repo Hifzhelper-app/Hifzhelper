@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Maktab4Life Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- M4L v97.1.5.2 Weekly Planner preview save compatibility -->
+    <!-- PWA Level 1 install metadata -->
+  <meta name="theme-color" content="#C26FBA" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="M4L Admin" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+  <!-- PWA: Admin install settings -->
+  <!-- M4L v79.7: Admin index Progress HTML cleanup; quarantined legacy Progress sections removed. -->
+<link rel="stylesheet" href="/styles.css?v=97.1.8.4">
+  <link rel="manifest" href="/admin-manifest.json" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/admin-apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/admin-favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/admin-favicon-16x16.png" />
+
+</head>
+
+<body>
+  <main class="app-shell">
+
+    <!-- LOGIN / PIN SCREEN -->
+    <section id="auth-screen" class="screen active">
+      <div id="auth-welcome-banner" class="auth-welcome-banner hidden">
+        Ahlan wa Sahlan
+      </div>
+
+      <div class="auth-brand-block">
+        <h2 class="auth-brand-title">Maktabhelper</h2>
+        <img src="/logo.png" alt="Maktab4Life Logo" class="app-logo auth-logo" />
+        <h2 class="auth-brand-title">Reboot Your Maktab</h2>
+        <p id="portal-title" class="auth-login-label">Admin Login</p>
+        <p id="portal-subtitle" class="subtitle auth-user-subtitle">Checking your link...</p>
+      </div>
+
+      <div id="setup-pin-box" class="auth-box hidden">
+        <h2>Create PIN</h2>
+        <ol class="pin-instruction-list">
+          <li>Create a memorable PIN.</li>
+          <li>Login with your PIN.</li>
+          <li>Add the page to your Homescreen.</li>
+        </ol>
+
+        <div class="pin-digit-row" data-pin-group="setup-pin" aria-label="Create 4-digit PIN">
+          <input id="setup-pin-1" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="next" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 1" />
+          <input id="setup-pin-2" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="next" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 2" />
+          <input id="setup-pin-3" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="next" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 3" />
+          <input id="setup-pin-4" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="done" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 4" />
+        </div>
+        <input id="setup-pin" type="hidden" />
+
+        <button onclick="submitSetupPin()">Set PIN</button>
+      </div>
+
+      <div id="login-pin-box" class="auth-box hidden">
+        <h2>Enter PIN</h2>
+        <p class="helper-text">Enter your 4-digit PIN to continue.</p>
+
+        <div class="pin-digit-row" data-pin-group="login-pin" aria-label="Enter 4-digit PIN">
+          <input id="login-pin-1" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="next" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 1" />
+          <input id="login-pin-2" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="next" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 2" />
+          <input id="login-pin-3" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="next" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 3" />
+          <input id="login-pin-4" class="pin-digit" type="tel" inputmode="numeric" enterkeyhint="done" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" aria-label="PIN digit 4" />
+        </div>
+        <input id="login-pin" type="hidden" />
+      </div>
+
+      <p id="auth-error" class="error-message"></p>
+    </section>
+
+    <!-- ADMIN HOME -->
+    <section id="admin-home" class="screen admin-theme">
+      <div id="admin-home-panel" class="home-stack admin-home-panel student-home-panel" data-home-stack="admin" aria-label="Admin home content">
+        <section id="admin-home-duas-panel" class="home-section home-duas-section" aria-label="Class duas">
+          <p class="helper-text">Loading class duas...</p>
+        </section>
+
+        <section class="home-section home-icons-section" aria-label="Admin home app icons">
+          <div aria-label="Admin home app icons" class="home-cover-icon-grid home-cover-icon-grid--admin">
+            
+         <button 
+           class="home-cover-icon-btn is-home-active" 
+           data-cover-home-nav="home" 
+           data-cover-home-role="admin"
+            aria-current="page"
+            type="button"
+          >
+          <span class="home-cover-icon-tile" aria-hidden="true">
+              <span class="home-cover-icon-glyph"></span>
+              </span>
+            <span class="home-cover-icon-label">Home</span>
+            </button>
+          <button class="home-cover-icon-btn" data-cover-home-nav="attendance" data-cover-home-role="admin" type="button">
+          <span aria-hidden="true" class="home-cover-icon-tile">
+          <span class="home-cover-icon-glyph"></span>
+          </span>
+          <span class="home-cover-icon-label">Attendance</span>
+          </button>
+          <button class="home-cover-icon-btn" data-cover-home-nav="record" data-cover-home-role="admin" type="button">
+          <span aria-hidden="true" class="home-cover-icon-tile">
+          <span class="home-cover-icon-glyph"></span>
+          </span>
+          <span class="home-cover-icon-label">VoiceNote</span>
+          </button>
+          <button class="home-cover-icon-btn" data-cover-home-nav="planner" data-cover-home-role="admin" type="button">
+          <span aria-hidden="true" class="home-cover-icon-tile">
+          <span class="home-cover-icon-glyph"></span>
+          </span>
+          <span class="home-cover-icon-label">Planner</span>
+          </button>
+          <button class="home-cover-icon-btn" data-cover-home-nav="library" data-cover-home-role="admin" type="button">
+          <span aria-hidden="true" class="home-cover-icon-tile">
+          <span class="home-cover-icon-glyph"></span>
+          </span>
+          <span class="home-cover-icon-label">Library</span>
+          </button>
+          <button class="home-cover-icon-btn" data-cover-home-nav="progress" data-cover-home-role="admin" type="button">
+          <span aria-hidden="true" class="home-cover-icon-tile">
+          <span class="home-cover-icon-glyph"></span>
+          </span>
+          <span class="home-cover-icon-label">Progress</span>
+          </button>
+          </div>
+        </section>
+
+        <section class="home-section home-timetable-section" aria-label="Timetable">
+          <section class="timetable-card">
+          <div class="timetable-card-header">
+          <h3>Reboot Your Maktab</h3>
+          <button aria-label="Refresh timetable" class="small-btn manual-refresh-btn" onclick="refreshAdminHomeTimetable(this)" title="Refresh timetable" type="button">
+          <span aria-hidden="true" class="manual-refresh-btn__icon"></span>
+          <span class="visually-hidden">Refresh timetable</span>
+          </button>
+          </div>
+          <div id="admin-home-timetable-content">
+          <p class="helper-text">Loading timetable...</p>
+          </div>
+          </section>
+        </section>
+      </div>
+    </section>
+
+    <!-- ADMIN ACADEMICS MENU -->
+    <section id="admin-academics" class="screen admin-theme">
+      <div class="nav-header">
+        <h2>Admin</h2>
+      </div>
+
+      <div class="list-stack">
+        <button class="list-btn" onclick="showManageStudents()">Add / Modify Students</button>
+        <button class="list-btn" onclick="showSubjectsScreen()">Curriculum</button>
+        <button class="list-btn" onclick="showWeeklyPlanner()">Weekly Planner</button>
+        <button class="list-btn" onclick="showAdminResources()">Library</button>
+        <button class="list-btn" onclick="showPlaceholder('Tasks')">Tasks</button>
+        <button class="list-btn" onclick="showAdminTimetableAdmin()">Timetable</button>
+        <button class="list-btn" onclick="showAdminZoomLinkAdmin()">Zoom Link</button>
+      </div>
+    </section>
+
+    <!-- SHARED LIBRARY SCREEN -->
+    <section id="student-resources-subjects" class="screen admin-theme">
+      <div class="library-landing-header">
+        <button type="button" class="xclose-home-btn icon-action-btn library-home-close" data-header-action="home" aria-label="Home" title="Home">
+          <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+          <span class="visually-hidden">Home</span>
+        </button>
+        <h2>Library</h2>
+        <span class="library-landing-header-spacer" aria-hidden="true"></span>
+      </div>
+      <div id="student-resource-subject-list" class="list-stack">
+        <p class="helper-text">Loading resources...</p>
+      </div>
+    </section>
+    <!-- PROGRESS REPORT -->
+    <!-- M4L v93.3: active Admin Progress dashboard retained; confirmed legacy support screen removed. -->
+<section id="progress-report" class="screen admin-theme admin-progress-screen">
+  <div class="nav-header admin-progress-landing-header">
+    <h2>Progress</h2>
+  </div>
+
+  <div id="admin-progress-dashboard" class="admin-progress-dashboard">
+    <p class="helper-text">Loading progress...</p>
+  </div>
+</section>
+    <!-- MANAGE STUDENTS -->
+    <section id="manage-students-screen" class="screen admin-theme student-admin-screen">
+      <div class="student-admin-modern-header">
+        <h2>Manage Students</h2>
+        <button class="small-btn" onclick="showScreen('admin-academics')">Back</button>
+      </div>
+
+      <div id="manage-students-content">
+        <p class="helper-text">Loading student management...</p>
+      </div>
+    </section>
+
+    <section id="manage-students-result-screen" class="screen admin-theme student-admin-screen">
+      <div class="student-admin-modern-header">
+        <h2>Student Link</h2>
+        <button class="small-btn home-icon-btn" onclick="showScreen('admin-home')" aria-label="Home" title="Home"><span class="home-icon-btn__icon" aria-hidden="true"></span><span class="visually-hidden">Home</span></button>
+      </div>
+
+      <div id="manage-students-result-content">
+        <p class="helper-text">Loading student link...</p>
+      </div>
+    </section>
+
+    <section id="manage-student-edit-screen" class="screen admin-theme student-admin-screen">
+      <div class="student-admin-modern-header">
+        <h2>Edit Student</h2>
+        <button class="small-btn" onclick="backToManagedStudentList()">Back</button>
+      </div>
+
+      <div id="manage-student-edit-content">
+        <p class="helper-text">Loading student...</p>
+      </div>
+
+      <dialog
+        id="student-edit-save-dialog"
+        class="student-edit-save-dialog"
+        aria-labelledby="student-edit-save-dialog-title"
+      >
+        <div class="student-edit-save-dialog-card">
+          <button
+            type="button"
+            class="student-edit-save-dialog-close"
+            data-manage-action="close-student-save-dialog"
+            aria-label="Close saved student details"
+            title="Close"
+          >
+            <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+          </button>
+
+          <h3 id="student-edit-save-dialog-title">Changes Saved</h3>
+          <p class="student-edit-save-dialog-message">The student details have been updated.</p>
+
+          <dl class="student-edit-save-dialog-details">
+            <div>
+              <dt>Name</dt>
+              <dd id="student-edit-save-name"></dd>
+            </div>
+            <div>
+              <dt>WhatsApp</dt>
+              <dd id="student-edit-save-whatsapp"></dd>
+            </div>
+            <div>
+              <dt>Group</dt>
+              <dd id="student-edit-save-group"></dd>
+            </div>
+            <div>
+              <dt>Active Status</dt>
+              <dd id="student-edit-save-status"></dd>
+            </div>
+          </dl>
+        </div>
+      </dialog>
+    </section>
+    
+    <section id="subjects-screen" class="screen admin-theme">
+         <div class="nav-header">
+            <h2>Subjects</h2>
+    <button class="small-btn home-icon-btn" onclick="showScreen('admin-home')" aria-label="Home" title="Home"><span class="home-icon-btn__icon" aria-hidden="true"></span><span class="visually-hidden">Home</span></button>
+  </div>
+
+  <div class="dashboard-section subject-panel">
+       <h3>Add Subjects</h3>
+
+        <div id="subject-add-list" class="subject-add-list"></div>
+
+       <button id="submit-subjects-btn" class="save-btn hidden" onclick="submitPendingSubjects()">
+      Submit Subjects
+    </button>
+
+    <p id="subject-add-message" class="helper-text"></p>
+  </div>
+
+  <div class="dashboard-section subject-panel">
+    <h3>Modify Subject</h3>
+
+    <select id="modify-subject-select" onchange="selectSubjectToModify()">
+      <option value="">Select subject...</option>
+    </select>
+
+   <div id="modify-subject-box" class="hidden">
+  <input id="modify-subject-name" type="text" placeholder="Subject name" />
+
+  <div class="status-action-row">
+    <div id="selected-subject-status" class="status-display">
+      STATUS: -
+    </div>
+
+    <button
+      id="toggle-subject-status-btn"
+      class="status-toggle-btn"
+      onclick="toggleSubjectStatusLocal()"
+    >
+      Change Status
+    </button>
+  </div>
+
+  <button class="save-btn" onclick="saveSubjectChanges()">
+    Save These Changes
+  </button>
+</div>
+  </div>
+</section>
+
+    <!-- ADMIN ATTENDANCE -->
+    <section id="attendance-screen" class="screen admin-theme">
+      <button type="button" class="xclose-home-btn icon-action-btn attendance-home-close" data-header-action="home" aria-label="Home" title="Home">
+        <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+        <span class="visually-hidden">Home</span>
+      </button>
+      <div
+        class="attendance-panel-dots"
+        data-attendance-swipe-dots
+        aria-label="Attendance panels"
+      >
+        <button
+          type="button"
+          class="attendance-panel-dot is-active"
+          data-attendance-panel-index="0"
+          aria-label="Show Register"
+          aria-current="true"
+        ></button>
+        <button
+          type="button"
+          class="attendance-panel-dot"
+          data-attendance-panel-index="1"
+          aria-label="Show Records"
+          aria-current="false"
+        ></button>
+        <button
+          type="button"
+          class="attendance-panel-dot"
+          data-attendance-panel-index="2"
+          aria-label="Show Stats"
+          aria-current="false"
+        ></button>
+      </div>
+
+      <div class="attendance-swipe-track" data-attendance-swipe-track>
+        <section
+          id="attendance-register-panel"
+          class="attendance-swipe-panel"
+          aria-label="Register"
+        >
+          <div id="attendance-register-content">
+            <p class="helper-text">Loading attendance...</p>
+          </div>
+        </section>
+
+        <section
+          id="attendance-report-panel"
+          class="attendance-swipe-panel"
+          aria-label="Attendance Records"
+        >
+          <div id="attendance-report-content">
+            <p class="helper-text">Loading attendance...</p>
+          </div>
+        </section>
+
+        <section
+          id="attendance-stats-panel"
+          class="attendance-swipe-panel"
+          aria-label="Attendance Stats"
+        >
+          <div id="attendance-stats-content">
+            <p class="helper-text">Loading statistics...</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+
+    <!-- ADMIN TIMETABLE -->
+    <section id="admin-timetable-screen" class="screen admin-theme">
+      <div class="nav-header">
+        <h2>Timetable</h2>
+        <button class="small-btn home-icon-btn" onclick="showScreen('admin-home')" aria-label="Home" title="Home"><span class="home-icon-btn__icon" aria-hidden="true"></span><span class="visually-hidden">Home</span></button>
+      </div>
+
+      <div class="timetable-card">
+        <div id="admin-timetable-content">
+          <p class="helper-text">Loading timetable...</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="admin-timetable-admin-screen" class="screen admin-theme">
+      <div class="nav-header">
+        <h2>Timetable / Zoom Link</h2>
+        <button class="small-btn" onclick="showScreen('admin-academics')">Back</button>
+      </div>
+
+      <div class="dashboard-section timetable-admin-form">
+        <h3>Global Zoom Link</h3>
+        <p class="helper-text">This link is stored in the TimeTable tab, row 2, ZoomLink column.</p>
+        <input id="admin-global-zoom-link" type="url" inputmode="url" placeholder="https://..." />
+        <button type="button" class="save-btn" onclick="saveAdminTimetableZoomLink(this)">
+          Save Zoom Link
+        </button>
+        <p id="admin-timetable-message" class="helper-text timetable-status-message"></p>
+      </div>
+
+      <div class="timetable-card">
+        <h3>Timetable Preview</h3>
+        <div id="admin-timetable-admin-preview">
+          <p class="helper-text">Loading timetable...</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- WEEKLY PLANNER - V97.1.8.6 -->
+    <section id="weekly-planner-screen" class="screen admin-theme weekly-planner-screen">
+      <div class="weekly-planner-global-panel">
+        <div class="weekly-planner-live-title-row">
+          <button class="weekly-planner-live-close" type="button" onclick="showScreen('admin-academics')" aria-label="Close Weekly Planner" title="Close">
+            <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+          </button>
+          <h2>Weekly Planner</h2>
+        </div>
+
+        <div class="weekly-planner-live-actions" role="toolbar" aria-label="Weekly Planner actions">
+          <button id="weekly-planner-preview-settings-toggle" class="weekly-planner-header-action weekly-planner-header-action--settings" type="button" onclick="toggleWeeklyPlannerPreviewSettings(this)" aria-label="Planner font and colour settings" aria-controls="weekly-planner-preview-settings" aria-expanded="false">
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span><span class="weekly-planner-header-action__label">Settings</span>
+          </button>
+          <button class="weekly-planner-header-action weekly-planner-header-action--archive" type="button" onclick="showWeeklyPlannerArchive()" aria-label="View planner archive">
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span><span class="weekly-planner-header-action__label">Archive</span>
+          </button>
+          <button class="weekly-planner-header-action weekly-planner-header-action--download" type="button" onclick="downloadWeeklyPlannerImage(this)" aria-label="Save planner image to this device">
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span><span class="weekly-planner-header-action__label">Save</span>
+          </button>
+          <button class="weekly-planner-header-action weekly-planner-header-action--share" type="button" onclick="shareWeeklyPlannerImage(this)" aria-label="Share planner image">
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span><span class="weekly-planner-header-action__label">Share</span>
+          </button>
+          <button class="weekly-planner-header-action weekly-planner-header-action--submit" type="button" onclick="saveWeeklyPlannerPreviewToDrive(this)" aria-label="Submit planner image to Google Drive">
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span><span class="weekly-planner-header-action__label">Submit</span>
+          </button>
+        </div>
+
+        <section id="weekly-planner-preview-settings" class="weekly-planner-preview-settings" aria-label="Planner font and colour settings" hidden>
+          <fieldset class="weekly-planner-preview-setting-group"><legend>Text</legend><div class="weekly-planner-font-options">
+            <label class="weekly-planner-font-option weekly-planner-font-option--normal"><input type="radio" name="weekly-planner-preview-font" value="normal" onchange="updateWeeklyPlannerPreviewStyle()" /><span>Standard</span></label>
+            <label class="weekly-planner-font-option weekly-planner-font-option--comic"><input type="radio" name="weekly-planner-preview-font" value="comic" onchange="updateWeeklyPlannerPreviewStyle()" /><span>Comic Sans</span></label>
+            <label class="weekly-planner-font-option weekly-planner-font-option--handwritten"><input type="radio" name="weekly-planner-preview-font" value="handwritten" onchange="updateWeeklyPlannerPreviewStyle()" checked /><span>Handwritten</span></label>
+            <label class="weekly-planner-font-option weekly-planner-font-option--classic"><input type="radio" name="weekly-planner-preview-font" value="classic" onchange="updateWeeklyPlannerPreviewStyle()" /><span>Classic</span></label>
+          </div></fieldset>
+          <fieldset class="weekly-planner-preview-setting-group"><legend>Colour</legend><div class="weekly-planner-color-options">
+            <label class="weekly-planner-color-option" style="--weekly-planner-option-color:var(--text)"><input type="radio" name="weekly-planner-preview-color" value="normal" onchange="updateWeeklyPlannerPreviewStyle()" /><span><i style="--weekly-planner-swatch:var(--text)" aria-hidden="true"></i>Standard</span></label>
+            <label class="weekly-planner-color-option" style="--weekly-planner-option-color:#a626aa"><input type="radio" name="weekly-planner-preview-color" value="violet" onchange="updateWeeklyPlannerPreviewStyle()" checked /><span><i style="--weekly-planner-swatch:#a626aa" aria-hidden="true"></i>Violet</span></label>
+            <label class="weekly-planner-color-option" style="--weekly-planner-option-color:#0066a1"><input type="radio" name="weekly-planner-preview-color" value="turquoise" onchange="updateWeeklyPlannerPreviewStyle()" /><span><i style="--weekly-planner-swatch:#0066a1" aria-hidden="true"></i>Turquoise</span></label>
+            <label class="weekly-planner-color-option" style="--weekly-planner-option-color:#000080"><input type="radio" name="weekly-planner-preview-color" value="navy" onchange="updateWeeklyPlannerPreviewStyle()" /><span><i style="--weekly-planner-swatch:#000080" aria-hidden="true"></i>Navy</span></label>
+            <label class="weekly-planner-color-option" style="--weekly-planner-option-color:#7d7f7c"><input type="radio" name="weekly-planner-preview-color" value="grey" onchange="updateWeeklyPlannerPreviewStyle()" /><span><i style="--weekly-planner-swatch:#7d7f7c" aria-hidden="true"></i>Grey</span></label>
+          </div></fieldset>
+        </section>
+
+        <section class="weekly-planner-controls" aria-label="Planner details">
+          <label class="weekly-planner-field weekly-planner-field--teacher"><span>Name</span><select id="weekly-planner-teacher"></select></label>
+          <label class="weekly-planner-field weekly-planner-field--week"><span>Week commencing</span><input id="weekly-planner-week" type="date" /></label>
+          <label class="weekly-planner-field weekly-planner-field--group"><span>Group</span><input id="weekly-planner-group" type="text" list="weekly-planner-groups" placeholder="Group" /><datalist id="weekly-planner-groups"></datalist></label>
+        </section>
+        <p id="weekly-planner-message" class="helper-text weekly-planner-message" aria-live="polite"></p>
+        <input id="weekly-planner-feedback" type="hidden" value="" />
+      </div>
+
+      <div class="weekly-planner-live-workspace">
+        <div class="weekly-planner-preview-frame weekly-planner-live-preview-frame">
+          <img id="weekly-planner-preview-image" alt="Weekly planner. Tap a day to edit." />
+          <div class="weekly-planner-day-hotspots" aria-label="Edit a planner day">
+            <button type="button" data-weekly-planner-open-day="0" aria-label="Edit Monday"></button>
+            <button type="button" data-weekly-planner-open-day="1" aria-label="Edit Tuesday"></button>
+            <button type="button" data-weekly-planner-open-day="2" aria-label="Edit Wednesday"></button>
+            <button type="button" data-weekly-planner-open-day="3" aria-label="Edit Thursday"></button>
+          </div>
+        </div>
+        <p id="weekly-planner-preview-message" class="helper-text weekly-planner-message" aria-live="polite"></p>
+        <p class="weekly-planner-edit-hint">Tap a day on the planner to edit it.</p>
+      </div>
+
+      <dialog id="weekly-planner-day-editor" class="weekly-planner-day-editor" aria-labelledby="weekly-planner-day-editor-title">
+        <div class="weekly-planner-day-editor-card">
+          <div class="weekly-planner-day-editor-header">
+            <button type="button" class="weekly-planner-day-editor-cancel" onclick="closeWeeklyPlannerDayEditor(false)">Cancel</button>
+            <h3 id="weekly-planner-day-editor-title">Edit day</h3>
+            <button type="button" class="weekly-planner-day-editor-done" onclick="closeWeeklyPlannerDayEditor(true)">Done</button>
+          </div>
+          <div class="weekly-planner-shell"><div class="weekly-planner-rail-shell"><div id="weekly-planner-dots" class="weekly-planner-dots"></div><div id="weekly-planner-rail" class="weekly-planner-rail" role="region" aria-label="Planner day editor"><p class="helper-text">Loading weekly planner...</p></div></div></div>
+        </div>
+      </dialog>
+
+      <dialog id="weekly-planner-save-dialog" class="weekly-planner-save-dialog" aria-labelledby="weekly-planner-save-dialog-message"><div class="weekly-planner-save-dialog-card"><p id="weekly-planner-save-dialog-message" aria-live="polite"></p><button type="button" class="weekly-planner-save-dialog-close" onclick="closeWeeklyPlannerSaveDialog()" aria-label="Close save notice" title="Close"><span class="app-icon app-icon-xclose" aria-hidden="true"></span></button></div></dialog>
+    </section>
+
+    <section id="weekly-planner-archive-screen" class="screen admin-theme weekly-planner-archive-screen">
+      <div class="weekly-planner-archive-container">
+        <div class="weekly-planner-archive-page-header">
+          <button
+            class="weekly-planner-header-action weekly-planner-header-action--close"
+            type="button"
+            onclick="returnToWeeklyPlannerFromArchive()"
+            aria-label="Close planner archive"
+          >
+            <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+          </button>
+
+          <h2>Planner Archive</h2>
+
+          <span class="weekly-planner-header-spacer" aria-hidden="true"></span>
+        </div>
+
+        <section class="weekly-planner-archive-panel">
+          <h3 class="weekly-planner-archive-panel-header">View by date</h3>
+
+          <div class="weekly-planner-archive-datebar">
+            <label class="weekly-planner-field weekly-planner-field--week">
+              <span>Week commencing</span>
+              <input id="weekly-planner-archive-week" type="date" />
+            </label>
+
+            <button
+              id="weekly-planner-archive-open"
+              class="weekly-planner-header-action weekly-planner-archive-open-btn"
+              type="button"
+              aria-label="Open planners for this week"
+            >
+              <span class="app-icon" style="--app-icon-url: url('/icons/open.svg')" aria-hidden="true"></span>
+              <span class="weekly-planner-header-action__label">OPEN</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="weekly-planner-archive-panel">
+          <h3 class="weekly-planner-archive-panel-header">View by Teacher</h3>
+
+          <p id="weekly-planner-archive-hub-message" class="helper-text weekly-planner-message" aria-live="polite"></p>
+          <div id="weekly-planner-archive-heatmap-list" class="weekly-planner-archive-heatmap-list" role="list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="weekly-planner-archive-week-screen" class="screen admin-theme weekly-planner-archive-week-screen">
+      <div class="weekly-planner-global-panel">
+        <div class="weekly-planner-app-header weekly-planner-app-header--rail-actions" role="toolbar" aria-label="Week planners actions">
+          <h2 id="weekly-planner-archive-week-screen-title" class="weekly-planner-app-header__title">Planners</h2>
+
+          <button
+            class="weekly-planner-header-action weekly-planner-header-action--close"
+            type="button"
+            onclick="returnToWeeklyPlannerArchiveFromWeekScreen()"
+            aria-label="Close and return to planner archive"
+          >
+            <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+          </button>
+
+          <button
+            id="weekly-planner-archive-week-save"
+            class="weekly-planner-header-action weekly-planner-header-action--save"
+            type="button"
+            aria-label="Save all planners"
+          >
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span>
+            <span class="weekly-planner-header-action__label">Save</span>
+          </button>
+
+          <button
+            id="weekly-planner-archive-week-share"
+            class="weekly-planner-header-action weekly-planner-header-action--share"
+            type="button"
+            aria-label="Share all planners"
+          >
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span>
+            <span class="weekly-planner-header-action__label">Share</span>
+          </button>
+        </div>
+      </div>
+
+      <p id="weekly-planner-archive-week-screen-message" class="helper-text weekly-planner-message" aria-live="polite"></p>
+
+      <div id="weekly-planner-archive-week-rail" class="weekly-planner-archive-week-rail" role="list"></div>
+    </section>
+
+    <section id="weekly-planner-archive-teacher-screen" class="screen admin-theme weekly-planner-archive-teacher-screen">
+      <div class="weekly-planner-global-panel">
+        <div class="weekly-planner-app-header weekly-planner-app-header--rail-actions" role="toolbar" aria-label="Teacher submission history actions">
+          <h2 id="weekly-planner-archive-teacher-name" class="weekly-planner-app-header__title">Submission History</h2>
+
+          <button
+            class="weekly-planner-header-action weekly-planner-header-action--close"
+            type="button"
+            onclick="returnToWeeklyPlannerArchiveHub()"
+            aria-label="Close submission history"
+          >
+            <span class="app-icon app-icon-xclose" aria-hidden="true"></span>
+          </button>
+
+          <button
+            id="weekly-planner-archive-teacher-save"
+            class="weekly-planner-header-action weekly-planner-header-action--save"
+            type="button"
+            aria-label="Save all planners"
+          >
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span>
+            <span class="weekly-planner-header-action__label">Save</span>
+          </button>
+
+          <button
+            id="weekly-planner-archive-teacher-share"
+            class="weekly-planner-header-action weekly-planner-header-action--share"
+            type="button"
+            aria-label="Share all planners"
+          >
+            <span class="weekly-planner-header-action__icon" aria-hidden="true"></span>
+            <span class="weekly-planner-header-action__label">Share</span>
+          </button>
+        </div>
+      </div>
+
+      <p id="weekly-planner-archive-teacher-message" class="helper-text weekly-planner-message" aria-live="polite"></p>
+
+      <div id="weekly-planner-archive-teacher-rail" class="weekly-planner-archive-week-rail" role="list"></div>
+    </section>
+
+
+
+<!-- RECORD LESSON -->
+<!-- V92.4: compatibility fallback; shared recorder JavaScript replaces this mount at initialization. -->
+<section
+  id="record-lesson-screen"
+  class="screen admin-theme m4l-recorder-screen"
+  data-m4l-recorder-role="admin"
+>
+  <div class="m4l-recorder-root" data-m4l-recorder-root>
+
+    <!-- PAGE SELECTOR -->
+    <section
+      id="m4l-recorder-page-select"
+      class="m4l-recorder-view m4l-recorder-view--pages active"
+      aria-labelledby="m4l-recorder-title"
+    >
+      <h2 id="m4l-recorder-title" class="m4l-recorder-title">
+        RECORD &amp; SHARE
+      </h2>
+
+      <div class="m4l-recorder-book-card">
+        <label class="visually-hidden" for="m4l-recorder-book-select">
+          Select your kitaab
+        </label>
+
+        <select
+          id="m4l-recorder-book-select"
+          class="m4l-recorder-book-select"
+          aria-label="Select your kitaab"
+        >
+          <option value="">Loading image sets...</option>
+        </select>
+
+        <p class="m4l-recorder-selector-label" aria-hidden="true">
+          Select your kitaab
+        </p>
+
+        <input
+          id="m4l-recorder-page-upload"
+          class="visually-hidden"
+          type="file"
+          accept="image/*"
+          multiple
+        />
+      </div>
+
+      <p
+        id="m4l-recorder-status"
+        class="m4l-recorder-status helper-text"
+        role="status"
+        aria-live="polite"
+      >
+        Loading image sets...
+      </p>
+
+      <div
+        id="m4l-recorder-page-grid"
+        class="m4l-recorder-page-grid"
+        aria-label="Available reader pages"
+      ></div>
+    </section>
+
+    <!-- RECORD VIEW -->
+    <section
+      id="m4l-recorder-record-view"
+      class="m4l-recorder-view m4l-recorder-view--record"
+      aria-labelledby="m4l-recorder-record-title"
+    >
+      <div class="m4l-recorder-view-header m4l-recorder-view-header--clean">
+        <h2
+          id="m4l-recorder-record-title"
+          class="m4l-recorder-view-title"
+        >
+          Record
+        </h2>
+
+        <button
+          id="m4l-recorder-back-to-pages"
+          class="m4l-recorder-back-icon-btn"
+          type="button"
+          aria-label="Return to page selector"
+          title="Return to page selector"
+        >
+          <span
+            class="m4l-recorder-back-icon"
+            aria-hidden="true"
+          ></span>
+
+          <span class="m4l-recorder-back-label">
+            Return to page selector
+          </span>
+        </button>
+      </div>
+
+      <div class="m4l-recorder-reader-frame">
+        <canvas
+          id="m4l-recorder-canvas"
+          aria-label="Selected reader page"
+        ></canvas>
+      </div>
+
+      <div
+        class="m4l-recorder-controls"
+        aria-label="Recording controls"
+      >
+        <button
+          id="m4l-recorder-record-btn"
+          class="m4l-recorder-record-action"
+          type="button"
+          aria-label="Start recording"
+        >
+          <img
+            class="m4l-recorder-native-icon"
+            src="/icons/record.svg?v=92.3"
+            alt=""
+            aria-hidden="true"
+          />
+
+          <span class="m4l-recorder-record-label">
+            Record
+          </span>
+        </button>
+
+        <button
+          id="m4l-recorder-stop-btn"
+          class="m4l-recorder-record-action"
+          type="button"
+          aria-label="Stop recording"
+          hidden
+        >
+          <img
+            class="m4l-recorder-native-icon"
+            src="/icons/stoprecord.svg?v=92.3"
+            alt=""
+            aria-hidden="true"
+          />
+
+          <span class="m4l-recorder-record-meta">
+            STOP Recording in 
+            <output
+              id="m4l-recorder-countdown"
+              aria-live="polite"
+            >
+              02:00
+            </output>
+          </span>
+        </button>
+
+        <p
+          id="m4l-recorder-helper"
+          class="m4l-recorder-helper helper-text"
+        >
+          Microphone permission will be requested when you tap Record.
+        </p>
+      </div>
+    </section>
+
+    <!-- PREVIEW VIEW -->
+    <section
+      id="m4l-recorder-preview-view"
+      class="m4l-recorder-view m4l-recorder-view--preview"
+      aria-labelledby="m4l-recorder-preview-title"
+    >
+      <div class="m4l-recorder-view-header m4l-recorder-view-header--clean">
+        <h2
+          id="m4l-recorder-preview-title"
+          class="m4l-recorder-view-title"
+        >
+          Preview
+        </h2>
+
+        <button
+          id="m4l-recorder-preview-pages"
+          class="m4l-recorder-back-icon-btn"
+          type="button"
+          aria-label="Return to page selector"
+          title="Return to page selector"
+        >
+          <span
+            class="m4l-recorder-back-icon"
+            aria-hidden="true"
+          ></span>
+
+          <span class="m4l-recorder-back-label">
+            Return to page selector
+          </span>
+        </button>
+      </div>
+
+      <video
+        id="m4l-recorder-preview-video"
+        class="m4l-recorder-preview-video"
+        controls
+        playsinline
+      ></video>
+
+      <p
+        id="m4l-recorder-recording-meta"
+        class="m4l-recorder-helper helper-text"
+      >
+        Review before sharing.
+      </p>
+
+      <div
+        class="m4l-recorder-preview-actions"
+        aria-label="Recording actions"
+      >
+        <button
+          id="m4l-recorder-rerecord-btn"
+          class="m4l-recorder-preview-action"
+          type="button"
+        >
+          <img
+            class="m4l-recorder-preview-icon"
+            src="/icons/cancelredo.svg"
+            alt=""
+            aria-hidden="true"
+          />
+
+          <span>Redo</span>
+        </button>
+
+        <button
+          id="m4l-recorder-share-btn"
+          class="m4l-recorder-preview-action"
+          type="button"
+        >
+          <img
+            class="m4l-recorder-preview-icon"
+            src="/icons/share.svg"
+            alt=""
+            aria-hidden="true"
+          />
+
+          <span>Share</span>
+        </button>
+      </div>
+    </section>
+
+  </div>
+</section>
+    <!-- PDF VIEWER -->
+    <section id="pdf-viewer-screen" class="screen admin-theme">
+      <div class="nav-header pdf-viewer-header">
+  <button
+    type="button"
+    class="pdf-viewer-icon-btn pdf-direct-btn"
+    onclick="openCurrentPdfDirect()"
+    aria-label="Open PDF outside the app"
+    title="Open PDF"
+  >
+    <span class="app-icon pdf-open-icon" aria-hidden="true"></span>
+    <span class="pdf-viewer-icon-label">OPEN</span>
+  </button>
+
+  <h2 id="pdf-viewer-title">PDF Viewer</h2>
+
+  <div class="pdf-viewer-library-controls" aria-label="PDF library navigation">
+    <button id="pdf-library-previous" type="button" class="pdf-viewer-icon-btn pdf-library-step-btn" onclick="stepPdfLibrary(-1)" aria-label="Previous PDF" title="Previous PDF" hidden>
+      <span class="app-icon pdf-library-previous-icon" aria-hidden="true"></span>
+      <span class="pdf-viewer-icon-label">PREV</span>
+    </button>
+    <button id="pdf-library-toggle" type="button" class="pdf-library-toggle-btn" onclick="togglePdfLibraryDrawer()" aria-label="Open PDF library" aria-controls="pdf-library-drawer" aria-expanded="false" hidden>
+      <span class="app-icon pdf-library-icon" aria-hidden="true"></span>
+      <span id="pdf-library-count" class="pdf-library-count"></span>
+    </button>
+    <button id="pdf-library-next" type="button" class="pdf-viewer-icon-btn pdf-library-step-btn" onclick="stepPdfLibrary(1)" aria-label="Next PDF" title="Next PDF" hidden>
+      <span class="app-icon pdf-library-next-icon" aria-hidden="true"></span>
+      <span class="pdf-viewer-icon-label">NEXT</span>
+    </button>
+  </div>
+
+  <div class="pdf-viewer-actions">
+    <button
+      type="button"
+      class="pdf-viewer-icon-btn"
+      onclick="closePdfViewer()"
+      aria-label="Back to the library"
+      title="Back"
+    >
+      <span class="app-icon pdf-back-icon" aria-hidden="true"></span>
+      <span class="pdf-viewer-icon-label">closeK</span>
+    </button>
+  </div>
+</div>
+
+
+  <aside id="pdf-library-drawer" class="pdf-library-drawer" aria-label="PDF Library" hidden>
+    <div class="pdf-library-drawer-header">
+      <h3 id="pdf-library-heading">PDF Library</h3>
+      <button type="button" class="pdf-library-close-btn" onclick="closePdfLibraryDrawer()" aria-label="Close PDF library">×</button>
+    </div>
+    <div id="pdf-library-list" class="pdf-library-list"></div>
+  </aside>
+
+      <iframe
+        id="pdf-viewer-frame"
+        class="pdf-viewer-frame"
+        title="PDF Viewer"
+      ></iframe>
+    </section>
+
+    <!-- PLACEHOLDER SCREEN -->
+    <section id="placeholder-screen" class="screen">
+      <div class="nav-header">
+        <h2 id="placeholder-title">Screen</h2>
+        <button class="small-btn home-icon-btn" onclick="goHome()" aria-label="Home" title="Home"><span class="home-icon-btn__icon" aria-hidden="true"></span><span class="visually-hidden">Home</span></button>
+      </div>
+
+      <div class="dashboard-section">
+        <p class="helper-text">This screen will be connected next.</p>
+      </div>
+    </section>
+
+    <nav id="bottom-nav" class="bottom-nav hidden" aria-label="Primary navigation"></nav>
+
+  </main>
+<script src="/js/m4l-dom.js?v=11"></script>
+<script src="/js/m4l-config.js?v=94.1"></script>
+<script src="/app.js?v=94.1"></script>
+<script src="/js/m4l-cache.js?v=94.6"></script>
+<script src="/js/m4l-auth.js?v=87.2"></script>
+<script src="/js/m4l-shell.js?v=97.1.5.5"></script>
+  <script src="/js/m4l-timetable.js?v=97.1.5.5"></script>
+  <script src="/js/m4l-weekly-planner.js?v=97.1.8.6"></script>
+  <script src="/js/m4l-weekly-planner-archive.js?v=97.1.8.4"></script>
+  <script src="/js/m4l-recorder.js?v=97.1.5.1"></script>
+<script src="/js/m4l-attendance.js?v=97.1.5.4"></script>
+<script src="/js/m4l-admin-academics.js?v=55"></script>
+  <script src="/js/m4l-resources.js?v=97.1.8"></script>
+<script src="/js/m4l-progress.js?v=96.5"></script>
+<script src="/js/m4l-manage-students.js?v=97.1.5.3"></script>
+</body>
+</html>

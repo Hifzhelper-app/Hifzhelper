@@ -1,0 +1,1157 @@
+/* M4L v97.1.6.3 Weekly Planner
+   Mobile uses one compact swipe card. Medium screens (768-1179px) show two
+   day cards per row, contained within the viewport. Large desktop
+   (>=1180px) shows all four in one row, on an enlarged canvas. Preview
+   font and ink colour are locally selectable. */
+
+.weekly-planner-screen,
+.weekly-planner-preview-screen {
+  --planner-page: #efd7dc;
+  --planner-cream: #eadfbd;
+  --planner-ink: #c238f2;
+  --planner-line: #777b75;
+  --weekly-planner-max-width: 1240px;
+}
+
+#weekly-planner-screen.screen,
+#weekly-planner-preview-screen.screen {
+  padding: 6px;
+  background: var(--surface-track);
+  text-align: left;
+}
+
+#weekly-planner-preview-screen.screen {
+  background: var(--surface-app);
+}
+
+.weekly-planner-global-panel,
+.weekly-planner-shell,
+.weekly-planner-preview-screen > .weekly-planner-app-header,
+.weekly-planner-preview-settings,
+.weekly-planner-preview-shell {
+  width: min(100%, var(--weekly-planner-max-width));
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.weekly-planner-global-panel {
+  overflow: hidden;
+  border: 2px solid var(--surface-track);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+
+.weekly-planner-app-header {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 1px 7px;
+  box-sizing: border-box;
+  background: var(--surface-card);
+  color: var(--text);
+}
+
+.weekly-planner-app-header--main {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    "title title title"
+    "back archive save";
+  min-height: auto;
+  row-gap: 2px;
+  padding: 6px 7px 4px;
+}
+
+.weekly-planner-app-header--main .weekly-planner-app-header__title {
+  grid-area: title;
+}
+
+.weekly-planner-app-header--main .weekly-planner-header-action--back {
+  grid-area: back;
+}
+
+.weekly-planner-app-header--main .weekly-planner-header-action--archive {
+  grid-area: archive;
+}
+
+.weekly-planner-app-header--main .weekly-planner-header-action--save {
+  grid-area: save;
+}
+
+@media (min-width: 768px) {
+  .weekly-planner-app-header--main {
+    grid-template-columns: 15% 55% 15% 15%;
+    grid-template-areas: "back title archive save";
+  }
+}
+
+.weekly-planner-app-header--rail-actions {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    "title title title"
+    "close save share";
+  min-height: auto;
+  row-gap: 2px;
+  padding: 6px 7px 4px;
+}
+
+.weekly-planner-app-header--rail-actions .weekly-planner-app-header__title {
+  grid-area: title;
+}
+
+.weekly-planner-app-header--rail-actions .weekly-planner-header-action--close {
+  grid-area: close;
+}
+
+.weekly-planner-app-header--rail-actions .weekly-planner-header-action--save {
+  grid-area: save;
+}
+
+.weekly-planner-app-header--rail-actions .weekly-planner-header-action--share {
+  grid-area: share;
+}
+
+@media (min-width: 768px) {
+  .weekly-planner-app-header--rail-actions {
+    grid-template-columns: 15% 55% 15% 15%;
+    grid-template-areas: "close title save share";
+  }
+}
+
+.weekly-planner-global-panel .weekly-planner-app-header {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--surface-track);
+  border-radius: 0;
+}
+
+.weekly-planner-preview-screen > .weekly-planner-app-header {
+  grid-template-columns: repeat(4, 1fr); 
+  border: 2px solid var(--surface-track); 
+  border-radius: 14px;
+   justify-items: center;
+}
+
+.weekly-planner-preview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: 4px;
+  min-width: 0;
+}
+
+.weekly-planner-preview-actions .weekly-planner-header-action {
+  flex: 0 1 46px;
+}
+
+.weekly-planner-app-header h2 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: clamp(0.94rem, 4vw, 1.15rem);
+  font-weight: 800;
+  line-height: 1.05;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weekly-planner-screen .weekly-planner-header-action,
+.weekly-planner-preview-screen .weekly-planner-header-action,
+.weekly-planner-archive-screen .weekly-planner-header-action,
+.weekly-planner-archive-week-screen .weekly-planner-header-action,
+.weekly-planner-archive-teacher-screen .weekly-planner-header-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  margin: 0;
+  padding: 1px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font: inherit;
+}
+
+.weekly-planner-screen .weekly-planner-header-action:active,
+.weekly-planner-preview-screen .weekly-planner-header-action:active,
+.weekly-planner-archive-screen .weekly-planner-header-action:active,
+.weekly-planner-archive-week-screen .weekly-planner-header-action:active,
+.weekly-planner-archive-teacher-screen .weekly-planner-header-action:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.weekly-planner-screen .weekly-planner-header-action:focus-visible,
+.weekly-planner-preview-screen .weekly-planner-header-action:focus-visible,
+.weekly-planner-archive-screen .weekly-planner-header-action:focus-visible,
+.weekly-planner-archive-week-screen .weekly-planner-header-action:focus-visible,
+.weekly-planner-archive-teacher-screen .weekly-planner-header-action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.weekly-planner-screen .weekly-planner-header-action:disabled,
+.weekly-planner-preview-screen .weekly-planner-header-action:disabled,
+.weekly-planner-archive-screen .weekly-planner-header-action:disabled,
+.weekly-planner-archive-week-screen .weekly-planner-header-action:disabled,
+.weekly-planner-archive-teacher-screen .weekly-planner-header-action:disabled {
+  opacity: 0.55;
+}
+
+.weekly-planner-header-action__icon {
+  width: 24px;
+  height: 24px;
+  background: currentColor;
+  -webkit-mask: var(--weekly-planner-header-icon) center / contain no-repeat;
+  mask: var(--weekly-planner-header-icon) center / contain no-repeat;
+}
+
+.weekly-planner-header-action--back {
+  --weekly-planner-header-icon: url('/icons/back.svg?v=96.4');
+}
+
+.weekly-planner-header-action--save {
+  --weekly-planner-header-icon: url('/icons/save.svg?v=95.3.1');
+}
+
+.weekly-planner-header-action--archive {
+  --weekly-planner-header-icon: url('/icons/archive.svg?v=97.1.6');
+}
+
+.weekly-planner-header-action--share {
+  --weekly-planner-header-icon: url('/icons/share.svg?v=95.3.1');
+}
+
+.weekly-planner-preview-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+#weekly-planner-preview-settings-toggle {
+  display: inline-grid;
+  flex: 0 0 28px;
+  place-items: center;
+  width: 28px;
+  min-width: 28px;
+  max-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  margin: 0;
+  padding: 3px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+}
+
+#weekly-planner-preview-settings-toggle:active {
+  transform: none;
+  box-shadow: none;
+}
+
+#weekly-planner-preview-settings-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.weekly-planner-preview-settings-icon {
+  width: 22px;
+  height: 22px;
+  background: currentColor;
+  -webkit-mask: url('/icons/settings.svg?v=95.3.1') center / contain no-repeat;
+  mask: url('/icons/settings.svg?v=95.3.1') center / contain no-repeat;
+}
+
+.weekly-planner-header-action__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weekly-planner-mobile-copy {
+  display: inline;
+}
+
+.weekly-planner-wide-copy {
+  display: none;
+}
+
+.weekly-planner-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+  align-items: end;
+  gap: 4px 10px;
+  width: 100%;
+  padding: 2px 6px 2px;
+  border: 2px solid var(--surface-track);
+   box-sizing: border-box; /* ADD THIS */
+}
+
+.weekly-planner-field {
+  position: relative;
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.weekly-planner-field--teacher {
+  grid-column: 1 / -1;
+}
+
+.weekly-planner-field > span {
+  padding-left: 2px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.weekly-planner-field--teacher > span,
+.weekly-planner-field--group > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+#weekly-planner-screen .weekly-planner-field input,
+#weekly-planner-screen .weekly-planner-field select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 36px;
+  min-height: 36px;
+  margin: 0;
+  padding: 4px 7px;
+  box-sizing: border-box;
+  border: 2px solid var(--surface-track);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  -webkit-text-fill-color: var(--text);
+}
+
+#weekly-planner-screen .weekly-planner-field--week,
+#weekly-planner-screen .weekly-planner-field--group {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.weekly-planner-field input::placeholder {
+  color: color-mix(in srgb, var(--text) 48%, transparent);
+  -webkit-text-fill-color: color-mix(in srgb, var(--text) 48%, transparent);
+}
+
+.weekly-planner-field select:disabled {
+  opacity: 1;
+  background: var(--surface-card);
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+
+}
+
+#weekly-planner-week,
+#weekly-planner-group {
+  background: var(--surface-card);
+}
+
+.weekly-planner-message {
+  min-height: 0;
+  margin: 2px 6px 3px;
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.weekly-planner-message:empty {
+  display: none;
+}
+
+.weekly-planner-message.error-message {
+  color: var(--error);
+}
+
+.weekly-planner-message.success-message {
+  color: var(--primary);
+}
+
+.weekly-planner-shell {
+  padding: 0 0 calc(22px + var(--bottom-nav-safe-area));
+}
+
+.weekly-planner-rail-shell {
+  width: 100%;
+  overflow: hidden;
+}
+
+.weekly-planner-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 22px;
+  padding: 5px 0 4px;
+  background: transparent;
+}
+
+.weekly-planner-screen .weekly-planner-dot {
+  flex: 0 0 9px;
+  width: 9px;
+  min-width: 9px;
+  max-width: 9px;
+  height: 9px;
+  min-height: 9px;
+  max-height: 9px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-app);
+  box-shadow: none;
+}
+
+.weekly-planner-screen .weekly-planner-dot:active {
+  transform: none;
+}
+
+.weekly-planner-screen .weekly-planner-dot.is-active {
+  background: var(--surface-contrast);
+  transform: scale(1.12);
+}
+
+.weekly-planner-rail {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0;
+  scroll-padding-inline: 0;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x pan-y;
+}
+
+.weekly-planner-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.weekly-planner-day-card {
+  flex: 0 0 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 2px solid var(--planner-line);
+  border-radius: 14px;
+  background: var(--surface-card);
+  color: var(--text);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+.weekly-planner-day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--surface-track);
+  background: var(--surface-app);
+}
+
+.weekly-planner-day-heading h3 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-heading);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.weekly-planner-day-date {
+  flex: 0 0 auto;
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.weekly-planner-period-row,
+.weekly-planner-feedback-row {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(68px, auto);
+  min-width: 0;
+  border-bottom: 1px solid var(--surface-track);
+  background: var(--surface-card);
+}
+
+.weekly-planner-feedback-row {
+  border-bottom: 0;
+}
+
+#weekly-planner-screen input.weekly-planner-period-subject,
+.weekly-planner-period-entries,
+.weekly-planner-feedback-row textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font: inherit;
+}
+#weekly-planner-screen input.weekly-planner-period-subject,
+.weekly-planner-feedback-row label {
+  min-height: 20px;
+  margin: 0;
+  padding: 4px 8px 0;
+  color: var(--text);
+  font-family: var(--font-main);
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.weekly-planner-period-subject:focus {
+  outline: 0;
+  box-shadow: inset 0 -1px 0 var(--surface-track);
+}
+
+.weekly-planner-period-subject::placeholder {
+  color: color-mix(in srgb, var(--text) 48%, transparent);
+}
+
+#weekly-planner-screen input.weekly-planner-period-subject {
+  min-height: 20px;
+  margin: 0;
+  padding: 4px 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+
+.weekly-planner-period-entries,
+.weekly-planner-feedback-row textarea {
+  min-height: 68px;
+  padding: 3px 8px 6px;
+  resize: vertical;
+  color: var(--text);
+  font-family:  inherit;
+  font-size: 0.98rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.weekly-planner-period-entries.is-prefilled {
+  color: color-mix(in srgb, var(--text) 42%, transparent);
+}
+
+.weekly-planner-period-entries:focus,
+.weekly-planner-feedback-row textarea:focus {
+  outline: 2px solid color-mix(in srgb, var(--text) 42%, transparent);
+  outline-offset: -2px;
+}
+
+.weekly-planner-period-entries::placeholder,
+.weekly-planner-feedback-row textarea::placeholder {
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+}
+
+/* Retain the add/remove implementation for a later phase without exposing it. */
+.weekly-planner-remove-period,
+.weekly-planner-add-period-wrap {
+  display: none !important;
+}
+
+.weekly-planner-preview-settings {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px;
+  border: 2px solid var(--surface-track);
+  border-radius: 14px;
+  background: var(--surface-card);
+}
+
+.weekly-planner-preview-settings[hidden] {
+  display: none;
+}
+
+.weekly-planner-preview-setting-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.weekly-planner-preview-setting-group legend {
+  margin: 0 0 4px;
+  padding: 0 2px;
+  color: var(--text);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.weekly-planner-font-options,
+.weekly-planner-color-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.weekly-planner-preview-setting-group input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.weekly-planner-font-option,
+.weekly-planner-color-option {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+
+.weekly-planner-font-option > span,
+.weekly-planner-color-option > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+  border: 2px solid var(--surface-track);
+  border-radius: 9px;
+  background: var(--surface-card);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.weekly-planner-font-option input:checked + span,
+.weekly-planner-color-option input:checked + span {
+  border-color: var(--primary);
+  background: var(--surface-track);
+}
+
+.weekly-planner-font-option input:focus-visible + span,
+.weekly-planner-color-option input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.weekly-planner-font-option--normal > span {
+  font-family: Arial, sans-serif;
+}
+
+.weekly-planner-font-option--comic > span {
+  font-family: "Comic Sans MS", "Comic Sans", cursive;
+}
+
+.weekly-planner-font-option--handwritten > span {
+  font-family: "Chalkboard SE", "Bradley Hand", "Comic Sans MS", cursive;
+}
+
+.weekly-planner-font-option--classic > span {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.weekly-planner-color-option > span {
+  justify-content: flex-start;
+  padding-left: 12px;
+  color: var(--weekly-planner-option-color, var(--text));
+  text-align: left;
+}
+
+.weekly-planner-color-option i {
+  flex: 0 0 14px;
+  width: 14px;
+  height: 14px;
+  border: 1px solid color-mix(in srgb, var(--text) 38%, transparent);
+  border-radius: 50%;
+  background: var(--weekly-planner-swatch);
+}
+
+.weekly-planner-preview-shell {
+  display: grid;
+  justify-items: center;
+  padding: 6px 0 calc(22px + var(--bottom-nav-safe-area));
+}
+
+.weekly-planner-preview-frame {
+  width: 100%;
+  overflow: hidden;
+  border: 2px solid var(--planner-line);
+  border-radius: 14px;
+  background: var(--surface-card);
+  box-shadow: none;
+}
+
+.weekly-planner-preview-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--planner-page);
+}
+
+#weekly-planner-preview-message {
+  width: 100%;
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.weekly-planner-save-dialog {
+  width: min(calc(100% - 28px), 440px);
+  max-width: 440px;
+  margin: auto;
+  padding: 0;
+  border: 2px solid var(--surface-track);
+  border-radius: 16px;
+  background: var(--surface-card);
+  color: var(--text);
+  box-shadow: 0 10px 30px rgba(var(--black-rgb), 0.18);
+}
+
+.weekly-planner-save-dialog:not([open]) {
+  display: none;
+}
+
+.weekly-planner-save-dialog::backdrop {
+  background: rgba(var(--black-rgb), 0.32);
+}
+
+.weekly-planner-save-dialog-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+  min-height: 62px;
+  padding: 10px 10px 10px 14px;
+  box-sizing: border-box;
+}
+
+#weekly-planner-save-dialog-message {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.weekly-planner-save-dialog-close {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+}
+
+.weekly-planner-save-dialog-close .app-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.weekly-planner-save-dialog-close:active {
+  transform: none;
+  box-shadow: none;
+}
+
+.weekly-planner-save-dialog-close:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+@media (max-width: 767px) {
+  #weekly-planner-screen .weekly-planner-controls {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+    row-gap: 4px;
+    column-gap: 10px;
+  }
+
+  #weekly-planner-screen .weekly-planner-field--week,
+  #weekly-planner-screen .weekly-planner-field--group {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #weekly-planner-screen .weekly-planner-field input,
+  #weekly-planner-screen .weekly-planner-field select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: 36px;
+    min-height: 36px;
+    margin: 0;
+    padding: 4px 7px;
+    box-sizing: border-box;
+  }
+}
+
+#weekly-planner-screen #weekly-planner-week {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+ #weekly-planner-screen .weekly-planner-field--group > span {
+  position: static;
+  width: auto;
+  height: auto;
+  padding-left: 2px;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  /* visibility: hidden; */
+}
+
+
+
+@media (min-width: 768px) {
+  body:has(#weekly-planner-screen.active) .app-shell,
+  body:has(#weekly-planner-preview-screen.active) .app-shell {
+    max-width: 1240px;
+  }
+#weekly-planner-screen.screen {
+    padding: 14px;
+    background: var(--surface-track);
+  }
+  
+  #weekly-planner-preview-screen.screen {
+    padding: 14px;
+    background: var(--surface-app);
+  }
+
+
+
+   
+  .weekly-planner-mobile-copy {
+    display: none;
+  }
+
+  .weekly-planner-wide-copy {
+    display: inline;
+  }
+
+  .weekly-planner-global-panel {
+    display: grid;
+    gap: 10px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .weekly-planner-global-panel .weekly-planner-app-header,
+  .weekly-planner-preview-screen > .weekly-planner-app-header {
+    grid-template-columns: 78px minmax(0, 1fr) 94px;
+    min-height: 52px;
+    padding-inline: 14px;
+    border: 2px solid var(--surface-track);
+    border-radius: 16px;
+    background: var(--surface-card);
+  }
+
+  .weekly-planner-preview-screen > .weekly-planner-app-header {
+   grid-template-columns: repeat(4, 1fr); 
+  border: 2px solid var(--surface-track); 
+  border-radius: 14px;
+   justify-items: center;
+  }
+
+  .weekly-planner-controls {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.65fr);
+    gap: 10px;
+    padding: 10px;
+    border: 2px solid var(--surface-track);
+    border-radius: 16px;
+  }
+
+  .weekly-planner-field--teacher {
+    grid-column: auto;
+  }
+
+  .weekly-planner-field--teacher > span,
+  .weekly-planner-field--group > span {
+    position: static;
+    width: auto;
+    height: auto;
+    padding-left: 2px;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  #weekly-planner-screen .weekly-planner-field input,
+#weekly-planner-screen .weekly-planner-field select {
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  margin: 0;
+  padding: 7px 9px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  font-size: 0.92rem;
+}
+
+  .weekly-planner-shell {
+    padding-top: 10px;
+    padding-bottom: 28px;
+  }
+
+  .weekly-planner-dots {
+    display: none;
+  }
+
+  .weekly-planner-rail-shell {
+    overflow: visible;
+  }
+
+  .weekly-planner-rail {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    overflow: visible;
+    padding: 0;
+    scroll-snap-type: none;
+  }
+
+  .weekly-planner-day-card {
+    width: auto;
+    min-width: 0;
+    border-radius: 16px;
+    scroll-snap-align: none;
+  }
+
+  .weekly-planner-day-heading {
+    background: var(--planner-cream);
+  }
+
+  .weekly-planner-period-row,
+  .weekly-planner-feedback-row {
+    grid-template-rows: auto minmax(76px, auto);
+  }
+
+  .weekly-planner-period-entries,
+  .weekly-planner-feedback-row textarea {
+    min-height: 76px;
+  }
+
+  .weekly-planner-preview-shell {
+    padding: 14px 16px 32px;
+  }
+
+  .weekly-planner-preview-settings {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 14px;
+  }
+
+  .weekly-planner-font-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .weekly-planner-color-options {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .weekly-planner-preview-frame {
+    width: min(100%, 760px);
+    border-radius: 20px;
+    box-shadow: 0 10px 28px rgba(var(--black-rgb), 0.12);
+  }
+
+  #weekly-planner-preview-message {
+    max-width: 760px;
+  }
+}
+
+/* Large desktop (>=1180px): enlarge the canvas and restore 4 equal day
+   columns. The 768px tier above is now the medium/tablet tier (2 columns,
+   contained within the viewport instead of overflowing it). */
+@media (min-width: 1180px) {
+  body:has(#weekly-planner-screen.active) .app-shell,
+  body:has(#weekly-planner-preview-screen.active) .app-shell {
+    max-width: 1600px;
+  }
+
+  .weekly-planner-screen,
+  .weekly-planner-preview-screen {
+    --weekly-planner-max-width: 1600px;
+  }
+
+  .weekly-planner-rail {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .weekly-planner-period-entries,
+  .weekly-planner-feedback-row textarea {
+    min-height: 96px;
+  }
+
+  .weekly-planner-day-heading h3 {
+    font-size: 0.95rem;
+  }
+}
+
+/* Unified Weekly Planner header card — all screen sizes */
+#weekly-planner-screen .weekly-planner-global-panel {
+  display: grid;
+  gap: 0;
+  width: min(100%, var(--weekly-planner-max-width));
+  margin-inline: auto;
+  padding: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 2px solid var(--surface-track);
+  border-radius: 16px;
+  background: var(--surface-card);
+}
+
+#weekly-planner-screen
+.weekly-planner-global-panel
+.weekly-planner-app-header {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--surface-track);
+  border-radius: 0;
+  background: transparent;
+}
+
+#weekly-planner-screen
+.weekly-planner-global-panel
+.weekly-planner-controls {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Routine messages must not create a separate footer strip. */
+#weekly-planner-screen
+#weekly-planner-message:not(.error-message) {
+  display: none;
+}
+
+#weekly-planner-screen #weekly-planner-message.error-message {
+  display: block;
+  margin: 0;
+  padding: 4px 8px;
+  background: transparent;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .weekly-planner-rail {
+    scroll-behavior: auto;
+  }
+
+  .weekly-planner-dot {
+    transition: none;
+  }
+}
+
+
+/* V97.1.8.6 preview-first workspace */
+.weekly-planner-live-title-row{position:relative;display:grid;place-items:center;min-height:48px;padding:4px 52px;border-bottom:1px solid var(--surface-track);background:var(--surface-card)}
+.weekly-planner-live-title-row h2{margin:0;font-family:var(--font-heading);font-size:1.15rem;color:var(--text)}
+.weekly-planner-live-close{position:absolute;left:10px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:38px;height:38px;padding:6px;border:0;background:transparent;color:var(--text)}
+.weekly-planner-live-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:5px 4px;border-bottom:1px solid var(--surface-track);background:var(--surface-card)}
+.weekly-planner-live-actions .weekly-planner-header-action{min-height:48px}
+.weekly-planner-header-action--settings{--weekly-planner-header-icon:url('/icons/settings.svg?v=97.1.8.6')}
+.weekly-planner-header-action--download{--weekly-planner-header-icon:url('/icons/save.svg?v=97.1.8.6')}
+.weekly-planner-header-action--submit{--weekly-planner-header-icon:url('/icons/open.svg?v=97.1.8.6')}
+.weekly-planner-live-workspace{width:min(100%,var(--weekly-planner-max-width));margin:6px auto 0;padding:6px;box-sizing:border-box;background:var(--surface-app)}
+.weekly-planner-live-preview-frame{position:relative;width:min(100%,760px);margin-inline:auto}
+.weekly-planner-live-preview-frame img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.weekly-planner-day-hotspots{position:absolute;left:3.2%;right:3.2%;top:16%;bottom:16%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1.8% 2.6%;pointer-events:none}
+.weekly-planner-day-hotspots button{pointer-events:auto;border:2px solid transparent;border-radius:8px;background:transparent;color:transparent}
+.weekly-planner-day-hotspots button:focus-visible,.weekly-planner-day-hotspots button:active{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,transparent)}
+.weekly-planner-edit-hint{text-align:center;margin:4px 0;color:var(--text-muted);font-size:.76rem}
+.weekly-planner-day-editor{width:min(96vw,720px);max-height:92dvh;padding:0;border:0;border-radius:18px;background:var(--surface-card)}
+.weekly-planner-day-editor::backdrop{background:rgba(0,0,0,.45)}
+.weekly-planner-day-editor-card{display:flex;flex-direction:column;max-height:92dvh;overflow:hidden}
+.weekly-planner-day-editor-header{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--surface-track)}
+.weekly-planner-day-editor-header h3{margin:0;text-align:center;font-size:1rem}
+.weekly-planner-day-editor-cancel,.weekly-planner-day-editor-done{border:0;background:transparent;color:var(--primary);font-weight:800;padding:8px}
+.weekly-planner-day-editor .weekly-planner-shell{overflow:auto;padding:4px}
+.weekly-planner-day-editor .weekly-planner-rail{scroll-snap-type:x mandatory;overflow-x:auto}
+.weekly-planner-day-editor .weekly-planner-day-card{display:block!important;flex:0 0 100%;max-width:none}
+.weekly-planner-day-editor .weekly-planner-dots{display:none}
+.weekly-planner-preview-settings{border-radius:0;border-inline:0}
+@media(min-width:768px){.weekly-planner-live-actions{padding-inline:12%}.weekly-planner-day-editor{width:min(86vw,820px)}}
