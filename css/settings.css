@@ -1,5 +1,5 @@
 /* ============================================================
-   Hifzhelper — Setup screen (V3.7.0)
+   Hifzhelper — Setup screen (V3.7.0/V3.7.1)
    Profile section only for now — history/default-targets, Dhor
    planning, and haidh tracking are separate, later deliveries.
    Reuses .detail-page (detail-pages.css) for label/input/select
@@ -7,6 +7,26 @@
    buttons — same pill look, single-select instead of the tajweed
    picker's multi-select, wired in js/settingsScreen.js.
    ============================================================ */
+
+/* V3.7.1: #screen-settings is a single-container form, same category as
+   .login-card/#screen-admin — it should have had this width cap from the
+   start (V3.7.0 missed it). Mirrors their exact rule, same tokens. */
+@media (min-width: 768px) and (max-width: 1179px) {
+  #screen-settings { max-width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  #screen-settings { max-width: var(--width-desktop); margin: 0 auto; }
+}
+
+/* V3.7.1: header row now holds the "Setup" title plus the save icon
+   (was a bottom-of-form text button) — icon-over-button preference. */
+.settings-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.settings-header-row h2 { margin: 0; }
 
 .profile-readonly-row {
   display: flex;

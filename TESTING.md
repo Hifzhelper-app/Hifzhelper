@@ -387,6 +387,23 @@ will 400/fail to save.
    tracking are genuinely absent from this screen — this delivery is
    scoped to profile only, on purpose.
 
+## 19. Setup screen sizing fix + save icon (V3.7.1)
+
+1. Desktop width (≥1180px): the Setup screen no longer stretches near
+   full-width — it's capped and centered, same visual treatment as the
+   login screen / admin screen, at the new 30% (up from 25%).
+2. Tablet width (768–1179px): Setup is capped at 50%, centered — same as
+   before, unaffected by this change (confirm it didn't regress).
+3. Mobile width (<768px): Setup still fills the available width — no cap
+   at this size, matching every other single-container screen.
+4. The Save action is now an icon (floppy disk), on the right of the
+   "Setup" header, NOT a text button at the bottom of the form.
+5. Clicking the save icon still actually saves (journal name/gender/
+   mushaf persist correctly) — this moved position and appearance only,
+   the underlying save logic is unchanged.
+6. The "saved ✓" confirmation still appears/fades correctly next to the
+   icon after a successful save.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
