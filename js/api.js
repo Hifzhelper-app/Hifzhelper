@@ -7,6 +7,7 @@
 const API_BASE = 'https://hifzhelper-api.hifzhelper-app.workers.dev';
 
 const TOKEN_KEY = 'hh_token';
+const REMEMBERED_ID_KEY = 'hh_login_id';
 // sessionStorage, not localStorage — clears automatically the moment the
 // tab/app actually closes, so reopening always requires signing in again.
 // Confirmed in chat (V3.4.1): the journal contents is valuable enough that
@@ -14,6 +15,49 @@ const TOKEN_KEY = 'hh_token';
 function getToken(){ return sessionStorage.getItem(TOKEN_KEY); }
 function setToken(t){ sessionStorage.setItem(TOKEN_KEY, t); }
 function clearToken(){ sessionStorage.removeItem(TOKEN_KEY); }
+
+// The account ID is safe to remember separately from the authenticated
+// session: it is already the non-secret part of each student's personal URL.
+// Keeping only this value lets an installed app ask for the PIN alone after
+// it relaunches at / or /index.html, while the token still dies with the app
+// and the PIN is never stored anywhere. Storage access can be unavailable in
+// a restricted browser context, so these helpers leave the normal ID+PIN
+// fallback usable rather than turning that browser limitation into a failed
+// login.
+function getRememberedLoginId(){
+  try{ return (localStorage.getItem(REMEMBERED_ID_KEY) || '').trim() || null; }
+  catch(e){ return null; }
+}
+function rememberLoginId(id){
+  const value = (id || '').trim();
+  if(!value) return;
+  try{ localStorage.setItem(REMEMBERED_ID_KEY, value); } catch(e){ /* fallback login remains available */ }
+}
+function forgetRememberedLoginId(){
+  try{ localStorage.removeItem(REMEMBERED_ID_KEY); } catch(e){ /* nothing else to clear */ }
+}
+
+// One shared interpretation of the current URL for auth.js and app.js.
+// Existing home-screen installs may continue opening /index.html even after
+// the manifest changes to /, so both forms deliberately mean "no ID in the
+// path". A real personal path always takes priority over the remembered ID.
+function getPathLoginId(pathname = location.pathname){
+  const raw = String(pathname || '').replace(/^\/+|\/+$/g, '');
+  if(!raw) return null;
+  let decoded;
+  try{ decoded = decodeURIComponent(raw).trim(); } catch(e){ return null; }
+  if(!decoded || decoded.toLowerCase() === 'index.html' || decoded.includes('/')) return null;
+  return decoded;
+}
+function getEffectiveLoginId(pathname = location.pathname){
+  return getPathLoginId(pathname) || getRememberedLoginId();
+}
+
+function replaceUrlWithLoginId(id){
+  const value = (id || '').trim();
+  if(!value) return;
+  history.replaceState(null, '', '/' + encodeURIComponent(value));
+}
 
 // Every call surfaces real errors rather than returning something that
 // looks like empty/default data — callers must expect this to throw.
@@ -42,6 +86,9 @@ async function apiFetch(path, options = {}){
 async function apiLogin(id, pin){
   const result = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ id, pin }) });
   setToken(result.token);
+  // Save the ID only after the server accepts the ID+PIN pair. Merely opening
+  // somebody else's personal link must never replace this device's account.
+  rememberLoginId(id);
   return result;
 }
 

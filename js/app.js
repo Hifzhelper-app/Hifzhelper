@@ -97,12 +97,19 @@ async function bootApp(){
     // back-guard's popstate listener never even sees it) silently kept
     // showing whichever account's token was already stored, ignoring the
     // URL entirely.
-    const urlId = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ''));
-    if(urlId && profile.id && urlId !== profile.id){
+    // An explicit personal path remains authoritative; a root/index launch
+    // uses the remembered device ID instead. This keeps the original
+    // cross-account guard intact without mistaking "index.html" for an ID.
+    const expectedId = getEffectiveLoginId();
+    if(expectedId && profile.id && expectedId !== profile.id){
       clearToken();
       routeToLoginScreen();
       return;
     }
+    // Also upgrades an already-authenticated V3.8.0 session: once the
+    // verified profile is known, remember its ID even if that login happened
+    // before V3.8.1's apiLogin() persistence existed.
+    rememberLoginId(profile.id);
     currentUser = { name: profile.name || '', role: profile.role || 'student' };
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
