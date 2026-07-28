@@ -116,34 +116,42 @@ function showAppShell(){
   document.getElementById('appShell').style.display = 'flex';
 }
 
-// The unique ID read from the URL path, once a lookup for it succeeds —
-// used by the personalized login screen and the create-PIN screen so they
-// never need their own ID input (V3.4 item 6).
-let urlLoginId = null;
+// The unique ID selected for this login, once its lookup succeeds. A personal
+// URL supplies it first; when a home-screen launch starts at / or /index.html,
+// the remembered device ID supplies it instead. Both routes use the same PIN-
+// only/create-PIN screens and never need their own ID input.
+let activeLoginId = null;
 
-// Decides which login screen to show. A unique-ID URL is looked up FIRST,
-// and no screen is shown until that resolves either way (CONVENTIONS.md #8
-// — never render state-dependent UI ahead of the async fetch it depends
-// on); a missing/unknown/inactive ID all fall back to the plain ID+PIN
-// screen identically (V3.4 item 15), same as a bare URL with no ID at all.
+// Decides which login screen to show. An explicit unique-ID URL wins over a
+// remembered device ID. No screen is shown until that lookup resolves
+// (CONVENTIONS.md #8 — never render state-dependent UI ahead of the async
+// fetch it depends on); a missing/unknown/inactive ID still falls back to the
+// plain ID+PIN screen.
 async function routeToLoginScreen(){
-  const seg = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ''));
-  if(seg){
+  const pathId = getPathLoginId();
+  const candidateId = pathId || getRememberedLoginId();
+  if(candidateId){
     try{
-      const info = await apiLookup(seg);
-      urlLoginId = seg;
+      const info = await apiLookup(candidateId);
+      activeLoginId = candidateId;
+      // Canonicalize root/index launches after a successful remembered-ID
+      // lookup. This keeps refresh/logout on the student's personal path too.
+      if(!pathId) replaceUrlWithLoginId(candidateId);
       if(info.hasPin) showLoginScreenPersonal(info.name);
       else showCreatePinScreen(info.name);
       return;
     } catch(e){
-      // not found / inactive / network hiccup — same as no ID in the URL
+      // Keep the fallback usable for an inactive/unknown remembered account
+      // or a temporary lookup failure. Pre-filling the candidate below means
+      // the student still only needs to type it again if they change account.
     }
   }
-  showLoginScreenFallback();
+  showLoginScreenFallback(candidateId);
 }
 
-function showLoginScreenFallback(){
+function showLoginScreenFallback(prefillId){
   hideAllLoginScreens();
+  document.getElementById('fallback_login_id').value = prefillId || '';
   document.getElementById('loginScreenFallback').classList.remove('hidden');
 }
 function showLoginScreenPersonal(name){
@@ -157,7 +165,7 @@ function showCreatePinScreen(name){
   document.getElementById('createPinGreeting').textContent = `Ahlan wa Sahlan, ${name}`;
   document.getElementById('createPinScreen').classList.remove('hidden');
   document.getElementById('createPinReminderMessage').textContent = REGISTRATION_CONFIRMATION_TEXT;
-  document.getElementById('createPinUrl').value = window.location.origin + '/' + urlLoginId;
+  document.getElementById('createPinUrl').value = window.location.origin + '/' + activeLoginId;
   document.getElementById('confirmPinWrap').classList.add('hidden');
   clearPinGroup(CONFIRM_PIN_IDS);
   clearPinGroup(CREATE_PIN_IDS);
@@ -173,6 +181,13 @@ function showRegisterScreen(){
 
 document.getElementById('showRegisterBtn').addEventListener('click', showRegisterScreen);
 document.getElementById('showLoginBtn').addEventListener('click', routeToLoginScreen);
+function switchLoginAccount(){
+  clearToken();
+  forgetRememberedLoginId();
+  window.location.replace('/');
+}
+document.getElementById('personalSwitchAccountBtn').addEventListener('click', switchLoginAccount);
+document.getElementById('createPinSwitchAccountBtn').addEventListener('click', switchLoginAccount);
 
 // ---------- fallback screen: ID + PIN, auto-submits on the 4th PIN digit ----------
 setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
@@ -186,6 +201,7 @@ setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
   }
   try{
     const loginResult = await apiLogin(id, pin);
+    replaceUrlWithLoginId(id);
     await bootApp();
     // Unlike the URL-based flow, there's no personal link already on
     // screen to save here, so the save-this-page reminder still earns
@@ -197,12 +213,12 @@ setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
   }
 });
 
-// ---------- personalized screen: PIN only, ID already known from the URL ----------
+// ---------- personalized screen: PIN only, ID known from URL or this device ----------
 setupPinGroup(PERSONAL_PIN_IDS, async (pin) => {
   const errEl = document.getElementById('personalLoginError');
   errEl.textContent = '';
   try{
-    await apiLogin(urlLoginId, pin);
+    await apiLogin(activeLoginId, pin);
     await bootApp();
   } catch(e){
     errEl.textContent = e.message;
@@ -227,7 +243,7 @@ setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
     return;
   }
   try{
-    await apiLogin(urlLoginId, confirmPin); // no pin_hash yet server-side, so this sets it
+    await apiLogin(activeLoginId, confirmPin); // no pin_hash yet server-side, so this sets it
     await bootApp();
   } catch(e){
     errEl.textContent = e.message;

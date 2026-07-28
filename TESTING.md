@@ -435,6 +435,38 @@ will 400/fail to save.
    back in → confirm you're NOT routed back to Setup (either card alone
    is enough to mark setup_complete).
 
+## 21. Home-screen PIN-only return login (V3.8.1)
+
+Use a real installed PWA on both iOS and Android if available; browser
+DevTools can verify storage/routing but not every home-screen launch detail.
+
+1. Clear site data, open `/`, and log in with ID + PIN → login succeeds,
+   the URL becomes `/<that ID>`, `localStorage.hh_login_id` contains only
+   that ID, and the PIN is absent from all browser storage.
+2. Fully close the installed app, then reopen it from the home-screen icon →
+   the personalized greeting and PIN-only boxes appear; no ID field appears.
+3. Repeat step 2 with an existing install whose icon still launches
+   `/index.html` → same PIN-only result (no reinstall should be required).
+4. Tap Log out → the personalized PIN-only screen returns for the same
+   account; the remembered ID remains, while `sessionStorage.hh_token` is
+   gone.
+5. Tap **Use another ID** → the app returns to `/`, the remembered ID is
+   removed, and the generic ID+PIN screen appears.
+6. With account A remembered, open account B's valid personal URL → B's
+   personalized PIN screen appears, but A remains remembered until B enters
+   the correct PIN. A wrong PIN for B must not replace A.
+7. Successfully log in as B → B becomes the remembered ID. Close and reopen
+   from the home screen → B's PIN-only screen appears.
+8. With a valid token for A, navigate directly to B's personal URL → A's
+   journal must never appear; the existing cross-account guard clears the
+   token and shows B's login screen.
+9. Remove/disable the remembered account in D1, then launch at `/` → the
+   generic fallback remains usable, with the remembered ID pre-filled rather
+   than a blank or broken screen.
+10. Upgrade/refresh from V3.8.0 while an authenticated session is still open
+    and no `hh_login_id` exists → the verified profile ID is remembered, so
+    the next full close/reopen uses PIN-only login.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

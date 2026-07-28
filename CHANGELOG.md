@@ -7,6 +7,52 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.8.1 — home-screen PIN-only return login (2026-07-28)
+
+Bismillah. Installed home-screen launches now remember which journal belongs
+to that device, so a returning student enters only their PIN rather than the
+unique ID and PIN every time.
+
+**Root cause corrected**: the manifest always launched the installed PWA at
+`/index.html`, while the personalized login could only obtain an ID from a
+`/<uniqueID>` path. That made every home-screen launch fall through to the
+generic ID+PIN screen even after a successful login.
+
+**Remembered device identity**: a successful login now saves only the unique
+ID in `localStorage` (`hh_login_id`). The PIN is never stored, and the auth
+token remains in `sessionStorage`, so closing the app still requires a fresh
+PIN. Opening a personal `/<uniqueID>` link takes priority over the remembered
+ID and does not replace it unless that new account successfully logs in.
+An already-open authenticated V3.8.0 session is upgraded too: its verified
+profile ID is remembered as soon as the new frontend loads.
+
+**Routing and account safety**: `/` and `/index.html` are both treated as
+neutral launch paths, covering new installs and already-installed icons that
+may retain the old URL. After a remembered-ID lookup succeeds the address is
+canonicalized back to the personal URL. `bootApp()` uses the same effective-ID
+rule, preserving the V3.4.2 cross-account guard without treating `index.html`
+as if it were a student ID. The PIN/create-PIN screens now include **Use
+another ID**, which forgets the device association and returns to the generic
+sign-in screen; ordinary Log out intentionally keeps the remembered ID.
+
+**Manifest**: `start_url` is now `/`, with an explicit `/` scope. No Worker,
+D1 schema, or migration changes are needed.
+
+**Files changed:**
+```
+manifest.json
+index.html
+js/api.js
+js/auth.js
+js/app.js
+sw.js
+CHANGELOG.md
+TESTING.md
+```
+
+**Retest before merging to `main`**: `TESTING.md` §21, especially both `/`
+and `/index.html` launches on an already-installed mobile home-screen app.
+
 ## V3.8.0 — top-paint fix generalized + Hifz Setup (2026-07-27)
 
 Bismillah. Two pieces: a permanent fix for the "invisible until scroll"
