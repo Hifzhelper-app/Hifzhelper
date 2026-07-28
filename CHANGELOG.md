@@ -7,6 +7,68 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.8.0 — top-paint fix generalized + Hifz Setup (2026-07-27)
+
+Bismillah. Two pieces: a permanent fix for the "invisible until scroll"
+bug (queued as a finding, now actioned), and the full Hifz Setup card
+(history baseline + default targets), turning the Setup screen into 2
+cards.
+
+**Top-paint fix, generalized**: `fixJournalTopPaint()` — hardcoded to only
+ever correct `#screen-journal` — is now `fixScreenTopPaint(screenId)`,
+called unconditionally at the end of `showScreen()` for whichever screen
+is actually showing (including the "not built yet" placeholder). This is
+why Setup had the identical symptom: the original fix simply never ran
+for any screen besides journal. No future new screen can reintroduce this
+gap now, since nothing needs to remember to wire it in again.
+
+**Setup restructured into 2 cards**, matching the unified day-log view's
+grid/rail pattern (V3.6.1) — row/grid on larger screens, swipeable rail
+on mobile, dot indicators, Sky (`#D0DBE7`) background on both:
+- **Profile** — the existing view-only header + journal name + gender,
+  unchanged in content, just its own card now, with its own save icon.
+- **Hifz Setup** — mushaf (existing picker, moved here from Profile) →
+  history (pick Surahs or Juz' — exclusive choice, switching discards the
+  other's selection; the matching grid slides in; multiple items ARE
+  selectable within whichever mode is active) → default targets
+  (mistakes/juz', minutes/juz', frequency in days — pre-filled with 2/40/30).
+  Its own independent save icon, separate from Profile's.
+
+**Backend**: migration 0010 adds `baseline_mode`, `baseline_selection`
+(JSON array, stored as text), `target_mistakes_per_juz`,
+`target_minutes_per_juz`, `target_frequency_days` to `students`.
+`profile.js` extended accordingly, with validation on each new field.
+Deliberately NOT integrated with `position_json`'s `activeJuz`/`studyOrder`
+yet — the baseline is a one-time self-reported fact, not derived progress
+state, and that deeper integration is real follow-up work for whenever the
+rings feature (which also reads `position`) actually gets built.
+
+**Deliberately unchanged**: saving either card sets `setup_complete`, so
+completing just one card is enough to stop being routed back to Setup —
+neither card is required to unlock the other.
+
+**Files changed:**
+```
+index.html
+js/app.js
+js/icons.js
+css/settings.css
+worker/src/profile.js
+SCHEMA.md
+sw.js
+```
+**New files:**
+```
+js/settingsScreen.js (full rewrite, not additive)
+worker/migrations/0010_history_baseline_targets.sql
+```
+
+**Retest before merging to `main`**: `TESTING.md` §20. Migration 0010
+needs to actually be applied to D1 before the Hifz Setup card's new
+fields will save.
+
+---
+
 ## V3.7.1 — Setup screen: sizing fix + save icon (2026-07-27)
 
 Bismillah. Both findings documented against V3.7.0, now actioned.

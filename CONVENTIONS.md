@@ -181,6 +181,29 @@ child elements with their own logic, look them up via `querySelector`
 scoped to that container — never assume there's only one instance of
 yourself in the document, even if that's true today.
 
+## 12. A per-screen visual correction belongs in the routing path, not a named call from one screen
+
+`fixJournalTopPaint()` (the Safari "invisible until scroll" correction —
+see V3.4.3) was hardcoded to always target `#screen-journal`, and only
+ran because `showScreen()` happened to call it by name inside the
+`id === 'journal'` branch. Every screen built after that point (Setup,
+and anything future) had the exact same underlying symptom, silently,
+because nothing called the correction for them — the fix existed, it
+just never ran anywhere else.
+
+*Why this is here:* a correction that depends on the *screen's own
+render function remembering to call it* will always eventually get
+missed for the next new screen — the failure mode is invisible until
+someone actually hits it on a real device, same as the tajweed/comment
+container-scoping bug (principle 11) was invisible until multiple cards
+were mounted at once.
+
+**In practice:** generalized to `fixScreenTopPaint(screenId)`, called
+unconditionally at the end of `showScreen()` for whatever screen is
+actually active (V3.8.0) — a cross-cutting per-screen concern belongs in
+the one place every screen already passes through, not in each screen's
+own render function.
+
 ## File structure
 
 ```
@@ -200,7 +223,9 @@ yourself in the document, even if that's true today.
                         4-card grid/rail layout (V3.6.1 — previously "the
                         3 detail-page forms", before they were merged)
     admin.css         — admin screen (user list, register form)
-    settings.css      — Setup screen (V3.7.0, profile section only)
+    settings.css      — Setup screen (V3.7.x/V3.8.0): Profile + Hifz Setup
+                        cards, card-rail/grid layout matching detail-pages'
+                        day-log view pattern
   js/
     icons.js          — shared inline SVG icon set
     api.js            — fetch wrapper + every endpoint client function
@@ -221,11 +246,14 @@ yourself in the document, even if that's true today.
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
                           renders all 4, rail scroll position, dot sync
     adminPage.js        — admin user-list screen
-    settingsScreen.js   — Setup screen (V3.7.0, profile section only) —
-                          view-only name/ID/URL, editable journal name/
-                          gender/mushaf; reached via "Settings" nav or
-                          automatically pre-setup_complete (see app.js)
-    app.js              — bootstrap, screen routing (see principle 8)
+    settingsScreen.js   — Setup screen (V3.8.0): 2 independently-saved
+                          cards — Profile (view-only name/ID/URL, journal
+                          name, gender) and Hifz Setup (mushaf, history
+                          baseline via Surah/Juz' grid, default targets);
+                          reached via "Settings" nav or automatically
+                          pre-setup_complete (see app.js)
+    app.js              — bootstrap, screen routing (see principle 8);
+                          also owns fixScreenTopPaint() (see principle 12)
 
 /shared/
   data.js        — Quran structural data (see principle 2): SURAHS,

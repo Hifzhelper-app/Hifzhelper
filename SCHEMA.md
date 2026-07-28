@@ -26,6 +26,11 @@ human-readable reference for the same thing.
 | `setup_complete` | INTEGER | Added in migration 0004. `1`/`0`. Gates whether the setup wizard shows on login. |
 | `journal_name` | TEXT | Added in migration 0009. A custom title for the student's own journal — not their real name. |
 | `mushaf` | TEXT | Added in migration 0009. `13line` / `15line_madani`. A 3rd option (Hybrid) is shown in the UI but disabled/unselectable — not yet a valid stored value, added once Hybrid is actually built. |
+| `baseline_mode` | TEXT | Added in migration 0010. `surah` / `juz` / NULL. Which of the two Hifz Setup history modes the student used — exclusive, not both. |
+| `baseline_selection` | TEXT | Added in migration 0010. JSON array of integers (surah numbers 1-114, or juz' numbers 1-30, per `baseline_mode`) — a one-time, self-reported "already memorised" fact, NOT backdated log entries. Deliberately separate from `position` (which holds state DERIVED from actual dhor sessions) — integrating this with `position_json`'s `activeJuz`/`studyOrder` is a deferred follow-up, not done yet. |
+| `target_mistakes_per_juz` | INTEGER | Added in migration 0010. Default `2`. User-adjustable ring target (see the Gamified visual map design — rings themselves aren't built yet, this just stores the setting). |
+| `target_minutes_per_juz` | INTEGER | Added in migration 0010. Default `40`. |
+| `target_frequency_days` | INTEGER | Added in migration 0010. Default `30` (represents "once/month" as a day-count for later recency math). |
 
 ## Tables: `sabaq_log`, `sabaq_dhor_log`, `dhor_log`, `reflections` (V2 — replaces `entries`)
 
