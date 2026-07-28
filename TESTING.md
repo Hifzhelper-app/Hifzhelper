@@ -467,6 +467,36 @@ DevTools can verify storage/routing but not every home-screen launch detail.
     and no `hh_login_id` exists → the verified profile ID is remembered, so
     the next full close/reopen uses PIN-only login.
 
+## 22. iPhone Home Screen keeps the personal URL (V3.8.2)
+
+This specifically requires a real iPhone/iPad Add to Home Screen test. An old
+icon keeps the launch target captured when it was installed, so it must not be
+reused for steps 3–6.
+
+1. Deploy V3.8.2, then delete the existing Hifzhelper Home Screen icon from
+   the iPhone. This removes only the shortcut/web-app instance, not server
+   data in D1.
+2. In Safari, open the student's exact personal URL (`https://HOST/<ID>`) and
+   confirm the personalized greeting/PIN-only screen appears before installing.
+3. From that personal page, use Share → **Add to Home Screen**. Do not install
+   from `/`, `/index.html`, or the generic ID+PIN screen.
+4. Before signing in inside the new standalone app, launch its Home Screen
+   icon → it opens the same `/<ID>` route and immediately shows the student's
+   personalized PIN-only screen, with no Unique ID field.
+5. Enter the PIN, fully close the app, and reopen it → it still returns to the
+   same student's PIN-only screen.
+6. Tap Log out → the same PIN-only screen returns; tap **Use another ID** →
+   the app deliberately moves to the generic root sign-in.
+7. iPhone/iPad Safari Web Inspector: on the personal page, confirm there is
+   no `link[rel="manifest"]`; the Apple standalone meta tags and
+   `apple-touch-icon` remain present.
+8. iPadOS with desktop-style user agent: repeat steps 2–4 to verify the
+   `MacIntel` + touch-point detection also preserves the personal URL.
+9. Android/desktop Chrome: confirm `link[rel="manifest"]` is added to the DOM,
+   `manifest.json` loads successfully, and the app remains installable there.
+10. Negative control: if the app is intentionally added from the bare `/`
+    fallback page, it cannot know a student yet and showing ID+PIN is correct.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
