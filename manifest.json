@@ -1,8 +1,8 @@
 {
-  "name": "Hifzhelper — Student Journal",
+  "name": "Hifzhelper Journal",
   "short_name": "Hifzhelper",
   "description": "A digital hifdh journal for tracking sabaq, sabaq dhor, and dhor.",
-  "start_url": "./index.html",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#efe9da",
   "theme_color": "#17323a",
