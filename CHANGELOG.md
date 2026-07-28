@@ -7,6 +7,57 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.8.2 — iPhone Home Screen keeps the personal URL (2026-07-28)
+
+Bismillah. Corrects the remaining iPhone-specific gap in V3.8.1: a newly
+installed Home Screen app now opens the student's personal `/<uniqueID>` URL
+on its very first launch, so the PIN-only screen appears without requiring a
+one-time ID entry inside the standalone app.
+
+**Why V3.8.1 was incomplete on iPhone**: iOS Home Screen web apps have cookies
+and storage separate from Safari. The ID saved while using the personal page
+in Safari therefore was not available inside a newly-created standalone app.
+Worse, the shared manifest's `start_url: "/"` explicitly discarded the
+personal path during installation, leaving the new app with no possible way
+to know which student it belonged to. The fallback screen in the reported
+screenshot was therefore the expected result of those two platform rules.
+
+**Apple-mobile installation path**: new `js/pwaManifest.js` detects iPhone,
+iPad, iPod, and iPadOS desktop-mode user agents. On those devices it omits the
+shared Web App Manifest link, allowing Add to Home Screen to save the exact
+current page URL. The existing Apple standalone meta tags and touch icon stay
+in place, so the installed experience remains full-screen and branded. Every
+other platform still receives `manifest.json`, preserving the normal Chrome/
+Android PWA installation route.
+
+**Defence in depth retained**: V3.8.1's remembered-ID behavior remains. It is
+still useful after a fallback login, for existing installations, and on
+platforms whose installed app shares origin storage. PINs are never stored and
+the authentication token remains session-only.
+
+**Required once for existing iPhone installations**: the old Home Screen icon
+has already saved `/` as its launch target. Page code cannot rewrite that
+installed shortcut. Delete that icon, open the personal `/<uniqueID>` URL in
+Safari, and use **Add to Home Screen** again after V3.8.2 is deployed. Future
+launches from the replacement icon start on the PIN-only personal screen.
+
+No Worker, D1 schema, or migration changes are needed.
+
+**Files changed:**
+```
+index.html
+sw.js
+CHANGELOG.md
+TESTING.md
+```
+**New file:**
+```
+js/pwaManifest.js
+```
+
+**Retest before merging to `main`**: `TESTING.md` §22 on a real iPhone,
+including deleting the old icon and reinstalling from a valid personal URL.
+
 ## V3.8.1 — home-screen PIN-only return login (2026-07-28)
 
 Bismillah. Installed home-screen launches now remember which journal belongs
