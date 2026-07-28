@@ -404,6 +404,37 @@ will 400/fail to save.
 6. The "saved ✓" confirmation still appears/fades correctly next to the
    icon after a successful save.
 
+## 20. Top-paint fix generalized + Hifz Setup (V3.8.0)
+
+Needs migration 0010 applied to D1 first, or the new Hifz Setup fields
+will 400/fail to save.
+
+1. Load Setup (Settings nav, or first login) on Safari specifically —
+   confirm the content is visible immediately, no scroll needed, on BOTH
+   cards (not just whichever one happens to render first).
+2. Load a screen that previously had this bug fixed (journal) — confirm
+   it's still fine; this was a generalization, not a rewrite of that
+   screen's own behavior.
+3. Load the "not built yet" placeholder (any unbuilt nav item) — confirm
+   its content is visible immediately too, same fix now applies there.
+4. Desktop (≥1180px): Profile and Hifz Setup show side by side as a 2-
+   column grid, both with a Sky background, no dots visible.
+5. Tablet/mobile: swiping moves between the two cards; dots track
+   correctly; tapping a dot scrolls to that card.
+6. Profile card: edit journal name/gender, tap ITS save icon → saves
+   correctly; confirm Hifz Setup's fields are untouched by this save
+   (independent saves, not one shared action).
+7. Hifz Setup: pick "Surahs" → grid of 114 surah names appears (slides
+   in); select several → tap ITS save icon → reload → same surahs still
+   selected. Switch to "Juz'" → confirm the previous Surah selections are
+   gone (mode switch discards the other mode's selection) → select a few
+   juz' → save → reload → correct juz' still selected, mode is "juz".
+8. Default targets: change the 3 values away from 2/40/30 → save → reload
+   → confirmed values persisted (not reset to the defaults).
+9. Complete only ONE of the two cards (e.g. just Profile) → log out → log
+   back in → confirm you're NOT routed back to Setup (either card alone
+   is enough to mark setup_complete).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

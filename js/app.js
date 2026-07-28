@@ -35,36 +35,51 @@ async function showScreen(id, param){
   if(!SCREENS_BUILT[id]){
     document.getElementById('placeholderLabel').textContent = SCREEN_LABELS[id] || id;
     target.classList.remove('hidden');
+    fixScreenTopPaint('placeholder');
     return;
   }
   target.classList.remove('hidden');
   if(id === 'home') renderHomeScreen();
-  if(id === 'journal'){ await renderJournalScreen(); fixJournalTopPaint(); }
+  if(id === 'journal') await renderJournalScreen();
   if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
   if(id === 'settings') await renderSettingsScreen();
+  // V3.8.0: generalized from the old fixJournalTopPaint(), which only ever
+  // corrected #screen-journal — every OTHER screen (including Setup) had
+  // the exact same Safari "invisible until scroll" symptom, just never
+  // fixed, because nothing called the correction for them. Now called
+  // for whichever screen is actually showing (both branches above), so no
+  // future new screen can reintroduce this gap.
+  fixScreenTopPaint(id);
 }
 
-// Safari-only "journal invisible until scroll" bug: the V3.4.3 CSS-only
-// attempt (translateZ(0) on #appContent) didn't fix it. Rather than add a
-// blind fixed-height margin (which would double up with the already-
-// correct flex layout once painted, creating a visible gap on every
-// device), this measures the ACTUAL gap between the auth band's bottom
-// edge and wherever the journal content is really rendering, and only
-// corrects it if one truly exists. The read+write of layout values here
-// is also what forces Safari through a synchronous layout+paint pass —
-// that's what actually resolves the invisible-until-scroll symptom, the
-// margin correction itself is closer to a side effect / safety net.
-// Also publishes --auth-band-height, which the sticky table headers
-// below use for their own offset, since the band's real height varies
-// (e.g. the iOS safe-area-inset padding) and a hardcoded value would be
-// wrong on some devices.
-function fixJournalTopPaint(){
+// Safari-only "invisible until scroll" bug: the V3.4.3 CSS-only attempt
+// (translateZ(0) on #appContent) didn't fix it. Rather than add a blind
+// fixed-height margin (which would double up with the already-correct
+// flex layout once painted, creating a visible gap on every device), this
+// measures the ACTUAL gap between the auth band's bottom edge and wherever
+// the given screen's content is really rendering, and only corrects it if
+// one truly exists. The read+write of layout values here is also what
+// forces Safari through a synchronous layout+paint pass — that's what
+// actually resolves the invisible-until-scroll symptom, the margin
+// correction itself is closer to a side effect / safety net.
+// Also publishes --auth-band-height, which the sticky table headers below
+// use for their own offset, since the band's real height varies (e.g. the
+// iOS safe-area-inset padding) and a hardcoded value would be wrong on
+// some devices.
+//
+// V3.8.0: generalized from fixJournalTopPaint(), which only ever targeted
+// #screen-journal and had to be called explicitly by name — every screen
+// added since (Setup, and anything future) had the identical symptom
+// simply because nothing called the correction for it. Now takes the
+// screen id and is called unconditionally from showScreen() for whatever
+// is actually being shown, so this can't be missed again.
+function fixScreenTopPaint(screenId){
   requestAnimationFrame(() => {
     const band = document.getElementById('authBand');
     if(!band) return;
     document.documentElement.style.setProperty('--auth-band-height', band.getBoundingClientRect().height + 'px');
-    const target = document.getElementById('screen-journal');
+    const target = document.getElementById('screen-' + screenId);
     if(!target) return;
     const gap = band.getBoundingClientRect().bottom - target.getBoundingClientRect().top;
     target.style.marginTop = gap > 0 ? gap + 'px' : '';

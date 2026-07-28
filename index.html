@@ -18,14 +18,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Hifzhelper">
 
-<link rel="stylesheet" href="css/tokens.css?v=3.7.1">
-<link rel="stylesheet" href="css/base.css?v=3.7.1">
-<link rel="stylesheet" href="css/nav.css?v=3.7.1">
-<link rel="stylesheet" href="css/journal-table.css?v=3.7.1">
-<link rel="stylesheet" href="css/components.css?v=3.7.1">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.7.1">
-<link rel="stylesheet" href="css/settings.css?v=3.7.1">
-<link rel="stylesheet" href="css/admin.css?v=3.7.1">
+<link rel="stylesheet" href="css/tokens.css?v=3.8.0">
+<link rel="stylesheet" href="css/base.css?v=3.8.0">
+<link rel="stylesheet" href="css/nav.css?v=3.8.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.8.0">
+<link rel="stylesheet" href="css/components.css?v=3.8.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.8.0">
+<link rel="stylesheet" href="css/settings.css?v=3.8.0">
+<link rel="stylesheet" href="css/admin.css?v=3.8.0">
 </head>
 <body>
 
@@ -329,74 +329,120 @@
       <p class="form-hint">This page isn't built yet — coming in a follow-up.</p>
     </section>
 
-    <!-- Setup screen (V3.7.0/V3.7.1) — profile section only. History/
-         default-targets, Dhor planning, and Haidh tracking are separate,
-         later deliveries; this is deliberately just the profile piece.
-         Reached both from the "Settings" nav item and automatically on a
-         new user's first login (see bootApp() in app.js). -->
-    <section class="screen hidden detail-page" id="screen-settings">
-      <div class="settings-header-row">
-        <h2>Setup</h2>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="save-status" id="setupSaveStatus">saved ✓</span>
-          <button type="button" class="icon-btn" id="setupSaveBtn" aria-label="Save"></button>
+    <!-- Setup screen (V3.7.0/V3.7.1/V3.8.0) — reached both from the
+         "Settings" nav item and automatically on a new user's first login
+         (see bootApp() in app.js). 2 cards: Profile (view-only header +
+         journal name + gender) and Hifz Setup (mushaf, history baseline,
+         default targets) — each independently saved, matching the same
+         card-rail/grid pattern as the unified day-log view (V3.6.1).
+         Dhor planning and Haidh tracking are separate, later deliveries —
+         not part of this screen at all. -->
+    <section class="screen hidden" id="screen-settings">
+      <div class="settings-card-rail" id="settingsCardRail">
+
+        <!-- Profile card -->
+        <div class="settings-card detail-page" id="card-profile">
+          <div class="card-scroll">
+            <div class="settings-header-row">
+              <h2>Profile</h2>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="save-status" id="profileSaveStatus">saved ✓</span>
+                <button type="button" class="icon-btn" id="profileSaveBtn" aria-label="Save"></button>
+              </div>
+            </div>
+
+            <div class="profile-readonly-row">
+              <span class="profile-readonly-label">Name</span>
+              <span class="profile-readonly-value" id="setup_name_display"></span>
+            </div>
+            <div class="profile-readonly-row">
+              <span class="profile-readonly-label">Unique ID</span>
+              <span class="profile-readonly-value" id="setup_id_display"></span>
+            </div>
+            <div class="profile-readonly-row">
+              <span class="profile-readonly-label">URL</span>
+              <div class="url-copy-row profile-readonly-value">
+                <input type="text" id="setup_url_display" readonly>
+                <button type="button" class="icon-btn" id="setupCopyUrlBtn" aria-label="Copy URL"></button>
+              </div>
+            </div>
+
+            <label>Journal name</label>
+            <input type="text" id="setup_journal_name" placeholder="e.g. Ahmad's Hifz Journal">
+
+            <label>Gender</label>
+            <select id="setup_gender">
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+            </select>
+
+            <div class="form-error" id="profileError"></div>
+          </div>
         </div>
-      </div>
 
-      <div class="profile-readonly-row">
-        <span class="profile-readonly-label">Name</span>
-        <span class="profile-readonly-value" id="setup_name_display"></span>
-      </div>
-      <div class="profile-readonly-row">
-        <span class="profile-readonly-label">Unique ID</span>
-        <span class="profile-readonly-value" id="setup_id_display"></span>
-      </div>
-      <div class="profile-readonly-row">
-        <span class="profile-readonly-label">URL</span>
-        <div class="url-copy-row profile-readonly-value">
-          <input type="text" id="setup_url_display" readonly>
-          <button type="button" class="icon-btn" id="setupCopyUrlBtn" aria-label="Copy URL"></button>
+        <!-- Hifz Setup card -->
+        <div class="settings-card detail-page" id="card-hifzSetup">
+          <div class="card-scroll">
+            <div class="settings-header-row">
+              <h2>Hifz Setup</h2>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="save-status" id="hifzSetupSaveStatus">saved ✓</span>
+                <button type="button" class="icon-btn" id="hifzSetupSaveBtn" aria-label="Save"></button>
+              </div>
+            </div>
+
+            <label>Mushaf</label>
+            <div id="setup_mushaf_picker">
+              <button type="button" class="tajweed-tag" data-mushaf="13line">13 line</button>
+              <button type="button" class="tajweed-tag" data-mushaf="15line_madani">15 line Madani</button>
+              <button type="button" class="tajweed-tag" data-mushaf="hybrid" disabled title="Coming later">Hybrid</button>
+            </div>
+
+            <label style="margin-top:20px;">Already memorised?</label>
+            <div id="baseline_mode_picker">
+              <button type="button" class="tajweed-tag" data-mode="surah">Surahs</button>
+              <button type="button" class="tajweed-tag" data-mode="juz">Juz'</button>
+            </div>
+            <div id="baseline_grid_wrap"></div>
+
+            <label style="margin-top:20px;">Default targets</label>
+            <div class="picker-row">
+              <div><label>Mistakes / juz'</label><input type="number" id="target_mistakes" min="0"></div>
+              <div><label>Minutes / juz'</label><input type="number" id="target_minutes" min="0"></div>
+            </div>
+            <label>Frequency (days)</label>
+            <input type="number" id="target_frequency" min="0">
+
+            <div class="form-error" id="hifzSetupError"></div>
+          </div>
         </div>
+
       </div>
-
-      <label>Journal name</label>
-      <input type="text" id="setup_journal_name" placeholder="e.g. Ahmad's Hifz Journal">
-
-      <label>Gender</label>
-      <select id="setup_gender">
-        <option value="M">Male</option>
-        <option value="F">Female</option>
-      </select>
-
-      <label>Mushaf</label>
-      <div id="setup_mushaf_picker">
-        <button type="button" class="tajweed-tag" data-mushaf="13line">13 line</button>
-        <button type="button" class="tajweed-tag" data-mushaf="15line_madani">15 line Madani</button>
-        <button type="button" class="tajweed-tag" data-mushaf="hybrid" disabled title="Coming later">Hybrid</button>
+      <div class="settings-card-dots" id="settingsCardDots">
+        <button type="button" class="dot" data-index="0" aria-label="Profile"></button>
+        <button type="button" class="dot" data-index="1" aria-label="Hifz Setup"></button>
       </div>
-
-      <div class="form-error" id="setupError"></div>
     </section>
 
   </main>
 </div>
 
-<script src="shared/data.js?v=3.7.1"></script>
-<script src="js/icons.js?v=3.7.1"></script>
-<script src="js/api.js?v=3.7.1"></script>
-<script src="js/auth.js?v=3.7.1"></script>
-<script src="js/home.js?v=3.7.1"></script>
-<script src="js/tajweed.js?v=3.7.1"></script>
-<script src="js/commentPrivacy.js?v=3.7.1"></script>
-<script src="js/timer.js?v=3.7.1"></script>
-<script src="js/journal.js?v=3.7.1"></script>
-<script src="js/dhorPage.js?v=3.7.1"></script>
-<script src="js/sabaqPage.js?v=3.7.1"></script>
-<script src="js/sabaqDhorPage.js?v=3.7.1"></script>
-<script src="js/reflectionCard.js?v=3.7.1"></script>
-<script src="js/logDetailScreen.js?v=3.7.1"></script>
-<script src="js/settingsScreen.js?v=3.7.1"></script>
-<script src="js/adminPage.js?v=3.7.1"></script>
-<script src="js/app.js?v=3.7.1"></script>
+<script src="shared/data.js?v=3.8.0"></script>
+<script src="js/icons.js?v=3.8.0"></script>
+<script src="js/api.js?v=3.8.0"></script>
+<script src="js/auth.js?v=3.8.0"></script>
+<script src="js/home.js?v=3.8.0"></script>
+<script src="js/tajweed.js?v=3.8.0"></script>
+<script src="js/commentPrivacy.js?v=3.8.0"></script>
+<script src="js/timer.js?v=3.8.0"></script>
+<script src="js/journal.js?v=3.8.0"></script>
+<script src="js/dhorPage.js?v=3.8.0"></script>
+<script src="js/sabaqPage.js?v=3.8.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.8.0"></script>
+<script src="js/reflectionCard.js?v=3.8.0"></script>
+<script src="js/logDetailScreen.js?v=3.8.0"></script>
+<script src="js/settingsScreen.js?v=3.8.0"></script>
+<script src="js/adminPage.js?v=3.8.0"></script>
+<script src="js/app.js?v=3.8.0"></script>
 </body>
 </html>

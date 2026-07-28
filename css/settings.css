@@ -1,25 +1,83 @@
 /* ============================================================
-   Hifzhelper — Setup screen (V3.7.0/V3.7.1)
-   Profile section only for now — history/default-targets, Dhor
-   planning, and haidh tracking are separate, later deliveries.
-   Reuses .detail-page (detail-pages.css) for label/input/select
-   styling, and .tajweed-tag (detail-pages.css) for the mushaf picker
-   buttons — same pill look, single-select instead of the tajweed
-   picker's multi-select, wired in js/settingsScreen.js.
+   Hifzhelper — Setup screen (V3.7.x/V3.8.0)
+   2 cards: Profile (view-only header + journal name + gender) and
+   Hifz Setup (mushaf, history baseline, default targets) — each
+   independently saved. Reuses .detail-page (detail-pages.css) for
+   label/input/select styling (applied per-card, not to the outer
+   rail), and .tajweed-tag (detail-pages.css) for the mushaf/mode
+   picker buttons and the baseline grid cells — same pill look,
+   multi/single-select behavior wired in js/settingsScreen.js.
+
+   V3.8.0: the old #screen-settings max-width cap (V3.7.1) is REMOVED
+   here, not carried forward — that rule was for when Setup was a
+   single bounded form, same category as .login-card/#screen-admin.
+   Now that it's a multi-card grid/rail, it needs the FULL available
+   width to lay its cards out side by side, exactly like the unified
+   day-log view (#screen-logDetail) already does — that screen was
+   never given a width cap either, for the same reason.
    ============================================================ */
 
-/* V3.7.1: #screen-settings is a single-container form, same category as
-   .login-card/#screen-admin — it should have had this width cap from the
-   start (V3.7.0 missed it). Mirrors their exact rule, same tokens. */
-@media (min-width: 768px) and (max-width: 1179px) {
-  #screen-settings { max-width: var(--width-tablet); margin: 0 auto; }
+.settings-card-rail {
+  display: flex;
+  gap: var(--space-md);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
 }
-@media (min-width: 1180px) {
-  #screen-settings { max-width: var(--width-desktop); margin: 0 auto; }
+.settings-card {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  background: var(--palette-sky);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* .card-scroll below does the actual scrolling */
+}
+.settings-card .card-scroll {
+  overflow-y: auto;
+  padding: var(--space-md);
+  flex: 1;
+  min-height: 0; /* flexbox gotcha — see CONVENTIONS.md principle 11's
+                    sibling note in the day-log view CSS: without this a
+                    flex:1 child with overflow-y:auto won't actually
+                    scroll, it just grows past its container instead. */
 }
 
-/* V3.7.1: header row now holds the "Setup" title plus the save icon
-   (was a bottom-of-form text button) — icon-over-button preference. */
+@media (min-width: 768px) and (max-width: 1179px) {
+  .settings-card { flex: 0 0 calc(50% - (var(--space-md) / 2)); }
+}
+@media (min-width: 1180px) {
+  .settings-card-rail {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .settings-card { height: 75vh; }
+}
+
+/* Dot indicators — only meaningful while the rail actually swipes;
+   hidden on the desktop grid, same reasoning as the day-log view. */
+.settings-card-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+.settings-card-dots .dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--ring-track);
+}
+.settings-card-dots .dot.active { background: var(--color-accent); }
+@media (min-width: 1180px) {
+  .settings-card-dots { display: none; }
+}
+
 .settings-header-row {
   display: flex;
   align-items: center;
@@ -55,4 +113,26 @@
   color: var(--color-ink);
 }
 
-#setup_mushaf_picker { margin-bottom: var(--space-md); }
+#setup_mushaf_picker, #baseline_mode_picker { margin-bottom: var(--space-sm); }
+
+/* History baseline grid (surah names 1-114, or juz' numbers 1-30) —
+   reuses .tajweed-tag's pill look via the same class in the markup, laid
+   out as a compact multi-column grid rather than a wrapped inline row,
+   since 114 items would otherwise ramble across many lines. Slides in
+   when a mode (Surahs/Juz') is picked. */
+#baseline_grid_wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 6px;
+  margin-bottom: var(--space-md);
+  animation: baselineGridSlideIn 0.2s ease-out;
+}
+#baseline_grid_wrap .tajweed-tag {
+  margin: 0;
+  text-align: center;
+  display: block;
+}
+@keyframes baselineGridSlideIn {
+  from { transform: translateY(-8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
