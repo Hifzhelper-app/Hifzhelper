@@ -223,9 +223,12 @@ own render function.
                         4-card grid/rail layout (V3.6.1 — previously "the
                         3 detail-page forms", before they were merged)
     admin.css         — admin screen (user list, register form)
-    settings.css      — Setup screen (V3.7.x/V3.8.0): Profile + Hifz Setup
-                        cards, card-rail/grid layout matching detail-pages'
-                        day-log view pattern
+    settings.css      — Setup screen (V3.9.0): ONE continuous page, 4
+                        independently-saved sections (Profile, Hifz
+                        Setup, Dhor Schedule, Haidh) — reverted from
+                        V3.7.x/V3.8.0's swipeable 2-card rail back to a
+                        bounded single column now that Dhor Schedule and
+                        Haidh live here permanently
   js/
     icons.js          — shared inline SVG icon set
     api.js            — fetch wrapper + every endpoint client function
@@ -237,8 +240,12 @@ own render function.
                         container-scoped (V3.6.1 — see principle 11)
     timer.js          — the real start/lap/stop Dhor timer
     journal.js        — the landing journal table + quick-add modal
+                        (V3.9.0: quick-add now pre-fills field values from
+                        a linked plan, not just the plan_id)
     dhorPage.js         — Dhor card: picker, timer, tajweed, own date
-                          selector (one of 4 cards, V3.6.1)
+                          selector (one of 4 cards, V3.6.1); V3.9.0 adds
+                          plan-as-default (pre-fills from today's Dhor
+                          Schedule plan, if any)
     sabaqPage.js        — Sabaq card, own date selector (one of 4 cards)
     sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4)
     reflectionCard.js   — Tadabbur card (V3.6.1, new) — one reflection
@@ -246,20 +253,33 @@ own render function.
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
                           renders all 4, rail scroll position, dot sync
     adminPage.js        — admin user-list screen
-    settingsScreen.js   — Setup screen (V3.8.0): 2 independently-saved
-                          cards — Profile (view-only name/ID/URL, journal
-                          name, gender) and Hifz Setup (mushaf, history
-                          baseline via Surah/Juz' grid, default targets);
-                          reached via "Settings" nav or automatically
+    settingsScreen.js   — Setup screen (V3.9.0): 4 independently-saved
+                          sections in one continuous page — Profile
+                          (view-only name/ID/URL, journal name, gender),
+                          Hifz Setup (mushaf, history baseline via
+                          slide-in Juz'/Surah grids, default targets),
+                          Dhor Schedule (rolling-plan settings), and Haidh
+                          (prediction settings, shown only when gender is
+                          F) — reached via "Settings" nav or automatically
                           pre-setup_complete (see app.js)
     app.js              — bootstrap, screen routing (see principle 8);
                           also owns fixScreenTopPaint() (see principle 12)
 
 /shared/
   data.js        — Quran structural data (see principle 2): SURAHS,
-                    JUZ_BOUNDARIES, RUB_BOUNDARIES, TAJWEED_DEFAULTS
+                    JUZ_BOUNDARIES (13-line, confirmed) + JUZ_BOUNDARIES_UTHMANI
+                    (15-line, derived), HALF_BOUNDARIES + QUARTER_BOUNDARIES_UTHMANI
+                    (both prints, all granularities — see RUB_BOUNDARIES'
+                    own comment for how each is derived), SURAH_JUZ_RANGE
+                    (which juz' each surah touches — identical for both
+                    prints, verified), RUB_BOUNDARIES, TAJWEED_DEFAULTS
                     (with major/minor classification), AYAH_WORD_RANGE,
-                    LINE13_RANGES, getLines13ForAyahRange()
+                    LINE13_RANGES, getLines13ForAyahRange(), and (V3.9.0)
+                    segmentsPerJuz()/unitMarkerCount()/
+                    segmentRangeForUnitIndex() — Dhor segment/granularity
+                    math shared between dhorPage.js and the Worker's
+                    dhorSchedule.js, moved here from a dhorPage.js-local
+                    copy so the two can never silently drift apart
 
 /worker/
   wrangler.jsonc  — production + development environments, each own D1
@@ -272,6 +292,13 @@ own render function.
                         by the four independent logs
     sabaqLog.js, sabaqDhorLog.js, dhorLog.js, reflections.js
     plans.js         — the plans feature
+    dhorSchedule.js  — Dhor rolling-schedule generator (V3.9.0): on-demand,
+                        not a background job — tops up the next 7 active
+                        days' worth of plans (plan_type='dhor') from a
+                        student's dhor_granularity/quantity/frequency/
+                        days_of_week settings, called from the frontend
+                        whenever it's a good moment (Setup save, Dhor
+                        page open), never a Cron Trigger
     attendance.js, position.js, profile.js
     utils.js         — response helpers, boundary validation (principle 4)
   migrations/
@@ -282,6 +309,10 @@ own render function.
     0005_v2_independent_logs.sql
     0006_plans_timer_privacy.sql
     0007_admin_role.sql
+    0008_whatsapp_number.sql
+    0009_setup_profile_fields.sql
+    0010_history_baseline_targets.sql
+    0011_dhor_schedule_and_haidh_settings.sql
 
 SCHEMA.md          — D1 structure, canonical field names
 CONVENTIONS.md      — this file

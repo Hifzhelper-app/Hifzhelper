@@ -14,7 +14,6 @@ const NAV_ITEMS = [
   { id: 'sabaqDhor', label: 'Sabaq Dhor', icon: 'sabaqDhor' },
   { id: 'dhor', label: 'Dhor', icon: 'dhor' },
   { id: 'reflections', label: 'Reflections', icon: 'reflections' },
-  { id: 'plans', label: 'Plans', icon: 'plans' },
   { id: 'progress', label: 'Progress', icon: 'progress' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
 ];

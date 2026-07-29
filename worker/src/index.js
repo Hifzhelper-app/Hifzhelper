@@ -8,6 +8,7 @@ import { handleGetPlans, handleCreatePlan, handleUpdatePlan, handleDeletePlan } 
 import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
 import { handleGetProfile, handleSaveProfile } from './profile.js';
+import { handleEnsureDhorSchedule } from './dhorSchedule.js';
 import { handleListUsers, handleResetPin, handleChangeRole, handleRegisterStudent, handleUpdateUser, handleDeleteUser } from './admin.js';
 
 // Every handler returns { data } or { error, status } — this file's only job
@@ -90,6 +91,8 @@ export default {
 
       if (path === '/profile' && request.method === 'GET') return respond(await handleGetProfile(request, env, auth));
       if (path === '/profile' && request.method === 'POST') return respond(await handleSaveProfile(request, env, auth));
+
+      if (path === '/dhor-schedule/ensure' && request.method === 'POST') return respond(await handleEnsureDhorSchedule(request, env, auth));
 
       if (path === '/admin/users' && request.method === 'GET') return respond(await handleListUsers(request, env, auth));
       if (path === '/admin/reset-pin' && request.method === 'POST') return respond(await handleResetPin(request, env, auth));

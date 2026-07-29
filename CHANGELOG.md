@@ -7,7 +7,178 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.8.2 — iPhone Home Screen keeps the personal URL (2026-07-28)
+## V3.9.1 — 15-line juz' boundaries, half/quarter/eighth data for both prints (2026-07-29)
+
+Bismillah. Closes the surah-baseline gap flagged in V3.9.0, one layer at a
+time — this delivery is the verified reference data itself; wiring it into
+Dhor Schedule generation (to let a surah-based Hifz Setup baseline drive it,
+not just a juz'-based one) is a natural next step, not done here.
+
+**Resolved this session, all in `shared/data.js`:**
+- `JUZ_BOUNDARIES` — confirmed to be the 13-line print's own boundaries
+  specifically, not a print-independent average as the code previously
+  (incorrectly) commented.
+- `JUZ_BOUNDARIES_UTHMANI` (new) — the 15-line Madani print's own 30 juz'
+  boundaries, derived from `RUB_BOUNDARIES.uthmani`'s every-8th marker.
+  Verified against all 30 — differs from the 13-line boundaries at exactly
+  one point, juz' 4 (13-line: 3:92, 15-line: 3:93).
+- `getJuzForPosition`/`juzStartSurah`/`getJuzSurahSpan` are now ref-aware
+  (optional `ref` param, defaulting to 13-line for existing callers).
+- `HALF_BOUNDARIES.waterval`/`.uthmani` and `QUARTER_BOUNDARIES_UTHMANI`
+  (new) — half- and quarter-juz' boundaries for both prints (13-line
+  quarters are `RUB_BOUNDARIES.waterval` itself, already fine-grained
+  enough; no separate array needed there). The 15-line print's own eighth-
+  of-juz' breakdown is `RUB_BOUNDARIES.uthmani` as-is.
+- `SURAH_JUZ_RANGE`/`getSurahJuzRange()` (new) — which juz' each surah
+  touches. Verified identical for both prints across all 114 surahs (the
+  one ayah-level difference doesn't change which surahs touch which juz'),
+  so one shared table covers both.
+- Corrected a stale code comment that had claimed `RUB_BOUNDARIES.waterval`
+  diverges from `JUZ_BOUNDARIES` at 6 points "due to a real print
+  variation" — re-verified properly (the original check didn't handle
+  surah rollover) and it's 5 points (juz' 7,14,20,21,23), and since both
+  are confirmed 13-line, it looks like residual imprecision in that source
+  rather than a genuine print difference. Flagged in the comment, not
+  silently corrected — there's no more-authoritative source to fix it
+  against.
+
+**Caught in my own review before this shipped**: my first pass at writing
+the derived arrays into the file had transcription errors (wrong lengths on
+3 of them). Re-derived everything programmatically from the source data and
+cross-checked lengths and internal consistency (e.g. every 2nd quarter-
+boundary entry must equal the corresponding half-boundary entry) before
+finalizing — worth knowing this class of mistake is possible, and worth the
+same check on any future hand-edit of these tables.
+
+**Files changed:**
+```
+shared/data.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+```
+
+
+
+Bismillah. The Setup screen is no longer 2 swipeable cards — it's one
+continuous page with 4 independently-saved sections: Profile, Hifz Setup
+(both carried over, reshaped), and two entirely new ones, Dhor Schedule and
+Haidh. Neither gets its own nav item: both live permanently inside Setup,
+reachable via "Settings" at any time, not just during onboarding. The old
+"Plans" nav placeholder is gone entirely as a result.
+
+**Profile / Hifz Setup, reshaped:**
+- Gender is now two exclusive toggle buttons (matching the mushaf/
+  granularity pickers' look) instead of a `<select>` — same M/F values
+  underneath, no backend change.
+- "Mark completed sections" (the old Surahs/Juz' baseline picker) is now
+  two buttons — Juz' and Surah — that each open a full slide-in grid
+  overlay (30 cells / 114 cells, scrollable) instead of one inline area
+  that swapped content on a mode toggle. Still mutually exclusive:
+  confirming a selection in one clears the other. The overlay's close icon
+  commits the selection into the section's pending state, same as any
+  other field here — it does not save to the server by itself; the Hifz
+  Setup section's own Save button still does that, so this doesn't behave
+  differently from every other field on the page.
+- Default targets (mistakes/minutes/frequency per juz') are unchanged.
+
+**Dhor Schedule (new):** a settings form, no visible table — students pick
+a portion size (Juz'/Half/Quarter, plus how many per session), a frequency
+(Daily/Twice a day), and which days of the week. Saving drives a rolling
+7-day plan generated behind the scenes (`worker/src/dhorSchedule.js`,
+called on-demand — Setup save, and whenever the Dhor log page opens — never
+a background job). Plan rows land in the existing `plans` table
+(`plan_type='dhor'`), which already had full CRUD and completion-linking
+built (V2/V3 schema) — nothing new needed there.
+
+Generation walks the student's memorised juz' pool (from Hifz Setup's
+`baseline_mode`/`baseline_selection`) in plain ascending order, never
+letting one session's segment span across a gap between non-adjacent
+memorised juz' (the normal early-stage pattern — e.g. juz' 30, 29, 1
+memorised but not 2-28 yet). It anchors to whichever is further along in
+that sequence — the last actually-logged `dhor_log` entry, or the last
+existing plan row — so logged reality overrides a stale unfulfilled plan,
+while an already-generated future plan never gets silently reassigned a
+different portion on a later call.
+
+Haidh interaction (confirmed in chat): no dhor is generated on a haidh or
+predicted-haidh day — that date is skipped and the window extends outward
+to make up the session, rather than losing it. Days not in the chosen
+weekday set are just normal off days, not made up.
+
+**Scope note, flagged rather than silently approximated**: generation
+currently requires `baseline_mode = 'juz'` (a surah-based baseline isn't
+mapped to juz' coverage yet — that needs real ayah-boundary math, a
+separate piece of work) and uses plain ascending juz' order, not the
+branching "30, then 29, then 1-or-28, then the rest" study order noted
+elsewhere for initial memorisation — that branching depends on a
+per-student choice this project doesn't store anywhere yet. Both cases
+return a clear reason rather than generating something wrong.
+
+**Haidh (new):** also a settings form, no visible calendar — cycle length,
+duration, and next expected haidh day. Shown only when gender is F, live
+off the gender picker (not just on reload). This reuses the existing
+`/attendance/predict` endpoint (`worker/src/attendance.js`, unchanged,
+live since migration 0001) entirely as-is — the `attendance` table already
+has `predicted-haidh` as a status, and predictions already never overwrite
+real data. The only genuinely new work is the Setup UI itself, plus one
+small reconciliation: Setup asks for "next expected day" (the more
+intuitive input), and the frontend computes that endpoint's own `lastStart`
+param from it (`lastStart = next_expected − cycle_length`) — so the backend
+needed no changes for this at all.
+
+**Dhor log page and journal quick-add now use plans, not just link them:**
+- `dhorPage.js` fetches today's Dhor plan(s) on open. Zero: unchanged manual
+  picker. One: every field pre-fills from it, and saving links back to it
+  (existing `plan_id` handling in `logHelpers.js`, unchanged). More than
+  one: a plain selector, never auto-picked.
+- The journal's quick-add cells previously showed a "planned" indicator and
+  passed `plan_id` through on save, but never pre-filled the form's actual
+  values — tapping one still opened a blank form. Now fixed for `sabaq` and
+  `dhor` (whose plan fields map directly onto their quick-add fields).
+  `sabaq_dhor` is not pre-filled: its plan rows store `surah`/`ayah_from`/
+  `ayah_to` (matching `sabaq`), but the log itself needs a computed `zone`
+  string that isn't wired into the frontend yet (same gap already flagged
+  in `sabaqDhorPage.js`) — left manual rather than guessed at.
+
+**Also (small, root-cause fix):** the Dhor segment/granularity math
+(`segmentsPerJuz`/`unitMarkerCount`) used to be a `dhorPage.js`-local copy.
+Moved to `shared/data.js` (already dual-loaded by frontend and Worker) since
+`dhorSchedule.js` needs the exact same math server-side — two copies is
+exactly what `CONVENTIONS.md` principle 2 exists to prevent.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/settings.css
+js/api.js
+js/app.js
+js/auth.js
+js/dhorPage.js
+js/icons.js
+js/journal.js
+js/settingsScreen.js
+shared/data.js
+worker/src/index.js
+worker/src/profile.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+TESTING.md
+```
+**New files:**
+```
+worker/migrations/0011_dhor_schedule_and_haidh_settings.sql
+worker/src/dhorSchedule.js
+```
+
+**Retest before merging to `main`**: `TESTING.md` §23, especially the
+juz'-gap generation case (a pool like {1, 29, 30}) and the haidh-shifts-the-
+window case — both are the kind of thing that looks fine with a small,
+contiguous test pool and only shows a problem with a real, gappy one.
+
+
 
 Bismillah. Corrects the remaining iPhone-specific gap in V3.8.1: a newly
 installed Home Screen app now opens the student's personal `/<uniqueID>` URL

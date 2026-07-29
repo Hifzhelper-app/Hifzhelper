@@ -25,8 +25,11 @@ function showWelcome(name){
 // three now open 'logDetail' (the unified 4-card day-log view); the old
 // ids are still used as the `param` telling it which card to open on.
 // V3.7.0: 'settings' is now built (Setup screen, profile section only).
+// V3.9.0: 'settings' now also covers Dhor Schedule and Haidh — the old
+// 'plans' nav item/placeholder is gone entirely (no separate destination
+// for it anymore, confirmed in chat), so SCREEN_LABELS lost that entry.
 const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true };
-const SCREEN_LABELS = { reflections: 'Reflections', plans: 'Plans', progress: 'Progress' };
+const SCREEN_LABELS = { reflections: 'Reflections', progress: 'Progress' };
 
 async function showScreen(id, param){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
