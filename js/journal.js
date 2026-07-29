@@ -125,6 +125,10 @@ async function renderJournalScreen(){
 // tags, timer, privacy toggles, flexible units) lives on the dedicated
 // pages, not built yet. This gets a real entry saved with the essentials.
 function openQuickAdd(date, type, planId){
+  // V3.9.0: look up the actual plan object (journalData already holds it —
+  // the DOM only ever carried its id) so the form can be pre-filled, not
+  // just linked at save time.
+  const plan = planId ? (journalData[date]?.plans || []).find(p => String(p.id) === String(planId)) : null;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal-card">
@@ -138,8 +142,11 @@ function openQuickAdd(date, type, planId){
     </div>
   </div>`;
   document.body.appendChild(overlay);
-  document.getElementById('quickAddFields').innerHTML = quickAddFieldsHtml(type);
-  if(type === 'sabaq') populateSurahSelectInto('qa_surah');
+  document.getElementById('quickAddFields').innerHTML = quickAddFieldsHtml(type, plan);
+  if(type === 'sabaq'){
+    populateSurahSelectInto('qa_surah');
+    if(plan && plan.surah) document.getElementById('qa_surah').value = plan.surah;
+  }
 
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
   overlay.querySelector('.close-btn').addEventListener('click', () => overlay.remove());
@@ -151,21 +158,26 @@ function quickAddTitle(type){
   return { sabaq: 'Sabaq', sabaqDhor: 'Sabaq Dhor', dhor: 'Dhor' }[type] || type;
 }
 
-function quickAddFieldsHtml(type){
+function quickAddFieldsHtml(type, plan){
   if(type === 'sabaq'){
     return `<label>Surah</label><select id="qa_surah"></select>
-      <label>Ayah from</label><input type="number" id="qa_ayah_from">
-      <label>Ayah to</label><input type="number" id="qa_ayah_to">`;
+      <label>Ayah from</label><input type="number" id="qa_ayah_from" value="${plan && plan.ayah_from != null ? plan.ayah_from : ''}">
+      <label>Ayah to</label><input type="number" id="qa_ayah_to" value="${plan && plan.ayah_to != null ? plan.ayah_to : ''}">`;
   }
   if(type === 'sabaqDhor'){
+    // Not pre-filled: a sabaq_dhor PLAN stores surah/ayah_from/ayah_to
+    // (SCHEMA.md), but the log itself takes a computed `zone` string —
+    // that computation isn't wired into the frontend yet (same gap noted
+    // in sabaqDhorPage.js), so there's no clean value to put here without
+    // guessing. Left manual rather than fabricated.
     return `<label>Zone</label><input type="text" id="qa_zone" placeholder="e.g. Juz' 29, 30">
       <label>Mistakes</label><input type="number" id="qa_mistakes" value="0">`;
   }
   if(type === 'dhor'){
-    return `<label>Segment from</label><input type="number" id="qa_seg_from">
-      <label>Segment to</label><input type="number" id="qa_seg_to">
+    return `<label>Segment from</label><input type="number" id="qa_seg_from" value="${plan && plan.segment_from != null ? plan.segment_from : ''}">
+      <label>Segment to</label><input type="number" id="qa_seg_to" value="${plan && plan.segment_to != null ? plan.segment_to : ''}">
       <label>Reference</label>
-      <select id="qa_ref"><option value="waterval">13-line (IndoPak)</option><option value="uthmani">Uthmani</option></select>
+      <select id="qa_ref"><option value="waterval"${plan && plan.ref === 'waterval' ? ' selected' : ''}>13-line (IndoPak)</option><option value="uthmani"${plan && plan.ref === 'uthmani' ? ' selected' : ''}>Uthmani</option></select>
       <label>Mistakes</label><input type="number" id="qa_mistakes" value="0">
       <label>Duration (minutes)</label><input type="number" id="qa_duration" step="0.5">`;
   }
