@@ -7,7 +7,74 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.9.4 — line-count mechanism for the 15-line Madani print (2026-07-29)
+## V3.10.0 — Hybrid mushaf enabled, Setup redesigned with switches (2026-07-29)
+
+Bismillah. Two things in one delivery, confirmed to go together: Hybrid
+becomes a real, selectable mushaf option, and every plain either/or
+control across Setup and Dhor Schedule becomes a genuine switch instead
+of a button pair.
+
+**Hybrid mushaf:** enabled in Setup (was shown-but-disabled since
+V3.7.0). One rule, applied everywhere a `ref` gets derived from a
+student's mushaf: page/line math always follows 15-line data for a
+Hybrid account, quarter/half/juz' math always follows 13-line rules —
+same as a plain 13-line account, never the 15-line print's own
+rub'/hizb/juz' system. `worker/src/dhorSchedule.js` already fell through
+to `waterval` for anything that wasn't `15line_madani`, so Hybrid needed
+no new branch there — just enabling the value in `profile.js`'s
+validation and the Setup UI.
+
+**Dhor log page's reference dropdown is gone.** It used to be a separate
+per-device `localStorage` setting, independent of the student's actual
+mushaf choice — that inconsistency is why Hybrid couldn't have worked
+cleanly before. Now `ref` is derived from `profile.mushaf` fresh on every
+open, the same rule as above, for every student — not just Hybrid ones.
+
+**Switch redesign**, all in Setup + Dhor Schedule:
+- Gender, mushaf (3-way, with an explanatory line under it for Hybrid),
+  Dhor Schedule's portion-granularity (3-way) and frequency (2-way) are
+  now genuine switches — one rounded track, a sliding highlighted thumb
+  — replacing the button-pair look those fields used before.
+- "Mark completed sections" (Juz'/Surah) is a switch too, but with a
+  neutral center: tapping either side always opens its slide-in grid
+  regardless of where the thumb currently sits; the thumb only reflects
+  which mode is actually set, resting muted in the middle if nothing's
+  been marked yet. A plain 2-way switch doesn't fit here, since tapping
+  opens a tool rather than flipping a persistent state.
+- Default targets and Haidh's 3 fields are now one row each, label on
+  the left, input on the right, instead of stacked. "Frequency (days)"
+  is renamed "Revision cycle time (days)".
+- Dhor Schedule's portion-per-session row now has the quantity number
+  first (left), the granularity switch after it (right) — reversed
+  from the original order.
+- Days-of-week is now forced onto one line at every width (was allowed
+  to wrap) — more compact per-button padding, no change to the 7-day
+  multi-select behavior itself.
+- Surah grid (the slide-in from "Mark completed sections") is now 3
+  columns instead of 2, as a trial — easy to revert if it doesn't read
+  well in practice.
+
+The generic switch component (`renderSwitch()`/`wireSwitch()` in
+`settingsScreen.js`, `.switch-track`/`.switch-option`/`.switch-thumb` in
+`settings.css`) handles 2-way, 3-way, and the neutral-center variant with
+the same code — none of it needed a special case per switch, just
+however many slots a given track has.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/settings.css
+js/settingsScreen.js
+js/dhorPage.js
+worker/src/profile.js
+worker/src/dhorSchedule.js
+CONVENTIONS.md
+CHANGELOG.md
+TESTING.md
+```
+
+
 
 Bismillah. Closes the other half of the sabaq line-count gap —
 `getLines13ForAyahRange` had no 15-line counterpart until now.

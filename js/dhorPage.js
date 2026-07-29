@@ -3,10 +3,12 @@
 // Segment picker (quarter/half/full-juz', in whichever reference is
 // active), the real timer/lap feature, tajweed tags, mistakes, comment.
 //
-// SCOPE NOTE: the full three-model selector (13-line/Madina/Hybrid) isn't
-// built yet — this page uses a simple local device-setting for which
-// reference (waterval/uthmani) to work in, same two options, just without
-// the richer page/line display the full model system will add later.
+// V3.10.0: the reference (waterval/uthmani) is no longer a local
+// per-device dropdown on this page — it's derived from the student's
+// own mushaf choice (Setup), fetched fresh on every open, same rule
+// everywhere in the app: 13-line and Hybrid both resolve to waterval
+// (quarter/half/juz' always follow 13-line rules for Hybrid, confirmed
+// in chat), 15-line Madani resolves to uthmani.
 //
 // V3.9.0: plan-as-default is now wired in. On open, fetches today's Dhor
 // plan(s) (produced by the rolling schedule configured in Setup, or
@@ -35,9 +37,8 @@
 // — same reasoning as the other two log cards.
 // ============================================================
 
-const DHOR_REF_KEY = 'hh_dhor_ref';
-function getDhorRef(){ return localStorage.getItem(DHOR_REF_KEY) || 'waterval'; }
-function setDhorRef(ref){ localStorage.setItem(DHOR_REF_KEY, ref); }
+let dhorCurrentRef = 'waterval'; // derived from profile.mushaf on every open, see renderDhorScreen()
+function refForMushaf(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
 
 function computeSegmentRange(juz, positionInJuz, ref, unit){
   const perJuz = segmentsPerJuz(ref);
@@ -70,12 +71,10 @@ let dhorTodaysPlans = [];    // today's plan(s) for type 'dhor', fetched fresh o
 let dhorActivePlanId = null; // which one (if any) is currently backing the form
 
 function renderDhorPicker(){
-  const ref = getDhorRef();
-  const perJuz = segmentsPerJuz(ref);
-  document.getElementById('dhor_ref').value = ref;
+  const perJuz = segmentsPerJuz(dhorCurrentRef);
   const posSel = document.getElementById('dhor_position');
   posSel.innerHTML = Array.from({length: perJuz}, (_,i) =>
-    `<option value="${i+1}">${ref === 'waterval' ? 'Quarter' : '1/8'} ${i+1}</option>`).join('');
+    `<option value="${i+1}">${dhorCurrentRef === 'waterval' ? 'Quarter' : '1/8'} ${i+1}</option>`).join('');
 }
 
 // Fills the form from one plan row and remembers its id for save-time
@@ -83,9 +82,8 @@ function renderDhorPicker(){
 // means dhorActivePlanId stays null, which callers set directly.
 function applyDhorPlan(plan){
   dhorActivePlanId = plan.id;
-  if(plan.ref){ setDhorRef(plan.ref); renderDhorPicker(); }
   if(plan.segment_from != null && plan.segment_to != null){
-    const { juz, positionInJuz, unit } = segmentRangeToPicker(plan.segment_from, plan.segment_to, getDhorRef());
+    const { juz, positionInJuz, unit } = segmentRangeToPicker(plan.segment_from, plan.segment_to, dhorCurrentRef);
     document.getElementById('dhor_juz').value = String(juz);
     document.getElementById('dhor_position').value = String(positionInJuz);
     document.getElementById('dhor_unit').value = unit;
@@ -123,6 +121,13 @@ async function renderDhorScreen(){
   dhorActivePlanId = null;
   document.getElementById('dhor_date').value = todayISO();
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz' ${i+1}</option>`).join('');
+
+  try{
+    const profile = await apiGetProfile();
+    dhorCurrentRef = refForMushaf(profile.mushaf);
+  } catch(e){
+    dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
+  }
   renderDhorPicker();
   document.getElementById('dhor_unit').value = 'quarter';
   document.getElementById('dhor_mistakes').value = '0';
@@ -160,23 +165,17 @@ function updateDhorTimerSummary(){
   el.textContent = text;
 }
 
-document.getElementById('dhor_ref').addEventListener('change', (e) => {
-  setDhorRef(e.target.value);
-  renderDhorPicker();
-});
-
 document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('dhorError');
   errEl.textContent = '';
   const juz = parseInt(document.getElementById('dhor_juz').value);
   const position = parseInt(document.getElementById('dhor_position').value);
   const unit = document.getElementById('dhor_unit').value;
-  const ref = getDhorRef();
-  const { segment_from, segment_to } = computeSegmentRange(juz, position, ref, unit);
+  const { segment_from, segment_to } = computeSegmentRange(juz, position, dhorCurrentRef, unit);
 
   const payload = {
     date: document.getElementById('dhor_date').value || todayISO(),
-    segment_from, segment_to, ref,
+    segment_from, segment_to, ref: dhorCurrentRef,
     tajweed_tags: dhorSelectedTags.join(','),
     mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
     ...(dhorTimerResult || {}),

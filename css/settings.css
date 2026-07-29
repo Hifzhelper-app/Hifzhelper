@@ -1,5 +1,5 @@
 /* ============================================================
-   Hifzhelper — Setup screen (V3.9.0)
+   Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0)
    REVISED from V3.7.x/V3.8.0's 2-card swipeable rail back to ONE
    continuous scrollable page, now that Dhor Plan and Haidh live here
    permanently too (confirmed in chat: no separate nav destinations for
@@ -17,6 +17,12 @@
    Schedule also kicks off generation, saving Haidh also kicks off
    prediction — conflating these into one page-wide Save would silently
    re-trigger both any time either changed).
+
+   V3.10.0: every plain either/or button-pair (gender, mushaf, Juz'/Surah,
+   granularity, frequency) becomes a genuine switch/segmented-control —
+   one rounded track, a sliding highlighted thumb, replacing the old
+   .tajweed-tag button-group look for these specific controls (still
+   used elsewhere — days-of-week, slide-in grid cells — unchanged).
    ============================================================ */
 
 #screen-settings {
@@ -73,21 +79,68 @@
   color: var(--color-ink);
 }
 
-/* Gender — two exclusive toggle buttons, same interaction and pill look
-   as the mushaf/baseline-mode pickers below (V3.4 "prefer buttons over
-   native form controls" design philosophy — a native <input type=radio>
-   would read as visually inconsistent next to everything else on this
-   screen), so this satisfies "radio selectors" functionally (single,
-   mutually-exclusive choice) without introducing a different control
-   style just for this one field. */
-#gender_picker { margin-bottom: var(--space-sm); }
+/* ---------- Switch / segmented-control (V3.10.0) ----------
+   Generic N-way switch: one rounded track, a sliding highlighted thumb
+   behind whichever option is active, positioned/sized by JS as a plain
+   percentage of the track width (settingsScreen.js's renderSwitch()).
+   Used for every plain either/or or either/or/or control on this screen
+   (gender, mushaf, granularity, frequency) — replaces the .tajweed-tag
+   button-group look for these specific fields (that pattern stays as-is
+   for multi-select controls like days-of-week and the slide-in grids). */
+.switch-track {
+  position: relative;
+  display: flex;
+  height: 42px;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  background: white;
+  overflow: hidden;
+}
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
+  background: var(--palette-evergreen);
+  transition: left 0.2s ease, width 0.2s ease, background 0.2s ease;
+  z-index: 0;
+}
+/* Neutral resting state (Juz'/Surah switch before anything's marked, or
+   any switch with no value yet) — a muted, unfilled thumb rather than
+   guessing which side to highlight. */
+.switch-thumb.neutral {
+  background: var(--color-table-border);
+}
+.switch-option {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-ink);
+  cursor: pointer;
+  padding: 0 8px;
+  transition: color 0.2s ease;
+}
+.switch-option.active { color: white; }
+/* The empty middle zone of a neutral-center 3-way switch (Juz'/Surah) —
+   not a real option, just reserves the middle third so the two real
+   options sit left/right with a true center rest position between them. */
+.switch-neutral-zone {
+  flex: 1;
+}
+.switch-hint {
+  font-size: 12px;
+  color: var(--color-ink-faint);
+  margin: 4px 0 var(--space-sm);
+}
 
-#setup_mushaf_picker, #dhor_granularity_picker,
-#dhor_frequency_picker, #dhor_days_picker { margin-bottom: var(--space-sm); }
-
-/* Row 7's two "open the grid" buttons — same pill look as everything
-   else, just triggering an overlay instead of toggling inline. */
-#section_grid_buttons { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+#setup_mushaf_picker, #dhor_granularity_picker, #dhor_frequency_picker,
+#gender_picker, #section_grid_switch { margin-bottom: var(--space-sm); }
 
 .baseline-summary {
   font-size: 12px;
@@ -95,27 +148,50 @@
   margin: 4px 0 var(--space-sm);
 }
 
-/* Days-of-week — 7 compact toggle buttons in a row on wide screens,
-   wrapping on narrow ones rather than shrinking to unreadable width
-   (CONVENTIONS.md principle 9: respects the viewport at both ends). */
+/* Days-of-week — forced to stay on one line always (compact enough that
+   wrapping would be worse than shrinking), unlike other button-groups on
+   this screen that wrap freely on narrow widths. */
 #dhor_days_picker {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
-#dhor_days_picker .tajweed-tag { margin: 0; }
+#dhor_days_picker .tajweed-tag {
+  margin: 0;
+  flex: 1;
+  padding: 6px 2px;
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
 
-/* Dhor schedule's granularity+quantity row: a picker of buttons plus a
-   single number field applying to whichever is active — laid out side
-   by side on anything wider than a phone, stacked on one. */
+/* Dhor schedule's portion-per-session row: number input first (left),
+   then the Juz'/Half/Quarter switch (right) — reversed from the order
+   these were first built in, per direct request. */
 .granularity-quantity-row {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--space-md);
   flex-wrap: wrap;
 }
-.granularity-quantity-row > div:first-child { flex: 1; min-width: 180px; }
-.granularity-quantity-row > div:last-child { width: 90px; }
+.granularity-quantity-row > .quantity-input-wrap { width: 90px; }
+.granularity-quantity-row > .switch-track { flex: 1; min-width: 180px; }
+
+/* Label-left/input-right rows (Default targets, Haidh) — one field per
+   row, label and input on the same line rather than stacked. */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 8px 0;
+}
+.settings-row label { margin: 0; flex: 1; }
+.settings-row input {
+  width: 110px;
+  flex: 0 0 auto;
+  text-align: right;
+}
+.settings-row input[type="date"] { width: 160px; }
 
 /* Juz'/Surah "mark completed sections" slide-in grids (V3.9.0) — replaces
    the old inline mode-toggle-then-grid pattern entirely (2 buttons that
@@ -123,9 +199,9 @@
    inline area shows). Reuses .modal-overlay/.modal-card as-is
    (components.css) for the overlay shell/close-icon/scroll behavior; only
    the grid itself needs its own rule, since these use FIXED column counts
-   (3 for Juz', 2 for Surah — matching the "3x10"/"2x57" layout asked
-   for), unlike the auto-fill/minmax responsive grid this project used
-   for the same underlying cell style before V3.9.0. */
+   (3 for Juz', 3 for Surah as of V3.10.0's trial — was 2 — unlike the
+   auto-fill/minmax responsive grid this project used for the same
+   underlying cell style before V3.9.0). */
 .section-grid-modal .modal-card {
   max-width: 520px;
 }
@@ -135,7 +211,7 @@
   margin-top: var(--space-md);
 }
 .section-grid.grid-juz { grid-template-columns: repeat(3, 1fr); }
-.section-grid.grid-surah { grid-template-columns: repeat(2, 1fr); }
+.section-grid.grid-surah { grid-template-columns: repeat(3, 1fr); }
 .section-grid .tajweed-tag {
   margin: 0;
   text-align: center;

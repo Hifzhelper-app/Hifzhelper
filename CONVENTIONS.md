@@ -223,12 +223,12 @@ own render function.
                         4-card grid/rail layout (V3.6.1 — previously "the
                         3 detail-page forms", before they were merged)
     admin.css         — admin screen (user list, register form)
-    settings.css      — Setup screen (V3.9.0): ONE continuous page, 4
-                        independently-saved sections (Profile, Hifz
-                        Setup, Dhor Schedule, Haidh) — reverted from
-                        V3.7.x/V3.8.0's swipeable 2-card rail back to a
-                        bounded single column now that Dhor Schedule and
-                        Haidh live here permanently
+    settings.css      — Setup screen (V3.9.0, switch redesign V3.10.0):
+                        ONE continuous page, 4 independently-saved
+                        sections, plus the generic .switch-track/
+                        .switch-option/.switch-thumb component (2-way,
+                        3-way, and neutral-center variants) and the
+                        .settings-row label-left/input-right pattern
   js/
     icons.js          — shared inline SVG icon set
     api.js            — fetch wrapper + every endpoint client function
@@ -245,7 +245,10 @@ own render function.
     dhorPage.js         — Dhor card: picker, timer, tajweed, own date
                           selector (one of 4 cards, V3.6.1); V3.9.0 adds
                           plan-as-default (pre-fills from today's Dhor
-                          Schedule plan, if any)
+                          Schedule plan, if any); V3.10.0 removes the
+                          separate per-device waterval/uthmani dropdown —
+                          ref is now derived from the student's own
+                          mushaf choice (Setup), fetched fresh on open
     sabaqPage.js        — Sabaq card, own date selector (one of 4 cards)
     sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4)
     reflectionCard.js   — Tadabbur card (V3.6.1, new) — one reflection
@@ -253,14 +256,17 @@ own render function.
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
                           renders all 4, rail scroll position, dot sync
     adminPage.js        — admin user-list screen
-    settingsScreen.js   — Setup screen (V3.9.0): 4 independently-saved
-                          sections in one continuous page — Profile
-                          (view-only name/ID/URL, journal name, gender),
-                          Hifz Setup (mushaf, history baseline via
-                          slide-in Juz'/Surah grids, default targets),
-                          Dhor Schedule (rolling-plan settings), and Haidh
-                          (prediction settings, shown only when gender is
-                          F) — reached via "Settings" nav or automatically
+    settingsScreen.js   — Setup screen (V3.9.0, switch redesign V3.10.0):
+                          4 independently-saved sections in one continuous
+                          page — Profile (view-only name/ID/URL, journal
+                          name, gender as a 2-way switch), Hifz Setup
+                          (mushaf as a 3-way switch incl. Hybrid, history
+                          baseline via a neutral-center Juz'/Surah switch
+                          opening slide-in grids, default targets as
+                          label-left/input-right rows), Dhor Schedule
+                          (granularity/frequency as switches), and Haidh
+                          (same row layout, shown only when gender is F)
+                          — reached via "Settings" nav or automatically
                           pre-setup_complete (see app.js)
     app.js              — bootstrap, screen routing (see principle 8);
                           also owns fixScreenTopPaint() (see principle 12)
