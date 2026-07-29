@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.9.0"></script>
+<script src="js/pwaManifest.js?v=3.10.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.9.0">
-<link rel="stylesheet" href="css/base.css?v=3.9.0">
-<link rel="stylesheet" href="css/nav.css?v=3.9.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.9.0">
-<link rel="stylesheet" href="css/components.css?v=3.9.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.9.0">
-<link rel="stylesheet" href="css/settings.css?v=3.9.0">
-<link rel="stylesheet" href="css/admin.css?v=3.9.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.10.0">
+<link rel="stylesheet" href="css/base.css?v=3.10.0">
+<link rel="stylesheet" href="css/nav.css?v=3.10.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.10.0">
+<link rel="stylesheet" href="css/components.css?v=3.10.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.10.0">
+<link rel="stylesheet" href="css/settings.css?v=3.10.0">
+<link rel="stylesheet" href="css/admin.css?v=3.10.0">
 </head>
 <body>
 
@@ -248,11 +248,11 @@
             <h2>Dhor</h2>
             <div id="dhorPlanBanner"></div>
             <label>Date</label><input type="date" id="dhor_date">
-            <label>Reference</label>
-            <select id="dhor_ref">
-              <option value="waterval">13-line (IndoPak)</option>
-              <option value="uthmani">Uthmani</option>
-            </select>
+            <!-- V3.10.0: the standalone reference dropdown is gone — ref
+                 is now derived from the student's own mushaf choice
+                 (Setup), same rule for everyone (13-line/15-line/Hybrid
+                 all resolve consistently), not a separate per-device pick
+                 living only on this one page. -->
             <div class="picker-row">
               <div><label>Juz'</label><select id="dhor_juz"></select></div>
               <div><label>Starting at</label><select id="dhor_position"></select></div>
@@ -378,12 +378,12 @@
           </div>
         </div>
 
-        <!-- V3.9.0: was a <select> — now the same exclusive-toggle-button
-             pattern as mushaf/granularity below (see settings.css). -->
+        <!-- V3.10.0: gender is now a genuine 2-way switch. -->
         <label>Gender</label>
-        <div id="gender_picker">
-          <button type="button" class="tajweed-tag" data-gender="M">Male</button>
-          <button type="button" class="tajweed-tag" data-gender="F">Female</button>
+        <div class="switch-track" id="gender_switch">
+          <div class="switch-thumb"></div>
+          <button type="button" class="switch-option" data-value="M">Male</button>
+          <button type="button" class="switch-option" data-value="F">Female</button>
         </div>
 
         <label>Journal name</label>
@@ -402,31 +402,41 @@
           </div>
         </div>
 
+        <!-- V3.10.0: Hybrid enabled (was disabled/coming-later); now a
+             3-way switch with an explanatory line, since "Hybrid" alone
+             doesn't say what it actually does. -->
         <label>Mushaf</label>
-        <div id="setup_mushaf_picker">
-          <button type="button" class="tajweed-tag" data-mushaf="13line">13 line</button>
-          <button type="button" class="tajweed-tag" data-mushaf="15line_madani">15 line Madani</button>
-          <button type="button" class="tajweed-tag" data-mushaf="hybrid" disabled title="Coming later">Hybrid</button>
+        <div class="switch-track" id="mushaf_switch">
+          <div class="switch-thumb"></div>
+          <button type="button" class="switch-option" data-value="13line">13 line</button>
+          <button type="button" class="switch-option" data-value="15line_madani">15 line Madani</button>
+          <button type="button" class="switch-option" data-value="hybrid">Hybrid</button>
         </div>
+        <div class="switch-hint" id="mushafHint"></div>
 
         <!-- V3.9.0: replaces the old inline Surahs/Juz' mode-toggle +
              grid — two buttons that each open a full slide-in grid
              overlay instead (still mutually exclusive: confirming a
              selection in one clears the other, same as before). -->
+        <!-- V3.10.0: neutral-center switch — tapping either side opens its
+             popout grid regardless of the thumb's current position; the
+             thumb only reflects which mode is ACTUALLY set (baselineMode),
+             resting in the middle if nothing's been marked yet, since this
+             isn't a real persistent on/off state the way other switches
+             on this screen are. -->
         <label style="margin-top:20px;">Mark completed sections</label>
-        <div id="section_grid_buttons">
-          <button type="button" class="tajweed-tag" id="openJuzGridBtn">Juz'</button>
-          <button type="button" class="tajweed-tag" id="openSurahGridBtn">Surah</button>
+        <div class="switch-track" id="section_grid_switch">
+          <div class="switch-thumb neutral"></div>
+          <button type="button" class="switch-option" id="openJuzGridBtn" data-value="juz">Juz'</button>
+          <div class="switch-neutral-zone"></div>
+          <button type="button" class="switch-option" id="openSurahGridBtn" data-value="surah">Surah</button>
         </div>
         <div class="baseline-summary" id="baselineSummary"></div>
 
         <label style="margin-top:20px;">Default targets</label>
-        <div class="picker-row">
-          <div><label>Mistakes / juz'</label><input type="number" id="target_mistakes" min="0"></div>
-          <div><label>Minutes / juz'</label><input type="number" id="target_minutes" min="0"></div>
-        </div>
-        <label>Frequency (days)</label>
-        <input type="number" id="target_frequency" min="0">
+        <div class="settings-row"><label>Mistakes / juz'</label><input type="number" id="target_mistakes" min="0"></div>
+        <div class="settings-row"><label>Minutes / juz'</label><input type="number" id="target_minutes" min="0"></div>
+        <div class="settings-row"><label>Revision cycle time (days)</label><input type="number" id="target_frequency" min="0"></div>
 
         <div class="form-error" id="hifzSetupError"></div>
       </div>
@@ -448,18 +458,20 @@
 
         <label>Portion per session</label>
         <div class="granularity-quantity-row">
-          <div id="dhor_granularity_picker">
-            <button type="button" class="tajweed-tag" data-granularity="juz">Juz'</button>
-            <button type="button" class="tajweed-tag" data-granularity="half">Half</button>
-            <button type="button" class="tajweed-tag" data-granularity="quarter">Quarter</button>
+          <div class="quantity-input-wrap"><input type="number" id="dhor_quantity" min="1" value="1"></div>
+          <div class="switch-track" id="dhor_granularity_switch">
+            <div class="switch-thumb"></div>
+            <button type="button" class="switch-option" data-value="juz">Juz'</button>
+            <button type="button" class="switch-option" data-value="half">Half</button>
+            <button type="button" class="switch-option" data-value="quarter">Quarter</button>
           </div>
-          <div><input type="number" id="dhor_quantity" min="1" value="1"></div>
         </div>
 
         <label style="margin-top:20px;">Frequency</label>
-        <div id="dhor_frequency_picker">
-          <button type="button" class="tajweed-tag" data-frequency="daily">Daily</button>
-          <button type="button" class="tajweed-tag" data-frequency="twice">Twice a day</button>
+        <div class="switch-track" id="dhor_frequency_switch">
+          <div class="switch-thumb"></div>
+          <button type="button" class="switch-option" data-value="daily">Daily</button>
+          <button type="button" class="switch-option" data-value="twice">Twice a day</button>
         </div>
 
         <label style="margin-top:20px;">Days of week</label>
@@ -490,12 +502,9 @@
         </div>
         <p class="form-hint" style="margin-top:0;">Plans will be adjusted for haidh days. Can be adjusted for actual haidh at any time.</p>
 
-        <label>Cycle length (days)</label>
-        <input type="number" id="haidh_cycle_length" min="1">
-        <label>Duration (days)</label>
-        <input type="number" id="haidh_period_length" min="1">
-        <label>Next expected haidh day</label>
-        <input type="date" id="haidh_next_expected">
+        <div class="settings-row"><label>Cycle length (days)</label><input type="number" id="haidh_cycle_length" min="1"></div>
+        <div class="settings-row"><label>Duration (days)</label><input type="number" id="haidh_period_length" min="1"></div>
+        <div class="settings-row"><label>Next expected haidh day</label><input type="date" id="haidh_next_expected"></div>
 
         <div class="form-error" id="haidhError"></div>
       </div>
@@ -505,22 +514,22 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.9.0"></script>
-<script src="js/icons.js?v=3.9.0"></script>
-<script src="js/api.js?v=3.9.0"></script>
-<script src="js/auth.js?v=3.9.0"></script>
-<script src="js/home.js?v=3.9.0"></script>
-<script src="js/tajweed.js?v=3.9.0"></script>
-<script src="js/commentPrivacy.js?v=3.9.0"></script>
-<script src="js/timer.js?v=3.9.0"></script>
-<script src="js/journal.js?v=3.9.0"></script>
-<script src="js/dhorPage.js?v=3.9.0"></script>
-<script src="js/sabaqPage.js?v=3.9.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.9.0"></script>
-<script src="js/reflectionCard.js?v=3.9.0"></script>
-<script src="js/logDetailScreen.js?v=3.9.0"></script>
-<script src="js/settingsScreen.js?v=3.9.0"></script>
-<script src="js/adminPage.js?v=3.9.0"></script>
-<script src="js/app.js?v=3.9.0"></script>
+<script src="shared/data.js?v=3.10.0"></script>
+<script src="js/icons.js?v=3.10.0"></script>
+<script src="js/api.js?v=3.10.0"></script>
+<script src="js/auth.js?v=3.10.0"></script>
+<script src="js/home.js?v=3.10.0"></script>
+<script src="js/tajweed.js?v=3.10.0"></script>
+<script src="js/commentPrivacy.js?v=3.10.0"></script>
+<script src="js/timer.js?v=3.10.0"></script>
+<script src="js/journal.js?v=3.10.0"></script>
+<script src="js/dhorPage.js?v=3.10.0"></script>
+<script src="js/sabaqPage.js?v=3.10.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.10.0"></script>
+<script src="js/reflectionCard.js?v=3.10.0"></script>
+<script src="js/logDetailScreen.js?v=3.10.0"></script>
+<script src="js/settingsScreen.js?v=3.10.0"></script>
+<script src="js/adminPage.js?v=3.10.0"></script>
+<script src="js/app.js?v=3.10.0"></script>
 </body>
 </html>

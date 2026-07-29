@@ -580,6 +580,50 @@ reused for steps 3–6.
     or otherwise. The only way to reach Dhor Schedule/Haidh is via
     Settings.
 
+## 24. Hybrid mushaf + Setup/Dhor Schedule switch redesign (V3.10.0)
+
+1. Setup → Mushaf: confirm "Hybrid" is now tappable (no longer greyed
+   out). Tap it → confirm the hint line below reads "15 line pages with
+   13 line quarter markings." and no hint shows for the other two.
+2. Set mushaf to Hybrid, save. Open the Dhor log page → log a segment →
+   confirm the saved entry's `ref` is `waterval` (check via the recent-
+   entries rail or the DB directly) — Hybrid must use 13-line quarter/
+   half/juz' rules, never uthmani.
+3. Set mushaf to 15-line Madani, save → log a Dhor entry → confirm `ref`
+   is `uthmani` this time. Set back to 13-line → confirm `ref` is
+   `waterval`. Three mushaf values, three consistent results.
+4. Dhor log page: confirm there's no reference dropdown anywhere on it
+   any more — the picker (Juz'/position) should still work, just without
+   a manual ref choice.
+5. Dhor Schedule: change mushaf in Setup, save, then check a freshly
+   generated plan's `ref` matches the new mushaf's expected value
+   (`worker/src/dhorSchedule.js` derives it the same way).
+
+**Switches — all of Setup + Dhor Schedule:**
+6. Gender: tap Male, then Female → confirm the thumb slides fully to
+   whichever is tapped, active side's text goes white, and the Haidh
+   section still appears/disappears live exactly as before.
+7. Mushaf: tap each of the 3 options → thumb should occupy exactly one
+   third each time, sliding smoothly, no overlap or gap.
+8. "Mark completed sections": before marking anything, confirm the thumb
+   rests in the visible middle, muted grey — not slid to either side.
+   Tap "Juz'" → grid opens regardless of thumb position; mark a few,
+   close → thumb slides to the LEFT third. Tap "Surah" → opens empty
+   (different mode) → mark some, close → thumb slides RIGHT. Reopen
+   "Juz'" → confirm it's empty again (mode switched, old selection
+   cleared, same rule as before this redesign).
+9. Surah grid: confirm 3 columns now (was 2) and still scrolls correctly
+   with all 114 entries reachable.
+10. Dhor Schedule: confirm the quantity number box is now to the LEFT of
+    the Juz'/Half/Quarter switch (was reversed before). Tap through all
+    3 granularity options and both frequency options, confirming the
+    thumb behaves the same way as the mushaf switch.
+11. Days of week: confirm all 7 buttons stay on one line at a typical
+    phone width — no wrapping to a second row.
+12. Default targets and Haidh: confirm all 6 fields (3 targets + 3 haidh)
+    are now single rows, label left, input right, and that saving each
+    section still works and redisplays correctly on reload.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

@@ -1,15 +1,15 @@
 // ============================================================
-// Hifzhelper — Setup screen (V3.9.0)
+// Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0)
 // REVISED from V3.7.x/V3.8.0's 2 independently-saved swipeable cards to
 // ONE continuous page with 4 independently-saved sections: Profile,
-// Hifz Setup, Dhor Schedule, and Haidh (Haidh shown only when gender is
-// F — toggled live off the gender picker, not just on reload). Dhor
-// Schedule and Haidh are new in V3.9.0 and live here permanently
-// (confirmed in chat: no separate nav destinations for either).
+// Hifz Setup, Dhor Schedule, Haidh (Haidh shown only when gender is F).
+// V3.10.0: every plain either/or control (gender, mushaf, Juz'/Surah,
+// Dhor Schedule's granularity/frequency) is now a genuine switch —
+// see renderSwitch()/wireSwitch() below, and Hybrid mushaf is enabled.
 //
 // Reached two ways: the "Settings" nav item (any time), and automatically
-// on a new user's first login before setup_complete (see bootApp() in
-// app.js) — the same screen either way, just a different entry point.
+// on a new user's first login before setup_complete (see app.js) — the
+// same screen either way, just a different entry point.
 // ============================================================
 
 document.getElementById('profileSaveBtn').innerHTML = iconHtml('save');
@@ -22,45 +22,67 @@ function addDaysISO(iso, n){
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
-// ---------- Profile: gender picker ----------
-let setupSelectedGender = null;
-function renderGenderPicker(){
-  document.querySelectorAll('#gender_picker [data-gender]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.gender === setupSelectedGender);
+// ---------- Generic switch helper (V3.10.0) ----------
+// A switch-track's children are the thumb plus one "slot" per option, in
+// DOM order — for a neutral-center switch (Juz'/Surah) one of those slots
+// is a plain .switch-neutral-zone div rather than a real option, so the
+// thumb has somewhere to rest when nothing's chosen yet. Positioning is
+// just "which slot index is active" as a percentage of the track width;
+// nothing here needs to special-case 2-way vs 3-way vs neutral-center.
+function renderSwitch(trackId, activeValue){
+  const track = document.getElementById(trackId);
+  const slots = Array.from(track.children).filter(el => !el.classList.contains('switch-thumb'));
+  const thumb = track.querySelector('.switch-thumb');
+  const totalSlots = slots.length;
+  let activeIndex = slots.findIndex(el => el.dataset && el.dataset.value === activeValue);
+  const isNeutral = activeIndex === -1;
+  if(isNeutral){
+    activeIndex = Math.floor((totalSlots - 1) / 2); // rest in the middle slot
+    thumb.classList.add('neutral');
+  } else {
+    thumb.classList.remove('neutral');
+  }
+  const pct = 100 / totalSlots;
+  thumb.style.left = `calc(${pct * activeIndex}% + 2px)`;
+  thumb.style.width = `calc(${pct}% - 4px)`;
+  slots.forEach(el => { if(el.classList.contains('switch-option')) el.classList.toggle('active', el.dataset.value === activeValue); });
+}
+function wireSwitch(trackId, onSelect){
+  document.querySelectorAll(`#${trackId} .switch-option`).forEach(btn => {
+    btn.addEventListener('click', () => onSelect(btn.dataset.value));
   });
 }
-document.querySelectorAll('#gender_picker [data-gender]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    setupSelectedGender = btn.dataset.gender;
-    renderGenderPicker();
-    updateHaidhVisibility();
-  });
+
+// ---------- Profile: gender switch ----------
+let setupSelectedGender = null;
+wireSwitch('gender_switch', (value) => {
+  setupSelectedGender = value;
+  renderSwitch('gender_switch', setupSelectedGender);
+  updateHaidhVisibility();
 });
 function updateHaidhVisibility(){
   document.getElementById('section-haidh').classList.toggle('hidden', setupSelectedGender !== 'F');
 }
 
-// ---------- Hifz Setup: mushaf picker (unchanged from V3.8.0) ----------
+// ---------- Hifz Setup: mushaf switch (V3.10.0: Hybrid enabled) ----------
+const MUSHAF_HINTS = {
+  '13line': '',
+  '15line_madani': '',
+  hybrid: '15 line pages with 13 line quarter markings.'
+};
 let setupSelectedMushaf = null;
-function renderMushafPicker(){
-  document.querySelectorAll('#setup_mushaf_picker [data-mushaf]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.mushaf === setupSelectedMushaf);
-  });
-}
-document.querySelectorAll('#setup_mushaf_picker [data-mushaf]:not(:disabled)').forEach(btn => {
-  btn.addEventListener('click', () => {
-    setupSelectedMushaf = btn.dataset.mushaf;
-    renderMushafPicker();
-  });
+wireSwitch('mushaf_switch', (value) => {
+  setupSelectedMushaf = value;
+  renderSwitch('mushaf_switch', setupSelectedMushaf);
+  document.getElementById('mushafHint').textContent = MUSHAF_HINTS[value] || '';
 });
 
 // ---------- Hifz Setup: completed-sections slide-in grids (V3.9.0) ----------
-// Replaces the old inline Surahs/Juz' mode-toggle + inline grid with two
-// buttons that each open a full overlay instead — built dynamically the
-// same way journal.js's quick-add modal is, rather than static hidden
-// HTML, since the 114-item Surah grid is much easier to generate from
-// SURAHS (shared/data.js) than to hand-write. Still mutually exclusive:
-// confirming a selection in one clears the other, same rule as before.
+// Neutral-center switch (V3.10.0): tapping either side always opens its
+// popout grid, regardless of the thumb's current resting position — the
+// thumb only reflects baselineMode itself (which grid was actually last
+// confirmed), resting in the middle if nothing's been marked yet, since
+// tapping here opens a tool rather than flipping a persistent state.
 let baselineMode = null;
 let baselineSelection = [];
 
@@ -73,9 +95,6 @@ function renderBaselineSummary(){
 }
 
 function openSectionGridModal(mode){
-  // Draft seeded from the current baseline ONLY if it's already in this
-  // mode — opening the other grid starts empty, since only one mode is
-  // ever the active one.
   const draft = baselineMode === mode ? baselineSelection.slice() : [];
   const items = mode === 'juz'
     ? Array.from({length: 30}, (_, i) => [i + 1, `Juz' ${i + 1}`])
@@ -103,17 +122,11 @@ function openSectionGridModal(mode){
     });
   });
 
-  // The overlay's close icon IS "save and close" for the grid itself —
-  // it commits the draft into the pending baselineMode/baselineSelection
-  // module variables. That's not the same as a server write: the outer
-  // Hifz Setup section's own Save button is still what actually persists
-  // it, same two-step confirm every other field on this screen already
-  // uses — one sub-control silently server-saving on its own would be
-  // the surprising, inconsistent behavior here, not this.
   const commitAndClose = () => {
     baselineMode = mode;
     baselineSelection = draft;
     renderBaselineSummary();
+    renderSwitch('section_grid_switch', baselineMode);
     overlay.remove();
   };
   overlay.addEventListener('click', e => { if(e.target === overlay) commitAndClose(); });
@@ -122,33 +135,18 @@ function openSectionGridModal(mode){
 document.getElementById('openJuzGridBtn').addEventListener('click', () => openSectionGridModal('juz'));
 document.getElementById('openSurahGridBtn').addEventListener('click', () => openSectionGridModal('surah'));
 
-// ---------- Dhor Schedule (new, V3.9.0) ----------
+// ---------- Dhor Schedule (new, V3.9.0; switches V3.10.0) ----------
 let setupSelectedGranularity = null;
 let setupSelectedFrequency = null;
 let setupSelectedDays = [];
 
-function renderGranularityPicker(){
-  document.querySelectorAll('#dhor_granularity_picker [data-granularity]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.granularity === setupSelectedGranularity);
-  });
-}
-document.querySelectorAll('#dhor_granularity_picker [data-granularity]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    setupSelectedGranularity = btn.dataset.granularity;
-    renderGranularityPicker();
-  });
+wireSwitch('dhor_granularity_switch', (value) => {
+  setupSelectedGranularity = value;
+  renderSwitch('dhor_granularity_switch', setupSelectedGranularity);
 });
-
-function renderFrequencyPicker(){
-  document.querySelectorAll('#dhor_frequency_picker [data-frequency]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.frequency === setupSelectedFrequency);
-  });
-}
-document.querySelectorAll('#dhor_frequency_picker [data-frequency]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    setupSelectedFrequency = btn.dataset.frequency;
-    renderFrequencyPicker();
-  });
+wireSwitch('dhor_frequency_switch', (value) => {
+  setupSelectedFrequency = value;
+  renderSwitch('dhor_frequency_switch', setupSelectedFrequency);
 });
 
 function renderDaysPicker(){
@@ -179,25 +177,27 @@ async function renderSettingsScreen(){
   document.getElementById('setup_url_display').value = window.location.origin + '/' + profile.id;
   document.getElementById('setup_journal_name').value = profile.journal_name || '';
   setupSelectedGender = profile.gender || null;
-  renderGenderPicker();
+  renderSwitch('gender_switch', setupSelectedGender);
   updateHaidhVisibility();
 
   // Hifz Setup section
   setupSelectedMushaf = profile.mushaf || null;
-  renderMushafPicker();
+  renderSwitch('mushaf_switch', setupSelectedMushaf);
+  document.getElementById('mushafHint').textContent = MUSHAF_HINTS[setupSelectedMushaf] || '';
   baselineMode = profile.baseline_mode || null;
   baselineSelection = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
   renderBaselineSummary();
+  renderSwitch('section_grid_switch', baselineMode);
   document.getElementById('target_mistakes').value = profile.target_mistakes_per_juz != null ? profile.target_mistakes_per_juz : 2;
   document.getElementById('target_minutes').value = profile.target_minutes_per_juz != null ? profile.target_minutes_per_juz : 40;
   document.getElementById('target_frequency').value = profile.target_frequency_days != null ? profile.target_frequency_days : 30;
 
   // Dhor Schedule section
   setupSelectedGranularity = profile.dhor_granularity || null;
-  renderGranularityPicker();
+  renderSwitch('dhor_granularity_switch', setupSelectedGranularity);
   document.getElementById('dhor_quantity').value = profile.dhor_quantity != null ? profile.dhor_quantity : 1;
   setupSelectedFrequency = profile.dhor_frequency || null;
-  renderFrequencyPicker();
+  renderSwitch('dhor_frequency_switch', setupSelectedFrequency);
   setupSelectedDays = Array.isArray(profile.dhor_days_of_week) ? profile.dhor_days_of_week.slice() : [];
   renderDaysPicker();
 

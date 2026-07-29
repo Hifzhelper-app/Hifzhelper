@@ -110,6 +110,10 @@ export async function ensureDhorSchedule(env, studentId) {
     return { generated: 0, reason: 'No days of week selected for the Dhor schedule' };
   }
 
+  // V3.10.0: Hybrid mushaf falls through to 'waterval' here too — Hybrid
+  // always uses 13-line quarter/half/juz' rules (confirmed in chat), same
+  // as a plain 13-line account, so no special case is needed beyond the
+  // existing default.
   const ref = student.mushaf === '15line_madani' ? 'uthmani' : 'waterval';
   const chunks = buildChunks(pool, ref, student.dhor_granularity, student.dhor_quantity);
   if (chunks.length === 0) return { generated: 0, reason: 'Could not build a schedule from the current settings' };

@@ -26,7 +26,9 @@ export async function handleGetProfile(request, env, auth) {
 // Only these two are real, active choices right now — Hybrid is shown in
 // the Setup screen UI but disabled/unselectable, so the server never needs
 // to accept it as a value until that actually gets built (V3.7.0).
-const VALID_MUSHAF = ['13line', '15line_madani'];
+// V3.10.0: Hybrid enabled — was shown-but-disabled in the UI and
+// explicitly rejected here since V3.7.0; now a real third choice.
+const VALID_MUSHAF = ['13line', '15line_madani', 'hybrid'];
 const VALID_BASELINE_MODE = ['surah', 'juz'];
 const VALID_DHOR_GRANULARITY = ['juz', 'half', 'quarter'];
 const VALID_DHOR_FREQUENCY = ['daily', 'twice'];
