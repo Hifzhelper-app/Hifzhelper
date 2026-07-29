@@ -133,16 +133,6 @@ const apiPlans = {
   remove: (id) => apiFetch('/plans?id=' + encodeURIComponent(id), { method: 'DELETE' })
 };
 
-// ---------- dhor schedule (V3.9.0) ----------
-// Tops up the rolling window — see worker/src/dhorSchedule.js. Returns
-// { generated } normally, or { generated: 0, reason } when nothing can be
-// generated yet (schedule not configured, no juz' baseline, etc.) — not
-// an error, just "nothing to do", so callers don't need a catch just for
-// that case (though one is still wise for genuine network/auth failures).
-function apiEnsureDhorSchedule(){
-  return apiFetch('/dhor-schedule/ensure', { method: 'POST' });
-}
-
 // ---------- attendance ----------
 function apiGetAttendance(month){
   const qs = month ? '?month=' + encodeURIComponent(month) : '';

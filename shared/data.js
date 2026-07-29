@@ -61,42 +61,24 @@ const SURAHS = [
 function surahName(n){ const s = SURAHS.find(x=>x[0]===n); return s ? s[1] : ''; }
 
 // [juz number, surah at start, ayah at start] — standard, print-independent boundaries.
-// Juz' start points, [juz, surah, ayah] — CONFIRMED (2026-07-29) to be the
-// 13-line print's boundaries specifically, not a print-agnostic average.
 const JUZ_BOUNDARIES = [
   [1,1,1],[2,2,142],[3,2,253],[4,3,92],[5,4,24],[6,4,148],[7,5,82],[8,6,111],
   [9,7,88],[10,8,41],[11,9,93],[12,11,6],[13,12,53],[14,15,1],[15,17,1],[16,18,75],
   [17,21,1],[18,23,1],[19,25,21],[20,27,56],[21,29,46],[22,33,31],[23,36,28],[24,39,32],
   [25,41,47],[26,46,1],[27,51,31],[28,58,1],[29,67,1],[30,78,1]
 ];
-// Juz' start points for the 15-line Madani print — derived (2026-07-29) from
-// RUB_BOUNDARIES.uthmani's every-8th marker (confirmed: 8 rub' al-hizb per
-// juz' for this print). Differs from the 13-line JUZ_BOUNDARIES at exactly
-// one point, juz' 4 (13-line: 3:92, 15-line: 3:93) — verified against every
-// one of the 30 boundaries, not just this one.
-const JUZ_BOUNDARIES_UTHMANI = [
-  [1,1,1],[2,2,142],[3,2,253],[4,3,93],[5,4,24],[6,4,148],[7,5,82],[8,6,111],
-  [9,7,88],[10,8,41],[11,9,93],[12,11,6],[13,12,53],[14,15,1],[15,17,1],[16,18,75],
-  [17,21,1],[18,23,1],[19,25,21],[20,27,56],[21,29,46],[22,33,31],[23,36,28],[24,39,32],
-  [25,41,47],[26,46,1],[27,51,31],[28,58,1],[29,67,1],[30,78,1]
-];
-function getJuzBoundariesForRef(ref){ return ref === 'uthmani' ? JUZ_BOUNDARIES_UTHMANI : JUZ_BOUNDARIES; }
-// ref defaults to 13-line (unchanged behaviour for existing callers that
-// don't pass one) — pass 'uthmani' for the 15-line print's boundaries.
-function getJuzForPosition(surah, ayah, ref){
-  const boundaries = getJuzBoundariesForRef(ref);
+function getJuzForPosition(surah, ayah){
   surah = parseInt(surah)||1; ayah = parseInt(ayah)||1;
   let result = 1;
-  for(const [juz,bS,bA] of boundaries){
+  for(const [juz,bS,bA] of JUZ_BOUNDARIES){
     if(surah > bS || (surah === bS && ayah >= bA)) result = juz; else break;
   }
   return result;
 }
-function juzStartSurah(juz, ref){ const b = getJuzBoundariesForRef(ref).find(x=>x[0]===juz); return b ? b[1] : 1; }
-function getJuzSurahSpan(juz, ref){
-  const boundaries = getJuzBoundariesForRef(ref);
-  const start = juzStartSurah(juz, ref);
-  const next = boundaries.find(x=>x[0]===juz+1);
+function juzStartSurah(juz){ const b = JUZ_BOUNDARIES.find(x=>x[0]===juz); return b ? b[1] : 1; }
+function getJuzSurahSpan(juz){
+  const start = juzStartSurah(juz);
+  const next = JUZ_BOUNDARIES.find(x=>x[0]===juz+1);
   const end = next ? next[1] : 114;
   return { start, end };
 }
@@ -108,51 +90,15 @@ const SURAH_TRACKED_JUZ = { 29:true, 30:true };
 // waterval: 120 markers (4 per juz'). SOURCE: extracted and verified from the maktab's own
 //   "Rub' quarters" file (Waterval 13-line print) — only the even rows of that source are real
 //   Waterval quarters; odd rows were an artifact of the source template and were discarded.
-//   CORRECTED 2026-07-29: previously claimed this cross-checked against JUZ_BOUNDARIES at
-//   24/30 points with the other 6 attributed to a real print variation — re-verified properly
-//   (with surah-rollover handled, which the original check missed) and it's actually 25/30,
-//   at juz' 7,14,20,21,23. Since JUZ_BOUNDARIES is itself confirmed 13-line, this small
-//   remainder looks like residual imprecision in this source, not a genuine print difference —
-//   flagged, not silently corrected, since there's no more-authoritative source for the exact
-//   half/quarter cutoffs to correct it against.
+//   Verified: ascending order, valid ayah counts, ends at 114:6, cross-checked against juz'-end
+//   boundaries above (matches at 24/30 points; 6 juz' boundaries differ by ~1 ayah from Uthmani,
+//   which is a known, real variation between print traditions, not a data error).
 // uthmani: 240 markers (8 per juz' — the finer rub' al-hizb division). SOURCE: Quran Foundation
-//   metadata (quran-metadata-rub.json), verified the same way. Confirmed 2026-07-29: this IS
-//   the 15-line Madani print's own eighth-of-juz' breakdown (not shared with 13-line) — every
-//   8th marker gives that print's juz' boundary (JUZ_BOUNDARIES_UTHMANI, above), every 4th its
-//   half-juz', every 2nd its quarter-juz'; see HALF_BOUNDARIES/QUARTER_BOUNDARIES_UTHMANI below.
+//   metadata (quran-metadata-rub.json), verified the same way.
 const RUB_BOUNDARIES = {
   waterval: ["2:46","2:82","2:112","2:141","2:176","2:210","2:231","2:252","2:273","3:20","3:54","3:91","3:129","3:171","3:200","4:23","4:59","4:87","4:115","4:147","5:5","5:34","5:56","5:82","5:115","6:41","6:82","6:110","6:140","6:165","7:47","7:87","7:141","7:171","7:206","8:40","8:75","9:37","9:66","9:92","9:129","10:30","10:70","11:5","11:49","11:83","12:20","12:52","12:104","13:18","14:12","15:1","15:99","16:50","16:89","16:128","17:52","17:100","18:31","18:74","19:40","19:98","20:76","20:135","21:50","21:112","22:37","22:78","23:77","24:20","24:50","25:20","25:77","26:122","27:14","27:59","28:13","28:60","28:88","29:44","30:27","31:19","32:30","33:30","33:68","34:30","35:16","36:21","37:76","37:182","38:63","39:31","39:75","40:50","41:8","41:46","42:29","43:25","44:29","45:37","46:35","48:17","49:10","51:30","53:32","55:25","56:74","57:29","59:10","61:13","64:10","66:12","68:52","71:28","74:56","77:50","82:19","88:26","97:5","114:6"],
   uthmani: ["2:25","2:43","2:59","2:74","2:91","2:105","2:123","2:141","2:157","2:176","2:188","2:202","2:218","2:232","2:242","2:252","2:262","2:271","2:282","3:14","3:32","3:51","3:74","3:92","3:112","3:132","3:152","3:170","3:185","3:200","4:11","4:23","4:35","4:57","4:73","4:87","4:99","4:113","4:134","4:147","4:162","4:176","5:11","5:26","5:40","5:50","5:66","5:81","5:96","5:108","6:12","6:35","6:58","6:73","6:94","6:110","6:126","6:140","6:150","6:165","7:30","7:46","7:64","7:87","7:116","7:141","7:155","7:170","7:188","7:206","8:21","8:40","8:60","8:75","9:18","9:33","9:45","9:59","9:74","9:92","9:110","9:121","10:10","10:25","10:52","10:70","10:89","11:5","11:23","11:40","11:60","11:83","11:107","12:6","12:29","12:52","12:76","12:100","13:4","13:18","13:34","14:9","14:27","14:52","15:48","15:99","16:29","16:50","16:74","16:89","16:110","16:128","17:22","17:49","17:69","17:98","18:16","18:31","18:50","18:74","18:98","19:21","19:58","19:98","20:54","20:82","20:110","20:135","21:28","21:50","21:82","21:112","22:18","22:37","22:59","22:78","23:35","23:74","23:118","24:20","24:34","24:52","24:64","25:20","25:52","25:77","26:51","26:110","26:180","26:227","27:26","27:55","27:81","28:11","28:28","28:50","28:75","28:88","29:25","29:45","29:69","30:30","30:53","31:21","32:10","32:30","33:17","33:30","33:50","33:59","34:9","34:23","34:45","35:14","35:40","36:27","36:59","37:21","37:82","37:144","38:20","38:51","39:7","39:31","39:52","39:75","40:20","40:40","40:65","41:8","41:24","41:46","42:12","42:26","42:50","43:23","43:56","44:16","45:11","45:37","46:20","47:9","47:32","48:17","48:29","49:13","50:26","51:30","52:23","53:25","54:8","54:55","55:78","56:74","57:15","57:29","58:13","59:10","60:6","61:14","63:3","64:18","65:12","66:12","67:30","68:52","70:18","71:28","73:19","74:56","76:18","77:50","79:46","81:29","83:36","86:17","89:30","93:11","100:8","114:6"]
 };
-
-// Half-juz' boundaries (2026-07-29), derived — waterval: every 2nd entry of
-// RUB_BOUNDARIES.waterval (2 quarters = 1 half, 60 total); uthmani: every
-// 4th entry of RUB_BOUNDARIES.uthmani (4 eighths = 1 half, 60 total).
-const HALF_BOUNDARIES = {
-  waterval: ["2:82","2:141","2:210","2:252","3:20","3:91","3:171","4:23","4:87","4:147","5:34","5:82","6:41","6:110","6:165","7:87","7:171","8:40","9:37","9:92","10:30","11:5","11:83","12:52","13:18","15:1","16:50","16:128","17:100","18:74","19:98","20:135","21:112","22:78","24:20","25:20","26:122","27:59","28:60","29:44","31:19","33:30","34:30","36:21","37:182","39:31","40:50","41:46","43:25","45:37","48:17","51:30","55:25","57:29","61:13","66:12","71:28","77:50","88:26","114:6"],
-  uthmani: ["2:74","2:141","2:202","2:252","3:14","3:92","3:170","4:23","4:87","4:147","5:26","5:81","6:35","6:110","6:165","7:87","7:170","8:40","9:33","9:92","10:25","11:5","11:83","12:52","13:18","14:52","16:50","16:128","17:98","18:74","19:98","20:135","21:112","22:78","24:20","25:20","26:110","27:55","28:50","29:45","31:21","33:30","34:23","36:27","37:144","39:31","40:40","41:46","43:23","45:37","48:17","51:30","54:55","57:29","61:14","66:12","71:28","77:50","86:17","114:6"]
-};
-// Quarter-juz' boundaries (2026-07-29) — for waterval this IS the raw
-// RUB_BOUNDARIES.waterval array (its markers already are quarters, 4/juz');
-// no separate array is needed there. For uthmani (eighths natively), quarter
-// boundaries are derived as every 2nd entry (2 eighths = 1 quarter, 120 total).
-const QUARTER_BOUNDARIES_UTHMANI = ["2:43","2:74","2:105","2:141","2:176","2:202","2:232","2:252","2:271","3:14","3:51","3:92","3:132","3:170","3:200","4:23","4:57","4:87","4:113","4:147","4:176","5:26","5:50","5:81","5:108","6:35","6:73","6:110","6:140","6:165","7:46","7:87","7:141","7:170","7:206","8:40","8:75","9:33","9:59","9:92","9:121","10:25","10:70","11:5","11:40","11:83","12:6","12:52","12:100","13:18","14:9","14:52","15:99","16:50","16:89","16:128","17:49","17:98","18:31","18:74","19:21","19:98","20:82","20:135","21:50","21:112","22:37","22:78","23:74","24:20","24:52","25:20","25:77","26:110","26:227","27:55","28:11","28:50","28:88","29:45","30:30","31:21","32:30","33:30","33:59","34:23","35:14","36:27","37:21","37:144","38:51","39:31","39:75","40:40","41:8","41:46","42:26","43:23","44:16","45:37","47:9","48:17","49:13","51:30","53:25","54:55","56:74","57:29","59:10","61:14","64:18","66:12","68:52","71:28","74:56","77:50","81:29","86:17","93:11","114:6"];
-
-// Which juz' (13-line) or juz' (15-line) each surah touches: [juzStart, juzEnd],
-// indexed by surah number 1-114 (array index = surah - 1). Derived (2026-07-29)
-// from JUZ_BOUNDARIES / JUZ_BOUNDARIES_UTHMANI respectively — used to turn a
-// surah-based Hifz Setup baseline into juz' coverage for Dhor Schedule
-// generation (worker/src/dhorSchedule.js currently requires a juz'-based
-// baseline; this is the data a future surah-based path would use).
-// NOTE: despite the one ayah-level difference between the two prints (juz'
-// 4), the RANGE of juz' each surah touches came out IDENTICAL for both —
-// verified across all 114 surahs, not assumed — so one shared table covers
-// both conventions for this specific (coarser) purpose.
-const SURAH_JUZ_RANGE = [[1,1],[1,3],[3,4],[4,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,11],[11,12],[12,13],[13,13],[13,13],[14,14],[14,14],[15,15],[15,16],[16,16],[16,16],[17,17],[17,17],[18,18],[18,18],[18,19],[19,19],[19,20],[20,20],[20,21],[21,21],[21,21],[21,21],[21,22],[22,22],[22,22],[22,23],[23,23],[23,23],[23,24],[24,24],[24,25],[25,25],[25,25],[25,25],[25,25],[26,26],[26,26],[26,26],[26,26],[26,26],[26,27],[27,27],[27,27],[27,27],[27,27],[27,27],[27,27],[28,28],[28,28],[28,28],[28,28],[28,28],[28,28],[28,28],[28,28],[28,28],[29,29],[29,29],[29,29],[29,29],[29,29],[29,29],[29,29],[29,29],[29,29],[29,29],[29,29],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30],[30,30]];
-function getSurahJuzRange(surah){
-  const row = SURAH_JUZ_RANGE[parseInt(surah) - 1];
-  return row ? { juzStart: row[0], juzEnd: row[1] } : null;
-}
 
 function compareVerseKey(s1, a1, s2, a2){
   if(s1 !== s2) return s1 - s2;
@@ -208,56 +154,13 @@ function getLines13ForAyahRange(surah, ayahFrom, ayahTo){
   return { lineCount: touched.length, pageCount: pages.length, pages };
 }
 
-// Dhor segment/granularity math (V3.9.0) — moved here from dhorPage.js,
-// which used to keep its own local copy. Now also needed by the Worker's
-// Dhor schedule generator (worker/src/dhorSchedule.js), and two copies of
-// the same math is exactly what principle 2 exists to prevent: a plan
-// generated server-side and a log entered client-side must agree on what
-// segment N actually means, in whichever reference is active.
-//
-// segmentsPerJuz: how many storage-unit markers make up one juz', globally
-// numbered 1-120 (13-line/waterval, 4/juz') or 1-240 (Uthmani, 8/juz') —
-// see SCHEMA.md's dhor_log.segment_from note.
-function segmentsPerJuz(ref){ return ref === 'uthmani' ? 8 : 4; }
-
-// unitMarkerCount: how many of those markers make up ONE unit of the given
-// granularity. 'quarter' always means exactly 1/4 of a juz' regardless of
-// ref — for waterval that's 1 marker (4 quarters/juz'), for uthmani that's
-// 2 markers (8 eighths/juz', 2 eighths per quarter). 'half' is double that,
-// 'juz' is the whole thing.
-function unitMarkerCount(ref, unit){
-  const perJuz = segmentsPerJuz(ref);
-  if(unit === 'quarter') return perJuz / 4;
-  if(unit === 'half') return perJuz / 2;
-  return perJuz; // 'juz' (whole)
-}
-
-// segmentRangeForUnitIndex: given a juz' number and a 1-indexed UNIT index
-// within that juz' (e.g. "the 2nd quarter of juz' 5", where units are
-// whichever granularity is passed in), returns the global {segment_from,
-// segment_to} marker range. Distinct from dhorPage.js's own
-// computeSegmentRange, which indexes by raw MARKER position instead (its
-// position picker always shows every marker, e.g. 1-4 for waterval,
-// labelled "Quarter 1".."Quarter 4") — genuinely a different calculation,
-// not just a naming variant, so kept as a separate function rather than
-// reused under the same name.
-function segmentRangeForUnitIndex(juz, unitIndexInJuz, ref, unit){
-  const perJuz = segmentsPerJuz(ref);
-  const unitSize = unitMarkerCount(ref, unit);
-  const startMarker = (juz - 1) * perJuz + (unitIndexInJuz - 1) * unitSize + 1;
-  return { segment_from: startMarker, segment_to: startMarker + unitSize - 1 };
-}
-
 // Works as a plain global-scope script in the browser (file:// safe — no ES module
 // CORS restrictions) AND as a CommonJS module for the Worker (wrangler/esbuild
 // supports require()). Nothing above this line needs to change either way.
 if(typeof module !== 'undefined' && module.exports){
   module.exports = {
-    TAJWEED_DEFAULTS, SURAHS, surahName, JUZ_BOUNDARIES, JUZ_BOUNDARIES_UTHMANI,
-    getJuzBoundariesForRef, getJuzForPosition, juzStartSurah, getJuzSurahSpan,
-    SURAH_TRACKED_JUZ, RUB_BOUNDARIES, HALF_BOUNDARIES, QUARTER_BOUNDARIES_UTHMANI,
-    SURAH_JUZ_RANGE, getSurahJuzRange,
-    compareVerseKey, getRubInfo, AYAH_WORD_RANGE, LINE13_RANGES, getLines13ForAyahRange,
-    segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex
+    TAJWEED_DEFAULTS, SURAHS, surahName, JUZ_BOUNDARIES, getJuzForPosition,
+    juzStartSurah, getJuzSurahSpan, SURAH_TRACKED_JUZ, RUB_BOUNDARIES,
+    compareVerseKey, getRubInfo, AYAH_WORD_RANGE, LINE13_RANGES, getLines13ForAyahRange
   };
 }
