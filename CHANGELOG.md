@@ -7,7 +7,101 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.9.1 — 15-line juz' boundaries, half/quarter/eighth data for both prints (2026-07-29)
+## V3.9.4 — line-count mechanism for the 15-line Madani print (2026-07-29)
+
+Bismillah. Closes the other half of the sabaq line-count gap —
+`getLines13ForAyahRange` had no 15-line counterpart until now.
+
+`AYAH_LINE_UTHMANI` in `shared/data.js`: `[surah, ayah, page, startLine,
+endLine]` for all 6236 ayahs, sourced from the Quran.com API's own
+word-level `line_number` field (via the user's `Generate_Quran_Mapping.py`,
+run locally since this sandbox can't reach that host). Verified before
+use: page assignment matches `quranmeta.json`'s independently-sourced
+page field at all 6236 ayahs — 0 mismatches. Genuinely per-page line
+data too, not another disguised running index: line numbers reset per
+page and cap at 15 (matching the print's name), and behave the way real
+typesetting does — e.g. Al-Fatiha's ayahs 3 and 4 share one line, ayah 7
+spans three.
+
+`getLines15ForAyahRange(surah, ayahFrom, ayahTo)` reads this directly —
+no word-ID lookup step needed the way the 13-line version requires,
+since this data is already at the same per-ayah granularity `sabaq_log`
+itself stores (surah/ayah_from/ayah_to). Handles same-page and
+multi-page spans, using each page's *actual* line count
+(`PAGE_MAX_LINE_UTHMANI`, derived from the data itself — page 1 only
+uses 8 of its 15 lines, so a hardcoded 15-per-page assumption would have
+been wrong there).
+
+Unlike the 13-line figure, this one isn't flagged as an approximation —
+the underlying per-ayah positions are the real thing.
+
+Not done in this delivery, by design: wiring either line-count function
+into any UI (sabaq entries don't display one yet — same "built, not yet
+wired up" state `getLines13ForAyahRange` has been in all along).
+
+**Files changed:**
+```
+shared/data.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+```
+
+
+
+Bismillah. `PRAGMA table_info(students)` on production showed exactly 4
+of migration 0011's 7 new columns present — all 4 from the Dhor Schedule
+section (`dhor_granularity`, `dhor_quantity`, `dhor_frequency`,
+`dhor_days_of_week`), none from the Haidh section
+(`haidh_cycle_length`, `haidh_period_length`, `haidh_next_expected`).
+
+Honest note: this doesn't fully match the "inline trailing comment"
+theory from V3.9.2 — two of the four columns that *did* apply
+(`dhor_quantity`, `dhor_days_of_week`) had that exact issue too, so
+something else caused execution to stop specifically before the Haidh
+section, not addressed by that fix alone. Not chasing the exact
+mechanism further right now — the priority is getting production
+working again.
+
+New migration 0012 adds only the 3 still-missing columns, kept
+deliberately bare (no comments, plain ASCII only, nothing beyond the
+3 statements) to remove any further risk. Do not re-run 0011 — the
+4 columns it already added would now fail as duplicates.
+
+**Files changed:**
+```
+CHANGELOG.md
+```
+**New file:**
+```
+worker/migrations/0012_haidh_settings_retry.sql
+```
+
+
+
+Bismillah. Migration 0011 had inline trailing comments after a semicolon
+on 3 lines (`dhor_quantity`, `dhor_days_of_week`, `haidh_next_expected`) —
+the exact pattern that broke migration 0010's runner before (see that
+entry). Same mistake, repeated, despite it already being a documented
+gotcha — should have caught this before shipping V3.9.1.
+
+If that migration didn't fully apply as a result, `profile.js`'s GET/POST
+handlers would be selecting/updating columns that don't exist yet on the
+live `students` table, which fails at the database level — a very likely
+explanation for a 500 right after login, since `/profile` is the first
+thing called post-login to route to Setup or Journal.
+
+Every comment in the migration is now on its own line; none share a line
+with a SQL statement. Re-run this corrected file against production D1,
+then retest login.
+
+**Files changed:**
+```
+worker/migrations/0011_dhor_schedule_and_haidh_settings.sql
+CHANGELOG.md
+```
+
+
 
 Bismillah. Closes the surah-baseline gap flagged in V3.9.0, one layer at a
 time — this delivery is the verified reference data itself; wiring it into

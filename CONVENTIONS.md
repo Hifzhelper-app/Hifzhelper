@@ -274,7 +274,10 @@ own render function.
                     (which juz' each surah touches — identical for both
                     prints, verified), RUB_BOUNDARIES, TAJWEED_DEFAULTS
                     (with major/minor classification), AYAH_WORD_RANGE,
-                    LINE13_RANGES, getLines13ForAyahRange(), and (V3.9.0)
+                    LINE13_RANGES, getLines13ForAyahRange(), AYAH_LINE_UTHMANI +
+                    getLines15ForAyahRange() (the 15-line print's own line-count
+                    mechanism, added 2026-07-29 — genuine per-ayah data, not an
+                    approximation the way the 13-line one is), and (V3.9.0)
                     segmentsPerJuz()/unitMarkerCount()/
                     segmentRangeForUnitIndex() — Dhor segment/granularity
                     math shared between dhorPage.js and the Worker's
