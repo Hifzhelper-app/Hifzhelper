@@ -209,6 +209,15 @@ in D1 — they ship as static data with the app instead:
   exact as the 15-line mapping
 - `getLines13ForAyahRange(surah, ayahFrom, ayahTo)` — returns `{lineCount, pageCount, pages}`
   for the 13-line print, given a canonical ayah range. Approximate by design, per the note above
+- `AYAH_LINE_UTHMANI` / `getLines15ForAyahRange(surah, ayahFrom, ayahTo)` — the 15-line print's
+  own counterpart, added 2026-07-29. `[surah, ayah, page, startLine, endLine]` per ayah (6236
+  rows), sourced from the Quran.com API's own word-level `line_number` field (via the user's
+  `Generate_Quran_Mapping.py`) — genuine per-page line positions, not a reconstruction. Verified
+  before use: page assignment matches `quranmeta.json`'s independently-sourced page field at all
+  6236 ayahs (0 mismatches). Already per-ayah, so unlike the 13-line version this needs no
+  word-ID lookup step — matches how `sabaq_log` itself stores a range directly
+- `PAGE_MAX_LINE_UTHMANI` — how many lines each of the 604 pages actually uses (not always 15 —
+  e.g. page 1 uses only 8), derived from `AYAH_LINE_UTHMANI` itself
 
 
 Each of these carries a source comment in `shared/data.js` per CONVENTIONS.md
