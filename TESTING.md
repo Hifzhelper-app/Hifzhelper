@@ -708,6 +708,32 @@ reused for steps 3–6.
     SDhor/Dhor/Tadabbur, sit above the card rail, and still correctly
     highlight/scroll to the right card when tapped.
 
+## 27. Sabaq Dhor's checkable-quarters redesign (V3.13.0)
+
+1. With a fresh position (nothing sabaq'd in the current juz' yet), open
+   Sabaq Dhor → confirm it shows "Nothing to revise yet" rather than an
+   empty or broken checklist.
+2. Log a Sabaq entry, then open Sabaq Dhor → confirm exactly one section
+   appears, checked, spanning from the start of the current quarter to
+   the just-logged Sabaq's end point.
+3. Log several more Sabaq entries until at least one full quarter is
+   behind the current one → confirm Sabaq Dhor now shows 2 sections: the
+   completed quarter (full range) and the current one (partial), both
+   checked by default.
+4. Uncheck one section, save → confirm the saved entry's from/to range
+   reflects only the sections left checked (check via the recent rail or
+   a DB query on `sabaq_dhor_log`).
+5. **Juz' 30 specifically**: as a fresh student (starts at 114:1 per
+   V3.12.0), log Sabaq down through several quarters → open Sabaq Dhor at
+   each stage and confirm the sections shown make sense in the *actual*
+   backwards study order — e.g. once Sabaq has passed surah 98's start,
+   confirm Sabaq Dhor shows a completed section for roughly 98:1-114:6,
+   not a section built from the juz's structurally-first surahs (78-82),
+   which would be backwards.
+6. Switch mushaf between 13-line/15-line/Hybrid → confirm the sections
+   still compute correctly for each (the quarter boundaries differ
+   slightly between prints at a few points, per the V3.9.1 derivation).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

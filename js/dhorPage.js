@@ -210,7 +210,7 @@ async function renderRecentEntries(type, client, railId){
 }
 function describeEntryForRail(type, r){
   if(type === 'dhor') return `Seg ${r.segment_from}-${r.segment_to} (${r.ref}) · ${r.mistakes||0} mistakes${r.duration_seconds?` · ${Math.round(r.duration_seconds/60)} min`:''}`;
-  if(type === 'sabaq') return `${surahName(r.surah)} ${r.ayah_from||''}-${r.ayah_to||''}`;
-  if(type === 'sabaqDhor') return `${r.zone||'—'} · ${r.mistakes||0} mistakes`;
+  if(type === 'sabaq') return `${r.surah}:${r.ayah_from||''}-${r.ayah_to||''}${r.line_count?` · ${r.line_count} lines`:''}${r.page_count?` · ${r.page_count} pages`:''}`;
+  if(type === 'sabaqDhor') return `${r.from_surah}:${r.from_ayah}-${r.to_surah}:${r.to_ayah} · ${r.mistakes||0} mistakes`;
   return '';
 }

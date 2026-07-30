@@ -279,9 +279,13 @@ own render function.
                           completed, folds it into Hifz Setup's
                           baseline_selection automatically
     sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4).
-                          Still the original free-text zone field as of
-                          V3.12.0 — the checkable-quarters redesign is a
-                          separate, later delivery (depends on this one)
+                          V3.13.0: position-driven checklist — shows the
+                          quarter Sabaq is currently in (partial) plus
+                          each already-completed quarter before it (up to
+                          3), each prepopulated checked; whichever stay
+                          checked at save composite into one overall
+                          from/to ayah range, replacing the old free-text
+                          zone field
     reflectionCard.js   — Tadabbur card (V3.6.1, new) — one reflection
                           per day, no date selector, upserts in place.
                           V3.12.0: Private/Public switch, was a checkbox

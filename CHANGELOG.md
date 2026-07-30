@@ -7,7 +7,64 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.12.0 — Position tracking + Sabaq rewrite + detail-screen layout (2026-07-30)
+## V3.13.0 — Sabaq Dhor's checkable-quarters redesign (2026-07-30)
+
+Bismillah. Second of the 3-part detail-screen delivery (V3.12.0 was
+position tracking + Sabaq; this is Sabaq Dhor, which depends on that
+landing first; the Dhor card's planner/timer-popup work is still ahead).
+
+**Sabaq Dhor is now genuinely position-driven.** Confirmed definition:
+it's revision of the CURRENT juz' (whichever one Sabaq is presently
+learning) from that juz's start up to wherever Sabaq has actually
+reached, excluding today's brand-new portion — replacing the earlier
+"beginning of Quran / halfway point" rule entirely. Shown as a checklist:
+the quarter Sabaq is currently partway through is one section, and each
+quarter before it that's already fully covered is its own section too —
+at most 3 of those, since a juz' only has 4 quarters and the 4th-
+equivalent one is always the one currently in progress. Every section
+comes prepopulated checked (these are derived from what's actually been
+memorised); the student unchecks anything they didn't actually revise
+today. Whichever stay checked get composited into one overall from/to
+ayah range at save time.
+
+**The juz' 30 direction problem, solved and tested.** Juz' 30 is studied
+backwards (114→78) — its quarters, structurally numbered in the normal
+ascending direction, don't line up with the order Sabaq actually walks
+through them. New in `shared/data.js`: `studyQuarterIndex()` (its own
+inverse — reverses for juz' 30, leaves everything else unchanged),
+`structuralQuarterOf()`, and `structuralQuarterBounds()`, all built
+specifically to get this right rather than assume every juz' behaves
+like the other 29. Verified with real numbers before shipping: a
+frontier at 90:5 with `activeJuz: 30` correctly produces a *complete*
+section for 98:1-114:6 (study quarter 1) and a *current, partial*
+section for 89:1-90:5 (study quarter 2) — matching the actual reversed
+study order, not the structural one.
+
+Migration 0014 adds `sabaq_dhor_log.from_surah/from_ayah/to_surah/
+to_ayah`; the old free-text `zone` column stays in the table (unused
+going forward) rather than being dropped.
+
+**Files changed:**
+```
+index.html
+sw.js
+shared/data.js
+css/detail-pages.css
+js/sabaqDhorPage.js
+js/dhorPage.js
+js/position.js
+worker/src/sabaqDhorLog.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+TESTING.md
+```
+**New file:**
+```
+worker/migrations/0014_sabaq_dhor_ayah_range.sql
+```
+
+
 
 Bismillah. First of a 3-part delivery for the detail-screen redesign
 (Sabaq Dhor's checkable-quarters and the Dhor card's planner/timer-popup

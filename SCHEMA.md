@@ -91,7 +91,8 @@ redacted, the entry itself still shows.
 | Column | Type | Notes |
 |---|---|---|
 | `student_id` / `date` / `entered_by` | — | Same as `sabaq_log`. |
-| `zone` | TEXT | Computed juz' list at save time, e.g. `Juz' 29, 30` — not user-entered. |
+| `zone` | TEXT | Deprecated as of migration 0014 (V3.13.0) — no longer written to by the frontend, left in place for backward compatibility. Was a computed juz' list at save time, e.g. `Juz' 29, 30`. |
+| `from_surah` / `from_ayah` / `to_surah` / `to_ayah` | INTEGER | Added in migration 0014. The actual saved range — composited client-side from whichever checkable quarter-sections the student left checked (`js/position.js`'s `computeSabaqDhorSections`), replacing `zone`. |
 | `tajweed_tags` | TEXT | |
 | `mistakes` | INTEGER | |
 | `student_comment` / `_by` / `_at` / `_private`, `teacher_feedback` / `_by` / `_at` / `_visibility` | — | Same shape as `sabaq_log`. |

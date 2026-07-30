@@ -358,6 +358,58 @@ function nextSabaqPosition(surah, ayah, ref){
 }
 
 
+// ---------- Juz' quarter detection (V3.13.0, for Sabaq Dhor) ----------
+// "Structural" here means ascending surah:ayah order (quarter 1 is always
+// the numerically-first quarter of the juz'), as opposed to STUDY order,
+// which for juz' 30 runs backwards (see SABAQ_STUDY_ORDER above) — quarter
+// 1 in study order is juz' 30's structurally-LAST quarter, since that's
+// the one sabaq actually reaches first. studyQuarterIndex is its own
+// inverse (juz'30: 5-q both ways; everything else: unchanged), so the
+// same function converts either direction.
+function studyQuarterIndex(juz, quarterIndex){ return juz === 30 ? (5 - quarterIndex) : quarterIndex; }
+
+// Which juz' and STRUCTURAL quarter (1-4) a position falls in, using the
+// true quarter-of-a-juz' boundaries for each print (RUB_BOUNDARIES.waterval
+// for 13-line/Hybrid; QUARTER_BOUNDARIES_UTHMANI, not RUB_BOUNDARIES.uthmani,
+// for 15-line — see the V3.11.0 Rub'-vs-Maqra correction).
+function structuralQuarterOf(surah, ayah, ref){
+  const list = ref === 'uthmani' ? QUARTER_BOUNDARIES_UTHMANI : RUB_BOUNDARIES.waterval;
+  let globalIdx = list.length;
+  for(let i = 0; i < list.length; i++){
+    const [s, a] = list[i].split(':').map(Number);
+    if(compareVerseKey(surah, ayah, s, a) <= 0){ globalIdx = i + 1; break; }
+  }
+  const juz = Math.ceil(globalIdx / 4);
+  const quarterIndex = ((globalIdx - 1) % 4) + 1;
+  return { juz, quarterIndex };
+}
+// Plain +1 ayah, always ascending (rolls to the next surah at a surah's
+// end) — distinct from nextSabaqPosition, which is STUDY-direction aware;
+// this one is only ever used for structural (always-ascending) boundaries.
+function ayahAfter(surah, ayah){
+  const max = maxAyahForSurah(surah);
+  return ayah < max ? { surah, ayah: ayah + 1 } : { surah: surah + 1, ayah: 1 };
+}
+// The structural {start, end} of a specific juz'/quarter, in ascending
+// surah:ayah terms regardless of study direction.
+function structuralQuarterBounds(juz, quarterIndex, ref){
+  const juzBoundaries = getJuzBoundariesForRef(ref);
+  const list = ref === 'uthmani' ? QUARTER_BOUNDARIES_UTHMANI : RUB_BOUNDARIES.waterval;
+  const idx = (juz - 1) * 4 + quarterIndex - 1;
+  const [endS, endA] = list[idx].split(':').map(Number);
+  let startS, startA;
+  if(quarterIndex === 1){
+    const jb = juzBoundaries.find(x => x[0] === juz);
+    startS = jb[1]; startA = jb[2];
+  } else {
+    const [prevS, prevA] = list[idx - 1].split(':').map(Number);
+    const r = ayahAfter(prevS, prevA);
+    startS = r.surah; startA = r.ayah;
+  }
+  return { startSurah: startS, startAyah: startA, endSurah: endS, endAyah: endA };
+}
+
+// Works as a plain global-scope script in the browser (file:// safe — no ES module
 // CORS restrictions) AND as a CommonJS module for the Worker (wrangler/esbuild
 // supports require()). Nothing above this line needs to change either way.
 if(typeof module !== 'undefined' && module.exports){
@@ -370,6 +422,7 @@ if(typeof module !== 'undefined' && module.exports){
     AYAH_LINE_UTHMANI, PAGE_MAX_LINE_UTHMANI, getLines15ForAyahRange,
     segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex,
     SABAQ_STUDY_ORDER, nextJuzInStudyOrder, firstSabaqPositionForJuz,
-    maxAyahForSurah, nextSabaqPosition
+    maxAyahForSurah, nextSabaqPosition,
+    studyQuarterIndex, structuralQuarterOf, ayahAfter, structuralQuarterBounds
   };
 }

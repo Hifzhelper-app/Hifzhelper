@@ -74,6 +74,19 @@
 }
 .tajweed-checkbox-row input { width: auto; }
 
+/* Sabaq Dhor's checkable quarter-sections (V3.13.0) -- same row shape as
+   the tajweed popup's checkbox list, just inline on the card itself
+   rather than in a popup (there are at most 4, no need to hide them
+   behind a trigger button the way tajweed's larger vocabulary needs). */
+.sabaq-dhor-section-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 0;
+  font-size: 14px;
+}
+.sabaq-dhor-section-row input { width: auto; }
+
 /* Tajweed pill buttons -- still used inside the popup's own grid style
    isn't needed here (checkboxes instead), but the "+ add" button and the
    Setup/Juz'-grid slide-ins still use this pill look. */
