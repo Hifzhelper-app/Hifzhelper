@@ -10,6 +10,19 @@
 
 const LOG_DETAIL_CARD_ORDER = ['sabaq', 'sabaqDhor', 'dhor', 'tadabbur'];
 
+// V3.12.0: header icons (display only, no click action) + save-button
+// icons for all 4 cards, injected once here rather than per-render since
+// they never change.
+document.getElementById('sabaqHeaderIcon').innerHTML = iconHtml('sabaq');
+document.getElementById('sabaqDhorHeaderIcon').innerHTML = iconHtml('sabaqDhor');
+document.getElementById('dhorHeaderIcon').innerHTML = iconHtml('dhor');
+document.getElementById('tadabburHeaderIcon').innerHTML = iconHtml('reflections');
+document.getElementById('sabaqSaveIcon').innerHTML = iconHtml('save');
+document.getElementById('sabaqDhorSaveIcon').innerHTML = iconHtml('save');
+document.getElementById('dhorSaveIcon').innerHTML = iconHtml('save');
+document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
+document.getElementById('tadabburPrivacySwitch') && renderSwitch('tadabburPrivacySwitch', 'public');
+
 async function renderLogDetailScreen(initialCard){
   await Promise.all([
     renderSabaqScreen(),
