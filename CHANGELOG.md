@@ -7,7 +7,77 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.10.0 — Hybrid mushaf enabled, Setup redesigned with switches (2026-07-29)
+## V3.11.0 — Setup V2: text/layout refinements, neutral-center fix, Tomorrow's Portion (2026-07-30)
+
+Bismillah. Everything from the last few rounds of feedback on V3.10.0,
+plus one new feature (Tomorrow's Portion) that needed real backend work.
+
+**Text and layout:**
+- Gender moved onto the Name row itself as a small inline switch (was
+  its own full-width row further down the page).
+- Mushaf's 13-line and 15-line options now have explanatory hints too
+  (Hybrid already had one): "13-line IndoPak/Waterval." and "15 Line
+  Uthmani script."
+- "Mark completed sections" → "Mark completed sections using".
+- "Default targets" → "Target for Dhor", styled as a proper header
+  (darker, heavier) rather than a plain field label.
+- "Dhor Schedule" → "Dhor Plan", everywhere (heading text; the
+  underlying section id/element ids are unchanged, this is a display
+  rename only).
+- `inputmode="numeric"` added to every numeric field (the 3 Dhor
+  targets, portion quantity, haidh cycle length and duration) — a
+  plain number pad on mobile instead of the full keyboard.
+
+**Correction:** the Juz'/Surah switch now always springs back to
+neutral once its popup closes, regardless of what was picked inside.
+V3.10.0 had it slide to reflect `baselineMode` instead and stay there —
+that's what's fixed here. Tapping either side still always opens its
+grid no matter where the thumb currently sits.
+
+**New: Tomorrow's Portion.** A row added after Days of week — date is
+always tomorrow, the portion is the student's own choice from a
+dropdown built out of their memorised (baseline) juz', broken into
+individual units at whichever granularity is currently selected above
+(e.g. quarters: `Q-Juz-1-1` through the last unit of the last memorised
+juz'). Picking one and saving passes it straight through to
+`dhorSchedule.js`'s generator as an explicit starting point for that one
+generation call only — every other call (routine top-ups from the Dhor
+log page, or a later Setup save with nothing picked) is untouched and
+keeps the existing auto-detect-from-history behaviour, so this can
+never silently reset a rotation that's already progressing.
+
+Naming, confirmed and tested against the actual segment math before
+shipping:
+- 13-line/Hybrid: `Juz-N` whole, `H-Juz-N-1`/`H-Juz-N-2` halves,
+  `Q-Juz-N-1`..`Q-Juz-N-4` quarters.
+- 15-line: `Juz-N` whole; `Hizb-N` for halves, numbered *globally*
+  across the whole Quran (1-60) rather than per-juz' — a global hizb
+  number is already unambiguous on its own, unlike a 13-line "half"
+  which has no name of its own to fall back on; `Rub-N-P` for quarters,
+  per-juz' (this is the print's true quarter-of-a-juz' unit — the
+  project's existing `RUB_BOUNDARIES.uthmani` array is actually
+  Maqra-level granularity, 8/juz', not Rub'; `QUARTER_BOUNDARIES_UTHMANI`
+  from V3.9.1, 4/juz', is the one that's genuinely Rub'-level, and is
+  what this actually reads from).
+
+The dropdown's list and the generator's own chunk sequence are built
+from the same underlying math (`segmentRangeForUnitIndex` /
+`buildChunks`'s single-unit case) so a picked label always corresponds
+to exactly what the rotation would produce on its own.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/settings.css
+js/settingsScreen.js
+worker/src/dhorSchedule.js
+js/api.js
+CHANGELOG.md
+TESTING.md
+```
+
+
 
 Bismillah. Two things in one delivery, confirmed to go together: Hybrid
 becomes a real, selectable mushaf option, and every plain either/or

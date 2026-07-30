@@ -139,6 +139,30 @@
   margin: 4px 0 var(--space-sm);
 }
 
+/* Small inline variant (V3.11.0) — gender, moved onto the Name row
+   itself rather than its own full-width row/label. */
+.switch-track-small {
+  height: 26px;
+  width: 72px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.switch-track-small .switch-option {
+  font-size: 12px;
+  padding: 0 4px;
+}
+
+/* Section-subheader (V3.11.0) — "Target for Dhor" reads as a proper
+   header (darker, heavier) rather than a plain field label like the
+   other <label> elements on this screen. */
+.settings-subheader {
+  display: block;
+  margin-top: 20px;
+  font-weight: 700;
+  color: var(--color-ink);
+  font-size: 15px;
+}
+
 #setup_mushaf_picker, #dhor_granularity_picker, #dhor_frequency_picker,
 #gender_picker, #section_grid_switch { margin-bottom: var(--space-sm); }
 
