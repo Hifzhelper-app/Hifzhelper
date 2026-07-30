@@ -7,7 +7,90 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.11.0 — Setup V2: text/layout refinements, neutral-center fix, Tomorrow's Portion (2026-07-30)
+## V3.12.0 — Position tracking + Sabaq rewrite + detail-screen layout (2026-07-30)
+
+Bismillah. First of a 3-part delivery for the detail-screen redesign
+(Sabaq Dhor's checkable-quarters and the Dhor card's planner/timer-popup
+work are separate, later deliveries — each depends on this one landing
+first).
+
+**Position tracking, wired in for the first time.** The `position` table
+and its Worker endpoints already existed (built earlier, never called
+from anywhere) — this delivery is what actually uses them. Shape:
+`{ activeJuz, sabaqFrontier: {surah, ayah} | null }`. New in
+`shared/data.js`: `SABAQ_STUDY_ORDER` (30 first backwards through its
+surahs 114→78, then 29 forwards, then 1-28 ascending — the "1 or 28"
+branch noted elsewhere picks 1 as the simpler deterministic default,
+flagged rather than guessed at silently) and the position-math helpers
+built on it. New `js/position.js` orchestrates it client-side, per the
+Worker's own "computed client-side" design note.
+
+**Sabaq card**, rebuilt around that position: prepopulates surah/
+ayah_from from wherever Sabaq last reached (a brand-new student starts at
+114:1); ayah references shown as surah:ayah numerals, never surah names;
+`line_count`/`page_count` auto-compute once `ayah_to` is entered
+(`getLines13ForAyahRange`/`getLines15ForAyahRange`, built in V3.9.1/
+V3.9.4, sitting unused until now) and are shown editable, since the
+underlying figures are estimates worth letting a student correct; on
+save, position advances, and if that completes the current juz', it's
+folded into Hifz Setup's `baseline_selection` automatically — confirmed
+in chat, no manual Juz' grid check-off needed. Migration 0013 adds
+`line_count`/`page_count` to `sabaq_log` (no inline trailing comments —
+the exact bug that broke two earlier migrations).
+
+Every position-math function was tested end to end before this shipped —
+new student → 114:1; sabaqing to 114:6 → next default 113:1; finishing
+all of juz' 30 → `completedJuz: 30`, next default 67:1 (start of juz' 29)
+— not just reasoned through, actually run.
+
+**All 4 detail cards** (Sabaq/Sabaq Dhor/Dhor/Tadabbur):
+- Header row now holds an icon (display-only), the title, the date field
+  (moved here from its own row), and an icon+label Save button — the old
+  bottom-of-card Save button is gone.
+- Cards capped at `max-width: 30%` on desktop (design target: a 13"
+  monitor as the practical maximum, not an ultra-wide external display);
+  with all 4 visible the grid already computes ~25% each on its own.
+- Tajweed picker is now a compact trigger button opening a popup with a
+  checkbox per tag (was an inline row of toggle buttons) — multi-select
+  doesn't fit a scroll-wheel or a plain dropdown.
+- The comment block's "Your comment on this session" is now "Notes",
+  and its privacy checkbox is now a genuine Private/Public switch
+  (default Public) — the "keep hidden from teachers" text is gone.
+  Tadabbur's own privacy control gets the same switch treatment.
+- Swipe dots now show text labels (Sabaq/SDhor/Dhor/Tadabbur) and sit
+  above the rail, not below it as plain circles.
+
+The switch component itself moved out of `settingsScreen.js` into a new
+`js/uiSwitch.js` (loads early) so `commentPrivacy.js`/`reflectionCard.js`
+could use the same one rather than duplicating it.
+
+**Files changed:**
+```
+index.html
+sw.js
+shared/data.js
+css/detail-pages.css
+js/sabaqPage.js
+js/commentPrivacy.js
+js/tajweed.js
+js/reflectionCard.js
+js/logDetailScreen.js
+js/dhorPage.js
+js/settingsScreen.js
+worker/src/sabaqLog.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+TESTING.md
+```
+**New files:**
+```
+js/position.js
+js/uiSwitch.js
+worker/migrations/0013_sabaq_line_page_count.sql
+```
+
+
 
 Bismillah. Everything from the last few rounds of feedback on V3.10.0,
 plus one new feature (Tomorrow's Portion) that needed real backend work.
