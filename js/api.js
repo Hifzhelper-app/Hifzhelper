@@ -139,8 +139,15 @@ const apiPlans = {
 // generated yet (schedule not configured, no juz' baseline, etc.) — not
 // an error, just "nothing to do", so callers don't need a catch just for
 // that case (though one is still wise for genuine network/auth failures).
-function apiEnsureDhorSchedule(){
-  return apiFetch('/dhor-schedule/ensure', { method: 'POST' });
+// startSegment (V3.11.0, optional): { segment_from, segment_to } — passed
+// through only when the student explicitly picked a "Tomorrow's portion"
+// starting point in Setup; omitted on every routine call (dhorPage.js's
+// own top-up, or a Setup save where nothing was picked).
+function apiEnsureDhorSchedule(startSegment){
+  return apiFetch('/dhor-schedule/ensure', {
+    method: 'POST',
+    body: startSegment ? JSON.stringify(startSegment) : undefined
+  });
 }
 
 // ---------- attendance ----------

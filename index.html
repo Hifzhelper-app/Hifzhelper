@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.10.0"></script>
+<script src="js/pwaManifest.js?v=3.11.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.10.0">
-<link rel="stylesheet" href="css/base.css?v=3.10.0">
-<link rel="stylesheet" href="css/nav.css?v=3.10.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.10.0">
-<link rel="stylesheet" href="css/components.css?v=3.10.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.10.0">
-<link rel="stylesheet" href="css/settings.css?v=3.10.0">
-<link rel="stylesheet" href="css/admin.css?v=3.10.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.11.0">
+<link rel="stylesheet" href="css/base.css?v=3.11.0">
+<link rel="stylesheet" href="css/nav.css?v=3.11.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.11.0">
+<link rel="stylesheet" href="css/components.css?v=3.11.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.11.0">
+<link rel="stylesheet" href="css/settings.css?v=3.11.0">
+<link rel="stylesheet" href="css/admin.css?v=3.11.0">
 </head>
 <body>
 
@@ -365,6 +365,13 @@
         <div class="profile-readonly-row">
           <span class="profile-readonly-label">Name</span>
           <span class="profile-readonly-value" id="setup_name_display"></span>
+          <!-- V3.11.0: moved here as a small inline switch (was its own
+               full-size row further down the page). -->
+          <div class="switch-track switch-track-small" id="gender_switch">
+            <div class="switch-thumb"></div>
+            <button type="button" class="switch-option" data-value="M">M</button>
+            <button type="button" class="switch-option" data-value="F">F</button>
+          </div>
         </div>
         <div class="profile-readonly-row">
           <span class="profile-readonly-label">Unique ID</span>
@@ -376,14 +383,6 @@
             <input type="text" id="setup_url_display" readonly>
             <button type="button" class="icon-btn" id="setupCopyUrlBtn" aria-label="Copy URL"></button>
           </div>
-        </div>
-
-        <!-- V3.10.0: gender is now a genuine 2-way switch. -->
-        <label>Gender</label>
-        <div class="switch-track" id="gender_switch">
-          <div class="switch-thumb"></div>
-          <button type="button" class="switch-option" data-value="M">Male</button>
-          <button type="button" class="switch-option" data-value="F">Female</button>
         </div>
 
         <label>Journal name</label>
@@ -424,7 +423,7 @@
              resting in the middle if nothing's been marked yet, since this
              isn't a real persistent on/off state the way other switches
              on this screen are. -->
-        <label style="margin-top:20px;">Mark completed sections</label>
+        <label style="margin-top:20px;">Mark completed sections using</label>
         <div class="switch-track" id="section_grid_switch">
           <div class="switch-thumb neutral"></div>
           <button type="button" class="switch-option" id="openJuzGridBtn" data-value="juz">Juz'</button>
@@ -433,22 +432,22 @@
         </div>
         <div class="baseline-summary" id="baselineSummary"></div>
 
-        <label style="margin-top:20px;">Default targets</label>
-        <div class="settings-row"><label>Mistakes / juz'</label><input type="number" id="target_mistakes" min="0"></div>
-        <div class="settings-row"><label>Minutes / juz'</label><input type="number" id="target_minutes" min="0"></div>
-        <div class="settings-row"><label>Revision cycle time (days)</label><input type="number" id="target_frequency" min="0"></div>
+        <label class="settings-subheader">Target for Dhor</label>
+        <div class="settings-row"><label>Mistakes / juz'</label><input type="number" inputmode="numeric" id="target_mistakes" min="0"></div>
+        <div class="settings-row"><label>Minutes / juz'</label><input type="number" inputmode="numeric" id="target_minutes" min="0"></div>
+        <div class="settings-row"><label>Revision cycle time (days)</label><input type="number" inputmode="numeric" id="target_frequency" min="0"></div>
 
         <div class="form-error" id="hifzSetupError"></div>
       </div>
 
-      <!-- Dhor Schedule section (new, V3.9.0) — settings-form only, no
-           visible table (confirmed in chat): saving this drives a rolling
-           7-day plan generated behind the scenes (worker/src/
-           dhorSchedule.js), consumed by the Dhor log page's plan-as-
-           default and the journal's quick-add prefill. -->
+      <!-- Dhor Plan section (V3.9.0 as "Dhor Schedule", renamed V3.11.0) —
+           settings-form only, no visible table (confirmed in chat): saving
+           this drives a rolling 7-day plan generated behind the scenes
+           (worker/src/dhorSchedule.js), consumed by the Dhor log page's
+           plan-as-default and the journal's quick-add prefill. -->
       <div class="settings-section detail-page" id="section-dhorSchedule">
         <div class="settings-header-row">
-          <h2>Dhor Schedule</h2>
+          <h2>Dhor Plan</h2>
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="save-status" id="dhorScheduleSaveStatus">saved ✓</span>
             <button type="button" class="icon-btn" id="dhorScheduleSaveBtn" aria-label="Save"></button>
@@ -458,7 +457,7 @@
 
         <label>Portion per session</label>
         <div class="granularity-quantity-row">
-          <div class="quantity-input-wrap"><input type="number" id="dhor_quantity" min="1" value="1"></div>
+          <div class="quantity-input-wrap"><input type="number" inputmode="numeric" id="dhor_quantity" min="1" value="1"></div>
           <div class="switch-track" id="dhor_granularity_switch">
             <div class="switch-thumb"></div>
             <button type="button" class="switch-option" data-value="juz">Juz'</button>
@@ -485,6 +484,18 @@
           <button type="button" class="tajweed-tag" data-day="sun">Sun</button>
         </div>
 
+        <!-- Tomorrow's Portion (new, V3.11.0): explicit starting point for
+             the rotation — date is always tomorrow, portion is the
+             student's choice, listed from their own memorised juz' at
+             whatever granularity is selected above. Optional — leaving
+             the default option keeps the existing auto-detect-from-
+             history behaviour. -->
+        <label style="margin-top:20px;">Tomorrow's portion</label>
+        <p class="form-hint" style="margin-top:0;">Start of plan — date is always tomorrow, portion is your choice.</p>
+        <select id="dhor_tomorrow_portion">
+          <option value="">Let the plan continue from where it left off</option>
+        </select>
+
         <div class="form-error" id="dhorScheduleError"></div>
       </div>
 
@@ -502,8 +513,8 @@
         </div>
         <p class="form-hint" style="margin-top:0;">Plans will be adjusted for haidh days. Can be adjusted for actual haidh at any time.</p>
 
-        <div class="settings-row"><label>Cycle length (days)</label><input type="number" id="haidh_cycle_length" min="1"></div>
-        <div class="settings-row"><label>Duration (days)</label><input type="number" id="haidh_period_length" min="1"></div>
+        <div class="settings-row"><label>Cycle length (days)</label><input type="number" inputmode="numeric" id="haidh_cycle_length" min="1"></div>
+        <div class="settings-row"><label>Duration (days)</label><input type="number" inputmode="numeric" id="haidh_period_length" min="1"></div>
         <div class="settings-row"><label>Next expected haidh day</label><input type="date" id="haidh_next_expected"></div>
 
         <div class="form-error" id="haidhError"></div>
@@ -514,22 +525,22 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.10.0"></script>
-<script src="js/icons.js?v=3.10.0"></script>
-<script src="js/api.js?v=3.10.0"></script>
-<script src="js/auth.js?v=3.10.0"></script>
-<script src="js/home.js?v=3.10.0"></script>
-<script src="js/tajweed.js?v=3.10.0"></script>
-<script src="js/commentPrivacy.js?v=3.10.0"></script>
-<script src="js/timer.js?v=3.10.0"></script>
-<script src="js/journal.js?v=3.10.0"></script>
-<script src="js/dhorPage.js?v=3.10.0"></script>
-<script src="js/sabaqPage.js?v=3.10.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.10.0"></script>
-<script src="js/reflectionCard.js?v=3.10.0"></script>
-<script src="js/logDetailScreen.js?v=3.10.0"></script>
-<script src="js/settingsScreen.js?v=3.10.0"></script>
-<script src="js/adminPage.js?v=3.10.0"></script>
-<script src="js/app.js?v=3.10.0"></script>
+<script src="shared/data.js?v=3.11.0"></script>
+<script src="js/icons.js?v=3.11.0"></script>
+<script src="js/api.js?v=3.11.0"></script>
+<script src="js/auth.js?v=3.11.0"></script>
+<script src="js/home.js?v=3.11.0"></script>
+<script src="js/tajweed.js?v=3.11.0"></script>
+<script src="js/commentPrivacy.js?v=3.11.0"></script>
+<script src="js/timer.js?v=3.11.0"></script>
+<script src="js/journal.js?v=3.11.0"></script>
+<script src="js/dhorPage.js?v=3.11.0"></script>
+<script src="js/sabaqPage.js?v=3.11.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.11.0"></script>
+<script src="js/reflectionCard.js?v=3.11.0"></script>
+<script src="js/logDetailScreen.js?v=3.11.0"></script>
+<script src="js/settingsScreen.js?v=3.11.0"></script>
+<script src="js/adminPage.js?v=3.11.0"></script>
+<script src="js/app.js?v=3.11.0"></script>
 </body>
 </html>

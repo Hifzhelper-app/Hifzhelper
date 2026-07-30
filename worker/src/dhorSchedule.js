@@ -83,7 +83,17 @@ function findChunkIndexForSegment(chunks, segment_from, segment_to) {
 // configured, no juz'-based baseline, etc.) — a normal, expected state for
 // many students, not an error, so this is a 200 either way; a genuine
 // failure (DB error) still surfaces as one per the usual error path.
-export async function ensureDhorSchedule(env, studentId) {
+//
+// startSegment (V3.11.0, optional): { segment_from, segment_to } — the
+// Dhor Plan's new "Tomorrow's portion" field lets a student explicitly
+// pick where the rotation should start (Setup's own save handler passes
+// this through only when the student actually chose something there).
+// When given, it's used as this call's anchor directly (no auto-detect,
+// no +1 — the chosen segment IS the first one used); every other call to
+// this function (dhorPage.js's routine top-ups, or a Setup save where
+// nothing was picked) omits it and keeps the existing auto-detect
+// behaviour, so this never resets an already-progressing rotation.
+export async function ensureDhorSchedule(env, studentId, startSegment) {
   const student = await env.DB.prepare(
     'SELECT mushaf, baseline_mode, baseline_selection, dhor_granularity, dhor_quantity, ' +
     'dhor_frequency, dhor_days_of_week FROM students WHERE id = ?'
@@ -118,21 +128,27 @@ export async function ensureDhorSchedule(env, studentId) {
   const chunks = buildChunks(pool, ref, student.dhor_granularity, student.dhor_quantity);
   if (chunks.length === 0) return { generated: 0, reason: 'Could not build a schedule from the current settings' };
 
-  // Anchor: whichever is FURTHER along in the chunk sequence — the last
-  // actually-logged dhor entry, or the last plan row that already exists —
-  // wins. Logged reality overrides a stale unfulfilled plan (the student
-  // did more, or different, than was planned); an existing future plan
-  // that's already ahead of the log is left alone rather than
-  // double-assigned a chunk it was already given on a previous call.
-  const lastLog = await env.DB.prepare(
-    'SELECT segment_from, segment_to FROM dhor_log WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1'
-  ).bind(studentId).first();
-  const lastPlan = await env.DB.prepare(
-    "SELECT segment_from, segment_to FROM plans WHERE student_id = ? AND plan_type = 'dhor' ORDER BY target_date DESC, created_at DESC LIMIT 1"
-  ).bind(studentId).first();
-  const logIndex = lastLog ? findChunkIndexForSegment(chunks, lastLog.segment_from, lastLog.segment_to) : -1;
-  const planIndex = lastPlan ? findChunkIndexForSegment(chunks, lastPlan.segment_from, lastPlan.segment_to) : -1;
-  let nextChunkIndex = (Math.max(logIndex, planIndex) + 1) % chunks.length;
+  let nextChunkIndex;
+  if (startSegment && startSegment.segment_from != null) {
+    const idx = findChunkIndexForSegment(chunks, startSegment.segment_from, startSegment.segment_to);
+    nextChunkIndex = idx >= 0 ? idx : 0;
+  } else {
+    // Anchor: whichever is FURTHER along in the chunk sequence — the last
+    // actually-logged dhor entry, or the last plan row that already exists —
+    // wins. Logged reality overrides a stale unfulfilled plan (the student
+    // did more, or different, than was planned); an existing future plan
+    // that's already ahead of the log is left alone rather than
+    // double-assigned a chunk it was already given on a previous call.
+    const lastLog = await env.DB.prepare(
+      'SELECT segment_from, segment_to FROM dhor_log WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1'
+    ).bind(studentId).first();
+    const lastPlan = await env.DB.prepare(
+      "SELECT segment_from, segment_to FROM plans WHERE student_id = ? AND plan_type = 'dhor' ORDER BY target_date DESC, created_at DESC LIMIT 1"
+    ).bind(studentId).first();
+    const logIndex = lastLog ? findChunkIndexForSegment(chunks, lastLog.segment_from, lastLog.segment_to) : -1;
+    const planIndex = lastPlan ? findChunkIndexForSegment(chunks, lastPlan.segment_from, lastPlan.segment_to) : -1;
+    nextChunkIndex = (Math.max(logIndex, planIndex) + 1) % chunks.length;
+  }
 
   const sessionsPerActiveDay = student.dhor_frequency === 'twice' ? 2 : 1;
   const today = todayISO();
@@ -178,6 +194,11 @@ export async function ensureDhorSchedule(env, studentId) {
 }
 
 export async function handleEnsureDhorSchedule(request, env, auth) {
-  const result = await ensureDhorSchedule(env, auth.id);
+  let body = {};
+  try { body = await request.json(); } catch (e) { /* no body sent — the normal case for routine top-ups */ }
+  const startSegment = (body && body.segment_from != null)
+    ? { segment_from: body.segment_from, segment_to: body.segment_to }
+    : null;
+  const result = await ensureDhorSchedule(env, auth.id, startSegment);
   return { data: result };
 }

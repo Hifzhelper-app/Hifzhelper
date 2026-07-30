@@ -256,18 +256,17 @@ own render function.
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
                           renders all 4, rail scroll position, dot sync
     adminPage.js        — admin user-list screen
-    settingsScreen.js   — Setup screen (V3.9.0, switch redesign V3.10.0):
-                          4 independently-saved sections in one continuous
-                          page — Profile (view-only name/ID/URL, journal
-                          name, gender as a 2-way switch), Hifz Setup
-                          (mushaf as a 3-way switch incl. Hybrid, history
-                          baseline via a neutral-center Juz'/Surah switch
-                          opening slide-in grids, default targets as
-                          label-left/input-right rows), Dhor Schedule
-                          (granularity/frequency as switches), and Haidh
-                          (same row layout, shown only when gender is F)
-                          — reached via "Settings" nav or automatically
-                          pre-setup_complete (see app.js)
+    settingsScreen.js   — Setup screen (V3.9.0, switch redesign V3.10.0,
+                          V2 refinements V3.11.0): 4 independently-saved
+                          sections — Profile (gender as a small inline
+                          switch on the Name row), Hifz Setup (mushaf
+                          switch with hints for all 3 options, neutral-
+                          center Juz'/Surah switch that always rests
+                          neutral, "Target for Dhor" targets), Dhor Plan
+                          (renamed from "Dhor Schedule" — switches +
+                          Tomorrow's Portion, an explicit rotation
+                          starting point built from the student's own
+                          baseline), and Haidh
     app.js              — bootstrap, screen routing (see principle 8);
                           also owns fixScreenTopPaint() (see principle 12)
 
@@ -307,7 +306,11 @@ own render function.
                         student's dhor_granularity/quantity/frequency/
                         days_of_week settings, called from the frontend
                         whenever it's a good moment (Setup save, Dhor
-                        page open), never a Cron Trigger
+                        page open), never a Cron Trigger. V3.11.0 adds an
+                        optional explicit start-segment override (Setup's
+                        new "Tomorrow's Portion" field) for one generation
+                        call only — every other call keeps the original
+                        auto-detect-from-history anchor
     attendance.js, position.js, profile.js
     utils.js         — response helpers, boundary validation (principle 4)
   migrations/

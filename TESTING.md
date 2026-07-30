@@ -624,6 +624,47 @@ reused for steps 3–6.
     are now single rows, label left, input right, and that saving each
     section still works and redisplays correctly on reload.
 
+## 25. Setup V2: text/layout refinements, neutral-center fix, Tomorrow's Portion (V3.11.0)
+
+1. Confirm gender now shows as a small M/F switch right on the Name row,
+   not its own row further down.
+2. Mushaf: tap 13-line → confirm hint reads "13-line IndoPak/Waterval.";
+   tap 15-line Madani → "15 Line Uthmani script."; tap Hybrid → the
+   existing hint, unchanged.
+3. Confirm the label above the Juz'/Surah switch now reads "Mark
+   completed sections using".
+4. Mark a few Juz' as complete, close the popup → confirm the switch's
+   thumb is back in the neutral middle, NOT slid to the Juz' side (this
+   is the corrected behaviour — check it actually differs from what
+   V3.10.0 shipped). Same check for Surah.
+5. Confirm "Default targets" now reads "Target for Dhor" and visually
+   stands out (darker/heavier) compared to a normal field label like
+   "Mistakes / juz'" right below it.
+6. Confirm the Dhor Schedule section heading now reads "Dhor Plan".
+7. Tap into any numeric field (targets, portion quantity, haidh cycle
+   length/duration) on an actual phone → confirm a plain number pad
+   appears, not the full keyboard.
+
+**Tomorrow's Portion:**
+8. With a baseline saved (e.g. juz' 1-3) and granularity set to Quarter:
+   confirm the "Tomorrow's portion" dropdown lists `Q-Juz-1-1` through
+   `Q-Juz-3-4` in order, plus the default "let the plan continue..."
+   option at the top.
+9. Switch granularity to Half → confirm the list re-populates with
+   `H-Juz-N-1`/`H-Juz-N-2` labels instead (13-line/Hybrid) — or
+   `Hizb-N` labels, globally numbered, if mushaf is 15-line Madani.
+10. Switch mushaf between 13-line/15-line/Hybrid → confirm the list
+    relabels correctly each time (Hybrid should label like 13-line).
+11. Pick a specific portion (not the default), save → confirm (via the
+    plans table or the Dhor log page for tomorrow's date) that the
+    FIRST generated session starts at exactly that segment.
+12. Leave the dropdown on the default option and save → confirm
+    generation behaves exactly as before V3.11.0 (auto-detects from the
+    last logged/planned entry, unaffected by this feature existing).
+13. Open the Dhor log page a second time after an explicit-portion save
+    → confirm it does NOT reset back to that same starting point again —
+    the override should only apply to that one save's generation call.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
