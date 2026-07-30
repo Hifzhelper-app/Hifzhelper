@@ -313,7 +313,51 @@ function segmentRangeForUnitIndex(juz, unitIndexInJuz, ref, unit){
   return { segment_from: startMarker, segment_to: startMarker + unitSize - 1 };
 }
 
-// Works as a plain global-scope script in the browser (file:// safe — no ES module
+// ---------- Sabaq study order (V3.12.0) ----------
+// Confirmed study order: juz' 30 first, its surahs studied BACKWARDS
+// (114→78) rather than the normal ascending direction; then juz' 29
+// forwards; then 1 through 28 ascending. The "juz' 1 or 28" branch noted
+// elsewhere depends on a per-student choice this project doesn't store
+// anywhere yet — this picks 1 as the simpler deterministic default,
+// flagged here rather than guessed at silently (same spirit as
+// dhorSchedule.js's own documented simplification).
+const SABAQ_STUDY_ORDER = [30,29,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28];
+function nextJuzInStudyOrder(juz){
+  const idx = SABAQ_STUDY_ORDER.indexOf(juz);
+  if(idx === -1 || idx === SABAQ_STUDY_ORDER.length - 1) return null; // unrecognised, or the whole Quran is done
+  return SABAQ_STUDY_ORDER[idx + 1];
+}
+// The starting position for a freshly-entered juz' — juz' 30 starts at
+// its LAST (highest-numbered) surah since it studies backwards; every
+// other juz' starts at its first (lowest-numbered) surah as normal.
+function firstSabaqPositionForJuz(juz, ref){
+  const span = getJuzSurahSpan(juz, ref);
+  return { surah: juz === 30 ? span.end : span.start, ayah: 1 };
+}
+const MAX_AYAH_PER_SURAH = (() => {
+  const m = {};
+  for(const [s, a] of AYAH_WORD_RANGE){ if(!m[s] || a > m[s]) m[s] = a; }
+  return m;
+})();
+function maxAyahForSurah(surah){ return MAX_AYAH_PER_SURAH[surah] || 1; }
+// Advances one ayah past {surah, ayah} within the CURRENT juz's study
+// direction (backwards for juz' 30, forwards otherwise). Returns
+// { surah, ayah, juzComplete } — juzComplete is true when advancing would
+// leave the juz' entirely (nothing left within it to sabaq), in which
+// case surah/ayah echo back the position that was already the end.
+function nextSabaqPosition(surah, ayah, ref){
+  const maxAyah = maxAyahForSurah(surah);
+  if(ayah < maxAyah) return { surah, ayah: ayah + 1, juzComplete: false };
+  const currentJuz = getJuzForPosition(surah, ayah, ref);
+  const direction = currentJuz === 30 ? -1 : 1;
+  const candidateSurah = surah + direction;
+  if(candidateSurah < 1 || candidateSurah > 114) return { surah, ayah, juzComplete: true };
+  const candidateJuz = getJuzForPosition(candidateSurah, 1, ref);
+  if(candidateJuz !== currentJuz) return { surah, ayah, juzComplete: true };
+  return { surah: candidateSurah, ayah: 1, juzComplete: false };
+}
+
+
 // CORS restrictions) AND as a CommonJS module for the Worker (wrangler/esbuild
 // supports require()). Nothing above this line needs to change either way.
 if(typeof module !== 'undefined' && module.exports){
@@ -324,6 +368,8 @@ if(typeof module !== 'undefined' && module.exports){
     SURAH_JUZ_RANGE, getSurahJuzRange,
     compareVerseKey, getRubInfo, AYAH_WORD_RANGE, LINE13_RANGES, getLines13ForAyahRange,
     AYAH_LINE_UTHMANI, PAGE_MAX_LINE_UTHMANI, getLines15ForAyahRange,
-    segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex
+    segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex,
+    SABAQ_STUDY_ORDER, nextJuzInStudyOrder, firstSabaqPositionForJuz,
+    maxAyahForSurah, nextSabaqPosition
   };
 }

@@ -665,6 +665,49 @@ reused for steps 3–6.
     → confirm it does NOT reset back to that same starting point again —
     the override should only apply to that one save's generation call.
 
+## 26. Position tracking + Sabaq rewrite + detail-screen layout (V3.12.0)
+
+**Position + Sabaq:**
+1. As a brand-new student (no position saved yet), open the Sabaq card →
+   confirm Surah is preset to An-Nas (114) and Ayah from to 1.
+2. Enter Ayah to = 6 (finishes An-Nas), save → reopen the Sabaq card →
+   confirm it now defaults to Surah 113 (Al-Falaq), Ayah from 1.
+3. Confirm the Recent rail shows entries as `114:1-114:6` with lines/
+   pages, not a surah name.
+4. Enter Ayah to, tab/click away from the field (triggering change) →
+   confirm Lines and Pages fields auto-populate. Manually edit one of
+   them before saving → confirm the edited value is what actually saves
+   (check via the recent rail or a DB query), not the auto-computed one.
+5. Working scenario: log entries that walk all the way through surah 78
+   (the last surah of juz' 30) to its final ayah → save → confirm Hifz
+   Setup's "Mark completed sections" now shows juz' 30 as marked, without
+   having opened the Juz' grid manually. Reopen Sabaq → confirm it now
+   defaults to 67:1 (start of juz' 29).
+6. Switch mushaf between 13-line/15-line/Hybrid in Setup → re-open Sabaq
+   → confirm line/page auto-calc uses the right function for each (13-
+   line approximate vs 15-line exact) without changing the surah:ayah
+   defaults, which stay ref-aware but conceptually the same either way.
+
+**All 4 cards — layout:**
+7. Confirm every card's header row shows: icon (non-clickable), title,
+   date field (Tadabbur excepted — no date), save status, and an
+   icon+label Save button — and that there's no Save button at the
+   bottom of any card any more.
+8. On a desktop-width screen, confirm all 4 cards are visible in one row
+   and none exceeds roughly 30% of the available width.
+9. Tap the Tajweed control on any card → confirm a popup opens with a
+   checkbox per tag (not a row of pill buttons); check a few, close →
+   confirm the trigger button now summarizes what's selected, and that
+   selecting multiple tags still works (this wasn't a single-select
+   change).
+10. Confirm the comment block reads "Notes", not "Your comment on this
+    session", and that the privacy control is a Public/Private switch
+    defaulting to Public, with no "keep hidden from teachers" text
+    visible anywhere. Same check on Tadabbur's own privacy control.
+11. Confirm the swipe dots (tablet/mobile widths) show the words Sabaq/
+    SDhor/Dhor/Tadabbur, sit above the card rail, and still correctly
+    highlight/scroll to the right card when tapped.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

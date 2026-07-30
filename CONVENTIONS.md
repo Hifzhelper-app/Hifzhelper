@@ -232,12 +232,31 @@ own render function.
   js/
     icons.js          — shared inline SVG icon set
     api.js            — fetch wrapper + every endpoint client function
+    uiSwitch.js       — generic switch/segmented-control component
+                        (V3.10.0, extracted here V3.12.0 from
+                        settingsScreen.js so commentPrivacy.js and other
+                        non-Setup screens can use it too — loads early)
+    position.js       — client-side position tracking (V3.12.0): computes
+                        Sabaq's next default position and detects juz'
+                        completion, entirely client-side per the Worker's
+                        own position.js comment — the actual progress
+                        logic (study order, next-position math) lives in
+                        shared/data.js, this file just orchestrates it
+                        with the API calls
     auth.js           — login screen, auth band, dropdown, nav item list
     home.js           — Home page tile grid
     tajweed.js        — shared tajweed tag picker (major/minor aware),
-                        container-scoped (V3.6.1 — see principle 11)
+                        container-scoped (V3.6.1 — see principle 11).
+                        V3.12.0: compact trigger button opening a popup
+                        with a checkbox per tag (was an inline row of
+                        toggle buttons) — multi-select doesn't fit a
+                        scroll-wheel or a plain dropdown
     commentPrivacy.js — shared student-comment + privacy block,
-                        container-scoped (V3.6.1 — see principle 11)
+                        container-scoped (V3.6.1 — see principle 11).
+                        V3.12.0: "Notes" (was "Your comment on this
+                        session"); Private/Public switch (uiSwitch.js),
+                        default Public, replacing the "keep hidden from
+                        teachers" checkbox
     timer.js          — the real start/lap/stop Dhor timer
     journal.js        — the landing journal table + quick-add modal
                         (V3.9.0: quick-add now pre-fills field values from
@@ -249,12 +268,29 @@ own render function.
                           separate per-device waterval/uthmani dropdown —
                           ref is now derived from the student's own
                           mushaf choice (Setup), fetched fresh on open
-    sabaqPage.js        — Sabaq card, own date selector (one of 4 cards)
-    sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4)
+    sabaqPage.js        — Sabaq card, own date selector (one of 4 cards).
+                          V3.12.0: position-driven (js/position.js) —
+                          prepopulates surah/ayah_from from wherever
+                          Sabaq last reached per the study order; ayah
+                          references shown as surah:ayah numerals, no
+                          names; line_count/page_count auto-compute once
+                          ayah_to is entered (shown editable); on save,
+                          advances position and, if a juz' just
+                          completed, folds it into Hifz Setup's
+                          baseline_selection automatically
+    sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4).
+                          Still the original free-text zone field as of
+                          V3.12.0 — the checkable-quarters redesign is a
+                          separate, later delivery (depends on this one)
     reflectionCard.js   — Tadabbur card (V3.6.1, new) — one reflection
-                          per day, no date selector, upserts in place
+                          per day, no date selector, upserts in place.
+                          V3.12.0: Private/Public switch, was a checkbox
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
-                          renders all 4, rail scroll position, dot sync
+                          renders all 4, rail scroll position, dot sync.
+                          V3.12.0: dots show text labels (Sabaq/SDhor/
+                          Dhor/Tadabbur) and sit above the rail (were
+                          plain circles below it); also injects each
+                          card's header icon + save-button icon once here
     adminPage.js        — admin user-list screen
     settingsScreen.js   — Setup screen (V3.9.0, switch redesign V3.10.0,
                           V2 refinements V3.11.0): 4 independently-saved
@@ -263,6 +299,7 @@ own render function.
                           switch with hints for all 3 options, neutral-
                           center Juz'/Surah switch that always rests
                           neutral, "Target for Dhor" targets), Dhor Plan
+
                           (renamed from "Dhor Schedule" — switches +
                           Tomorrow's Portion, an explicit rotation
                           starting point built from the student's own

@@ -1,5 +1,5 @@
 /* ============================================================
-   Hifzhelper — detail pages: tajweed picker, timer, shared form bits
+   Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    ============================================================ */
 
 .detail-page label {
@@ -15,7 +15,68 @@
   display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);
 }
 
-/* Tajweed picker — pill buttons, major tags get a subtle marker (the •) */
+/* V3.12.0: card header row -- icon, title, date (moved here from its own
+   full-width row), save status + an icon+label Save button. Applies to
+   all 4 detail cards identically. The bottom-of-card Save button these
+   cards used to have is gone -- this is the only Save control now. */
+.card-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+.card-header-row h2 { margin: 0; white-space: nowrap; }
+.card-header-icon { width: 22px; height: 22px; flex: 0 0 auto; color: var(--color-ink-soft); }
+.card-header-icon svg { width: 100%; height: 100%; }
+.card-header-date {
+  margin-left: auto;
+  width: auto;
+  max-width: 140px;
+}
+.card-header-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--color-table-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.card-header-save-btn svg { width: 16px; height: 16px; }
+
+/* Tajweed picker (V3.12.0) -- a compact trigger button instead of an
+   inline row of toggle buttons, opening a popup with a checkbox per tag
+   (multi-select doesn't fit a scroll-wheel or a plain dropdown). */
+.tajweed-trigger-btn {
+  width: 100%;
+  text-align: left;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  font-size: 13px;
+}
+.tajweed-checkbox-list {
+  margin-top: var(--space-md);
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.tajweed-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px 0;
+  font-size: 14px;
+}
+.tajweed-checkbox-row input { width: auto; }
+
+/* Tajweed pill buttons -- still used inside the popup's own grid style
+   isn't needed here (checkboxes instead), but the "+ add" button and the
+   Setup/Juz'-grid slide-ins still use this pill look. */
 .tajweed-tag {
   display: inline-block;
   padding: 6px 12px;
@@ -39,8 +100,6 @@
   border-style: dashed;
   color: var(--color-ink-faint);
 }
-/* V3.7.0: reused (single-select, not multi-select) for the Setup screen's
-   mushaf picker, where the Hybrid option is shown but not yet selectable. */
 .tajweed-tag:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -53,6 +112,15 @@
   border-radius: var(--radius-sm);
   font-size: 13px;
 }
+
+/* Small-wide switch variant (V3.12.0) -- the Notes block's Private/Public
+   switch: wider than Setup's tiny inline gender switch, but not a full
+   Setup-style field-width track either. */
+.switch-track-small-wide {
+  height: 34px;
+  max-width: 220px;
+}
+.switch-track-small-wide .switch-option { font-size: 13px; }
 
 /* Timer */
 .timer-display {
@@ -78,7 +146,7 @@
 
 .save-status {
   display: inline-block; opacity: 0; transition: opacity 0.2s;
-  color: var(--color-success); font-size: 12px; margin-right: var(--space-sm);
+  color: var(--color-success); font-size: 12px;
 }
 .save-status.show { opacity: 1; }
 
@@ -86,12 +154,21 @@
 .rail-card-body { font-size: 13px; }
 
 /* ============================================================
-   Unified day-log view (V3.6.1) — 4 cards: Sabaq / Sabaq Dhor / Dhor /
+   Unified day-log view (V3.6.1) -- 4 cards: Sabaq / Sabaq Dhor / Dhor /
    Tadabbur. Mobile: swipeable rail, 1 card in view. Tablet: swipeable
-   rail, 2 in view. Desktop: static 1x4 grid, no swiping — breakpoints
+   rail, 2 in view. Desktop: static 1x4 grid, no swiping -- breakpoints
    match the app-wide tablet/desktop convention already used for
    .login-card/#screen-admin (768/1180), not journal-table.css's older
    720px one.
+
+   V3.12.0: swipe dots moved above the rail (was below) and now show
+   text labels (Sabaq/SDhor/Dhor/Tadabbur) instead of plain circles --
+   see index.html for the reordered markup, this file just restyles them.
+   Cards are explicitly capped at max-width 30% on desktop -- with all 4
+   visible, the 4-column grid already computes ~25% each on its own
+   (design target: a 13" monitor as the practical maximum width, not an
+   ultra-wide external display), the 30% is a stated ceiling rather than
+   a value that changes today's math.
    ============================================================ */
 .log-detail-rail {
   display: flex;
@@ -116,7 +193,7 @@
   padding: var(--space-md);
   flex: 1;
   min-height: 0; /* flexbox gotcha: without this, a flex:1 child with
-                    overflow-y:auto won't actually scroll — it just grows
+                    overflow-y:auto won't actually scroll -- it just grows
                     past its container instead of shrinking to fit it. */
 }
 
@@ -130,26 +207,28 @@
     overflow: visible;
     scroll-snap-type: none;
   }
-  .log-detail-card { height: 75vh; }
+  .log-detail-card { height: 75vh; max-width: 30%; }
 }
 
-/* Dot indicators — only meaningful while the rail actually swipes;
+/* Dot indicators -- only meaningful while the rail actually swipes;
    hidden entirely on the desktop grid, where all 4 cards are visible at
-   once and there's nothing to indicate a position within. */
+   once and there's nothing to indicate a position within. Text labels
+   (V3.12.0) instead of plain circles -- same active/inactive states. */
 .log-detail-dots {
   display: flex;
   justify-content: center;
   gap: var(--space-sm);
-  margin-top: var(--space-sm);
+  margin-bottom: var(--space-sm);
 }
 .log-detail-dots .dot {
-  width: 8px;
-  height: 8px;
-  padding: 0;
-  border-radius: 50%;
-  background: var(--ring-track);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  color: var(--color-ink-soft);
 }
-.log-detail-dots .dot.active { background: var(--color-accent); }
+.log-detail-dots .dot.active { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
 @media (min-width: 1180px) {
   .log-detail-dots { display: none; }
 }
