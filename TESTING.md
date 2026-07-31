@@ -847,6 +847,45 @@ reused for steps 3–6.
    a move-to-Dhor (manual or automatic) — the newly-added quarter-units
    should show up in generation the next time it runs.
 
+## 32. Detail-screen UI round 3 (V3.18.0)
+
+1. Open any of the 3 log cards (Sabaq/Sabaq Dhor/Dhor) → confirm the
+   header is now 2 rows: row 1 has the icon, heading, and Save
+   button/status roughly at a 10:70:20 split; row 2 is just the date
+   input at roughly 30% width with blank space beside it.
+2. Confirm the "Notes" label and the "Private" checkbox+label now sit
+   on the same row, checkbox on the same line as the label — not below
+   the textarea.
+3. Confirm the "Recent" heading text is gone entirely, and there's no
+   list of the last 2 entries — just a single compact button.
+4. Confirm that button is dark green (Evergreen) and reads "Sabaq
+   History" / "Sabaq Dhor History" / "Dhor History" depending on the
+   card (not generic "History"). Tap it → confirm the same full popup
+   (up to 50 entries) still opens correctly.
+5. On Sabaq, confirm the "Sabaq from"/"Sabaq to" fields now render as a
+   4-column row (chevron, surah name, ayah number, chevron) with no
+   overlapping/misaligned text regardless of how long the surah name is
+   — try a few different surahs via the picker, including long names
+   (e.g. Al-Baqarah) and short ones, to confirm the columns hold their
+   width either way.
+6. Tap the left chevron → confirm the surah picker still opens and
+   selecting a surah still updates the field correctly (unchanged
+   behaviour, just restyled).
+7. Tap the new right-hand up/down chevrons → confirm they step the ayah
+   number up/down by 1, respecting that surah's min/max ayah bounds
+   (shouldn't go below 1 or above the surah's last ayah), and that Lines/
+   Pages recompute afterward exactly as they do when typing a number in
+   directly.
+8. On a tablet-width or mobile-width screen, open the log-detail rail
+   and swipe/scroll between the 4 cards → confirm the dot labels
+   (Sabaq/SDhor/Dhor/Tadabbur) highlight the correct card as it comes
+   into view, with no lag or wrong-dot-highlighted behaviour. This was
+   the "erratic"/"misaligned" bug — re-test on both a phone-width and a
+   tablet-width viewport, since the rail shows 1 vs. 2 cards at those
+   sizes respectively.
+9. Confirm the desktop static 4-column grid (≥1180px) is unaffected —
+   no dots shown, all 4 cards visible without scrolling.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
