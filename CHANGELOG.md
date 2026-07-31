@@ -7,6 +7,87 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.18.0 — Detail-screen UI round 3 (2026-07-31)
+
+Bismillah. This round's scope was fixing UI items confirmed after V3.17.0
+went live — Sabaq Dhor confirmed working, so this leaves the Sabaq
+prepopulation bug for a later revision as agreed, and focuses purely on
+this round's UI list.
+
+**Header, all 4 cards**: rebuilt as two explicit CSS grids instead of the
+old flex row — row 1 is icon:heading:save at 10:70:20, row 2 is
+date:blank at 30:70. `save-status` and the Save button are now grouped
+into one wrapper so they share column 3 as a single grid item instead of
+each auto-placing into its own column.
+
+**Notes/Private**: the Private checkbox + label move up onto the same
+row as the "Notes" label itself, replacing the row that used to sit
+below the textarea.
+
+**"Recent" → History button only**: the heading text is gone entirely,
+and the last-2-entries list under the History button is removed per the
+confirmed scope — the button alone (now compact and dark green/Evergreen,
+with type-specific text: "Sabaq History", "Sabaq Dhor History", "Dhor
+History") is enough for now. It still opens the same full popup (up to
+50 entries) as before.
+
+**Verse-ref fields (Sabaq from/to) — real bug found, rebuilt, not
+patched**: these were flagged as "erratic"/chevrons "not visible at all."
+Root cause: the flex version had no `min-width` guard on the surah
+label, so a long name could eat into a sibling's share depending on
+exactly how much room flex gave it that render — the same underlying
+issue (an unconstrained sibling silently stealing a neighbour's assigned
+space) as the V3.14.1 ayah-width bug, just via flex-basis this time
+instead of a specificity fight. Rebuilt as an explicit 4-column CSS grid
+(chevron:Surah:Ayah:chevron at 10:50:30:10, confirmed in chat) with
+`min-width: 0` on every text-bearing cell, so each column keeps its
+assigned share regardless of content length. Left chevron is unchanged
+(still opens the surah picker). **New**: the right-hand chevron column
+is an explicit up/down stepper for the ayah value — added because it
+was the *native number input's own spinner* that wasn't rendering, so
+this replaces reliance on it entirely rather than trying to make it
+visible; dispatches a `change` event so it flows through the exact same
+sync/recompute logic as typing a value in directly. Flagging this as an
+assumption, not a confirmed spec: the 4th column's exact behaviour
+(ayah stepper) wasn't explicitly specified, just its width.
+
+**Swipe dots — real bug found, root cause was outside the file being
+debugged**: `updateLogDetailDots` compared `card.offsetLeft` against
+`rail.scrollLeft`, which silently broke once `#appContent` gained
+`transform: translateZ(0)` (V3.4.3's Safari-paint fix, in `css/base.css`)
+— a transformed ancestor becomes the nearest `offsetParent` for elements
+inside it in every major browser, so each card's `offsetLeft` was
+actually measured from `#appContent`'s edge, several DOM levels above
+the rail, not from the rail's own content box. That added a constant
+(`#appContent`'s own padding) to every comparison, so a dot only flipped
+"active" once you'd scrolled well past where the card had actually
+snapped into place — matching the "erratic"/"misaligned" report exactly,
+and invisible from reading either file in isolation. Fixed by switching
+to `getBoundingClientRect()`, which is always viewport-relative and
+can't drift the same way regardless of any ancestor's transform/position
+tricks.
+
+**Housekeeping**: the three Recent-rail container divs (`sabaqRecentRail`
+etc.) previously carried the pre-V3.14.2 `.swipe-rail` class, left over
+from before the History-button redesign and now meaningless (nothing
+scrolls horizontally there any more) — given their own plain
+`.history-container` class instead while already touching this markup.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/commentPrivacy.js
+js/dhorPage.js
+js/sabaqPage.js
+js/logDetailScreen.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.17.0 — Phase 2b: the move-to-Dhor transition (2026-07-31)
 
 Bismillah. Completes the Sabaq Dhor rebuild — the last piece confirmed
