@@ -29,11 +29,12 @@
 .card-header-icon { width: 22px; height: 22px; flex: 0 0 auto; color: var(--color-ink-soft); }
 .card-header-icon svg { width: 100%; height: 100%; }
 .card-header-date {
-  margin-left: auto;
-  width: auto;
-  max-width: 108px;
-  padding: 4px 6px;
+  width: 30%;
   flex-shrink: 0;
+  padding: 4px 6px;
+}
+.card-date-row {
+  margin-top: 4px;
 }
 .card-header-save-btn {
   display: flex;
@@ -88,6 +89,33 @@
   font-size: 14px;
 }
 .sabaq-dhor-section-row input { width: auto; }
+.sabaq-dhor-row-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: 2px 0;
+}
+.sabaq-dhor-row-wrap .sabaq-dhor-section-row { padding: 4px 0; flex: 1; }
+.move-to-dhor-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--palette-evergreen);
+  color: var(--palette-evergreen);
+  background: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.sabaq-dhor-rollup-row {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+.sabaq-dhor-rollup-row .verse-ref-chevron {
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+}
 
 /* Combined surah:ayah input field (V3.14.0) -- chevron opens the surah
    picker, ayah is a bounded number input (browser stepper or numeric
@@ -177,6 +205,16 @@
   border-radius: var(--radius-sm);
   font-size: 13px;
 }
+.cb-private-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+}
+.cb-private-row input { width: auto; }
+.save-btn-text { white-space: nowrap; }
 
 /* Small-wide switch variant (V3.12.0) -- the Notes block's Private/Public
    switch: wider than Setup's tiny inline gender switch, but not a full
@@ -212,11 +250,38 @@
 .save-status {
   display: inline-block; opacity: 0; transition: opacity 0.2s;
   color: var(--color-success); font-size: 12px;
+  margin-left: auto;
 }
 .save-status.show { opacity: 1; }
 
 .rail-card-date { font-size: 11px; color: var(--color-ink-faint); margin-bottom: 4px; }
 .rail-card-body { font-size: 13px; }
+
+/* History button + last-2-entries (V3.14.2) -- replaces the swipe rail. */
+.history-btn {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  font-size: 13px;
+}
+.history-last-two {
+  margin-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.history-entry-row {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-table-border);
+}
+.history-full-list {
+  margin-top: var(--space-md);
+  max-height: 60vh;
+  overflow-y: auto;
+}
 
 /* ============================================================
    Unified day-log view (V3.6.1) -- 4 cards: Sabaq / Sabaq Dhor / Dhor /
