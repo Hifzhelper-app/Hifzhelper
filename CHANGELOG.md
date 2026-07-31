@@ -7,7 +7,21 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.14.0 — Sabaq rebuild: multi-surah spans, sabaq_from/sabaq_to (2026-07-31)
+## V3.14.1 — two UI fixes on the new Sabaq fields (2026-07-31)
+
+Bismillah. Small, contained fix while Phase 2 gets its own proper attention.
+
+Found a real CSS bug from the screenshot: `.detail-page input`'s general `width:100%` rule was beating `.verse-ref-ayah`'s own `width:70px` on specificity (0,1,1 vs 0,1,0), which is exactly why the ayah box was stretching to fill the row instead of staying compact. Fixed by giving it a more specific selector and shrinking it further (46px, enough for 3 digits plus the browser's own spinner), freeing that space back to the surah name. Also removed the header row's ability to wrap — Save was dropping to its own second line on narrow widths because the date field plus everything else didn't quite fit on one row; the date field is now more compact too, so all of icon/title/date/Save fit on the same first row on every card.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+CHANGELOG.md
+```
+
+
 
 Bismillah. First of a new 4-phase plan replacing V3.12.0/V3.13.0's Sabaq/
 Sabaq Dhor design, once it became clear a sabaq entry isn't confined to
