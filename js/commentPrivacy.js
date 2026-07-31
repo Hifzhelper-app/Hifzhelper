@@ -13,6 +13,8 @@
 // checkbox next to "Notes" -- default unchecked (public), checked means
 // private. The switch was judged too large for what's a minor, occasional
 // toggle.
+// V3.18.0: the checkbox+label move up onto the same row as the "Notes"
+// label itself, instead of sitting on their own row below the textarea.
 // ============================================================
 
 function renderCommentBlock(containerId, existingEntry){
@@ -20,12 +22,14 @@ function renderCommentBlock(containerId, existingEntry){
   const feedback = existingEntry && existingEntry.teacher_feedback;
   const isPrivate = !!(existingEntry && existingEntry.student_comment_private);
   el.innerHTML = `
-    <label>Notes</label>
+    <div class="notes-header-row">
+      <label>Notes</label>
+      <label class="cb-private-row">
+        <input type="checkbox" class="cb-private-checkbox"${isPrivate ? ' checked' : ''}>
+        Private
+      </label>
+    </div>
     <textarea class="cb-comment" rows="2">${existingEntry && existingEntry.student_comment ? existingEntry.student_comment : ''}</textarea>
-    <label class="cb-private-row">
-      <input type="checkbox" class="cb-private-checkbox"${isPrivate ? ' checked' : ''}>
-      Private
-    </label>
     ${feedback ? `<div class="teacher-feedback-box"><strong>Teacher feedback:</strong> ${feedback}</div>` : ''}
   `;
 }

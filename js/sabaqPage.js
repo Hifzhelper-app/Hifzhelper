@@ -88,6 +88,31 @@ function openSurahPickerFor(side){
 }
 document.getElementById('sabaq_from_chevron').addEventListener('click', () => openSurahPickerFor('from'));
 document.getElementById('sabaq_to_chevron').addEventListener('click', () => openSurahPickerFor('to'));
+
+// V3.18.0: the verse-ref grid's right-hand chevron column is a new
+// explicit up/down stepper for the ayah value -- added because it was
+// the native number input's own spinner that wasn't rendering ("not
+// visible at all"), so this replaces reliance on it rather than trying
+// to make it visible. Dispatches 'change' so the existing listeners
+// below (which keep sabaqValue in sync and recompute line/page counts)
+// fire exactly as if the number had been typed in directly.
+function stepAyah(inputId, delta){
+  const input = document.getElementById(inputId);
+  const min = parseInt(input.min, 10) || 1;
+  const max = parseInt(input.max, 10) || 999;
+  let val = parseInt(input.value, 10);
+  if(isNaN(val)) val = min;
+  val = Math.min(max, Math.max(min, val + delta));
+  input.value = String(val);
+  input.dispatchEvent(new Event('change'));
+}
+document.querySelectorAll('.verse-ref-ayah-up').forEach(btn => {
+  btn.addEventListener('click', () => stepAyah(btn.dataset.target, 1));
+});
+document.querySelectorAll('.verse-ref-ayah-down').forEach(btn => {
+  btn.addEventListener('click', () => stepAyah(btn.dataset.target, -1));
+});
+
 document.getElementById('sabaq_from_ayah').addEventListener('change', () => {
   const v = readVerseRefField('from');
   if(v){ sabaqValue.from = v; renderVerseRefField('from'); }

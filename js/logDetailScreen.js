@@ -39,16 +39,31 @@ async function renderLogDetailScreen(initialCard){
   updateLogDetailDots();
 }
 
+// V3.18.0 fix: this used to compare card.offsetLeft against rail.scrollLeft,
+// which silently broke once #appContent gained `transform: translateZ(0)`
+// (V3.4.3's Safari-paint fix) -- a transformed ancestor becomes the nearest
+// offsetParent for elements inside it in every major browser, so each
+// card's offsetLeft was actually being measured from #appContent's edge,
+// several DOM levels above the rail, not from the rail's own content box.
+// That added a constant (#appContent's own padding) to every comparison,
+// so a dot only flipped "active" once you'd scrolled well past where the
+// card had actually snapped into place -- exactly the "erratic"/
+// "misaligned" symptom reported, and invisible from reading either file in
+// isolation since neither one looks wrong on its own.
+// getBoundingClientRect() is always viewport-relative regardless of any
+// ancestor's transform/position tricks, so comparing the rail's own edge
+// to each card's edge this way can't drift the same way offsetLeft did.
 function updateLogDetailDots(){
   const rail = document.getElementById('logDetailRail');
   const dots = document.querySelectorAll('#logDetailDots .dot');
   const cards = Array.from(rail.children);
+  const railLeft = rail.getBoundingClientRect().left;
   // The rightmost card whose left edge has scrolled into (or past) view is
   // the "active" one — works for both the 1-in-view (mobile) and
   // 2-in-view (tablet) cases without needing to special-case either.
   let activeIndex = 0;
   cards.forEach((card, i) => {
-    if(card.offsetLeft <= rail.scrollLeft + 4) activeIndex = i;
+    if(card.getBoundingClientRect().left <= railLeft + 4) activeIndex = i;
   });
   dots.forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
 }
