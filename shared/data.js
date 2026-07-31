@@ -313,7 +313,31 @@ function segmentRangeForUnitIndex(juz, unitIndexInJuz, ref, unit){
   return { segment_from: startMarker, segment_to: startMarker + unitSize - 1 };
 }
 
-// ---------- Sabaq V2: surah:ayah strings, multi-surah spans (V3.14.0) ----------
+// ---------- Dhor eligibility pool: quarter-unit IDs (V3.15.0) ----------
+// baseline_selection now stores a flat list of "quarter-unit" IDs (1-120)
+// rather than whole juz' numbers — quarter-unit N = juz' ceil(N/4),
+// structural quarter ((N-1)%4)+1. This is the FINEST granularity Dhor
+// Schedule's own "Portion per session" setting ever uses (quarter/half/
+// full juz'), so representing the pool at this level lets a juz' be
+// partially eligible (e.g. just its first half) — needed once Sabaq Dhor
+// can send a half-juz' to Dhor independently of the other half. Print-
+// independent: a "quarter of a juz'" is the same logical quarter (1st,
+// 2nd, 3rd, 4th) regardless of mushaf — only the exact ayah boundaries
+// differ by ref, resolved separately via segmentRangeForUnitIndex.
+function quarterUnitId(juz, quarterIndex){ return (juz - 1) * 4 + quarterIndex; }
+function quarterUnitToJuzQuarter(unitId){
+  return { juz: Math.ceil(unitId / 4), quarterIndex: ((unitId - 1) % 4) + 1 };
+}
+// The 4 quarter-unit IDs that make up a whole juz' — used when Setup's
+// Juz' grid marks (or Sabaq's own juz'-completion) a full juz' complete.
+function quarterUnitsForJuz(juz){ return [1,2,3,4].map(q => quarterUnitId(juz, q)); }
+// The 2 quarter-unit IDs for a specific half of a juz' — half 1 = quarters
+// 1+2, half 2 = quarters 3+4 (the fixed pairing confirmed in chat).
+function quarterUnitsForHalf(juz, half){
+  return half === 1 ? [quarterUnitId(juz,1), quarterUnitId(juz,2)] : [quarterUnitId(juz,3), quarterUnitId(juz,4)];
+}
+
+
 // sabaq_from/sabaq_to (migration 0015) are each a combined "surah:ayah"
 // string, e.g. "114:6" -- a sabaq entry can now span multiple surahs (from
 // and to can name different surahs) and cross at most one juz' boundary.
@@ -477,6 +501,7 @@ if(typeof module !== 'undefined' && module.exports){
     SABAQ_STUDY_ORDER, nextJuzInStudyOrder, firstSabaqPositionForJuz,
     maxAyahForSurah, nextSabaqPosition,
     studyQuarterIndex, structuralQuarterOf, ayahAfter, structuralQuarterBounds,
-    parseVerseRef, formatVerseRef, crossesAtMostOneJuzBoundary, getLinesForSpan
+    parseVerseRef, formatVerseRef, crossesAtMostOneJuzBoundary, getLinesForSpan,
+    quarterUnitId, quarterUnitToJuzQuarter, quarterUnitsForJuz, quarterUnitsForHalf
   };
 }
