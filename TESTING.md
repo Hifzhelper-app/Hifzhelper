@@ -766,6 +766,87 @@ reused for steps 3–6.
     since `computeSabaqDhorSections` was deliberately left working
     against the same position shape.
 
+## 29. Dhor eligibility pool rework: quarter-unit granularity (V3.15.0)
+
+1. Mark juz' 1 and 2 complete via Setup's Juz' grid, save → check via a
+   direct DB query that `baseline_selection` now contains 8 numbers
+   (1-8), not `[1,2]`.
+2. Reopen the Juz' grid → confirm juz' 1 and 2 still show as checked
+   (not everything, not nothing — the round-trip through quarter-units
+   needs to come back correctly).
+3. With juz' 1-2 marked and a Dhor Schedule configured, save/open the
+   Dhor Schedule → confirm it still generates sensible sessions matching
+   the chosen granularity (quarter/half/full), same as before this
+   rework — this is a rebuild of internals, output should look unchanged
+   for a fully-marked pool like this.
+4. Confirm "Tomorrow's Portion" (Setup's Dhor Schedule section) still
+   lists options correctly for juz' 1-2.
+5. Directly test a partial-juz' scenario (can only be set via a DB edit
+   for now, since the UI to create one — Sabaq Dhor's move-to-Dhor —
+   isn't built yet): set `baseline_selection` to include only juz' 5's
+   first-half quarter-units (17,18) alongside a fully-marked juz' 1
+   (1,2,3,4) → confirm Dhor Schedule generation produces sensible
+   sessions from juz' 1's full range and juz' 5's first half only,
+   without ever drawing from juz' 5's second half.
+
+## 30. UI notes round 2 + Phase 2a: Sabaq Dhor rollup (V3.16.0)
+
+1. Confirm every card's header is 2 rows: icon+heading+Save on row 1
+   (Save has both an icon and visible "Save" text), date alone on row 2
+   at roughly 30% width (Tadabbur has no date row, unchanged).
+2. Confirm the privacy control on all 4 cards (Notes' checkbox, and
+   Tadabbur's own) is a plain checkbox, not the switch — default
+   unchecked, checking it should mark the entry private on save.
+3. Confirm "Recent" now shows a "History" button plus the last 2 entries
+   stacked below it. Tap History → confirm a popup opens listing more
+   entries (up to 50), not just the same 2.
+4. On Sabaq, enter a range you know the line count for (e.g. something
+   you've already checked totals 20 lines) → confirm Pages shows 1.5,
+   not a real-page-derived number.
+5. Log Sabaq entries into a fresh juz' until at least one quarter is
+   complete and the current one is partial → open Sabaq Dhor → confirm
+   the completed quarter shows as its own row (chevron hasn't merged
+   anything yet by default).
+6. Complete a second, adjacent quarter (so both members of a pair, e.g.
+   1 and 2, are done) → tap the up chevron → confirm those two merge
+   into one "First Half" row, while the current (still in-progress)
+   quarter is untouched.
+7. Tap the down chevron → confirm it splits back to separate quarters.
+8. Close and reopen Sabaq Dhor → confirm the rollup level you left it on
+   (quarters vs halves vs full) is remembered, not reset.
+9. Check a couple of rows, save → confirm the saved entry's from/to
+   range spans exactly the checked rows (via the recent rail or a DB
+   query on sabaq_dhor_log), same composite behaviour as before.
+10. With only the current quarter available (freshly started juz', or a
+    juz' with nothing complete yet), confirm the chevrons don't error or
+    produce a broken row — should just redraw the same single row.
+
+## 31. Phase 2b: the move-to-Dhor transition (V3.17.0)
+
+1. Get a student to the point where a full juz' is complete and Sabaq
+   has crossed into the next one (per Phase 2a's testing) → open Sabaq
+   Dhor → confirm the completed old juz' now shows as a lingering row
+   (First Half + Second Half, or one Full Juz' row if rollup is set to
+   "full") with a "Move to Dhor" button next to it.
+2. Tap "Move to Dhor" on First Half → confirm it disappears from Sabaq
+   Dhor, and check via `PRAGMA`/a DB query that `baseline_selection` now
+   includes that half's 2 quarter-units.
+3. Confirm Second Half's "Move to Dhor" button is now enabled (it
+   shouldn't have been available before First Half moved, per the
+   sequential rule) — move it too, confirm the lingering juz' disappears
+   from Sabaq Dhor entirely once both halves are gone.
+4. Separately (fresh scenario): leave a lingering juz' untouched (don't
+   tap any Move to Dhor button) → continue logging Sabaq into the new
+   juz' until at least one quarter of it completes → open Sabaq Dhor (or
+   just check `baseline_selection` directly) → confirm the OLD juz' was
+   moved to Dhor automatically, and that it's no longer showing as
+   lingering.
+5. Confirm a lone (unrolled) quarter never shows a "Move to Dhor" button
+   — only halves and full-juz' rows should have one.
+6. Confirm Setup's Dhor Schedule still generates sensible sessions after
+   a move-to-Dhor (manual or automatic) — the newly-added quarter-units
+   should show up in generation the next time it runs.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
