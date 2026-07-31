@@ -196,25 +196,22 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 // Shared across the log cards — a swipe rail of recent entries for that
 // log type, tapped to view (read-only for now; editing an existing entry
 // from here is a follow-up, not built in this pass).
-// V3.14.2: replaces the swipe rail with a "History" button + the last 2
-// entries shown stacked directly below it. Tapping History opens the
-// full list (up to 50 entries) in a popup, reusing the same per-type
-// describeEntryForRail formatting.
+// V3.14.2: replaced the swipe rail with a "History" button. Tapping it
+// opens the full list (up to 50 entries) in a popup, reusing the same
+// per-type describeEntryForRail formatting.
+// V3.18.0: the last-2-entries stack below the button is removed per the
+// confirmed scope -- button alone is enough for now. Button text is now
+// type-specific ("Sabaq History", "Dhor History", etc.) instead of a
+// generic "History".
+const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'Dhor History' };
 async function renderRecentEntries(type, client, railId){
   const container = document.getElementById(railId);
   let rows = [];
   try{ rows = await client.get(); } catch(e){ rows = []; }
   rows = rows.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id||0) - (a.id||0));
 
-  const lastTwo = rows.slice(0, 2);
-  container.innerHTML = `
-    <button type="button" class="history-btn" id="${railId}_historyBtn">History</button>
-    <div class="history-last-two">
-      ${lastTwo.length ? lastTwo.map(r => `<div class="history-entry-row">
-        <div class="rail-card-date">${r.date}</div>
-        <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
-      </div>`).join('') : '<div class="form-hint">Nothing logged yet.</div>'}
-    </div>`;
+  const label = HISTORY_BTN_LABEL[type] || 'History';
+  container.innerHTML = `<button type="button" class="history-btn" id="${railId}_historyBtn">${label}</button>`;
 
   document.getElementById(`${railId}_historyBtn`).addEventListener('click', () => {
     const overlay = document.createElement('div');
