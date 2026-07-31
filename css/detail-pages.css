@@ -15,26 +15,38 @@
   display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);
 }
 
-/* V3.12.0: card header row -- icon, title, date (moved here from its own
-   full-width row), save status + an icon+label Save button. Applies to
-   all 4 detail cards identically. The bottom-of-card Save button these
-   cards used to have is gone -- this is the only Save control now. */
+/* V3.18.0: header rebuilt as two explicit CSS grids per the confirmed
+   spec, replacing V3.12.0's flex row -- row 1 is icon:heading:save at
+   10:70:20, row 2 is date:blank at 30:70. save-status + the Save button
+   are grouped into one wrapper (.card-header-save-wrap in index.html) so
+   they occupy grid column 3 together, stacked, instead of each claiming
+   their own auto-placed column. Applies to all 4 detail cards
+   identically. The bottom-of-card Save button these cards used to have
+   is gone -- this is the only Save control now. */
 .card-header-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 10% 70% 20%;
   align-items: center;
   gap: var(--space-sm);
-  flex-wrap: nowrap;
 }
-.card-header-row h2 { margin: 0; white-space: nowrap; flex-shrink: 1; overflow: hidden; text-overflow: ellipsis; }
-.card-header-icon { width: 22px; height: 22px; flex: 0 0 auto; color: var(--color-ink-soft); }
+.card-header-row h2 { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-header-icon { width: 22px; height: 22px; color: var(--color-ink-soft); justify-self: center; }
 .card-header-icon svg { width: 100%; height: 100%; }
-.card-header-date {
-  width: 30%;
-  flex-shrink: 0;
-  padding: 4px 6px;
+.card-header-save-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  min-width: 0;
 }
 .card-date-row {
+  display: grid;
+  grid-template-columns: 30% 70%;
   margin-top: 4px;
+}
+.card-header-date {
+  width: 100%;
+  padding: 4px 6px;
 }
 .card-header-save-btn {
   display: flex;
@@ -43,12 +55,12 @@
   border: 1px solid var(--color-table-border);
   background: var(--color-surface);
   border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: 4px 6px;
+  font-size: 12px;
   color: var(--color-ink);
   cursor: pointer;
 }
-.card-header-save-btn svg { width: 16px; height: 16px; }
+.card-header-save-btn svg { width: 14px; height: 14px; }
 
 /* Tajweed picker (V3.12.0) -- a compact trigger button instead of an
    inline row of toggle buttons, opening a popup with a checkbox per tag
@@ -117,20 +129,33 @@
   padding: 6px 12px;
 }
 
-/* Combined surah:ayah input field (V3.14.0) -- chevron opens the surah
-   picker, ayah is a bounded number input (browser stepper or numeric
-   keypad), no auto-rollover into the next surah. */
+/* Combined surah:ayah input field -- V3.18.0 rebuild as an explicit CSS
+   grid (chevron:surah:ayah:chevron at 10:50:30:10, per the confirmed
+   spec), replacing the flex version entirely rather than patching it.
+   The flex version had no min-width guard on the surah label, so a long
+   surah name could eat into its neighbours' share depending on exactly
+   how much room its flex siblings claimed that render -- the same root
+   issue (an unconstrained sibling silently stealing space from one
+   that's supposed to have a fixed share) as the V3.14.1 ayah-width bug,
+   just showing up via flex-basis instead of a specificity fight. Grid +
+   min-width:0 on every text-bearing cell fixes it the same way for
+   good: each column keeps exactly its assigned share no matter the
+   content length. Left chevron keeps its existing job (opens the surah
+   picker). Right chevron is new -- an explicit up/down stepper for the
+   ayah value, since it was the native number input's own spinner that
+   wasn't showing ("not visible at all") -- this replaces reliance on it
+   rather than trying to make it visible. */
 .verse-ref-field {
-  display: flex;
+  display: grid;
+  grid-template-columns: 10% 50% 30% 10%;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-sm);
   padding: var(--space-sm);
   background: var(--color-surface);
 }
 .verse-ref-chevron {
-  flex: 0 0 auto;
   border: none;
   background: none;
   font-size: 10px;
@@ -138,20 +163,46 @@
   color: var(--color-ink-soft);
   cursor: pointer;
   padding: 4px;
+  justify-self: center;
 }
 .verse-ref-surah-label {
-  flex: 1;
   font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.verse-ref-ayah-cell {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
 }
 .verse-ref-sep {
   color: var(--color-ink-faint);
+  flex-shrink: 0;
 }
 .verse-ref-field .verse-ref-ayah {
-  width: 46px;
-  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
   border: none;
   padding: 0;
   text-align: right;
+}
+.verse-ref-ayah-stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-self: center;
+}
+.verse-ref-ayah-stepper button {
+  border: none;
+  background: none;
+  padding: 1px 4px;
+  font-size: 9px;
+  line-height: 1.2;
+  color: var(--color-ink-soft);
+  cursor: pointer;
 }
 .surah-picker-list {
   margin-top: var(--space-md);
@@ -205,6 +256,19 @@
   border-radius: var(--radius-sm);
   font-size: 13px;
 }
+/* V3.18.0: Private checkbox moves up next to the "Notes" label itself,
+   replacing the row below the textarea (js/commentPrivacy.js). Scoped
+   margin override below -- tadabbur's own private checkbox (a separate,
+   standalone use of .cb-private-row under "Reflection", not "Notes")
+   keeps its original spacing. */
+.notes-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-md);
+  margin-bottom: 4px;
+}
+.notes-header-row label { margin: 0; }
 .cb-private-row {
   display: flex;
   align-items: center;
@@ -213,6 +277,7 @@
   font-size: 13px;
   color: var(--color-ink-soft);
 }
+.notes-header-row .cb-private-row { margin-top: 0; }
 .cb-private-row input { width: auto; }
 .save-btn-text { white-space: nowrap; }
 
@@ -252,26 +317,35 @@
   color: var(--color-success); font-size: 12px;
   margin-left: auto;
 }
+/* Scoped rather than changed globally -- .save-status is shared with the
+   Setup screens (css/settings.css), which have their own flex wrapper
+   and don't need this. Only the new narrow 20%-wide save column here
+   needs the smaller size. */
+.card-header-save-wrap .save-status { font-size: 10px; }
 .save-status.show { opacity: 1; }
 
 .rail-card-date { font-size: 11px; color: var(--color-ink-faint); margin-bottom: 4px; }
 .rail-card-body { font-size: 13px; }
 
-/* History button + last-2-entries (V3.14.2) -- replaces the swipe rail. */
-.history-btn {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid var(--color-table-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-ink-soft);
-  font-size: 13px;
+/* History button (V3.18.0) -- compact, dark green (Evergreen), type-
+   specific text ("Sabaq History" etc. -- js/dhorPage.js). The last-2-
+   entries list below it is removed per the confirmed scope; the button
+   alone opens the full popup (up to 50 entries), which still reuses
+   .history-entry-row below. The container div (renderRecentEntries'
+   target, in index.html) previously carried the pre-V3.14.2 .swipe-rail
+   class -- given its own plain wrapper now instead. */
+.history-container {
+  margin-top: var(--space-lg);
 }
-.history-last-two {
-  margin-top: var(--space-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
+.history-btn {
+  display: inline-block;
+  width: auto;
+  padding: 6px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--palette-evergreen);
+  color: #fff;
+  font-size: 13px;
 }
 .history-entry-row {
   padding: 6px 0;
