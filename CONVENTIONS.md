@@ -236,13 +236,15 @@ own render function.
                         (V3.10.0, extracted here V3.12.0 from
                         settingsScreen.js so commentPrivacy.js and other
                         non-Setup screens can use it too — loads early)
-    position.js       — client-side position tracking (V3.12.0): computes
-                        Sabaq's next default position and detects juz'
-                        completion, entirely client-side per the Worker's
-                        own position.js comment — the actual progress
-                        logic (study order, next-position math) lives in
-                        shared/data.js, this file just orchestrates it
-                        with the API calls
+    position.js       — client-side position tracking (V3.12.0, rebuilt
+                        V3.14.0): computes Sabaq's next default and sums
+                        of a multi-surah span, entirely client-side per
+                        the Worker's own position.js comment. Shape is now
+                        { sabaqTo, activeJuz } — sabaqTo is the single
+                        source of truth, activeJuz a derived value kept
+                        only for the not-yet-rebuilt Sabaq Dhor card. The
+                        V3.12.0 juz'-completion→baseline auto-add is
+                        REMOVED (superseded — now Setup's own job)
     auth.js           — login screen, auth band, dropdown, nav item list
     home.js           — Home page tile grid
     tajweed.js        — shared tajweed tag picker (major/minor aware),
@@ -269,15 +271,17 @@ own render function.
                           ref is now derived from the student's own
                           mushaf choice (Setup), fetched fresh on open
     sabaqPage.js        — Sabaq card, own date selector (one of 4 cards).
-                          V3.12.0: position-driven (js/position.js) —
-                          prepopulates surah/ayah_from from wherever
-                          Sabaq last reached per the study order; ayah
-                          references shown as surah:ayah numerals, no
-                          names; line_count/page_count auto-compute once
-                          ayah_to is entered (shown editable); on save,
-                          advances position and, if a juz' just
-                          completed, folds it into Hifz Setup's
-                          baseline_selection automatically
+                          V3.14.0: sabaq_from/sabaq_to (combined
+                          "surah:ayah" strings, can span multiple surahs,
+                          capped at one juz' boundary) replace the old
+                          surah/ayah_from/ayah_to trio entirely. Each
+                          field is one combined control (chevron opens
+                          the surah picker, ayah is a bounded number
+                          input, no auto-rollover). Position-driven
+                          prepopulation reworked around the simplified
+                          { sabaqTo, activeJuz } shape (js/position.js);
+                          line/page calc now sums across every surah a
+                          span touches (getLinesForSpan)
     sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4).
                           V3.13.0: position-driven checklist — shows the
                           quarter Sabaq is currently in (partial) plus

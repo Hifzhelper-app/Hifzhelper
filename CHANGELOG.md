@@ -7,7 +7,77 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.13.0 — Sabaq Dhor's checkable-quarters redesign (2026-07-30)
+## V3.14.0 — Sabaq rebuild: multi-surah spans, sabaq_from/sabaq_to (2026-07-31)
+
+Bismillah. First of a new 4-phase plan replacing V3.12.0/V3.13.0's Sabaq/
+Sabaq Dhor design, once it became clear a sabaq entry isn't confined to
+one surah or one juz' the way that design assumed.
+
+**`sabaq_from`/`sabaq_to`** (migration 0015) replace `surah`/`ayah_from`/
+`ayah_to` entirely — a clean removal (both columns dropped, not left
+deprecated-in-place, per explicit request), not just a rename: the old
+trio had one surah shared by both ayah numbers, which couldn't represent
+an entry spanning two different surahs at all. Each field is now a
+`"surah:ayah"` string (e.g. `"114:6"`), and `sabaq_from`/`sabaq_to` can
+each name a different surah. Confirmed scope: no limit on how many
+surahs an entry spans, capped at crossing at most one juz' boundary
+(`shared/data.js`'s new `crossesAtMostOneJuzBoundary`, which checks
+adjacency in *study* order — juz' 29→1 counts as one boundary same as
+29→30, even though those aren't numerically next to each other).
+
+**UI**: each field is one combined control — a chevron opens the full
+surah picker, the ayah itself is a bounded number input (browser stepper
+or the numeric keypad), never rolling over into the next surah on its
+own (confirmed: only the chevron changes the surah).
+
+**Prepopulation**, replacing the old advance-by-one-ayah logic: any Dhor
+history at all → neither field prepopulates; no Sabaq history yet →
+114:1/114:6; otherwise the last reached point prefills *To* if currently
+in juz' 30 (studied backwards) or *From* otherwise (studied forwards).
+Tested directly, not just reasoned through: brand-new student → 114:1/
+114:6; after logging into juz' 30's content → next open prefills To with
+the frontier; after crossing into juz' 29 → next open prefills From
+instead.
+
+**Line/page calc now sums across every surah a span touches** — the
+existing `getLines13/15ForAyahRange` functions still only understand one
+surah each; new `getLinesForSpan` walks every surah between `sabaq_from`
+and `sabaq_to` (handling juz' 30's reversed, high-to-low surah order,
+not just ascending) and adds them up. Caught and fixed a real bug here
+before shipping: the first version's surah loop assumed `from ≤ to`
+numerically, which silently returned zero for any juz'-30-direction
+span — re-verified with both directions before finalizing.
+
+**Position tracking simplified**: `position_json` is now just
+`{ sabaqTo, activeJuz }` — `sabaqTo` is the single source of truth,
+`activeJuz` is derived from it after every save. The V3.12.0 behaviour
+of auto-adding a completed juz' to Hifz Setup's `baseline_selection` is
+REMOVED — that's superseded, now Setup's own job (a separate, later
+phase). Sabaq Dhor's card (`sabaqDhorPage.js`) is untouched in this
+delivery and keeps working exactly as before against this same position
+shape — its own rebuild (rollable quarter/half/juz' sections) is Phase 2.
+
+**Files changed:**
+```
+index.html
+sw.js
+shared/data.js
+css/detail-pages.css
+js/sabaqPage.js
+js/position.js
+js/dhorPage.js
+worker/src/sabaqLog.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+TESTING.md
+```
+**New file:**
+```
+worker/migrations/0015_sabaq_from_to.sql
+```
+
+
 
 Bismillah. Second of the 3-part detail-screen delivery (V3.12.0 was
 position tracking + Sabaq; this is Sabaq Dhor, which depends on that

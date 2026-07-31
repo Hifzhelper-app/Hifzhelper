@@ -734,6 +734,38 @@ reused for steps 3–6.
    still compute correctly for each (the quarter boundaries differ
    slightly between prints at a few points, per the V3.9.1 derivation).
 
+## 28. Sabaq rebuild: sabaq_from/sabaq_to, multi-surah spans (V3.14.0)
+
+1. As a brand-new student, open Sabaq → confirm From shows blank/— and To
+   shows 114:6 is NOT preset the same way as before — confirm instead
+   both fields show 114:1 and 114:6 respectively per the new rule.
+2. Tap the chevron on either field → confirm the full 114-surah picker
+   opens, and selecting one updates that field's surah (ayah resets to 1).
+3. Try entering an ayah number beyond a surah's actual count (e.g. 114
+   ayah 7 — An-Nas only has 6) → confirm it's bounded, not accepted as-is.
+4. Enter a From/To spanning two different surahs within the same juz' →
+   save → confirm it saves successfully and the recent rail shows both
+   surahs correctly (e.g. "90:5-89:1" style, not just one surah number).
+5. Enter a From/To that would cross TWO juz' boundaries at once → confirm
+   this is rejected with a clear message, not silently saved wrong.
+6. Log a sabaq entry that ends inside juz' 30 → reopen Sabaq → confirm To
+   prepopulates with that entry's end point, From stays blank. Then log
+   an entry that crosses into juz' 29 → reopen → confirm From prepopulates
+   instead this time, To stays blank.
+7. Log any Dhor entry at all → reopen Sabaq → confirm NEITHER field
+   prepopulates any more, regardless of Sabaq history.
+8. Confirm Lines/Pages auto-populate once both fields are set, and that
+   a multi-surah span's totals look like a plausible sum across the
+   surahs involved, not just the first or last one.
+9. Confirm the old `sabaq_log` columns (`surah`, `ayah_from`, `ayah_to`)
+   are actually gone from the live table after the migration runs (a
+   `PRAGMA table_info(sabaq_log);` check, same pattern as prior migration
+   verifications), not just unused.
+10. Open Sabaq Dhor (unchanged in this delivery) → confirm it still shows
+    sensible sections as before — this delivery shouldn't have broken it,
+    since `computeSabaqDhorSections` was deliberately left working
+    against the same position shape.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

@@ -73,10 +73,8 @@ redacted, the entry itself still shows.
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
 | `entered_by` | TEXT (FK) | → `students.id`. Who actually logged this. |
-| `surah` | INTEGER | Surah number, 1–114. The only canonical input — page, line, quarter, etc. are all computed at display time from `surah`/`ayah_from`/`ayah_to` (see `shared/data.js`). |
-| `ayah_from` | INTEGER | |
-| `ayah_to` | INTEGER | |
-| `line_count` | INTEGER | Added in migration 0013. Auto-computed client-side (`getLines13ForAyahRange`/`getLines15ForAyahRange`, `shared/data.js`) once `ayah_to` is entered, shown editable. |
+| `sabaq_from` / `sabaq_to` | TEXT | Added in migration 0015, replacing `surah`/`ayah_from`/`ayah_to` (dropped that same migration — a clean removal, not left deprecated-in-place). Each is a combined `"surah:ayah"` string (e.g. `"114:6"`) — since `sabaq_from` and `sabaq_to` can each name a *different* surah, one entry can span multiple surahs directly (confirmed in chat: capped at crossing at most one juz' boundary, no other limit). Validation (per-surah ayah bounds, the one-juz'-boundary cap) happens client-side (`shared/data.js`'s `crossesAtMostOneJuzBoundary`) before save. |
+| `line_count` | INTEGER | Added in migration 0013. Auto-computed client-side (`getLinesForSpan`, `shared/data.js` — sums across every surah the from/to span touches, not just one) once both fields are set, shown editable. |
 | `page_count` | INTEGER | Added in migration 0013, same computation/editability as `line_count`. |
 | `tajweed_tags` | TEXT | Comma-separated tags, e.g. `Ghunnah,Madd`. |
 | `student_comment` / `_by` / `_at` | TEXT / TEXT (FK) / TEXT | |
@@ -169,7 +167,7 @@ state, updated in place, not appended.
 | Column | Type | Notes |
 |---|---|---|
 | `student_id` | TEXT (PK/FK) | → `students.id`. |
-| `position_json` | TEXT | JSON blob. As of V3.12.0, actually populated: `{ activeJuz, sabaqFrontier: {surah, ayah} \| null }` — activeJuz is which juz' Sabaq is currently working through (per `SABAQ_STUDY_ORDER`, `shared/data.js`); sabaqFrontier is the most recent Sabaq entry's end point within it, or null for a juz' just started. Computed/updated entirely client-side (`js/position.js`) — see that file for the study-order and juz'-completion logic. Not meant for hand-editing. |
+| `position_json` | TEXT | JSON blob. As of V3.14.0: `{ sabaqTo: {surah, ayah} \| null, activeJuz }` — `sabaqTo` is the single source of truth, the actual last point Sabaq reached; `activeJuz` is a DERIVED value (recomputed from `sabaqTo` after every save) kept only so the not-yet-rebuilt Sabaq Dhor card (`computeSabaqDhorSections`) keeps working unchanged in the meantime — nothing treats it as independently meaningful. The old `juz'-completion → auto-add to baseline_selection` behaviour is REMOVED (V3.12.0 had it; superseded — that's now Setup's own job). Computed/updated entirely client-side (`js/position.js`). Not meant for hand-editing. |
 | `last_dhor_json` | TEXT | JSON blob: `{ "<segment-unit>": "<last-revised-date>", ... }` — segment units match whichever reference (waterval/uthmani) is active. |
 | `updated_at` | TEXT | ISO timestamp of last write, for debugging/sync purposes. |
 

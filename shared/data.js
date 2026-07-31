@@ -313,7 +313,60 @@ function segmentRangeForUnitIndex(juz, unitIndexInJuz, ref, unit){
   return { segment_from: startMarker, segment_to: startMarker + unitSize - 1 };
 }
 
-// ---------- Sabaq study order (V3.12.0) ----------
+// ---------- Sabaq V2: surah:ayah strings, multi-surah spans (V3.14.0) ----------
+// sabaq_from/sabaq_to (migration 0015) are each a combined "surah:ayah"
+// string, e.g. "114:6" -- a sabaq entry can now span multiple surahs (from
+// and to can name different surahs) and cross at most one juz' boundary.
+function parseVerseRef(str){
+  if(!str) return null;
+  const [s, a] = String(str).split(':').map(Number);
+  if(!s || !a) return null;
+  return { surah: s, ayah: a };
+}
+function formatVerseRef(surah, ayah){ return `${surah}:${ayah}`; }
+
+// "At most one juz' boundary" is checked in STUDY order, not raw numeric
+// adjacency -- juz' 30 → 29 is one boundary, and so is 29 → 1 (or 28, per
+// the branch noted elsewhere), even though those aren't numerically next
+// to each other the way e.g. 5 → 6 is.
+function crossesAtMostOneJuzBoundary(fromSurah, fromAyah, toSurah, toAyah, ref){
+  const juzFrom = getJuzForPosition(fromSurah, fromAyah, ref);
+  const juzTo = getJuzForPosition(toSurah, toAyah, ref);
+  if(juzFrom === juzTo) return true;
+  return nextJuzInStudyOrder(juzFrom) === juzTo || nextJuzInStudyOrder(juzTo) === juzFrom;
+}
+
+// Sums line/page counts across every surah a sabaq_from→sabaq_to span
+// actually touches, using the same per-surah getLines13/15ForAyahRange
+// this project already has -- those still only understand one surah at a
+// time, so this walks each surah in the span and adds them up rather than
+// duplicating their internals. fromSurah can be numerically GREATER than
+// toSurah (juz' 30 studies backwards, e.g. from 114 down to 113) -- the
+// surah loop always runs low-to-high internally regardless of which end
+// is "from" and which is "to", using each end's own actual ayah bound.
+function getLinesForSpan(fromSurah, fromAyah, toSurah, toAyah, ref){
+  const getLinesFn = ref === 'uthmani' ? getLines15ForAyahRange : getLines13ForAyahRange;
+  if(fromSurah === toSurah){
+    return getLinesFn(fromSurah, fromAyah, toAyah);
+  }
+  const lowSurah = Math.min(fromSurah, toSurah);
+  const highSurah = Math.max(fromSurah, toSurah);
+  const lowAyah = fromSurah < toSurah ? fromAyah : toAyah;
+  const highAyah = fromSurah < toSurah ? toAyah : fromAyah;
+  let lineCount = 0;
+  const pages = new Set();
+  for(let s = lowSurah; s <= highSurah; s++){
+    const start = s === lowSurah ? lowAyah : 1;
+    const end = s === highSurah ? highAyah : maxAyahForSurah(s);
+    const part = getLinesFn(s, start, end);
+    if(!part) continue;
+    lineCount += part.lineCount;
+    (part.pages || []).forEach(p => pages.add(p));
+  }
+  return { lineCount, pageCount: pages.size, pages: [...pages] };
+}
+
+
 // Confirmed study order: juz' 30 first, its surahs studied BACKWARDS
 // (114→78) rather than the normal ascending direction; then juz' 29
 // forwards; then 1 through 28 ascending. The "juz' 1 or 28" branch noted
@@ -423,6 +476,7 @@ if(typeof module !== 'undefined' && module.exports){
     segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex,
     SABAQ_STUDY_ORDER, nextJuzInStudyOrder, firstSabaqPositionForJuz,
     maxAyahForSurah, nextSabaqPosition,
-    studyQuarterIndex, structuralQuarterOf, ayahAfter, structuralQuarterBounds
+    studyQuarterIndex, structuralQuarterOf, ayahAfter, structuralQuarterBounds,
+    parseVerseRef, formatVerseRef, crossesAtMostOneJuzBoundary, getLinesForSpan
   };
 }
