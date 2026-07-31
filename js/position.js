@@ -69,17 +69,199 @@ function nextSabaqDefaults(position, ref, hasDhor){
   return { from: { surah: position.sabaqTo.surah, ayah: position.sabaqTo.ayah }, to: null };
 }
 
-// Called after a Sabaq entry saves, with its own sabaq_to surah/ayah.
+// Phase 2a (V3.16.0): builds the actual DISPLAYABLE rows for Sabaq Dhor,
+// applying a rollup level to the COMPLETED portion only -- the current,
+// still-in-progress quarter is never rolled up (confirmed in chat: only
+// already-finished quarters/halves can merge). rollupLevel is one of
+// 'quarters' (each completed quarter its own row -- the default),
+// 'halves' (merges completed quarters into First/Second Half rows where
+// both halves of a pair are actually complete), or 'full' (merges
+// everything into one row, only once the whole juz' is complete).
+// Persisted per-juz' in position.sabaqDhorRollup so a student's chosen
+// granularity sticks across sessions rather than resetting every open.
+// The lingering previous juz's rows -- whatever portion of it hasn't
+// already moved to Dhor (checked against baselineSelection directly:
+// membership there IS "already moved", since moving to Dhor means
+// joining that same pool). Respects the same rollup preference as the
+// current juz', so a student who prefers halves sees the lingering
+// content the same way. Second Half only ever appears here once First
+// Half is confirmed already in the pool (the sequential rule) -- if
+// neither half has moved yet, both are still eligible together.
+function computeLingeringRows(previousJuz, ref, rollupLevel, baselineSelection){
+  const firstHalfUnits = quarterUnitsForHalf(previousJuz, 1);
+  const secondHalfUnits = quarterUnitsForHalf(previousJuz, 2);
+  const firstHalfMoved = firstHalfUnits.every(u => baselineSelection.includes(u));
+  const secondHalfMoved = secondHalfUnits.every(u => baselineSelection.includes(u));
+  if(firstHalfMoved && secondHalfMoved) return []; // fully moved already, nothing lingers
+
+  const juzBounds = { from: structuralQuarterBounds(previousJuz, 1, ref), to: structuralQuarterBounds(previousJuz, 4, ref) };
+  if(!firstHalfMoved && !secondHalfMoved && rollupLevel === 'full'){
+    return [{ id: 'lingering-full', label: `Juz' ${previousJuz} (complete)`,
+      fromSurah: juzBounds.from.startSurah, fromAyah: juzBounds.from.startAyah,
+      toSurah: juzBounds.to.endSurah, toAyah: juzBounds.to.endAyah,
+      complete: true, canMoveToDhor: true, isFull: true, lingeringJuz: previousJuz }];
+  }
+  const rows = [];
+  const halfBounds = (h) => {
+    const start = structuralQuarterBounds(previousJuz, h === 1 ? 1 : 3, ref);
+    const end = structuralQuarterBounds(previousJuz, h === 1 ? 2 : 4, ref);
+    return { fromSurah: start.startSurah, fromAyah: start.startAyah, toSurah: end.endSurah, toAyah: end.endAyah };
+  };
+  // Both un-moved halves stay visible/revisable in Sabaq Dhor regardless
+  // of order -- the sequential rule only governs canMoveToDhor (Second
+  // Half's Dhor option isn't available until First Half has actually
+  // moved), not whether the row is shown at all.
+  if(!firstHalfMoved){
+    const b = halfBounds(1);
+    rows.push(Object.assign({ id: 'lingering-h1', label: `Juz' ${previousJuz}, First Half` }, b, { complete: true, canMoveToDhor: true, isHalf: true, halfIndex: 1, lingeringJuz: previousJuz }));
+  }
+  if(!secondHalfMoved){
+    const b = halfBounds(2);
+    rows.push(Object.assign({ id: 'lingering-h2', label: `Juz' ${previousJuz}, Second Half` }, b, { complete: true, canMoveToDhor: firstHalfMoved, isHalf: true, halfIndex: 2, lingeringJuz: previousJuz }));
+  }
+  return rows;
+}
+
+function computeSabaqDhorRows(position, ref, rollupLevel, baselineSelection){
+  const pool = baselineSelection || [];
+  const lingering = position.previousJuz ? computeLingeringRows(position.previousJuz, ref, rollupLevel, pool) : [];
+  const currentRows = computeCurrentJuzRows(position, ref, rollupLevel);
+  return lingering.concat(currentRows);
+}
+
+function computeCurrentJuzRows(position, ref, rollupLevel){
+  const sections = computeSabaqDhorSections(position, ref); // current partial first, then completed ones descending
+  if(sections.length === 0) return [];
+  const current = sections[0]; // studyQuarter === highest, i.e. the in-progress one
+  const completed = sections.slice(1).sort((a, b) => a.studyQuarter - b.studyQuarter); // ascending 1,2,3...
+
+  const rows = [{
+    id: `q${current.studyQuarter}`,
+    label: `Quarter ${current.studyQuarter} (current)`,
+    fromSurah: current.fromSurah, fromAyah: current.fromAyah,
+    toSurah: current.toSurah, toAyah: current.toAyah,
+    complete: false,
+    canMoveToDhor: false
+  }];
+
+  if(rollupLevel === 'quarters' || completed.length === 0){
+    completed.forEach(s => rows.push({
+      id: `q${s.studyQuarter}`,
+      label: `Quarter ${s.studyQuarter}`,
+      fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
+      complete: true,
+      canMoveToDhor: false // a lone quarter never has its own Dhor option -- only halves and full juz' do
+    }));
+  } else {
+    // Merge into halves (1+2, 3+4) wherever BOTH members of the pair are
+    // actually present in `completed` -- a lone quarter (e.g. only Q1
+    // done, Q2 still the current one) stays on its own, unmerged.
+    const byQuarter = {};
+    completed.forEach(s => { byQuarter[s.studyQuarter] = s; });
+    const pairs = [[1,2,'First Half'], [3,4,'Second Half']];
+    for(const [a, b, label] of pairs){
+      if(byQuarter[a] && byQuarter[b]){
+        const mergeFull = rollupLevel === 'full' && byQuarter[1] && byQuarter[2] && byQuarter[3] && byQuarter[4];
+        if(!mergeFull){
+          rows.push({
+            id: `h${a}`, label,
+            fromSurah: byQuarter[a].fromSurah, fromAyah: byQuarter[a].fromAyah,
+            toSurah: byQuarter[b].toSurah, toAyah: byQuarter[b].toAyah,
+            complete: true, canMoveToDhor: true, isHalf: true, halfIndex: a === 1 ? 1 : 2
+          });
+        }
+        delete byQuarter[a]; delete byQuarter[b];
+      }
+    }
+    if(rollupLevel === 'full' && byQuarter[1] === undefined && byQuarter[2] === undefined && byQuarter[3] === undefined && byQuarter[4] === undefined && completed.length === 4){
+      // all 4 already consumed by the two half-merges above and rollupLevel
+      // asked for full -- replace both half rows with one full-juz' row.
+      rows.length = 1; // keep just the current row
+      rows.push({
+        id: 'full',
+        label: 'Full Juz\'',
+        fromSurah: completed[0].fromSurah, fromAyah: completed[0].fromAyah,
+        toSurah: completed[completed.length-1].toSurah, toAyah: completed[completed.length-1].toAyah,
+        complete: true, canMoveToDhor: true, isFull: true
+      });
+    } else {
+      // any leftover unmerged single quarters (rare -- only if the pairing
+      // didn't complete both halves) still need their own row.
+      Object.values(byQuarter).forEach(s => rows.push({
+        id: `q${s.studyQuarter}`, label: `Quarter ${s.studyQuarter}`,
+        fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
+        complete: true, canMoveToDhor: false
+      }));
+    }
+  }
+  return rows;
+}
+
+
 // Just advances the frontier — no juz'-completion detection, no baseline
 // side effects (see the file header for why that changed).
+// V3.17.0 (Phase 2b): preserves every other field already on `position`
+// (sabaqDhorRollup, previousJuz) rather than replacing the whole object —
+// V3.16.0's version didn't, which would have silently dropped Phase 2a's
+// rollup preference on every single Sabaq save. Also tracks previousJuz:
+// when this save crosses into a NEW juz', the juz' just left behind
+// becomes "lingering" in Sabaq Dhor (confirmed in chat) until it moves to
+// Dhor, manually or automatically — see maybeAutoMoveToDhor below.
 function advancePositionAfterSabaq(position, toSurah, toAyah, ref){
-  return {
+  const newActiveJuz = getJuzForPosition(toSurah, toAyah, ref);
+  const crossedIntoNewJuz = position.activeJuz != null && newActiveJuz !== position.activeJuz;
+  return Object.assign({}, position, {
     sabaqTo: { surah: toSurah, ayah: toAyah },
-    activeJuz: getJuzForPosition(toSurah, toAyah, ref)
+    activeJuz: newActiveJuz,
+    previousJuz: crossedIntoNewJuz ? position.activeJuz : (position.previousJuz || null)
+  });
+}
+
+// Phase 2b (V3.17.0): which quarter-unit IDs a given row represents, for
+// actually moving it into Dhor's eligibility pool (baseline_selection).
+// Only ever called for halves/full-juz' rows (canMoveToDhor === true) —
+// a lone quarter never has this option (confirmed in chat).
+function quarterUnitsForRow(row, juz){
+  if(row.isFull) return quarterUnitsForJuz(juz);
+  if(row.isHalf) return quarterUnitsForHalf(juz, row.halfIndex);
+  return [];
+}
+
+// Adds a row's quarter-units to the given baseline_selection pool
+// (deduped) and returns the updated pool — caller is responsible for
+// actually persisting it (apiSaveProfile). Moving to Dhor means becoming
+// eligible content for the Dhor Schedule generator, confirmed in chat —
+// not an immediately-logged Dhor entry.
+function addRowToBaselinePool(row, juz, baselineSelection){
+  const units = quarterUnitsForRow(row, juz);
+  const pool = baselineSelection.slice();
+  units.forEach(u => { if(!pool.includes(u)) pool.push(u); });
+  return pool;
+}
+
+// The automatic move-to-Dhor trigger: once a lingering previous juz' has
+// ANY still-not-moved portion, and Sabaq has completed at least one full
+// quarter of the NEW (current) juz', the entire remaining lingering
+// portion moves to Dhor and previousJuz clears — confirmed in chat as an
+// independent path to the same outcome the manual tickbox reaches, not a
+// replacement for it. Returns { position, baselineSelection, moved } —
+// moved is false (no-op) if the trigger condition isn't met yet.
+function maybeAutoMoveToDhor(position, ref, baselineSelection){
+  if(!position.previousJuz) return { position, baselineSelection, moved: false };
+  const currentJuzSections = computeSabaqDhorSections(position, ref);
+  const hasCompletedQuarterInNewJuz = currentJuzSections.some(s => s.complete);
+  if(!hasCompletedQuarterInNewJuz) return { position, baselineSelection, moved: false };
+
+  const remainingUnits = quarterUnitsForJuz(position.previousJuz).filter(u => !baselineSelection.includes(u));
+  const newPool = baselineSelection.concat(remainingUnits);
+  return {
+    position: Object.assign({}, position, { previousJuz: null }),
+    baselineSelection: newPool,
+    moved: remainingUnits.length > 0
   };
 }
 
-// Sabaq Dhor recites the CURRENT juz' from its start up to the current
+
 // Sabaq point, excluding today's brand-new portion — confirmed in chat,
 // replacing the earlier "beginning of Quran / halfway point" rule
 // entirely. Builds quarter by quarter as Sabaq progresses: the quarter

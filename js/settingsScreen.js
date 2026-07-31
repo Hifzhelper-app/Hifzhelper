@@ -70,13 +70,30 @@ let baselineSelection = [];
 function renderBaselineSummary(){
   const el = document.getElementById('baselineSummary');
   if(!baselineMode || !baselineSelection.length){ el.textContent = 'Nothing marked yet.'; return; }
-  el.textContent = baselineMode === 'juz'
-    ? `${baselineSelection.length} juz' marked complete.`
-    : `${baselineSelection.length} surah(s) marked complete.`;
+  if(baselineMode === 'juz'){
+    // V3.15.0: baselineSelection now holds quarter-unit IDs — count whole
+    // juz' as however many have all 4 of their quarter-units present.
+    const juzCount = Array.from({length: 30}, (_, i) => i + 1)
+      .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u))).length;
+    el.textContent = `${juzCount} juz' marked complete.`;
+    return;
+  }
+  el.textContent = `${baselineSelection.length} surah(s) marked complete.`;
 }
 
 function openSectionGridModal(mode){
-  const draft = baselineMode === mode ? baselineSelection.slice() : [];
+  // V3.15.0: baseline_selection stores quarter-unit IDs now (1-120), not
+  // whole juz' numbers — but the Juz' grid still shows/toggles WHOLE juz'
+  // for a natural picker. A juz' displays as "marked" only if all 4 of its
+  // quarter-units are already in the stored pool; committing expands each
+  // marked juz' back out to its 4 quarter-unit IDs. Surah mode is
+  // unchanged for now (still stores surah numbers directly) — its own
+  // integration with this same quarter pool is a separate, later phase.
+  const draft = baselineMode === mode
+    ? (mode === 'juz'
+        ? Array.from({length: 30}, (_, i) => i + 1).filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u)))
+        : baselineSelection.slice())
+    : [];
   const items = mode === 'juz'
     ? Array.from({length: 30}, (_, i) => [i + 1, `Juz' ${i + 1}`])
     : SURAHS.map(([num, name]) => [num, `${num}. ${name}`]);
@@ -105,7 +122,9 @@ function openSectionGridModal(mode){
 
   const commitAndClose = () => {
     baselineMode = mode;
-    baselineSelection = draft;
+    baselineSelection = mode === 'juz'
+      ? draft.flatMap(juz => quarterUnitsForJuz(juz))
+      : draft;
     renderBaselineSummary();
     renderSwitch('section_grid_switch', null); // V3.11.0: always back to neutral, never reflects baselineMode
     renderTomorrowPortionOptions();
@@ -194,7 +213,12 @@ function renderTomorrowPortionOptions(){
     return;
   }
   const ref = refForMushaf(setupSelectedMushaf);
-  const options = buildSegmentOptions(baselineSelection, ref, granularity);
+  // V3.15.0: baselineSelection now holds quarter-unit IDs — Tomorrow's
+  // Portion still lists whole juz' worth of options, so derive which
+  // juz' are FULLY covered (all 4 quarter-units present) first.
+  const wholeJuzPool = Array.from({length: 30}, (_, i) => i + 1)
+    .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u)));
+  const options = buildSegmentOptions(wholeJuzPool, ref, granularity);
   sel.innerHTML = `<option value="">Let the plan continue from where it left off</option>` +
     options.map(o => `<option value="${o.segment_from}-${o.segment_to}">${o.label}</option>`).join('');
   if(Array.from(sel.options).some(o => o.value === previousValue)) sel.value = previousValue;

@@ -21,7 +21,6 @@ document.getElementById('sabaqSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('sabaqDhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('dhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
-document.getElementById('tadabburPrivacySwitch') && renderSwitch('tadabburPrivacySwitch', 'public');
 
 async function renderLogDetailScreen(initialCard){
   await Promise.all([

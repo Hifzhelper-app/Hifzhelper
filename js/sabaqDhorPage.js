@@ -1,42 +1,101 @@
 // ============================================================
-// Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view, V3.6.1)
-// V3.13.0: rebuilt around position (js/position.js) -- confirmed in chat,
-// Sabaq Dhor recites the CURRENT juz' from its start up to wherever Sabaq
-// has reached, excluding today's brand-new portion, replacing the earlier
-// "beginning of Quran / halfway point" rule entirely. Shown as a checklist
-// of quarter-sized sections (the quarter Sabaq is currently in, plus each
-// already-completed quarter before it, at most 3, since a juz' has 4
-// quarters and the 4th-equivalent is always in progress) -- each
-// prepopulated checked, since these are derived from what's actually been
-// memorised; the student unchecks anything they didn't actually revise
-// today. Whichever stay checked at save time are composited into one
-// overall from/to ayah range (migration 0014's from_surah/from_ayah/
-// to_surah/to_ayah), replacing the old free-text `zone` field.
+// Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
+// V3.16.0 (Phase 2a): rebuilt around position -- recites the CURRENT
+// juz' from its start to wherever Sabaq has reached, excluding today's
+// brand-new portion. Builds quarter by quarter as Sabaq progresses; the
+// in-progress quarter is always its own row, never rollable. Completed
+// quarters can be rolled up via the chevron -- quarters 1+2 into "First
+// Half", 3+4 into "Second Half", both halves into "Full Juz'" -- and
+// back down again. The rollup level is persisted per student
+// (position.sabaqDhorRollup) so it sticks across sessions rather than
+// resetting every time the card opens.
 //
-// Has its own independent date selector (defaults to today on every open)
-// -- same reasoning as the Sabaq card: only changes which `date` a NEW
-// entry saves under, doesn't load/edit an existing entry for that date.
+// This delivery is the day-to-day mechanics only (Phase 2a) -- rows,
+// rollup, and the daily multi-select save. The actual move-to-Dhor
+// transition (the tickbox/auto-trigger that sends a half/full-juz' row
+// into the real Dhor Schedule pool) is Phase 2b, a separate, later
+// delivery; rows here already carry a canMoveToDhor flag for whichever
+// are eligible (halves and full juz', never a lone quarter), but nothing
+// acts on it yet.
 // ============================================================
 
 let sabaqDhorSelectedTags = [];
-let sabaqDhorSections = [];
+let sabaqDhorRows = [];
 let sabaqDhorRef = 'waterval';
+let sabaqDhorPosition = null;
+let sabaqDhorRollupLevel = 'quarters';
+let sabaqDhorBaselineSelection = [];
 
 function refForMushafSabaqDhor(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
 
-function renderSabaqDhorSections(){
+function renderSabaqDhorRows(){
   const el = document.getElementById('sabaqDhor_sections');
-  if(sabaqDhorSections.length === 0){
+  if(sabaqDhorRows.length === 0){
     el.innerHTML = `<p class="form-hint">Nothing to revise yet -- log a Sabaq entry first.</p>`;
     return;
   }
-  el.innerHTML = sabaqDhorSections.map((s, i) => `
-    <label class="sabaq-dhor-section-row">
-      <input type="checkbox" class="sabaqDhor-section-cb" data-index="${i}" checked>
-      ${s.fromSurah}:${s.fromAyah} - ${s.toSurah}:${s.toAyah}${s.complete ? '' : ' (today so far)'}
-    </label>
+  el.innerHTML = sabaqDhorRows.map(r => `
+    <div class="sabaq-dhor-row-wrap">
+      <label class="sabaq-dhor-section-row">
+        <input type="checkbox" class="sabaqDhor-row-cb" data-id="${r.id}" checked>
+        ${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}
+      </label>
+      ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : ''}
+    </div>
   `).join('');
+  el.querySelectorAll('.move-to-dhor-btn').forEach(btn => {
+    btn.addEventListener('click', () => moveRowToDhor(btn.dataset.id));
+  });
 }
+
+// Phase 2b (V3.17.0): the manual half of the move-to-Dhor transition --
+// the automatic trigger (a quarter of the NEW juz' completing) lives in
+// sabaqPage.js's save handler instead, since that's where a juz'
+// actually gets crossed. Both are independent paths to the same outcome,
+// confirmed in chat -- whichever happens first.
+async function moveRowToDhor(rowId){
+  const row = sabaqDhorRows.find(r => r.id === rowId);
+  if(!row || !row.canMoveToDhor) return;
+  const juz = row.lingeringJuz || sabaqDhorPosition.activeJuz;
+  try{
+    const profile = await apiGetProfile();
+    const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
+    const updated = addRowToBaselinePool(row, juz, current);
+    await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: updated });
+    // If this was the last lingering piece of a previous juz', clear it
+    // from position so it stops being tracked as "lingering" going forward.
+    if(row.lingeringJuz){
+      const stillLingering = computeLingeringRows(row.lingeringJuz, sabaqDhorRef, sabaqDhorRollupLevel, updated);
+      if(stillLingering.length === 0 && sabaqDhorPosition.previousJuz === row.lingeringJuz){
+        sabaqDhorPosition = Object.assign({}, sabaqDhorPosition, { previousJuz: null });
+        await savePosition(sabaqDhorPosition);
+      }
+    }
+    rebuildRowsFromPosition();
+  } catch(e){
+    document.getElementById('sabaqDhorError').textContent = "Couldn't move to Dhor: " + e.message;
+  }
+}
+
+function rebuildRowsFromPosition(){
+  sabaqDhorRows = computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, sabaqDhorRollupLevel, sabaqDhorBaselineSelection);
+  renderSabaqDhorRows();
+}
+
+// Chevron cycles the rollup level quarters -> halves -> full -> quarters,
+// only among the levels that would actually change anything -- if there's
+// nothing complete yet, there's nothing to roll, so the chevron is a
+// no-op (still fine to tap, just redraws the same single current row).
+document.getElementById('sabaqDhor_rollup_up').addEventListener('click', () => {
+  sabaqDhorRollupLevel = sabaqDhorRollupLevel === 'quarters' ? 'halves' : 'full';
+  rebuildRowsFromPosition();
+  savePosition(Object.assign({}, sabaqDhorPosition, { sabaqDhorRollup: sabaqDhorRollupLevel })).catch(() => {});
+});
+document.getElementById('sabaqDhor_rollup_down').addEventListener('click', () => {
+  sabaqDhorRollupLevel = sabaqDhorRollupLevel === 'full' ? 'halves' : 'quarters';
+  rebuildRowsFromPosition();
+  savePosition(Object.assign({}, sabaqDhorPosition, { sabaqDhorRollup: sabaqDhorRollupLevel })).catch(() => {});
+});
 
 async function renderSabaqDhorScreen(){
   sabaqDhorSelectedTags = [];
@@ -46,27 +105,27 @@ async function renderSabaqDhorScreen(){
   let profile = null;
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
   sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
-  const position = await loadPosition();
-  sabaqDhorSections = computeSabaqDhorSections(position, sabaqDhorRef);
-  renderSabaqDhorSections();
+  sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
+  sabaqDhorPosition = await loadPosition();
+  sabaqDhorRollupLevel = sabaqDhorPosition.sabaqDhorRollup || 'quarters';
+  rebuildRowsFromPosition();
 
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', null);
   await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
 }
 
-// Composites whichever sections stayed checked into one overall from/to
-// range -- earliest checked section's start to the latest checked
-// section's end. Returns null if nothing's checked (nothing to save).
-function compositeCheckedSabaqDhorSections(){
-  const checkedIndices = Array.from(document.querySelectorAll('.sabaqDhor-section-cb:checked'))
-    .map(cb => parseInt(cb.dataset.index, 10));
-  if(checkedIndices.length === 0) return null;
-  const checked = checkedIndices.map(i => sabaqDhorSections[i]);
+// Composites whichever rows stayed checked into one overall from/to range
+// -- earliest checked row's start to the latest checked row's end.
+// Returns null if nothing's checked (nothing to save).
+function compositeCheckedSabaqDhorRows(){
+  const checkedIds = Array.from(document.querySelectorAll('.sabaqDhor-row-cb:checked')).map(cb => cb.dataset.id);
+  if(checkedIds.length === 0) return null;
+  const checked = sabaqDhorRows.filter(r => checkedIds.includes(r.id));
   let from = checked[0], to = checked[0];
-  for(const s of checked){
-    if(compareVerseKey(s.fromSurah, s.fromAyah, from.fromSurah, from.fromAyah) < 0) from = s;
-    if(compareVerseKey(s.toSurah, s.toAyah, to.toSurah, to.toAyah) > 0) to = s;
+  for(const r of checked){
+    if(compareVerseKey(r.fromSurah, r.fromAyah, from.fromSurah, from.fromAyah) < 0) from = r;
+    if(compareVerseKey(r.toSurah, r.toAyah, to.toSurah, to.toAyah) > 0) to = r;
   }
   return { fromSurah: from.fromSurah, fromAyah: from.fromAyah, toSurah: to.toSurah, toAyah: to.toAyah };
 }
@@ -74,7 +133,7 @@ function compositeCheckedSabaqDhorSections(){
 document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('sabaqDhorError');
   errEl.textContent = '';
-  const range = compositeCheckedSabaqDhorSections();
+  const range = compositeCheckedSabaqDhorRows();
   if(!range){
     errEl.textContent = 'Please check at least one section that was actually revised today.';
     return;
