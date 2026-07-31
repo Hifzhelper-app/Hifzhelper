@@ -1,4 +1,4 @@
-import { segmentsPerJuz, unitMarkerCount } from '../../shared/data.js';
+import { segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex, quarterUnitToJuzQuarter } from '../../shared/data.js';
 
 // Dhor rolling schedule (V3.9.0) — Setup rows 9-11.
 //
@@ -9,18 +9,21 @@ import { segmentsPerJuz, unitMarkerCount } from '../../shared/data.js';
 // recompute on every call that a scheduled job would be solving a problem
 // that doesn't exist yet.
 //
-// SCOPE NOTE: dhor_granularity/quantity walk the student's memorised juz'
-// pool in plain ascending numeric order (1→30, filtered to whatever
-// baseline_mode='juz' recorded) — NOT the branching "juz 30, then 29, then
-// 1-or-28, then the rest ascending" study order noted elsewhere for
-// initial memorisation. That branching order depends on a per-student
-// choice this project doesn't store anywhere yet; rather than guess at it
-// silently, this generator uses the simpler deterministic order and says
-// so here. baseline_mode='surah' isn't supported yet either, for a similar
-// reason — mapping arbitrary surah selections onto juz' coverage needs
-// real ayah-boundary math that's a separate piece of work, not a
-// silent/wrong approximation. Both are flagged in ensureDhorSchedule's
-// `reason` rather than failing quietly.
+// V3.15.0: baseline_selection is now a flat pool of QUARTER-UNIT IDs
+// (1-120 — see shared/data.js's quarterUnit* helpers), not whole juz'
+// numbers — the finest granularity Dhor's own "Portion per session"
+// setting ever uses, so a juz' can now be partially eligible (e.g. just
+// one half, from Sabaq Dhor's own progressive move-to-Dhor). Still walks
+// the pool in plain ascending order (juz' 1→30, quarter 1→4 within each) —
+// NOT the branching "juz 30, then 29, then 1-or-28" study order noted
+// elsewhere for initial memorisation. That branching order depends on a
+// per-student choice this project doesn't store anywhere yet; rather than
+// guess at it silently, this generator uses the simpler deterministic
+// order and says so here. baseline_mode='surah' isn't supported yet
+// either — mapping arbitrary surah selections onto this quarter pool is a
+// separate piece of work (Phase 3), not a silent/wrong approximation.
+// Both are flagged in ensureDhorSchedule's `reason` rather than failing
+// quietly.
 
 const DAY_ABBR = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']; // Date.getDay() index → students.dhor_days_of_week value
 const WINDOW_DAYS = 7;
@@ -36,26 +39,35 @@ function dateToUTCWeekday(iso) {
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
 // Builds the full ordered list of session-sized chunks across the
-// memorised pool. Each chunk stays entirely within ONE juz' — never spans
-// two, even when they're numerically adjacent in the pool — so a pool
-// with gaps (e.g. juz' 30, 29, 1 memorised but not 2-28, the normal
-// early-stage pattern) never produces a segment range that silently
-// swallows unmemorised juz' in between. This means a chunk can come out
-// shorter than `quantity` units right at a juz' boundary — a minor,
-// harmless unevenness, not a bug.
-function buildChunks(pool, ref, granularity, quantity) {
-  const perJuz = segmentsPerJuz(ref);
-  const sessionSize = unitMarkerCount(ref, granularity) * quantity;
+// eligible pool (a flat, sorted list of quarter-unit IDs, 1-120). A
+// session groups `quantity` granularity-units of CONSECUTIVE quarter-unit
+// IDs — consecutive in the pool, not just numerically possible, so a gap
+// (e.g. quarter-units 1-6 eligible but not 7-8, the normal pattern when
+// only part of juz' 2 has moved to Dhor) never produces a segment range
+// that silently swallows an ineligible quarter. A chunk can come out
+// shorter than `quantity` units right at a gap — a minor, harmless
+// unevenness, not a bug (same as the old per-juz' version of this).
+function buildChunks(quarterPool, ref, granularity, quantity) {
+  const sortedUnits = [...new Set(quarterPool)].sort((a, b) => a - b);
+  const quartersPerUnit = granularity === 'quarter' ? 1 : granularity === 'half' ? 2 : 4;
+  const sessionSize = quartersPerUnit * quantity; // how many consecutive quarter-units make one session
   const chunks = [];
-  for (const juz of pool) {
-    const juzStart = (juz - 1) * perJuz + 1;
-    const juzEnd = juz * perJuz;
-    let cursor = juzStart;
-    while (cursor <= juzEnd) {
-      const end = Math.min(cursor + sessionSize - 1, juzEnd);
-      chunks.push({ segment_from: cursor, segment_to: end });
-      cursor = end + 1;
+  let i = 0;
+  while (i < sortedUnits.length) {
+    // Longest run of consecutive quarter-unit IDs starting at i.
+    let runEnd = i;
+    while (runEnd + 1 < sortedUnits.length && sortedUnits[runEnd + 1] === sortedUnits[runEnd] + 1) runEnd++;
+    let cursor = i;
+    while (cursor <= runEnd) {
+      const groupEnd = Math.min(cursor + sessionSize - 1, runEnd);
+      const first = quarterUnitToJuzQuarter(sortedUnits[cursor]);
+      const last = quarterUnitToJuzQuarter(sortedUnits[groupEnd]);
+      const startRange = segmentRangeForUnitIndex(first.juz, first.quarterIndex, ref, 'quarter');
+      const endRange = segmentRangeForUnitIndex(last.juz, last.quarterIndex, ref, 'quarter');
+      chunks.push({ segment_from: startRange.segment_from, segment_to: endRange.segment_to });
+      cursor = groupEnd + 1;
     }
+    i = runEnd + 1;
   }
   return chunks;
 }
@@ -111,8 +123,8 @@ export async function ensureDhorSchedule(env, studentId, startSegment) {
   }
   let pool;
   try { pool = JSON.parse(student.baseline_selection || '[]'); } catch (e) { pool = []; }
-  pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 30))].sort((a, b) => a - b);
-  if (pool.length === 0) return { generated: 0, reason: "No memorised juz' recorded yet in Hifz Setup" };
+  pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b);
+  if (pool.length === 0) return { generated: 0, reason: "No memorised juz'/quarters recorded yet in Hifz Setup" };
 
   let daysOfWeek;
   try { daysOfWeek = JSON.parse(student.dhor_days_of_week); } catch (e) { daysOfWeek = []; }
