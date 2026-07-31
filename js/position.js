@@ -1,24 +1,34 @@
 // ============================================================
-// Hifzhelper — client-side position tracking (V3.12.0)
+// Hifzhelper — client-side position tracking (V3.12.0, rebuilt V3.14.0)
 // The Worker's position.js only stores whatever JSON blob it's given (see
 // that file's own comment) — all the actual progress logic lives here,
 // same "computed client-side" design already documented in SCHEMA.md.
 //
-// Shape used: { activeJuz, sabaqFrontier: {surah, ayah} | null }.
-// activeJuz is which juz' Sabaq is currently working through (per
-// SABAQ_STUDY_ORDER); sabaqFrontier is the most recent Sabaq entry's end
-// point within it, or null for a juz' just started (nothing sabaq'd yet).
+// V3.14.0 rebuild: Sabaq entries can now span multiple surahs and cross
+// at most one juz' boundary in a single save (confirmed in chat) — the
+// old model (a separately-tracked activeJuz, advanced+juz'-complete-
+// detected ayah by ayah, auto-adding to Hifz Setup's baseline) no longer
+// fits, since a single save can jump straight past a juz' boundary
+// without ever visiting every ayah behind it one at a time. The auto-add-
+// to-baseline behaviour is REMOVED here — that's now Setup's own job
+// (3-way Juz'/Half-juz'/Surah marking, a separate phase), not something
+// Sabaq does as a side effect.
 //
-// Sabaq Dhor (a later delivery) will read this same position to build its
-// checkable-quarters list — not wired in yet, this delivery is Sabaq only.
+// Shape used: { sabaqTo: {surah, ayah} | null, activeJuz }. sabaqTo is the
+// single source of truth — the actual last point Sabaq reached. activeJuz
+// is a DERIVED value (which juz' sabaqTo currently falls in), recomputed
+// and stored alongside it purely so the still-live V3.13.0 Sabaq Dhor
+// card (not yet rebuilt — separate phase) keeps working against this same
+// position shape without its own changes; nothing here treats activeJuz
+// as independently meaningful data.
 // ============================================================
 
 async function loadPosition(){
   const row = await apiGetPosition();
   let position = null;
   try{ position = row && row.position_json ? JSON.parse(row.position_json) : null; } catch(e){ position = null; }
-  if(!position || !position.activeJuz){
-    position = { activeJuz: SABAQ_STUDY_ORDER[0], sabaqFrontier: null }; // brand new student — juz' 30 first
+  if(!position){
+    position = { sabaqTo: null, activeJuz: SABAQ_STUDY_ORDER[0] }; // brand new student — juz' 30 first
   }
   return position;
 }
@@ -27,19 +37,46 @@ function savePosition(position){
   return apiSavePosition(JSON.stringify(position), null);
 }
 
-// The default {surah, ayah} to prefill for a NEW Sabaq entry, given the
-// current position and mushaf ref (13-line/15-line/Hybrid juz' boundaries
-// can differ at the margins — see the ref-aware helpers in shared/data.js).
-function nextSabaqDefault(position, ref){
-  if(!position.sabaqFrontier) return firstSabaqPositionForJuz(position.activeJuz, ref);
-  const { surah, ayah, juzComplete } = nextSabaqPosition(position.sabaqFrontier.surah, position.sabaqFrontier.ayah, ref);
-  if(juzComplete){
-    // Shouldn't normally be reached (a completed juz' advances activeJuz
-    // and clears the frontier at save time, see advancePositionAfterSabaq
-    // below) — but if it is, fall back to wherever activeJuz would start.
-    return firstSabaqPositionForJuz(position.activeJuz, ref);
+// Any Dhor history at all (not just recent) — used by Sabaq's prepopulation
+// rule: once real Dhor revision exists, Sabaq stops prepopulating entirely
+// (confirmed in chat) rather than guessing where a student wants to resume.
+async function hasDhorHistory(){
+  try{
+    const rows = await apiDhor.get();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch(e){
+    return false; // fail open to "no history" — prepopulation is a convenience, never a blocker
   }
-  return { surah, ayah };
+}
+
+// The default {surah, ayah}-pair prefill for a new Sabaq entry, per the
+// confirmed rules: any Dhor history → don't prepopulate either field, the
+// caller passes hasDhor and just gets nulls back for both; no Sabaq history
+// yet either → 114:1/114:6 (juz' 30's start, per the study order); has
+// Sabaq history → the last reached point prefills To if currently in juz'
+// 30 (studied backwards, so the frontier is the FURTHER-along end) or From
+// otherwise (studied forwards, so the frontier is the starting point for
+// what's next).
+function nextSabaqDefaults(position, ref, hasDhor){
+  if(hasDhor) return { from: null, to: null };
+  if(!position.sabaqTo){
+    return { from: { surah: 114, ayah: 1 }, to: { surah: 114, ayah: 6 } };
+  }
+  const juz = getJuzForPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
+  if(juz === 30){
+    return { from: null, to: { surah: position.sabaqTo.surah, ayah: position.sabaqTo.ayah } };
+  }
+  return { from: { surah: position.sabaqTo.surah, ayah: position.sabaqTo.ayah }, to: null };
+}
+
+// Called after a Sabaq entry saves, with its own sabaq_to surah/ayah.
+// Just advances the frontier — no juz'-completion detection, no baseline
+// side effects (see the file header for why that changed).
+function advancePositionAfterSabaq(position, toSurah, toAyah, ref){
+  return {
+    sabaqTo: { surah: toSurah, ayah: toAyah },
+    activeJuz: getJuzForPosition(toSurah, toAyah, ref)
+  };
 }
 
 // Sabaq Dhor recites the CURRENT juz' from its start up to the current
@@ -51,10 +88,15 @@ function nextSabaqDefault(position, ref){
 // (at most 3, since a juz' has 4 quarters and the 4th-equivalent is
 // always the one currently in progress). Returns [] if nothing's been
 // sabaq'd yet in this juz' (nothing to revise).
+// NOTE: still V3.13.0's model, reading position.activeJuz as before —
+// Sabaq Dhor's own rebuild (rollable quarter/half/juz' sections,
+// progressive Dhor-eligibility) is a separate, later phase; this function
+// is untouched here so that still-live card keeps working against the
+// same position shape in the meantime.
 function computeSabaqDhorSections(position, ref){
-  if(!position.sabaqFrontier) return [];
+  if(!position.sabaqTo) return [];
   const juz = position.activeJuz;
-  const { quarterIndex: frontierStructuralQ } = structuralQuarterOf(position.sabaqFrontier.surah, position.sabaqFrontier.ayah, ref);
+  const { quarterIndex: frontierStructuralQ } = structuralQuarterOf(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
   const currentStudyQ = studyQuarterIndex(juz, frontierStructuralQ);
   const sections = [];
   for(let studyQ = currentStudyQ; studyQ >= 1; studyQ--){
@@ -65,27 +107,9 @@ function computeSabaqDhorSections(position, ref){
       studyQuarter: studyQ,
       complete: !isCurrent,
       fromSurah: bounds.startSurah, fromAyah: bounds.startAyah,
-      toSurah: isCurrent ? position.sabaqFrontier.surah : bounds.endSurah,
-      toAyah: isCurrent ? position.sabaqFrontier.ayah : bounds.endAyah
+      toSurah: isCurrent ? position.sabaqTo.surah : bounds.endSurah,
+      toAyah: isCurrent ? position.sabaqTo.ayah : bounds.endAyah
     });
   }
   return sections;
-}
-
-// Returns the updated position AND whether the just-finished juz' should
-// be added to Hifz Setup's baseline_selection (confirmed in chat: Sabaq
-// crossing a juz' boundary auto-adds it, no manual Juz' grid check-off
-// needed). Caller is responsible for actually persisting both — this
-// function only computes what changed.
-function advancePositionAfterSabaq(position, savedSurah, savedAyah, ref){
-  const { juzComplete } = nextSabaqPosition(savedSurah, savedAyah, ref);
-  if(!juzComplete){
-    return { position: { activeJuz: position.activeJuz, sabaqFrontier: { surah: savedSurah, ayah: savedAyah } }, completedJuz: null };
-  }
-  const completedJuz = position.activeJuz;
-  const nextJuz = nextJuzInStudyOrder(completedJuz);
-  return {
-    position: { activeJuz: nextJuz, sabaqFrontier: null }, // null: nothing sabaq'd yet in the new juz'
-    completedJuz
-  };
 }

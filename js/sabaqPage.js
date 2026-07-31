@@ -1,44 +1,106 @@
 // ============================================================
 // Hifzhelper — Sabaq card (one of 4 in the unified day-log view, V3.6.1)
-// V3.12.0: position-driven — on open, fetches the student's position
-// (js/position.js) and profile (for mushaf/ref) and prepopulates
-// surah/ayah_from from wherever Sabaq last reached, per the confirmed
-// study order (juz' 30 first, backwards through its surahs; then 29
-// forwards; then 1-28 ascending -- see shared/data.js's
-// SABAQ_STUDY_ORDER). A brand new student with no position yet starts at
-// Surah An-Nas (114:1), the first surah in that order.
+// V3.14.0 rebuild: sabaq_from/sabaq_to (migration 0015) replace the old
+// surah/ayah_from/ayah_to trio — each is a combined "surah:ayah" string,
+// letting one entry span multiple surahs and cross at most one juz'
+// boundary (confirmed in chat: no other limit on how many ayahs/surahs a
+// sabaq entry can cover). Each field renders as one combined control:
+// a chevron (opens the full surah picker) + surah name + ":" + an ayah
+// number input (steppable via the browser's own number controls, or the
+// numeric keypad) bounded to that surah's own 1..N ayah range. Ayahs do
+// NOT roll over into the next surah automatically — only the chevron
+// changes which surah is selected.
 //
-// Once ayah_to is filled in, line_count/page_count are auto-computed
-// (getLines13ForAyahRange for 13-line/Hybrid, getLines15ForAyahRange for
-// 15-line -- both built in earlier deliveries, unused until now) and shown
-// editable, since the underlying figures are estimates (13-line) or can
-// still need a manual correction (15-line).
-//
-// On save: position advances to the saved ayah_to. If that completes the
-// current juz' (nothing left of it to sabaq), the NEXT juz' in study
-// order becomes current, and the just-completed juz' is added to Hifz
-// Setup's baseline_selection automatically -- confirmed in chat, no manual
-// Juz' grid check-off needed for a juz' finished this way.
+// Prepopulation (js/position.js's nextSabaqDefaults): any Dhor history at
+// all → neither field prepopulates; no Sabaq history yet → 114:1/114:6;
+// otherwise the last reached point prefills To if currently in juz' 30
+// (studied backwards) or From otherwise (studied forwards) — the other
+// field is left for the student to fill in.
 //
 // Has its own independent date selector (defaults to today on every open)
-// so a missed day can be logged without affecting the other 3 cards --
+// so a missed day can be logged without affecting the other 3 cards —
 // this only changes which `date` a NEW entry saves under, doesn't load/
 // edit an existing entry for that date (multiple entries per day are
-// deliberately allowed app-wide -- see SCHEMA.md).
+// deliberately allowed app-wide — see SCHEMA.md).
 // ============================================================
 
 let sabaqSelectedTags = [];
 let sabaqPosition = null;
 let sabaqRef = 'waterval';
+// { from: {surah, ayah} | null, to: {surah, ayah} | null } — the two
+// combined fields' current values, kept here since the DOM only shows a
+// formatted display, not the raw numbers.
+let sabaqValue = { from: null, to: null };
 
 function refForMushafSabaq(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
-function formatVerseRef(surah, ayah){ return `${surah}:${ayah}`; }
+
+function renderVerseRefField(side){
+  const v = sabaqValue[side];
+  const surahLabel = document.getElementById(`sabaq_${side}_surah_label`);
+  const ayahInput = document.getElementById(`sabaq_${side}_ayah`);
+  if(!v){
+    surahLabel.textContent = '—';
+    ayahInput.value = '';
+    ayahInput.min = '';
+    ayahInput.max = '';
+    return;
+  }
+  surahLabel.textContent = `${v.surah} ${surahName(v.surah)}`;
+  ayahInput.min = '1';
+  ayahInput.max = String(maxAyahForSurah(v.surah));
+  ayahInput.value = String(v.ayah);
+}
+
+function readVerseRefField(side){
+  const surahLabel = document.getElementById(`sabaq_${side}_surah_label`);
+  const ayahInput = document.getElementById(`sabaq_${side}_ayah`);
+  const match = surahLabel.textContent.match(/^(\d+)/);
+  if(!match || !ayahInput.value) return null;
+  const surah = parseInt(match[1], 10);
+  let ayah = parseInt(ayahInput.value, 10);
+  const max = maxAyahForSurah(surah);
+  if(ayah < 1) ayah = 1;
+  if(ayah > max) ayah = max;
+  return { surah, ayah };
+}
+
+function openSurahPickerFor(side){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay surah-picker-modal';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" id="surahPickerCloseBtn">&times;</button>
+    <h2>Choose Surah</h2>
+    <div class="surah-picker-list" id="surahPickerList"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const listEl = document.getElementById('surahPickerList');
+  listEl.innerHTML = SURAHS.map(([num, name]) => `<button type="button" class="tajweed-tag surah-picker-row" data-surah="${num}">${num}. ${name}</button>`).join('');
+  listEl.querySelectorAll('[data-surah]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const surah = parseInt(btn.dataset.surah, 10);
+      sabaqValue[side] = { surah, ayah: 1 };
+      renderVerseRefField(side);
+      overlay.remove();
+    });
+  });
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.getElementById('surahPickerCloseBtn').addEventListener('click', () => overlay.remove());
+}
+document.getElementById('sabaq_from_chevron').addEventListener('click', () => openSurahPickerFor('from'));
+document.getElementById('sabaq_to_chevron').addEventListener('click', () => openSurahPickerFor('to'));
+document.getElementById('sabaq_from_ayah').addEventListener('change', () => {
+  const v = readVerseRefField('from');
+  if(v){ sabaqValue.from = v; renderVerseRefField('from'); }
+});
+document.getElementById('sabaq_to_ayah').addEventListener('change', () => {
+  const v = readVerseRefField('to');
+  if(v){ sabaqValue.to = v; renderVerseRefField('to'); }
+  recomputeSabaqLineCount();
+});
 
 async function renderSabaqScreen(){
   sabaqSelectedTags = [];
   document.getElementById('sabaq_date').value = todayISO();
-  populateSurahSelectInto('sabaq_surah');
-  document.getElementById('sabaq_ayah_to').value = '';
   document.getElementById('sabaq_line_count').value = '';
   document.getElementById('sabaq_page_count').value = '';
 
@@ -46,10 +108,12 @@ async function renderSabaqScreen(){
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
   sabaqRef = refForMushafSabaq(profile && profile.mushaf);
   sabaqPosition = await loadPosition();
+  const dhorExists = await hasDhorHistory();
 
-  const start = nextSabaqDefault(sabaqPosition, sabaqRef);
-  document.getElementById('sabaq_surah').value = String(start.surah);
-  document.getElementById('sabaq_ayah_from').value = String(start.ayah);
+  const defaults = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
+  sabaqValue = { from: defaults.from, to: defaults.to };
+  renderVerseRefField('from');
+  renderVerseRefField('to');
 
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', null);
@@ -57,28 +121,30 @@ async function renderSabaqScreen(){
 }
 
 function recomputeSabaqLineCount(){
-  const surah = parseInt(document.getElementById('sabaq_surah').value, 10);
-  const ayahFrom = parseInt(document.getElementById('sabaq_ayah_from').value, 10);
-  const ayahTo = parseInt(document.getElementById('sabaq_ayah_to').value, 10);
-  if(!surah || !ayahFrom || !ayahTo) return;
-  const result = sabaqRef === 'uthmani'
-    ? getLines15ForAyahRange(surah, ayahFrom, ayahTo)
-    : getLines13ForAyahRange(surah, ayahFrom, ayahTo);
+  const from = sabaqValue.from, to = sabaqValue.to;
+  if(!from || !to) return;
+  const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
   if(!result) return;
   document.getElementById('sabaq_line_count').value = result.lineCount;
   document.getElementById('sabaq_page_count').value = result.pageCount;
 }
-document.getElementById('sabaq_ayah_to').addEventListener('change', recomputeSabaqLineCount);
 
 document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('sabaqError');
   errEl.textContent = '';
-  const surah = parseInt(document.getElementById('sabaq_surah').value) || null;
-  const ayahFrom = parseInt(document.getElementById('sabaq_ayah_from').value) || null;
-  const ayahTo = parseInt(document.getElementById('sabaq_ayah_to').value) || null;
+  const from = sabaqValue.from, to = sabaqValue.to;
+  if(!from || !to){
+    errEl.textContent = 'Please fill in both the From and To ayahs.';
+    return;
+  }
+  if(!crossesAtMostOneJuzBoundary(from.surah, from.ayah, to.surah, to.ayah, sabaqRef)){
+    errEl.textContent = "This range crosses more than one juz' boundary — please split it into separate entries.";
+    return;
+  }
   const payload = {
     date: document.getElementById('sabaq_date').value || todayISO(),
-    surah, ayah_from: ayahFrom, ayah_to: ayahTo,
+    sabaq_from: formatVerseRef(from.surah, from.ayah),
+    sabaq_to: formatVerseRef(to.surah, to.ayah),
     line_count: parseInt(document.getElementById('sabaq_line_count').value) || null,
     page_count: parseInt(document.getElementById('sabaq_page_count').value) || null,
     tajweed_tags: sabaqSelectedTags.join(','),
@@ -89,27 +155,17 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     document.getElementById('sabaqSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqSaveStatus').classList.remove('show'), 1800);
 
-    if(surah && ayahTo){
-      try{
-        const adv = advancePositionAfterSabaq(sabaqPosition, surah, ayahTo, sabaqRef);
-        sabaqPosition = adv.position;
-        await savePosition(sabaqPosition);
-        if(adv.completedJuz){
-          const profile = await apiGetProfile();
-          const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
-          if(!current.includes(adv.completedJuz)){
-            current.push(adv.completedJuz);
-            await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: current });
-          }
-        }
-      } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
-    }
+    try{
+      sabaqPosition = advancePositionAfterSabaq(sabaqPosition, to.surah, to.ayah, sabaqRef);
+      await savePosition(sabaqPosition);
+    } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
 
     await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
-    const next = nextSabaqDefault(sabaqPosition, sabaqRef);
-    document.getElementById('sabaq_surah').value = String(next.surah);
-    document.getElementById('sabaq_ayah_from').value = String(next.ayah);
-    document.getElementById('sabaq_ayah_to').value = '';
+    const dhorExists = await hasDhorHistory();
+    const next = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
+    sabaqValue = { from: next.from, to: next.to };
+    renderVerseRefField('from');
+    renderVerseRefField('to');
     document.getElementById('sabaq_line_count').value = '';
     document.getElementById('sabaq_page_count').value = '';
   } catch(e){
