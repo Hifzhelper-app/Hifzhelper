@@ -7,7 +7,181 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.14.1 — two UI fixes on the new Sabaq fields (2026-07-31)
+## V3.17.0 — Phase 2b: the move-to-Dhor transition (2026-07-31)
+
+Bismillah. Completes the Sabaq Dhor rebuild — the last piece confirmed
+in chat, and the one most likely to have a subtle bug, given how many
+moving parts it touches. Bundled complete, same as before: nothing from
+V3.14.0 onward had been uploaded yet.
+
+**Two independent paths to the same outcome**, confirmed in chat —
+whichever fires first:
+- **Manual**: a "Move to Dhor" button now appears next to any row that's
+  eligible (halves and full juz' only, never a lone quarter) — clicking
+  it adds that row's quarter-units directly into `baseline_selection`
+  (Dhor Schedule's own eligibility pool, from V3.15.0's rework).
+- **Automatic**: `js/position.js`'s new `maybeAutoMoveToDhor`, called
+  right after every Sabaq save — if a previous juz' is still lingering
+  and this save just completed at least one quarter of the *new* juz',
+  whatever's left of the old one moves to Dhor on its own.
+
+**Progressive eligibility, exactly as specified**: a lone quarter never
+has the Dhor option. A First Half always does, once complete. A Second
+Half only gets it once First Half has *actually* moved — checked
+directly against `baseline_selection` membership (being in that pool
+*is* "already moved"), not a separately-tracked flag. Caught a real bug
+here before shipping: my first version only showed Second Half as a row
+once First Half had moved, when it should always be visible for
+revision — the sequential rule governs the Dhor *option*, not whether
+the row shows at all. Fixed and re-verified.
+
+**`previousJuz` tracking**: `advancePositionAfterSabaq` now preserves
+every other field on `position` instead of replacing the object outright
+— its first version would have silently dropped Phase 2a's rollup
+preference on every single save, a bug caught in this round's own
+review rather than shipped. It also now records which juz' was just left
+behind whenever Sabaq crosses a boundary, which is what both the
+lingering rows and the auto-trigger read.
+
+Every scenario tested directly with real numbers before packaging:
+juz' 30→29 crossing sets `previousJuz` correctly; the auto-trigger
+correctly does *not* fire before a quarter of the new juz' is done, and
+correctly *does* fire (with the right quarter-units) once it is; lingering
+rows show both halves when neither has moved, only Second Half once
+First has, and disappear entirely once both have.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/position.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+
+
+Bismillah. This delivery bundles everything still pending from V3.14.0
+onward (none of it had been uploaded yet) plus this round's work, all in
+one download as requested — nothing here assumes any earlier zip made
+it live.
+
+**UI notes, all 4 detail cards:**
+- Header is now 2 rows: row 1 is icon + heading (left) and Save (right,
+  icon styled like the nav icons, with actual "Save" text next to it —
+  reverses the icon-only version from before); row 2 is just the date,
+  at 30% width. Putting date and heading on the same row didn't work in
+  practice, per direct feedback on what shipped.
+- Privacy reverts from the large Public/Private switch back to a plain
+  checkbox next to "Notes" (default unchecked = public) — judged too
+  much control for what's a minor, occasional toggle.
+- "Recent" becomes a "History" button plus the last 2 entries shown
+  stacked directly underneath; tapping History opens the full list (up
+  to 50 entries) in a popup. Replaces the swipe rail entirely.
+
+**Sabaq-specific: page count is now a fixed-standard capacity measure**,
+not a real-page lookup — always divides by 13 lines/page and rounds
+down to the nearest quarter-page (20 lines → 1.538 → 1.5), regardless of
+mushaf print or which real pages were actually touched. Confirmed in
+chat: this is a volume/capacity measure, not a progress tracker, so it
+doesn't need real per-print page data at all — just the line count
+(still computed properly per-print) divided by that constant.
+
+**Phase 2a — Sabaq Dhor's rollup mechanism.** New `computeSabaqDhorRows`
+(`js/position.js`) builds the actual displayable rows: the current,
+still-in-progress quarter is always its own row and never rollable
+(confirmed: only already-finished units can merge); completed quarters
+can be rolled up via a chevron — 1+2 into "First Half", 3+4 into "Second
+Half" (fixed pairing), both halves into "Full Juz'" — and back down
+again. The rollup level is persisted per student
+(`position.sabaqDhorRollup`) so it sticks across sessions. Tested 3
+scenarios before shipping: an unmergeable lone completed quarter (its
+partner not done yet), a clean half-merge, and the "nothing complete
+yet" case (just the current row, chevron a no-op).
+
+Each row also carries a `canMoveToDhor` flag (true for halves and full
+juz', never a lone quarter) — this delivery doesn't act on it. The
+actual move-to-Dhor transition (tickbox + auto-trigger) is Phase 2b, a
+separate delivery once this mechanism itself is confirmed working.
+
+**Files changed (cumulative — includes everything from V3.14.0 onward,
+none previously uploaded):**
+```
+index.html
+sw.js
+shared/data.js
+css/detail-pages.css
+js/sabaqPage.js
+js/position.js
+js/dhorPage.js
+js/sabaqDhorPage.js
+js/commentPrivacy.js
+js/reflectionCard.js
+js/logDetailScreen.js
+js/settingsScreen.js
+worker/src/sabaqLog.js
+worker/src/dhorSchedule.js
+SCHEMA.md
+CONVENTIONS.md
+CHANGELOG.md
+TESTING.md
+```
+**New files (cumulative):**
+```
+worker/migrations/0015_sabaq_from_to.sql
+```
+
+
+
+Bismillah. Foundational piece both Phase 2b (Sabaq Dhor's move-to-Dhor)
+and Phase 3 (Setup's baseline marking) depend on, built first on its own
+rather than duplicated inside each.
+
+**`baseline_selection` now stores quarter-unit IDs (1-120), not whole
+juz' numbers**, for `baseline_mode='juz'`. A juz' is always exactly 4
+quarters, and Dhor's own "Portion per session" setting already only
+ever works in quarter/half/full-juz' sizes — so representing the
+eligibility pool at quarter granularity (the finest of those) means a
+juz' can now be *partially* eligible, e.g. just its first half, which
+there was previously no way to represent at all. `shared/data.js` gained
+`quarterUnitId`/`quarterUnitToJuzQuarter`/`quarterUnitsForJuz`/
+`quarterUnitsForHalf` for converting between a flat unit ID and its
+juz'/quarter, print-independent (the logical quarter position is the
+same across mushafs; only exact ayah boundaries differ by ref, resolved
+separately).
+
+**`dhorSchedule.js`'s chunk-builder reworked** to consume this flat pool
+directly — groups *consecutive* quarter-unit IDs into session-sized
+chunks (1/2/4 quarter-units per session, matching the granularity
+setting), respecting gaps rather than assuming a whole juz' is always
+available. Verified with 5 scenarios before shipping, including a pool
+with a real gap (a juz' with only its first half eligible, second half
+not) — chunking correctly treats that as its own group rather than
+bridging into where the missing half would be.
+
+**Setup's Juz' grid** still shows/marks whole juz' (unchanged UI) — it
+now expands each marked juz' to its 4 quarter-unit IDs on save, and
+shows a juz' as checked on reopen only when all 4 are already present.
+Tested the full round-trip (mark → store → reopen → still shows
+correctly, including a partially-covered juz' correctly NOT showing as
+checked) before finalizing. Surah mode is untouched — still stores surah
+numbers directly, and `dhorSchedule.js` already refuses to generate
+anything for surah-based baselines, so it can't collide with the new
+quarter-unit interpretation.
+
+**Files changed:**
+```
+shared/data.js
+worker/src/dhorSchedule.js
+js/settingsScreen.js
+SCHEMA.md
+CHANGELOG.md
+```
+
+
 
 Bismillah. Small, contained fix while Phase 2 gets its own proper attention.
 

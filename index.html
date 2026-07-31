@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.14.1"></script>
+<script src="js/pwaManifest.js?v=3.17.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.14.1">
-<link rel="stylesheet" href="css/base.css?v=3.14.1">
-<link rel="stylesheet" href="css/nav.css?v=3.14.1">
-<link rel="stylesheet" href="css/journal-table.css?v=3.14.1">
-<link rel="stylesheet" href="css/components.css?v=3.14.1">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.14.1">
-<link rel="stylesheet" href="css/settings.css?v=3.14.1">
-<link rel="stylesheet" href="css/admin.css?v=3.14.1">
+<link rel="stylesheet" href="css/tokens.css?v=3.17.0">
+<link rel="stylesheet" href="css/base.css?v=3.17.0">
+<link rel="stylesheet" href="css/nav.css?v=3.17.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.17.0">
+<link rel="stylesheet" href="css/components.css?v=3.17.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.17.0">
+<link rel="stylesheet" href="css/settings.css?v=3.17.0">
+<link rel="stylesheet" href="css/admin.css?v=3.17.0">
 </head>
 <body>
 
@@ -213,10 +213,10 @@
             <div class="card-header-row">
               <span class="card-header-icon" id="sabaqHeaderIcon"></span>
               <h2>Sabaq</h2>
-              <input type="date" id="sabaq_date" class="card-header-date">
               <span class="save-status" id="sabaqSaveStatus">saved ✓</span>
-              <button type="button" class="card-header-save-btn" id="sabaqSaveBtn"><span class="btn-icon" id="sabaqSaveIcon"></span>Save</button>
+              <button type="button" class="card-header-save-btn" id="sabaqSaveBtn"><span class="btn-icon" id="sabaqSaveIcon"></span><span class="save-btn-text">Save</span></button>
             </div>
+            <div class="card-date-row"><input type="date" id="sabaq_date" class="card-header-date"></div>
 
             <!-- V3.14.0: each field is one combined surah:ayah control --
                  chevron opens the full surah picker, ayah is a bounded
@@ -256,12 +256,16 @@
             <div class="card-header-row">
               <span class="card-header-icon" id="sabaqDhorHeaderIcon"></span>
               <h2>Sabaq Dhor</h2>
-              <input type="date" id="sabaqDhor_date" class="card-header-date">
               <span class="save-status" id="sabaqDhorSaveStatus">saved ✓</span>
-              <button type="button" class="card-header-save-btn" id="sabaqDhorSaveBtn"><span class="btn-icon" id="sabaqDhorSaveIcon"></span>Save</button>
+              <button type="button" class="card-header-save-btn" id="sabaqDhorSaveBtn"><span class="btn-icon" id="sabaqDhorSaveIcon"></span><span class="save-btn-text">Save</span></button>
             </div>
+            <div class="card-date-row"><input type="date" id="sabaqDhor_date" class="card-header-date"></div>
 
             <label>Sections to revise</label>
+            <div class="sabaq-dhor-rollup-row">
+              <button type="button" class="verse-ref-chevron" id="sabaqDhor_rollup_up" title="Roll up (quarters to half to full)">&#x25B2;</button>
+              <button type="button" class="verse-ref-chevron" id="sabaqDhor_rollup_down" title="Split down">&#x25BC;</button>
+            </div>
             <div id="sabaqDhor_sections"></div>
             <label style="margin-top:16px;">Mistakes</label><input type="number" inputmode="numeric" id="sabaqDhor_mistakes">
             <label>Tajweed</label>
@@ -279,10 +283,10 @@
             <div class="card-header-row">
               <span class="card-header-icon" id="dhorHeaderIcon"></span>
               <h2>Dhor</h2>
-              <input type="date" id="dhor_date" class="card-header-date">
               <span class="save-status" id="dhorSaveStatus">saved ✓</span>
-              <button type="button" class="card-header-save-btn" id="dhorSaveBtn"><span class="btn-icon" id="dhorSaveIcon"></span>Save</button>
+              <button type="button" class="card-header-save-btn" id="dhorSaveBtn"><span class="btn-icon" id="dhorSaveIcon"></span><span class="save-btn-text">Save</span></button>
             </div>
+            <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"></div>
             <div id="dhorPlanBanner"></div>
             <!-- V3.10.0: the standalone reference dropdown is gone -- ref
                  is now derived from the student's own mushaf choice
@@ -323,15 +327,14 @@
               <span class="card-header-icon" id="tadabburHeaderIcon"></span>
               <h2>Tadabbur</h2>
               <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
-              <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span>Save</button>
+              <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span><span class="save-btn-text">Save</span></button>
             </div>
             <label>Reflection</label>
             <textarea id="tadabbur_text" rows="8"></textarea>
-            <div class="switch-track switch-track-small-wide" id="tadabburPrivacySwitch" style="margin-top:8px;">
-              <div class="switch-thumb"></div>
-              <button type="button" class="switch-option" data-value="public">Public</button>
-              <button type="button" class="switch-option" data-value="private">Private</button>
-            </div>
+            <label class="cb-private-row">
+              <input type="checkbox" id="tadabbur_private">
+              Private
+            </label>
             <div class="form-error" id="tadabburError"></div>
           </div>
         </div>
@@ -555,24 +558,24 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.14.1"></script>
-<script src="js/icons.js?v=3.14.1"></script>
-<script src="js/api.js?v=3.14.1"></script>
-<script src="js/uiSwitch.js?v=3.14.1"></script>
-<script src="js/position.js?v=3.14.1"></script>
-<script src="js/auth.js?v=3.14.1"></script>
-<script src="js/home.js?v=3.14.1"></script>
-<script src="js/tajweed.js?v=3.14.1"></script>
-<script src="js/commentPrivacy.js?v=3.14.1"></script>
-<script src="js/timer.js?v=3.14.1"></script>
-<script src="js/journal.js?v=3.14.1"></script>
-<script src="js/dhorPage.js?v=3.14.1"></script>
-<script src="js/sabaqPage.js?v=3.14.1"></script>
-<script src="js/sabaqDhorPage.js?v=3.14.1"></script>
-<script src="js/reflectionCard.js?v=3.14.1"></script>
-<script src="js/logDetailScreen.js?v=3.14.1"></script>
-<script src="js/settingsScreen.js?v=3.14.1"></script>
-<script src="js/adminPage.js?v=3.14.1"></script>
-<script src="js/app.js?v=3.14.1"></script>
+<script src="shared/data.js?v=3.17.0"></script>
+<script src="js/icons.js?v=3.17.0"></script>
+<script src="js/api.js?v=3.17.0"></script>
+<script src="js/uiSwitch.js?v=3.17.0"></script>
+<script src="js/position.js?v=3.17.0"></script>
+<script src="js/auth.js?v=3.17.0"></script>
+<script src="js/home.js?v=3.17.0"></script>
+<script src="js/tajweed.js?v=3.17.0"></script>
+<script src="js/commentPrivacy.js?v=3.17.0"></script>
+<script src="js/timer.js?v=3.17.0"></script>
+<script src="js/journal.js?v=3.17.0"></script>
+<script src="js/dhorPage.js?v=3.17.0"></script>
+<script src="js/sabaqPage.js?v=3.17.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.17.0"></script>
+<script src="js/reflectionCard.js?v=3.17.0"></script>
+<script src="js/logDetailScreen.js?v=3.17.0"></script>
+<script src="js/settingsScreen.js?v=3.17.0"></script>
+<script src="js/adminPage.js?v=3.17.0"></script>
+<script src="js/app.js?v=3.17.0"></script>
 </body>
 </html>

@@ -239,12 +239,20 @@ own render function.
     position.js       — client-side position tracking (V3.12.0, rebuilt
                         V3.14.0): computes Sabaq's next default and sums
                         of a multi-surah span, entirely client-side per
-                        the Worker's own position.js comment. Shape is now
-                        { sabaqTo, activeJuz } — sabaqTo is the single
-                        source of truth, activeJuz a derived value kept
-                        only for the not-yet-rebuilt Sabaq Dhor card. The
-                        V3.12.0 juz'-completion→baseline auto-add is
-                        REMOVED (superseded — now Setup's own job)
+                        the Worker's own position.js comment. Shape:
+                        { sabaqTo, activeJuz, previousJuz,
+                        sabaqDhorRollup } — sabaqTo is the single source
+                        of truth, the rest derived/tracked alongside it.
+                        computeSabaqDhorRows() (V3.16.0) builds Sabaq
+                        Dhor's rows with a persisted rollup level;
+                        V3.17.0 adds maybeAutoMoveToDhor()/
+                        addRowToBaselinePool() (the move-to-Dhor
+                        transition, reading/writing baseline_selection
+                        directly) and previousJuz tracking in
+                        advancePositionAfterSabaq() (which now preserves
+                        every other position field instead of replacing
+                        the object outright — a real bug caught and
+                        fixed before V3.17.0 shipped)
     auth.js           — login screen, auth band, dropdown, nav item list
     home.js           — Home page tile grid
     tajweed.js        — shared tajweed tag picker (major/minor aware),
@@ -255,21 +263,23 @@ own render function.
                         scroll-wheel or a plain dropdown
     commentPrivacy.js — shared student-comment + privacy block,
                         container-scoped (V3.6.1 — see principle 11).
-                        V3.12.0: "Notes" (was "Your comment on this
-                        session"); Private/Public switch (uiSwitch.js),
-                        default Public, replacing the "keep hidden from
-                        teachers" checkbox
+                        "Notes" (was "Your comment on this session").
+                        V3.16.0: a plain checkbox (default unchecked =
+                        public) — reverted from V3.12.0's Public/Private
+                        switch, judged too large for an occasional toggle
     timer.js          — the real start/lap/stop Dhor timer
     journal.js        — the landing journal table + quick-add modal
                         (V3.9.0: quick-add now pre-fills field values from
                         a linked plan, not just the plan_id)
     dhorPage.js         — Dhor card: picker, timer, tajweed, own date
                           selector (one of 4 cards, V3.6.1); V3.9.0 adds
-                          plan-as-default (pre-fills from today's Dhor
-                          Schedule plan, if any); V3.10.0 removes the
-                          separate per-device waterval/uthmani dropdown —
-                          ref is now derived from the student's own
-                          mushaf choice (Setup), fetched fresh on open
+                          plan-as-default; V3.10.0 removes the separate
+                          per-device waterval/uthmani dropdown (ref now
+                          derived from mushaf choice). Also home to the
+                          shared renderRecentEntries()/describeEntryForRail()
+                          used by all 3 log cards — V3.16.0 rebuilt this
+                          as a "History" button + last-2-entries-stacked,
+                          replacing the swipe rail
     sabaqPage.js        — Sabaq card, own date selector (one of 4 cards).
                           V3.14.0: sabaq_from/sabaq_to (combined
                           "surah:ayah" strings, can span multiple surahs,
@@ -280,19 +290,31 @@ own render function.
                           input, no auto-rollover). Position-driven
                           prepopulation reworked around the simplified
                           { sabaqTo, activeJuz } shape (js/position.js);
-                          line/page calc now sums across every surah a
-                          span touches (getLinesForSpan)
+                          line/page calc sums across every surah a span
+                          touches (getLinesForSpan). V3.16.0: page count
+                          is a fixed 13-lines/page capacity measure
+                          (rounds down to the nearest quarter-page), not
+                          a real-page lookup — it's a volume measure, not
+                          a progress tracker
     sabaqDhorPage.js    — Sabaq Dhor card, own date selector (one of 4).
-                          V3.13.0: position-driven checklist — shows the
-                          quarter Sabaq is currently in (partial) plus
-                          each already-completed quarter before it (up to
-                          3), each prepopulated checked; whichever stay
-                          checked at save composite into one overall
-                          from/to ayah range, replacing the old free-text
-                          zone field
+                          V3.16.0 (Phase 2a): rebuilt around
+                          computeSabaqDhorRows() (js/position.js) — the
+                          current in-progress quarter is always its own
+                          row (never rollable); completed quarters can
+                          roll up via a chevron into halves/full juz' and
+                          back down, persisted per student
+                          (position.sabaqDhorRollup). V3.17.0 (Phase 2b):
+                          eligible rows (halves/full juz') get a "Move to
+                          Dhor" button, wired to
+                          addRowToBaselinePool()/apiSaveProfile — the
+                          manual half of the move-to-Dhor transition (the
+                          automatic half lives in sabaqPage.js's save
+                          handler instead, since that's where a juz'
+                          boundary actually gets crossed)
     reflectionCard.js   — Tadabbur card (V3.6.1, new) — one reflection
                           per day, no date selector, upserts in place.
-                          V3.12.0: Private/Public switch, was a checkbox
+                          V3.16.0: a plain Private checkbox (reverted
+                          from V3.12.0's switch, same as commentPrivacy.js)
     logDetailScreen.js  — orchestrates the 4 cards into one screen:
                           renders all 4, rail scroll position, dot sync.
                           V3.12.0: dots show text labels (Sabaq/SDhor/
