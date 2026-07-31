@@ -196,17 +196,43 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 // Shared across the log cards — a swipe rail of recent entries for that
 // log type, tapped to view (read-only for now; editing an existing entry
 // from here is a follow-up, not built in this pass).
+// V3.14.2: replaces the swipe rail with a "History" button + the last 2
+// entries shown stacked directly below it. Tapping History opens the
+// full list (up to 50 entries) in a popup, reusing the same per-type
+// describeEntryForRail formatting.
 async function renderRecentEntries(type, client, railId){
-  const rail = document.getElementById(railId);
-  try{
-    const rows = await client.get(isoDateNDaysAgo(14));
-    rail.innerHTML = rows.slice(0, 10).map(r => `<div class="rail-card">
-      <div class="rail-card-date">${r.date}</div>
-      <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
-    </div>`).join('') || '<div class="form-hint">Nothing logged yet in the last two weeks.</div>';
-  } catch(e){
-    rail.innerHTML = `<div class="form-hint">Couldn't load recent entries.</div>`;
-  }
+  const container = document.getElementById(railId);
+  let rows = [];
+  try{ rows = await client.get(); } catch(e){ rows = []; }
+  rows = rows.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id||0) - (a.id||0));
+
+  const lastTwo = rows.slice(0, 2);
+  container.innerHTML = `
+    <button type="button" class="history-btn" id="${railId}_historyBtn">History</button>
+    <div class="history-last-two">
+      ${lastTwo.length ? lastTwo.map(r => `<div class="history-entry-row">
+        <div class="rail-card-date">${r.date}</div>
+        <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
+      </div>`).join('') : '<div class="form-hint">Nothing logged yet.</div>'}
+    </div>`;
+
+  document.getElementById(`${railId}_historyBtn`).addEventListener('click', () => {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay history-popup-modal';
+    overlay.innerHTML = `<div class="modal-card">
+      <button type="button" class="close-btn" id="historyPopupCloseBtn">&times;</button>
+      <h2>History</h2>
+      <div class="history-full-list">
+        ${rows.slice(0, 50).map(r => `<div class="history-entry-row">
+          <div class="rail-card-date">${r.date}</div>
+          <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
+        </div>`).join('') || '<div class="form-hint">Nothing logged yet.</div>'}
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+    document.getElementById('historyPopupCloseBtn').addEventListener('click', () => overlay.remove());
+  });
 }
 function describeEntryForRail(type, r){
   if(type === 'dhor') return `Seg ${r.segment_from}-${r.segment_to} (${r.ref}) · ${r.mistakes||0} mistakes${r.duration_seconds?` · ${Math.round(r.duration_seconds/60)} min`:''}`;

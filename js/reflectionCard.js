@@ -1,7 +1,7 @@
 // ============================================================
 // Hifzhelper -- Tadabbur/reflection card (4th card in the unified day-log
-// view, V3.6.1). New frontend -- the `reflections` table and apiReflections
-// client already existed (SCHEMA.md, api.js), just had no UI until now.
+// view, V3.6.1). The `reflections` table and apiReflections client
+// already existed (SCHEMA.md, api.js), just had no UI until V3.6.1.
 //
 // Deliberately different from the other 3 cards: reflections are meant to
 // be ONE per day (unlike Sabaq/Sabaq Dhor/Dhor, which allow multiple
@@ -10,9 +10,8 @@
 // always creating a new row. No date selector on this card (per spec) --
 // always today.
 //
-// V3.12.0: the "keep this private" checkbox is now a Private/Public
-// switch (js/uiSwitch.js), default Public, same as the other cards' Notes
-// block.
+// V3.14.2: reverted from V3.12.0's Public/Private switch back to a plain
+// checkbox, same as the other 3 cards' Notes block.
 // ============================================================
 
 let tadabburCurrentId = null;
@@ -21,7 +20,7 @@ async function renderTadabburScreen(){
   tadabburCurrentId = null;
   const textarea = document.getElementById('tadabbur_text');
   textarea.value = '';
-  renderSwitch('tadabburPrivacySwitch', 'public');
+  document.getElementById('tadabbur_private').checked = false;
   document.getElementById('tadabburError').textContent = '';
   try{
     const rows = await apiReflections.getForDate(todayISO());
@@ -29,22 +28,20 @@ async function renderTadabburScreen(){
       const existing = rows[0];
       tadabburCurrentId = existing.id;
       textarea.value = existing.reflection || '';
-      renderSwitch('tadabburPrivacySwitch', existing.is_private ? 'private' : 'public');
+      document.getElementById('tadabbur_private').checked = !!existing.is_private;
     }
   } catch(e){
     // Non-fatal -- leave the form blank rather than blocking the whole card
     // over a failed prefill fetch; saving still works either way.
   }
 }
-wireSwitch('tadabburPrivacySwitch', (value) => renderSwitch('tadabburPrivacySwitch', value));
 
 document.getElementById('tadabburSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('tadabburError');
   errEl.textContent = '';
-  const activeOption = document.querySelector('#tadabburPrivacySwitch .switch-option.active');
   const fields = {
     reflection: document.getElementById('tadabbur_text').value || null,
-    is_private: !!(activeOption && activeOption.dataset.value === 'private')
+    is_private: document.getElementById('tadabbur_private').checked
   };
   try{
     if(tadabburCurrentId){

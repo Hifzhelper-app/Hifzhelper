@@ -120,13 +120,19 @@ async function renderSabaqScreen(){
   await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
 }
 
+// V3.14.2: page count is a fixed-standard capacity measure, not a real-
+// page tracker (confirmed in chat) -- always divides by 13 lines/page
+// and rounds DOWN to the nearest quarter-page, regardless of which
+// mushaf print or which actual pages were touched. Only the line count
+// itself comes from the real per-print calculation (getLinesForSpan);
+// page count is derived from that line count alone.
 function recomputeSabaqLineCount(){
   const from = sabaqValue.from, to = sabaqValue.to;
   if(!from || !to) return;
   const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
   if(!result) return;
   document.getElementById('sabaq_line_count').value = result.lineCount;
-  document.getElementById('sabaq_page_count').value = result.pageCount;
+  document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / 13) * 4) / 4;
 }
 
 document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
@@ -158,6 +164,19 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     try{
       sabaqPosition = advancePositionAfterSabaq(sabaqPosition, to.surah, to.ayah, sabaqRef);
       await savePosition(sabaqPosition);
+      // Phase 2b (V3.17.0): the automatic half of the move-to-Dhor
+      // transition -- if a previous juz' is lingering and this save just
+      // completed at least one quarter of the new one, whatever's left
+      // of the old juz' moves to Dhor automatically. Independent of the
+      // manual tickbox on Sabaq Dhor's own card -- whichever happens first.
+      const profile = await apiGetProfile();
+      const currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
+      const autoMove = maybeAutoMoveToDhor(sabaqPosition, sabaqRef, currentPool);
+      if(autoMove.moved){
+        sabaqPosition = autoMove.position;
+        await savePosition(sabaqPosition);
+        await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: autoMove.baselineSelection });
+      }
     } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
 
     await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
