@@ -37,8 +37,8 @@ function renderSabaqDhorRows(){
   el.innerHTML = sabaqDhorRows.map(r => `
     <div class="sabaq-dhor-row-wrap">
       <label class="sabaq-dhor-section-row">
-        <input type="checkbox" class="sabaqDhor-row-cb" data-id="${r.id}" checked>
-        ${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}
+        <span>${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</span>
+        <input type="checkbox" class="sabaqDhor-row-cb" data-id="${r.id}">
       </label>
       ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : ''}
     </div>
@@ -80,12 +80,34 @@ async function moveRowToDhor(rowId){
 function rebuildRowsFromPosition(){
   sabaqDhorRows = computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, sabaqDhorRollupLevel, sabaqDhorBaselineSelection);
   renderSabaqDhorRows();
+  updateRollupStepperVisibility();
 }
 
-// Chevron cycles the rollup level quarters -> halves -> full -> quarters,
-// only among the levels that would actually change anything -- if there's
-// nothing complete yet, there's nothing to roll, so the chevron is a
-// no-op (still fine to tap, just redraws the same single current row).
+// V3.19.0: each rollup button is only shown when it would actually change
+// something -- rather than hand-duplicating computeSabaqDhorRows' own
+// merge logic (pairs, full-juz' conditions, lingering-juz rows) to work
+// out eligibility separately, this just computes the rows one level up
+// and one level down and compares the resulting row ids to the current
+// level's. If a direction produces the identical set of rows, there's
+// nothing for it to do, so it's hidden entirely rather than left as a
+// no-op tap.
+const ROLLUP_LEVEL_ORDER = ['quarters', 'halves', 'full'];
+function updateRollupStepperVisibility(){
+  const idx = ROLLUP_LEVEL_ORDER.indexOf(sabaqDhorRollupLevel);
+  const currentIds = sabaqDhorRows.map(r => r.id).join(',');
+  const rowIdsAtLevel = (level) => computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, level, sabaqDhorBaselineSelection).map(r => r.id).join(',');
+  const canMergeUp = idx < ROLLUP_LEVEL_ORDER.length - 1 && rowIdsAtLevel(ROLLUP_LEVEL_ORDER[idx + 1]) !== currentIds;
+  const canSplitDown = idx > 0 && rowIdsAtLevel(ROLLUP_LEVEL_ORDER[idx - 1]) !== currentIds;
+  document.getElementById('sabaqDhor_rollup_up').style.display = canMergeUp ? '' : 'none';
+  document.getElementById('sabaqDhor_rollup_down').style.display = canSplitDown ? '' : 'none';
+}
+
+// Chevron cycles the rollup level quarters -> halves -> full -> quarters.
+// Each button is hidden by updateRollupStepperVisibility() above whenever
+// its direction wouldn't actually change anything, so a click here only
+// ever happens when it's a real, eligible action.
+document.getElementById('sabaqDhor_rollup_up').innerHTML = iconHtml('rollupMerge');
+document.getElementById('sabaqDhor_rollup_down').innerHTML = iconHtml('rollupSplit');
 document.getElementById('sabaqDhor_rollup_up').addEventListener('click', () => {
   sabaqDhorRollupLevel = sabaqDhorRollupLevel === 'quarters' ? 'halves' : 'full';
   rebuildRowsFromPosition();
