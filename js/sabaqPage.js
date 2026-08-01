@@ -239,10 +239,6 @@ async function resetSabaqFormAfterEdit(){
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', null);
 }
-document.getElementById('sabaqEditCancelBtn').addEventListener('click', async () => {
-  cancelSabaqEdit();
-  await resetSabaqFormAfterEdit();
-});
 document.getElementById('sabaqEditCancelBtn2').addEventListener('click', async () => {
   cancelSabaqEdit();
   await resetSabaqFormAfterEdit();

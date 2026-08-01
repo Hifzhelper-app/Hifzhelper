@@ -149,6 +149,9 @@ function apiEnsureDhorSchedule(startSegment){
     body: startSegment ? JSON.stringify(startSegment) : undefined
   });
 }
+function apiGetDhorDefaultEntry(){
+  return apiFetch('/dhor-schedule/default-entry');
+}
 
 // ---------- attendance ----------
 function apiGetAttendance(month){

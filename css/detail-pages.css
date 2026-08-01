@@ -46,14 +46,22 @@
   gap: 2px;
   min-width: 0;
 }
+/* V3.23.0: date field widened -- was a fixed 30% column that truncated
+   the rendered date text on narrower screens; now sized to its own
+   natural content width instead. History moved into this same row
+   (index.html) rather than sitting on its own further down, and
+   align-items:stretch makes it match the date field's height exactly
+   regardless of exact pixel values on either side. */
 .card-date-row {
   display: grid;
-  grid-template-columns: 30% 70%;
+  grid-template-columns: auto 1fr;
+  align-items: stretch;
   margin-top: 4px;
+  gap: var(--space-sm);
 }
 .card-header-date {
-  width: 100%;
   padding: 4px 6px;
+  box-sizing: border-box;
 }
 /* V3.19.0: Save button restyled to match Hifzhelper's own existing
    icon-button convention (.nav-icon-item, css/base.css -- icon on top,
@@ -373,21 +381,31 @@
    specific text ("Sabaq History" etc. -- js/dhorPage.js). The last-2-
    entries list below it is removed per the confirmed scope; the button
    alone opens the full popup (up to 50 entries), which still reuses
-   .history-entry-row below. The container div (renderRecentEntries'
-   target, in index.html) previously carried the pre-V3.14.2 .swipe-rail
-   class -- given its own plain wrapper now instead. */
+   .history-entry-row below.
+   V3.23.0: moved into the date row (index.html), right-justified with
+   edge padding, height matched to the date field via the row's own
+   align-items:stretch (above) rather than a hardcoded pixel value --
+   robust regardless of the exact rendered height of either side. Width
+   deliberately left to size to its own label rather than forced to
+   match the date field's width too, since "Sabaq Dhor History" would
+   otherwise risk wrapping/truncating on a narrower screen. */
 .history-container {
-  margin-top: var(--space-lg);
+  display: flex;
+  justify-content: flex-end;
+  padding-right: var(--space-sm);
 }
 .history-btn {
-  display: inline-block;
-  width: auto;
-  padding: 6px 14px;
+  height: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 14px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--palette-evergreen);
   color: #fff;
   font-size: 13px;
+  white-space: nowrap;
 }
 /* V3.21.0: entry rows now hold an edit (pencil) icon button per row,
    opening that entry for editing in the card's own form. */

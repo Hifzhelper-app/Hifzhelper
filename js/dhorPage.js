@@ -23,6 +23,16 @@
 // like the one-plan case; leaving none picked behaves like the zero-plan
 // case.
 //
+// V3.23.0 (Dhor detail rebuild, Phase A): the zero-plan-for-today case no
+// longer just falls back to a blank manual picker. apiGetDhorDefaultEntry
+// (worker/src/dhorSchedule.js's computeDefaultDhorEntry) now checks, in
+// order: a missed plan (backdated to ITS OWN date, a catch-up entry) →
+// the closest future plan (today's date, borrowed early) → continuing
+// from the last actual Dhor entry (at THAT entry's own granularity,
+// walking the eligible pool forward) → the very first eligible segment.
+// Only when none of those produce anything does the manual picker stay
+// genuinely blank, same as before this round.
+//
 // segmentsPerJuz/unitMarkerCount used to be defined locally here — moved
 // to shared/data.js (V3.9.0) since the new server-side schedule generator
 // (worker/src/dhorSchedule.js) needs the exact same math, and two copies
@@ -125,29 +135,39 @@ function applyDhorPlan(plan){
   }
 }
 
-function renderDhorPlanBanner(){
+// V3.23.0: now takes the source computeDefaultDhorEntry reported, so the
+// student can see WHY something got pre-filled rather than just seeing
+// fields silently populated. dateInfo is only meaningful for
+// 'missed_plan' (the backdated catch-up date).
+function renderDhorPlanBanner(source, dateInfo){
   const el = document.getElementById('dhorPlanBanner');
   if(!el) return;
-  if(dhorTodaysPlans.length === 0){ el.innerHTML = ''; return; }
-  if(dhorTodaysPlans.length === 1){
-    el.innerHTML = `<div class="form-hint">Pre-filled from today's plan.</div>`;
+  if(source === 'today_plan' && dhorTodaysPlans.length > 1){
+    // More than one planned session for today — a plain selector, never
+    // auto-picked (per the "never auto-selected" rule already agreed for
+    // this feature). Reuses .tajweed-tag's pill look for consistency with
+    // every other single-select control in the app.
+    el.innerHTML = `<div class="form-hint">More than one plan for today — pick one, or leave unpicked to enter manually:</div>
+      <div id="dhorPlanChoices">` +
+      dhorTodaysPlans.map(p => `<button type="button" class="tajweed-tag" data-plan-id="${p.id}">Seg ${p.segment_from}-${p.segment_to}</button>`).join('') +
+      `</div>`;
+    el.querySelectorAll('[data-plan-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const plan = dhorTodaysPlans.find(p => p.id === parseInt(btn.dataset.planId, 10));
+        applyDhorPlan(plan);
+        el.querySelectorAll('[data-plan-id]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
     return;
   }
-  // More than one planned session for today — a plain selector, never
-  // auto-picked (per the "never auto-selected" rule already agreed for
-  // this feature). Reuses .tajweed-tag's pill look for consistency with
-  // every other single-select control in the app.
-  el.innerHTML = `<div class="form-hint">More than one plan for today — pick one, or leave unpicked to enter manually:</div>
-    <div id="dhorPlanChoices">` +
-    dhorTodaysPlans.map(p => `<button type="button" class="tajweed-tag" data-plan-id="${p.id}">Seg ${p.segment_from}-${p.segment_to}</button>`).join('') +
-    `</div>`;
-  el.querySelectorAll('[data-plan-id]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const plan = dhorTodaysPlans.find(p => p.id === parseInt(btn.dataset.planId, 10));
-      applyDhorPlan(plan);
-      el.querySelectorAll('[data-plan-id]').forEach(b => b.classList.toggle('active', b === btn));
-    });
-  });
+  const TEXT = {
+    today_plan: `Pre-filled from today's plan.`,
+    missed_plan: `No plan for today — catching up on ${dateInfo}, which was missed.`,
+    future_plan: `Nothing planned for today — pre-filled from your next upcoming session.`,
+    continue_last: `No plan set up yet — continuing from your last Dhor session.`,
+    first_segment: `No plan or history yet — starting from your first eligible segment.`
+  };
+  el.innerHTML = TEXT[source] ? `<div class="form-hint">${TEXT[source]}</div>` : '';
 }
 
 async function renderDhorScreen(){
@@ -192,14 +212,38 @@ async function renderDhorScreen(){
   // schedule configured yet).
   try{ await apiEnsureDhorSchedule(); } catch(e){ /* not configured yet, or offline — fine */ }
 
+  // V3.23.0: computeDefaultDhorEntry (worker/src/dhorSchedule.js) checks
+  // today's plan(s) first, then falls through missed → future → continue-
+  // from-last-entry → first-ever-segment, in that order. Only 'today_plan'
+  // with more than one row still needs a picker here (dhorTodaysPlans) --
+  // every other source is a single, fully-resolved answer.
   try{
-    const plans = await apiPlans.getForDate(todayISO());
-    dhorTodaysPlans = (plans || []).filter(p => p.plan_type === 'dhor' && p.status === 'planned');
+    const result = await apiGetDhorDefaultEntry();
+    if(result.source === 'today_plan'){
+      dhorTodaysPlans = result.plans;
+      renderDhorPlanBanner('today_plan');
+      if(dhorTodaysPlans.length === 1) applyDhorPlan(dhorTodaysPlans[0]);
+    } else if(result.source === 'missed_plan' || result.source === 'future_plan'){
+      dhorTodaysPlans = [];
+      applyDhorPlan({ id: result.plan_id, segment_from: result.segment_from, segment_to: result.segment_to });
+      if(result.source === 'missed_plan') document.getElementById('dhor_date').value = result.date;
+      renderDhorPlanBanner(result.source, result.date);
+    } else if(result.source === 'continue_last' || result.source === 'first_segment'){
+      dhorTodaysPlans = [];
+      dhorActivePlanId = null;
+      const { juz, positionInJuz, unit } = segmentRangeToPicker(result.segment_from, result.segment_to, dhorCurrentRef);
+      document.getElementById('dhor_juz').value = String(juz);
+      document.getElementById('dhor_position').value = String(positionInJuz);
+      document.getElementById('dhor_unit').value = unit;
+      renderDhorPlanBanner(result.source);
+    } else {
+      dhorTodaysPlans = [];
+      renderDhorPlanBanner(null);
+    }
   } catch(e){
     dhorTodaysPlans = [];
+    renderDhorPlanBanner(null);
   }
-  renderDhorPlanBanner();
-  if(dhorTodaysPlans.length === 1) applyDhorPlan(dhorTodaysPlans[0]);
 
   await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
 }
@@ -256,10 +300,6 @@ function resetDhorFormAfterEdit(){
   document.getElementById('dhor_duration_minutes').value = '';
   updateDhorTimerSummary();
 }
-document.getElementById('dhorEditCancelBtn').addEventListener('click', () => {
-  cancelDhorEdit();
-  resetDhorFormAfterEdit();
-});
 document.getElementById('dhorEditCancelBtn2').addEventListener('click', () => {
   cancelDhorEdit();
   resetDhorFormAfterEdit();

@@ -214,3 +214,85 @@ export async function handleEnsureDhorSchedule(request, env, auth) {
   const result = await ensureDhorSchedule(env, auth.id, startSegment);
   return { data: result };
 }
+
+// GET /dhor-schedule/default-entry (Phase A of the Dhor detail rebuild,
+// confirmed in chat 2026-08-01) — what should today's Dhor form show by
+// default, in priority order:
+//   1. today's plan(s), if any (multiple → caller still shows its own
+//      picker, same as before; this just reports them)
+//   2. no entry for today → the most recently MISSED plan (target_date
+//      in the past, still 'planned') — returned WITH that plan's own
+//      date, a deliberate backdated catch-up, not today's date
+//   3. no missed entries → the closest upcoming plan
+//   4. no plan at all, but real Dhor history exists → the segment that
+//      follows the last logged entry, walking the eligible pool forward,
+//      at THAT ENTRY'S OWN granularity (not the account's configured
+//      Setup granularity/quantity — deliberately different from
+//      ensureDhorSchedule's own anchor logic just above, which anchors
+//      new auto-generated PLAN rows to the account's configured
+//      settings; this is about matching what the student actually just
+//      did, for a single manual fallback, not projecting the schedule)
+//   5. no plan and no history → the very first eligible segment,
+//      quarter granularity
+// Reuses buildChunks/findChunkIndexForSegment (this file, above) rather
+// than duplicating the gap-aware chunking logic a second time.
+export async function computeDefaultDhorEntry(env, studentId) {
+  const today = todayISO();
+
+  const { results: todaysPlans } = await env.DB.prepare(
+    "SELECT * FROM plans WHERE student_id = ? AND plan_type = 'dhor' AND status = 'planned' AND target_date = ? ORDER BY created_at"
+  ).bind(studentId, today).all();
+  if (todaysPlans.length > 0) return { source: 'today_plan', date: today, plans: todaysPlans };
+
+  const missed = await env.DB.prepare(
+    "SELECT * FROM plans WHERE student_id = ? AND plan_type = 'dhor' AND status = 'planned' AND target_date < ? ORDER BY target_date DESC LIMIT 1"
+  ).bind(studentId, today).first();
+  if (missed) {
+    return { source: 'missed_plan', date: missed.target_date, segment_from: missed.segment_from, segment_to: missed.segment_to, ref: missed.ref, plan_id: missed.id };
+  }
+
+  const future = await env.DB.prepare(
+    "SELECT * FROM plans WHERE student_id = ? AND plan_type = 'dhor' AND status = 'planned' AND target_date > ? ORDER BY target_date ASC LIMIT 1"
+  ).bind(studentId, today).first();
+  if (future) {
+    return { source: 'future_plan', date: today, segment_from: future.segment_from, segment_to: future.segment_to, ref: future.ref, plan_id: future.id };
+  }
+
+  const student = await env.DB.prepare(
+    'SELECT mushaf, baseline_mode, baseline_selection FROM students WHERE id = ?'
+  ).bind(studentId).first();
+  if (!student) return { source: 'none', reason: 'Student not found' };
+  if (student.baseline_mode !== 'juz') {
+    return { source: 'none', reason: "No plan found, and surah-based Hifz Setup history isn't mapped to a Dhor pool yet — enter this session manually" };
+  }
+  let pool;
+  try { pool = JSON.parse(student.baseline_selection || '[]'); } catch (e) { pool = []; }
+  pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b);
+  if (pool.length === 0) return { source: 'none', reason: "No memorised juz'/quarters recorded yet in Hifz Setup" };
+
+  const ref = student.mushaf === '15line_madani' ? 'uthmani' : 'waterval';
+  const lastLog = await env.DB.prepare(
+    'SELECT segment_from, segment_to FROM dhor_log WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1'
+  ).bind(studentId).first();
+
+  if (lastLog) {
+    const perJuz = segmentsPerJuz(ref);
+    const span = lastLog.segment_to - lastLog.segment_from + 1;
+    const granularity = span === perJuz ? 'full' : span === perJuz / 2 ? 'half' : 'quarter';
+    const chunks = buildChunks(pool, ref, granularity, 1);
+    if (chunks.length === 0) return { source: 'none', reason: 'Could not build a next segment from the current pool' };
+    const idx = findChunkIndexForSegment(chunks, lastLog.segment_from, lastLog.segment_to);
+    const nextIdx = (idx >= 0 ? idx + 1 : 0) % chunks.length;
+    const chunk = chunks[nextIdx];
+    return { source: 'continue_last', date: today, segment_from: chunk.segment_from, segment_to: chunk.segment_to, ref, plan_id: null };
+  }
+
+  const chunks = buildChunks(pool, ref, 'quarter', 1);
+  if (chunks.length === 0) return { source: 'none', reason: 'Could not build a starting segment from the current pool' };
+  return { source: 'first_segment', date: today, segment_from: chunks[0].segment_from, segment_to: chunks[0].segment_to, ref, plan_id: null };
+}
+
+export async function handleGetDhorDefaultEntry(request, env, auth) {
+  const result = await computeDefaultDhorEntry(env, auth.id);
+  return { data: result };
+}

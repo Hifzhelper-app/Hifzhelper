@@ -1098,6 +1098,42 @@ the fix for a bug that broke Save entirely.
 4. Re-run a couple of spot checks from §38 (edit a normal entry, cancel,
    update) to confirm the reordering didn't break anything else.
 
+## 40. Dhor detail rebuild, Phase A (V3.23.0)
+
+1. As a student with a Dhor plan scheduled for TODAY, open Dhor →
+   confirm it still pre-fills from today's plan exactly as before, with
+   "Pre-filled from today's plan."
+2. As a student with a plan for today AND another plan also dated today,
+   confirm the existing multi-plan picker still shows (unaffected by
+   this round).
+3. As a student with NO plan for today but a plan scheduled on a PAST
+   date that's still status='planned' (i.e. missed), open Dhor → confirm
+   it pre-fills from that missed plan's segment, the date field shows
+   THAT plan's own date (not today), and the hint reads something like
+   "catching up on [date], which was missed."
+4. As a student with no plan for today or missed, but a plan scheduled
+   for a FUTURE date, open Dhor → confirm it pre-fills from that
+   session, but the date field stays on TODAY (not the future date).
+5. As a student with no plan at all (Dhor Schedule never configured, or
+   genuinely no upcoming/missed rows) but real Dhor log history exists,
+   open Dhor → confirm it continues from the last logged entry, walking
+   forward through the eligible pool at the SAME granularity as that
+   last entry (e.g. if the last entry was a half-juz', the next
+   suggestion should also be a half-juz', not a quarter).
+6. As a brand-new student with no plan and no Dhor history at all (but
+   some memorised juz'/quarters in Hifz Setup), open Dhor → confirm it
+   suggests the very first eligible segment at quarter granularity.
+7. As a student with no eligible pool at all yet (nothing memorised in
+   Setup), confirm the form falls back to a genuinely blank manual
+   picker, same as before this round — no error, no crash.
+8. On any card, confirm Cancel no longer appears in the edit-screen top
+   bar (only in the bottom bar now), and that Cancel still works
+   correctly from the bottom bar on all 3 cards.
+9. On any card, confirm the date field is no longer truncated, and that
+   History now sits directly beside it, right-justified, roughly the
+   same height as the date field, with a bit of padding before the
+   screen edge.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
