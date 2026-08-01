@@ -50,26 +50,26 @@ async function hasDhorHistory(){
 }
 
 // The default {surah, ayah}-pair prefill for a new Sabaq entry, per the
-// confirmed rules: any Dhor history → don't prepopulate either field, the
-// caller passes hasDhor and just gets nulls back for both; no Sabaq history
-// yet either → 114:1/114:6 (juz' 30's start, per the study order); has
-// Sabaq history → the last reached point ADVANCES one ayah (via
-// shared/data.js's nextSabaqPosition, study-direction aware) and prefills
-// To if currently in juz' 30 (studied backwards, so the frontier is the
-// FURTHER-along end) or From otherwise (studied forwards, so the frontier
-// is the starting point for what's next). If advancing would leave the
-// juz' entirely (it's fully complete), nothing prepopulates -- there's no
-// single correct next point to guess at.
+// confirmed rules: no Sabaq history AND no Dhor history → 114:1/114:6
+// (juz' 30's start); no Sabaq history but Dhor history exists → nothing
+// prepopulates (prior memorisation recorded directly via Setup, nothing
+// for Sabaq's own position tracker to advance from); has REAL Sabaq
+// history → always prepopulates from it regardless of Dhor history, via
+// nextSabaqPosition advancing one ayah past the last reached point in the
+// correct study direction, prefilling To if currently in juz' 30
+// (studied backwards, so the frontier is the FURTHER-along end) or From
+// otherwise. If advancing would leave the juz' entirely (it's fully
+// complete), nothing prepopulates -- there's no single correct next point
+// to guess at.
 //
-// V3.19.0 fix: this used to reuse position.sabaqTo directly as the new
-// From/To, which repeats the exact ayah the last entry already ended on
-// instead of continuing past it -- a real off-by-one, not a rendering
-// issue. nextSabaqPosition already existed in shared/data.js, fully
-// written and exported, specifically for this -- it just was never
-// actually called anywhere. Wiring it in here is the fix.
+// V3.19.2 fix: hasDhor used to gate everything unconditionally, so a
+// student with BOTH real Sabaq history and any Dhor history at all (e.g.
+// Umme) got nothing prepopulated even though there's a perfectly good
+// Sabaq frontier to continue from. Confirmed in chat: the no-prepopulate
+// rule was only ever meant for the no-Sabaq-history case.
 function nextSabaqDefaults(position, ref, hasDhor){
-  if(hasDhor) return { from: null, to: null };
   if(!position.sabaqTo){
+    if(hasDhor) return { from: null, to: null };
     return { from: { surah: 114, ayah: 1 }, to: { surah: 114, ayah: 6 } };
   }
   const juz = getJuzForPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
@@ -219,11 +219,27 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
 // when this save crosses into a NEW juz', the juz' just left behind
 // becomes "lingering" in Sabaq Dhor (confirmed in chat) until it moves to
 // Dhor, manually or automatically — see maybeAutoMoveToDhor below.
-function advancePositionAfterSabaq(position, toSurah, toAyah, ref){
-  const newActiveJuz = getJuzForPosition(toSurah, toAyah, ref);
+// V3.19.1: takes BOTH endpoints now, not just "to" -- determines the
+// actual frontier by comparing them against the juz's real study
+// direction (compareVerseKey, shared/data.js), rather than assuming "to"
+// always represents the newest point reached. A bulk/historical catch-up
+// entry can have its fields filled in ascending numeric order (lower as
+// From, higher as To) rather than juz' 30's actual backward chronology,
+// where the numerically LOWER endpoint is really the frontier -- e.g.
+// From=88:1/To=114:6 means surahs 89-114 are fully done and only ayah 1
+// of surah 88 is done, so 88:1 (not 114:6) is where the next sabaq
+// continues from. For every other (forward-studied) juz', the frontier
+// is the numerically HIGHER endpoint instead. Found live (confirmed in
+// chat) after V3.19.0 still got a bulk-entry student's frontier wrong.
+function advancePositionAfterSabaq(position, fromSurah, fromAyah, toSurah, toAyah, ref){
+  const juz = getJuzForPosition(fromSurah, fromAyah, ref); // both endpoints share one juz' -- enforced at save time
+  const cmp = compareVerseKey(fromSurah, fromAyah, toSurah, toAyah);
+  const fromIsFrontier = juz === 30 ? cmp <= 0 : cmp >= 0;
+  const frontier = fromIsFrontier ? { surah: fromSurah, ayah: fromAyah } : { surah: toSurah, ayah: toAyah };
+  const newActiveJuz = getJuzForPosition(frontier.surah, frontier.ayah, ref);
   const crossedIntoNewJuz = position.activeJuz != null && newActiveJuz !== position.activeJuz;
   return Object.assign({}, position, {
-    sabaqTo: { surah: toSurah, ayah: toAyah },
+    sabaqTo: frontier,
     activeJuz: newActiveJuz,
     previousJuz: crossedIntoNewJuz ? position.activeJuz : (position.previousJuz || null)
   });

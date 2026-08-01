@@ -187,7 +187,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     setTimeout(() => document.getElementById('sabaqSaveStatus').classList.remove('show'), 1800);
 
     try{
-      sabaqPosition = advancePositionAfterSabaq(sabaqPosition, to.surah, to.ayah, sabaqRef);
+      sabaqPosition = advancePositionAfterSabaq(sabaqPosition, from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
       await savePosition(sabaqPosition);
       // Phase 2b (V3.17.0): the automatic half of the move-to-Dhor
       // transition -- if a previous juz' is lingering and this save just
