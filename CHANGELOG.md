@@ -7,6 +7,64 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.23.0 — Dhor detail rebuild, Phase A (2026-08-01)
+
+**Dhor's default entry is no longer just "today's plan or blank."**
+Confirmed design: `computeDefaultDhorEntry` (new, `worker/src/dhorSchedule.js`)
+now checks, in order: (1) today's plan(s) — unchanged from before; (2) no
+entry for today → the most recently MISSED plan, backdated to *that
+plan's own date* (a genuine catch-up entry, not logged as today); (3) no
+missed entries → the closest upcoming plan, borrowed early under today's
+date; (4) no plan at all but real Dhor history exists → the segment that
+follows the last logged entry, walking the eligible pool forward at
+*that entry's own granularity* — a deliberate choice to match what the
+student actually just did, not the account's configured Setup
+granularity/quantity (which is what `ensureDhorSchedule`'s own anchor
+logic uses for auto-generating future plan rows — a related but
+different question); (5) no plan and no history at all → the very first
+eligible segment, quarter granularity.
+
+Reuses the existing `buildChunks`/`findChunkIndexForSegment` (this same
+file, already proven via `ensureDhorSchedule`) rather than building a
+second copy of that gap-aware chunking logic. New endpoint:
+`GET /dhor-schedule/default-entry`. The Dhor form now shows a hint
+explaining *why* something was pre-filled ("catching up on...",
+"continuing from your last session", etc.) instead of populating
+silently.
+
+**3 UI fixes, applied across all 3 cards** (shared CSS/HTML, not
+Dhor-specific) since they're deferred groundwork for this same rebuild:
+- Cancel removed from the edit-screen top bar (redundant with the bottom
+  bar's Cancel) — and the now-orphaned JS listeners for those buttons
+  were removed too, checked deliberately given how the last critical bug
+  happened.
+- The date field is no longer a fixed 30% column that could truncate the
+  rendered date — now sized to its own natural width.
+- History moved into the same row as the date field, right-justified
+  with edge padding, height-matched to the date field via the row's own
+  `align-items:stretch` rather than a hardcoded pixel value. Width was
+  deliberately left unconstrained (sized to its own label) rather than
+  forced to match the date field's width too, since "Sabaq Dhor History"
+  would otherwise risk wrapping on a narrower screen — flagging this as
+  a specific interpretation choice, not an oversight.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+js/api.js
+worker/src/dhorSchedule.js
+worker/src/index.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.22.1 — Edit screen polish + null-entry crash fix (2026-08-01)
 
 Three fixes, all confirmed in chat after V3.22.0 went live:

@@ -203,10 +203,6 @@ function resetSabaqDhorFormAfterEdit(){
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', null);
 }
-document.getElementById('sabaqDhorEditCancelBtn').addEventListener('click', () => {
-  cancelSabaqDhorEdit();
-  resetSabaqDhorFormAfterEdit();
-});
 document.getElementById('sabaqDhorEditCancelBtn2').addEventListener('click', () => {
   cancelSabaqDhorEdit();
   resetSabaqDhorFormAfterEdit();
