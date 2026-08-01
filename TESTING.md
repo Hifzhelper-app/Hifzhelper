@@ -931,6 +931,33 @@ reused for steps 3–6.
 11. Confirm the rollup level still persists across a screen reload
     (position.sabaqDhorRollup), same as before this round.
 
+## 34. Prepopulation frontier fix + UI polish (V3.20.0)
+
+1. Recreate a bulk-entry scenario like ADMIN-01's: for a juz' 30 student,
+   save a Sabaq entry with From set to a LOWER surah:ayah than To (e.g.
+   From=88:1, To=114:6). Reopen Sabaq fresh → confirm "Sabaq to"
+   prepopulates one ayah PAST 88:1 in the backward direction (i.e. still
+   within/before surah 88), NOT anywhere near 114.
+2. For a normal (non-bulk) juz' 30 entry where From is the higher
+   surah:ayah and To is the lower one (the usual chronological order),
+   confirm prepopulation still works exactly as before — this fix
+   shouldn't change behavior for correctly-ordered entries.
+3. For a non-juz'-30 student with both real Sabaq history and any Dhor
+   history logged, confirm "Sabaq from" now prepopulates one ayah past
+   the last Sabaq entry, instead of blanking out.
+4. For a student with Dhor history but NO Sabaq history at all, confirm
+   both fields still correctly stay blank (unchanged case).
+5. For a student with neither Sabaq nor Dhor history, confirm it still
+   prepopulates 114:1/114:6 (unchanged case).
+6. On all 4 cards, confirm the Save icon is visibly larger and the whole
+   icon+label unit is centered in its column, not pressed against the
+   right edge.
+7. On Sabaq Dhor, confirm each row's checkbox lines up at the same
+   horizontal position across every row regardless of how long that
+   row's label text is (roughly 80% across the row).
+8. On Sabaq Dhor, confirm Mistakes and Tajweed now sit side by side on
+   one line instead of stacked.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

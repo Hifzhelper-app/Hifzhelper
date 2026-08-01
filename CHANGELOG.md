@@ -7,6 +7,57 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.20.0 — Prepopulation frontier fix + UI polish (2026-08-01)
+
+**Sabaq position frontier — two more real bugs found live, after V3.19.0.**
+
+Bug 1: `advancePositionAfterSabaq` still trusted "to" as the frontier
+unconditionally. That breaks for a bulk/historical catch-up entry whose
+fields were filled in ascending numeric order rather than the juz's
+actual study/chronological order — e.g. From=88:1/To=114:6 for a juz' 30
+student actually means surahs 89-114 are fully done and only ayah 1 of
+88 is, so 88:1 (not 114:6) is the real frontier. Fixed by comparing both
+endpoints via `shared/data.js`'s existing `compareVerseKey` against the
+juz's real study direction (lower endpoint = frontier for juz' 30,
+higher = frontier for every other juz'), instead of assuming either
+field always plays a fixed role. This corrects the logic from here
+onward; it does NOT retroactively fix already-stored position data for
+students already affected by the old logic — that needs a one-time
+direct D1 correction, separate from this delivery.
+
+Bug 2: `nextSabaqDefaults` gated on `hasDhor` unconditionally, so a
+student with real Sabaq history AND any Dhor history at all got nothing
+prepopulated. The no-prepopulate rule was only ever meant for the
+no-Sabaq-history case — real Sabaq history should always prepopulate
+regardless of Dhor history. This one needed no data correction: the
+underlying position record was already correct, only the display logic
+was wrong.
+
+**UI polish, all confirmed in chat:**
+- Save button (all 4 cards): icon doubled in size, whole icon+label unit
+  now centered both ways within its grid cell instead of hugging the
+  column's right edge.
+- Sabaq Dhor section rows: rebuilt as an explicit 80:20 grid (text :
+  checkbox) instead of flex + space-between, so the checkbox sits at a
+  consistent position across every row instead of trailing wherever that
+  row's text happens to end.
+- Sabaq Dhor: Mistakes and Tajweed now share one line, reusing the same
+  `.picker-row` 2-column pattern already used for Sabaq's own Lines/Pages
+  fields.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/position.js
+js/sabaqPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.19.0 — Detail-screen UI round 4 + real prepopulation fix (2026-07-31)
 
 **Sabaq prepopulation — real root cause found, not a rendering issue.**
