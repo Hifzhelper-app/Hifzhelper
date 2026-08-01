@@ -22,6 +22,14 @@ document.getElementById('sabaqDhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('dhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
 
+// V3.19.0: xclose exits back to Journal -- the landing page this screen
+// is always reached from (via a journal-table cell click). There's no
+// navigation history stack anywhere in the app (showScreen is a direct
+// switch, not a push/pop), so "back" has no more general meaning here
+// than that fixed target.
+document.getElementById('logDetailClose').innerHTML = iconHtml('close');
+document.getElementById('logDetailClose').addEventListener('click', () => showScreen('journal'));
+
 async function renderLogDetailScreen(initialCard){
   await Promise.all([
     renderSabaqScreen(),

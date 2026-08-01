@@ -53,20 +53,32 @@ async function hasDhorHistory(){
 // confirmed rules: any Dhor history → don't prepopulate either field, the
 // caller passes hasDhor and just gets nulls back for both; no Sabaq history
 // yet either → 114:1/114:6 (juz' 30's start, per the study order); has
-// Sabaq history → the last reached point prefills To if currently in juz'
-// 30 (studied backwards, so the frontier is the FURTHER-along end) or From
-// otherwise (studied forwards, so the frontier is the starting point for
-// what's next).
+// Sabaq history → the last reached point ADVANCES one ayah (via
+// shared/data.js's nextSabaqPosition, study-direction aware) and prefills
+// To if currently in juz' 30 (studied backwards, so the frontier is the
+// FURTHER-along end) or From otherwise (studied forwards, so the frontier
+// is the starting point for what's next). If advancing would leave the
+// juz' entirely (it's fully complete), nothing prepopulates -- there's no
+// single correct next point to guess at.
+//
+// V3.19.0 fix: this used to reuse position.sabaqTo directly as the new
+// From/To, which repeats the exact ayah the last entry already ended on
+// instead of continuing past it -- a real off-by-one, not a rendering
+// issue. nextSabaqPosition already existed in shared/data.js, fully
+// written and exported, specifically for this -- it just was never
+// actually called anywhere. Wiring it in here is the fix.
 function nextSabaqDefaults(position, ref, hasDhor){
   if(hasDhor) return { from: null, to: null };
   if(!position.sabaqTo){
     return { from: { surah: 114, ayah: 1 }, to: { surah: 114, ayah: 6 } };
   }
   const juz = getJuzForPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
+  const next = nextSabaqPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
+  if(next.juzComplete) return { from: null, to: null };
   if(juz === 30){
-    return { from: null, to: { surah: position.sabaqTo.surah, ayah: position.sabaqTo.ayah } };
+    return { from: null, to: { surah: next.surah, ayah: next.ayah } };
   }
-  return { from: { surah: position.sabaqTo.surah, ayah: position.sabaqTo.ayah }, to: null };
+  return { from: { surah: next.surah, ayah: next.ayah }, to: null };
 }
 
 // Phase 2a (V3.16.0): builds the actual DISPLAYABLE rows for Sabaq Dhor,
