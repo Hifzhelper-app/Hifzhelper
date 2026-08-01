@@ -7,6 +7,77 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.19.0 — Detail-screen UI round 4 + real prepopulation fix (2026-07-31)
+
+**Sabaq prepopulation — real root cause found, not a rendering issue.**
+`shared/data.js` already had a fully-written, exported helper,
+`nextSabaqPosition`, specifically for advancing one ayah past a given
+position in the correct study direction (backwards for juz' 30, forwards
+otherwise) — it just was never actually called anywhere. `nextSabaqDefaults`
+(`js/position.js`) was reusing `position.sabaqTo` directly as the new
+From/To, which repeats the exact ayah the last entry already ended on
+instead of continuing past it. Fixed by wiring `nextSabaqPosition` in;
+also added a `juzComplete` check so prepopulation stays silent (rather
+than guessing) once advancing would leave the juz' entirely.
+
+**Icon-button convention.** The Save button (all 4 cards) now matches
+Hifzhelper's own existing `.nav-icon-item` pattern — icon on top, label
+below, no border/background — instead of being a special-cased bordered
+button. This is the new default for in-app icon buttons generally, not
+just Save. Label stays normal weight; caps come from `text-transform`,
+not the underlying string.
+
+**Xclose control.** The log-detail screen (Sabaq/Sabaq Dhor/Dhor/Tadabbur)
+now has an exit icon on the right of the swipe-dots row, using the
+provided Lucide `square-x` source. Exits to Journal — the app has no
+navigation history stack, just direct screen switches, and Journal is the
+landing page this screen is always reached from. The dots row is now a
+3-column grid (spacer:dots:close) so dots stay centered independently of
+the close button; only the dots hide on desktop (≥1180px), the close
+button stays visible at every size.
+
+**Sabaq Dhor "Sections to revise" redesign.** Heading text removed
+entirely; "Mark sections revised" now labels the checkbox list
+specifically. Checkboxes moved to the right side of each row. Default
+changed from checked to unchecked — this was a real bug, not styling:
+`renderSabaqDhorRows` was hardcoding `checked` on every row, forcing
+everything pre-selected instead of letting a student actually mark what
+was revised. The existing "please check at least one section" validation
+in the save handler already covers the resulting empty-selection case, no
+changes needed there.
+
+**Rollup control redesign.** The two rollup buttons are now a compact
+2-icon vertical stepper sitting to the left of the section list (was a
+full-width row above it), using the provided Lucide
+`list-chevrons-down-up`/`list-chevrons-up-down` icons in place of the
+plain ▲/▼ glyphs. Each button is now hidden entirely (not just a no-op
+tap) whenever its direction wouldn't actually change anything — rather
+than hand-duplicating `computeSabaqDhorRows`' own merge conditions
+(pairs, full-juz' logic, lingering-juz' rows) to detect eligibility
+separately, `updateRollupStepperVisibility` computes the rows one level
+up and down and compares row-id sets directly, so eligibility can never
+drift out of sync with what the button would actually do.
+
+**Deferred, not in this round:** relabeling the Dhor Plan picker's raw
+"Seg 113-116"/"Seg 117-120" buttons (segment_from/segment_to quarter-unit
+IDs) into a human-readable form — parked for when Dhor's own detail work
+happens.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/icons.js
+js/position.js
+js/sabaqDhorPage.js
+js/logDetailScreen.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.18.0 — Detail-screen UI round 3 (2026-07-31)
 
 Bismillah. This round's scope was fixing UI items confirmed after V3.17.0
