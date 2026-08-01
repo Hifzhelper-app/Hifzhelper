@@ -7,6 +7,120 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.21.1 — Dhor duration becomes a real input (2026-08-01)
+
+**Note on this delivery: bundled with V3.21.0.** V3.21.0 was never actually
+uploaded to production, so this zip contains every file changed by BOTH
+V3.21.0 and V3.21.1 together — the live site is still on V3.20.0.
+
+**Duration is now a genuine user input, not something only the timer can
+set.** Confirmed in chat: the timer is meant to be an assistive feature
+that fills duration in for you and additionally captures lap times (real
+richer data a manual entry can't provide) — it was never supposed to be
+the *only* way to record a duration. Previously there was no manual
+field at all; `js/timer.js` has no `<input>` elements, so
+`duration_seconds` could only ever come from actually running the timer.
+
+Added a "Duration (minutes)" field above the timer. The timer auto-fills
+it (and separately captures lap times) when used, but it's directly
+editable at any time — before, during, or after using the timer.
+Stored value is still seconds (unchanged column), entered/displayed in
+minutes.
+
+Two precision/consistency details, both confirmed in chat:
+- The field displays 1 decimal place, but the timer's real precision
+  isn't lost to that rounding — if the field is left exactly as the
+  timer set it, saving uses the timer's exact seconds value directly,
+  not a re-parse of the rounded "12.6" display text. Detecting "did the
+  user actually touch this" relies on a real quirk: setting `.value`
+  programmatically doesn't fire an `input` event, only genuine typing
+  does — so the auto-fill and the override-detection cleanly never
+  collide.
+- Manually overriding the duration clears lap times, since laps that no
+  longer sum to the new total would be actively misleading rather than
+  just unused.
+
+This also meant fixing V3.21.0's Dhor edit flow: duration and lap times
+were excluded from editing specifically because no editable field
+existed for them yet. That reasoning no longer applies now that one
+does, so editing a past Dhor entry includes them like any other field.
+Segment (from a picker reflecting today's live options, not what was
+actually chosen on the edited day) is still excluded — that part of the
+original reasoning still holds.
+
+**Files changed (includes V3.21.0's files, since that hadn't shipped
+yet):**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/icons.js
+js/dhorPage.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
+## V3.21.0 — Edit past entries + checkbox alignment fix (2026-08-01)
+
+**Sabaq Dhor checkbox alignment** — the fix identified but held back last
+round is now in: `.sabaq-dhor-section-row span` gets `min-width: 0`, so a
+longer label like "Quarter 3 (current): 83:1 - 86:2" wraps within its 80%
+column instead of overflowing it and dragging that row's checkbox out of
+line with shorter rows.
+
+**Editing past entries — confirmed design.** A single edit (pencil) icon
+per row in the History popup (Sabaq/Sabaq Dhor/Dhor), loading that entry
+into the card's own form rather than a separate edit UI — reuses every
+existing field/picker/validation as-is. Saving PATCHes the row.
+
+The important nuance, confirmed in chat: this is NOT "delete and re-save
+for every edit." That would be actively risky — recomputing Sabaq's
+position from whichever entry happens to be getting a typo fixed today,
+even a weeks-old one, would silently drag the student's position
+backward. Position is now only ever recomputed when the entry being
+edited is confirmed to be the current frontier (the one `position.sabaqTo`
+was actually derived from — checked once, when the entry is loaded, by
+comparing it against the most recent entry in that student's own history).
+Editing any other Sabaq entry saves the content and leaves position alone.
+
+Sabaq Dhor and Dhor have no position side effects to worry about, but
+have their own real constraint: their range fields (Sabaq Dhor's
+from/to, Dhor's segment_from/to) reflect a picker or checkbox set built
+from *today's* live options, not whatever was actually true on the day
+being edited — there's no way to correctly reconstruct that UI for a
+past entry. So editing those two only ever touches mistakes, tajweed
+tags, and notes; the range (and Dhor's timer data, which can't be
+redone either) is simply never included in the PATCH and stays exactly
+as originally recorded. The banner shown while editing says so
+explicitly, and the section checkboxes / rollup stepper are hidden on
+Sabaq Dhor while editing since they'd otherwise look actionable but
+silently do nothing.
+
+Also fixed while building this: reopening any of the 3 cards now
+explicitly resets editing state. Without it, closing the screen mid-edit
+(e.g. via xclose) without saving or cancelling would leave the next
+save on a fresh visit silently PATCHing the old entry instead of
+creating a new one.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/icons.js
+js/dhorPage.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.20.0 — Prepopulation frontier fix + UI polish (2026-08-01)
 
 **Sabaq position frontier — two more real bugs found live, after V3.19.0.**
