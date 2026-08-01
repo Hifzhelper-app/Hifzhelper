@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.21.2"></script>
+<script src="js/pwaManifest.js?v=3.22.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.21.2">
-<link rel="stylesheet" href="css/base.css?v=3.21.2">
-<link rel="stylesheet" href="css/nav.css?v=3.21.2">
-<link rel="stylesheet" href="css/journal-table.css?v=3.21.2">
-<link rel="stylesheet" href="css/components.css?v=3.21.2">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.21.2">
-<link rel="stylesheet" href="css/settings.css?v=3.21.2">
-<link rel="stylesheet" href="css/admin.css?v=3.21.2">
+<link rel="stylesheet" href="css/tokens.css?v=3.22.0">
+<link rel="stylesheet" href="css/base.css?v=3.22.0">
+<link rel="stylesheet" href="css/nav.css?v=3.22.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.22.0">
+<link rel="stylesheet" href="css/components.css?v=3.22.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.22.0">
+<link rel="stylesheet" href="css/settings.css?v=3.22.0">
+<link rel="stylesheet" href="css/admin.css?v=3.22.0">
 </head>
 <body>
 
@@ -226,8 +226,8 @@
               </div>
             </div>
             <div class="card-date-row"><input type="date" id="sabaq_date" class="card-header-date"></div>
-            <div class="edit-banner hidden" id="sabaqEditBanner">
-              <span>Editing entry from <span id="sabaqEditBannerDate"></span></span>
+            <div class="edit-topbar hidden" id="sabaqEditTopbar">
+              <span>Editing Sabaq from <span id="sabaqEditTopbarDate"></span></span>
               <button type="button" id="sabaqEditCancelBtn">Cancel</button>
             </div>
 
@@ -272,6 +272,11 @@
             <div id="sabaqTajweedPicker"></div>
             <div id="sabaqCommentBlock"></div>
             <div class="form-error" id="sabaqError"></div>
+            <div class="edit-bottombar hidden" id="sabaqEditBottombar">
+              <button type="button" id="sabaqEditCancelBtn2"><span class="btn-icon" id="sabaqEditCancelIcon"></span><span>Cancel</span></button>
+              <button type="button" class="edit-bottombar-delete" id="sabaqEditDeleteBtn"><span class="btn-icon" id="sabaqEditDeleteIcon"></span><span>Delete</span></button>
+              <button type="button" id="sabaqEditUpdateBtn"><span class="btn-icon" id="sabaqEditUpdateIcon"></span><span>Update</span></button>
+            </div>
             <div class="history-container" id="sabaqRecentRail"></div>
           </div>
         </div>
@@ -288,8 +293,8 @@
               </div>
             </div>
             <div class="card-date-row"><input type="date" id="sabaqDhor_date" class="card-header-date"></div>
-            <div class="edit-banner hidden" id="sabaqDhorEditBanner">
-              <span>Editing entry from <span id="sabaqDhorEditBannerDate"></span></span>
+            <div class="edit-topbar hidden" id="sabaqDhorEditTopbar">
+              <span>Editing Sabaq Dhor from <span id="sabaqDhorEditTopbarDate"></span></span>
               <button type="button" id="sabaqDhorEditCancelBtn">Cancel</button>
             </div>
 
@@ -314,6 +319,11 @@
             </div>
             <div id="sabaqDhorCommentBlock"></div>
             <div class="form-error" id="sabaqDhorError"></div>
+            <div class="edit-bottombar hidden" id="sabaqDhorEditBottombar">
+              <button type="button" id="sabaqDhorEditCancelBtn2"><span class="btn-icon" id="sabaqDhorEditCancelIcon"></span><span>Cancel</span></button>
+              <button type="button" class="edit-bottombar-delete" id="sabaqDhorEditDeleteBtn"><span class="btn-icon" id="sabaqDhorEditDeleteIcon"></span><span>Delete</span></button>
+              <button type="button" id="sabaqDhorEditUpdateBtn"><span class="btn-icon" id="sabaqDhorEditUpdateIcon"></span><span>Update</span></button>
+            </div>
             <div class="history-container" id="sabaqDhorRecentRail"></div>
           </div>
         </div>
@@ -330,26 +340,28 @@
               </div>
             </div>
             <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"></div>
-            <div class="edit-banner hidden" id="dhorEditBanner">
-              <span>Editing entry from <span id="dhorEditBannerDate"></span></span>
+            <div class="edit-topbar hidden" id="dhorEditTopbar">
+              <span>Editing Dhor from <span id="dhorEditTopbarDate"></span></span>
               <button type="button" id="dhorEditCancelBtn">Cancel</button>
             </div>
-            <div id="dhorPlanBanner"></div>
-            <!-- V3.10.0: the standalone reference dropdown is gone -- ref
-                 is now derived from the student's own mushaf choice
-                 (Setup), same rule for everyone (13-line/15-line/Hybrid
-                 all resolve consistently), not a separate per-device pick
-                 living only on this one page. -->
-            <div class="picker-row">
-              <div><label>Juz'</label><select id="dhor_juz"></select></div>
-              <div><label>Starting at</label><select id="dhor_position"></select></div>
+            <div id="dhorSegmentPicker">
+              <div id="dhorPlanBanner"></div>
+              <!-- V3.10.0: the standalone reference dropdown is gone -- ref
+                   is now derived from the student's own mushaf choice
+                   (Setup), same rule for everyone (13-line/15-line/Hybrid
+                   all resolve consistently), not a separate per-device pick
+                   living only on this one page. -->
+              <div class="picker-row">
+                <div><label>Juz'</label><select id="dhor_juz"></select></div>
+                <div><label>Starting at</label><select id="dhor_position"></select></div>
+              </div>
+              <label>Amount</label>
+              <select id="dhor_unit">
+                <option value="quarter">Quarter</option>
+                <option value="half">Half juz'</option>
+                <option value="full">Full juz'</option>
+              </select>
             </div>
-            <label>Amount</label>
-            <select id="dhor_unit">
-              <option value="quarter">Quarter</option>
-              <option value="half">Half juz'</option>
-              <option value="full">Full juz'</option>
-            </select>
             <label>Mistakes</label><input type="number" inputmode="numeric" id="dhor_mistakes">
             <!-- V3.21.1: duration is a real user input now, not something
                  only the timer can set (confirmed in chat) -- the timer
@@ -365,6 +377,11 @@
             <div id="dhorTajweedPicker"></div>
             <div id="dhorCommentBlock"></div>
             <div class="form-error" id="dhorError"></div>
+            <div class="edit-bottombar hidden" id="dhorEditBottombar">
+              <button type="button" id="dhorEditCancelBtn2"><span class="btn-icon" id="dhorEditCancelIcon"></span><span>Cancel</span></button>
+              <button type="button" class="edit-bottombar-delete" id="dhorEditDeleteBtn"><span class="btn-icon" id="dhorEditDeleteIcon"></span><span>Delete</span></button>
+              <button type="button" id="dhorEditUpdateBtn"><span class="btn-icon" id="dhorEditUpdateIcon"></span><span>Update</span></button>
+            </div>
             <div class="history-container" id="dhorRecentRail"></div>
           </div>
         </div>
@@ -613,24 +630,24 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.21.2"></script>
-<script src="js/icons.js?v=3.21.2"></script>
-<script src="js/api.js?v=3.21.2"></script>
-<script src="js/uiSwitch.js?v=3.21.2"></script>
-<script src="js/position.js?v=3.21.2"></script>
-<script src="js/auth.js?v=3.21.2"></script>
-<script src="js/home.js?v=3.21.2"></script>
-<script src="js/tajweed.js?v=3.21.2"></script>
-<script src="js/commentPrivacy.js?v=3.21.2"></script>
-<script src="js/timer.js?v=3.21.2"></script>
-<script src="js/journal.js?v=3.21.2"></script>
-<script src="js/dhorPage.js?v=3.21.2"></script>
-<script src="js/sabaqPage.js?v=3.21.2"></script>
-<script src="js/sabaqDhorPage.js?v=3.21.2"></script>
-<script src="js/reflectionCard.js?v=3.21.2"></script>
-<script src="js/logDetailScreen.js?v=3.21.2"></script>
-<script src="js/settingsScreen.js?v=3.21.2"></script>
-<script src="js/adminPage.js?v=3.21.2"></script>
-<script src="js/app.js?v=3.21.2"></script>
+<script src="shared/data.js?v=3.22.0"></script>
+<script src="js/icons.js?v=3.22.0"></script>
+<script src="js/api.js?v=3.22.0"></script>
+<script src="js/uiSwitch.js?v=3.22.0"></script>
+<script src="js/position.js?v=3.22.0"></script>
+<script src="js/auth.js?v=3.22.0"></script>
+<script src="js/home.js?v=3.22.0"></script>
+<script src="js/tajweed.js?v=3.22.0"></script>
+<script src="js/commentPrivacy.js?v=3.22.0"></script>
+<script src="js/timer.js?v=3.22.0"></script>
+<script src="js/journal.js?v=3.22.0"></script>
+<script src="js/dhorPage.js?v=3.22.0"></script>
+<script src="js/sabaqPage.js?v=3.22.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.22.0"></script>
+<script src="js/reflectionCard.js?v=3.22.0"></script>
+<script src="js/logDetailScreen.js?v=3.22.0"></script>
+<script src="js/settingsScreen.js?v=3.22.0"></script>
+<script src="js/adminPage.js?v=3.22.0"></script>
+<script src="js/app.js?v=3.22.0"></script>
 </body>
 </html>

@@ -136,9 +136,10 @@ document.getElementById('sabaqDhor_rollup_down').addEventListener('click', () =>
 
 async function renderSabaqDhorScreen(){
   sabaqDhorEditingId = null;
-  document.getElementById('sabaqDhorEditBanner').classList.add('hidden');
+  document.getElementById('sabaqDhorEditTopbar').classList.add('hidden');
+  document.getElementById('sabaqDhorEditBottombar').classList.add('hidden');
   document.getElementById('sabaqDhor_sections').classList.remove('hidden');
-  document.getElementById('sabaqDhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+  exitEditScreenMode('card-sabaqDhor');
   sabaqDhorSelectedTags = [];
   document.getElementById('sabaqDhor_date').value = todayISO();
   document.getElementById('sabaqDhor_mistakes').value = '0';
@@ -178,28 +179,52 @@ function loadSabaqDhorEntryForEdit(entry){
   sabaqDhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', entry);
-  document.getElementById('sabaqDhorEditBannerDate').textContent =
+  document.getElementById('sabaqDhorEditTopbarDate').textContent =
     `${entry.date} (${entry.from_surah}:${entry.from_ayah} - ${entry.to_surah}:${entry.to_ayah} — range isn't editable here)`;
-  document.getElementById('sabaqDhorEditBanner').classList.remove('hidden');
+  document.getElementById('sabaqDhorEditTopbar').classList.remove('hidden');
+  document.getElementById('sabaqDhorEditBottombar').classList.remove('hidden');
   document.getElementById('sabaqDhor_rollup_up').style.display = 'none';
   document.getElementById('sabaqDhor_rollup_down').style.display = 'none';
   document.getElementById('sabaqDhor_sections').classList.add('hidden');
-  document.getElementById('sabaqDhorSaveBtn').querySelector('.save-btn-text').textContent = 'Update';
+  enterEditScreenMode('card-sabaqDhor');
 }
 function cancelSabaqDhorEdit(){
   sabaqDhorEditingId = null;
-  document.getElementById('sabaqDhorEditBanner').classList.add('hidden');
+  document.getElementById('sabaqDhorEditTopbar').classList.add('hidden');
+  document.getElementById('sabaqDhorEditBottombar').classList.add('hidden');
   document.getElementById('sabaqDhor_sections').classList.remove('hidden');
-  document.getElementById('sabaqDhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
   updateRollupStepperVisibility();
+  exitEditScreenMode('card-sabaqDhor');
 }
-document.getElementById('sabaqDhorEditCancelBtn').addEventListener('click', () => {
-  cancelSabaqDhorEdit();
+function resetSabaqDhorFormAfterEdit(){
   document.getElementById('sabaqDhor_date').value = todayISO();
   document.getElementById('sabaqDhor_mistakes').value = 0;
   sabaqDhorSelectedTags = [];
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', null);
+}
+document.getElementById('sabaqDhorEditCancelBtn').addEventListener('click', () => {
+  cancelSabaqDhorEdit();
+  resetSabaqDhorFormAfterEdit();
+});
+document.getElementById('sabaqDhorEditCancelBtn2').addEventListener('click', () => {
+  cancelSabaqDhorEdit();
+  resetSabaqDhorFormAfterEdit();
+});
+document.getElementById('sabaqDhorEditUpdateBtn').addEventListener('click', () => {
+  document.getElementById('sabaqDhorSaveBtn').click();
+});
+document.getElementById('sabaqDhorEditDeleteBtn').addEventListener('click', async () => {
+  if(!sabaqDhorEditingId) return;
+  if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
+  try{
+    await apiSabaqDhor.remove(sabaqDhorEditingId);
+    cancelSabaqDhorEdit();
+    resetSabaqDhorFormAfterEdit();
+    await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
+  } catch(e){
+    document.getElementById('sabaqDhorError').textContent = "Couldn't delete: " + e.message;
+  }
 });
 EDIT_HANDLERS.sabaqDhor = loadSabaqDhorEntryForEdit;
 

@@ -1048,6 +1048,38 @@ the fix for a bug that broke Save entirely.
    fixed — they were untestable before this fix since Save itself
    wasn't working.
 
+## 38. Dedicated edit screen + Delete (V3.22.0)
+
+1. On any card, open History and tap the pencil icon → confirm the
+   screen changes dramatically: the Sabaq/SDhor/Dhor/Tadabbur tabs and
+   dots row disappear, the other 3 cards disappear, and the card being
+   edited fills the space with a grey "Editing [Type] from [date]" bar
+   at the top (no icon/heading/Save button visible) instead of its
+   normal header.
+2. Confirm the grey bottom bar appears too, below Notes: Cancel, Delete
+   (red), Update — evenly spaced, centered.
+3. Tap Cancel (either the top or bottom one) → confirm the normal
+   4-card view returns, tabs/dots reappear, and the form resets to a
+   fresh new-entry state.
+4. Make a change and tap Update → confirm it saves correctly (reuse the
+   relevant checks from §35-37) and the normal view returns afterward.
+5. On Sabaq, open the edit screen for the MOST RECENT entry → confirm
+   Delete is greyed out/disabled. Open it for an OLDER entry → confirm
+   Delete is enabled there.
+6. Tap Delete on an enabled entry → confirm the exact confirmation text
+   appears ("Deleting this entry may create gaps in your history which
+   cannot be recovered. Are you sure you want to DELETE?"). Cancel that
+   dialog → confirm nothing happens. Do it again and confirm → confirm
+   the entry is actually gone from History afterward.
+7. On Dhor specifically, open the edit screen → confirm the Juz'/
+   Starting at/Amount pickers and any plan banner are hidden while
+   editing (only Mistakes, Duration, Tajweed, Notes should show).
+8. Exit the whole log-detail screen mid-edit via the xclose icon
+   WITHOUT saving/cancelling/deleting, then reopen it fresh → confirm
+   it opens in normal view, not stuck in edit mode, and confirm no
+   console errors appear on that reopen (this is exactly the failure
+   mode V3.21.2 had — re-verify it didn't reappear here).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

@@ -135,13 +135,15 @@ document.getElementById('sabaq_to_ayah').addEventListener('change', () => {
 });
 
 async function renderSabaqScreen(){
-  // V3.21.0: reset any stale editing state from a previous visit -- if
-  // the screen was closed mid-edit (e.g. via xclose) without saving or
-  // cancelling, a fresh open must not silently PATCH that old entry.
+  // V3.21.0/V3.22.0: reset any stale editing state from a previous visit
+  // -- if the screen was closed mid-edit (e.g. via xclose) without
+  // saving or cancelling, a fresh open must not silently PATCH that old
+  // entry, and must not leave the edit-screen takeover mode stuck on.
   sabaqEditingId = null;
   sabaqEditingIsFrontier = false;
-  document.getElementById('sabaqEditBanner').classList.add('hidden');
-  document.getElementById('sabaqSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+  document.getElementById('sabaqEditTopbar').classList.add('hidden');
+  document.getElementById('sabaqEditBottombar').classList.add('hidden');
+  exitEditScreenMode('card-sabaq');
   sabaqSelectedTags = [];
   document.getElementById('sabaq_date').value = todayISO();
   document.getElementById('sabaq_line_count').value = '';
@@ -182,6 +184,11 @@ function recomputeSabaqLineCount(){
 // reuses every existing field/picker/validation rather than a separate
 // edit UI. Registered below as EDIT_HANDLERS.sabaq (js/dhorPage.js's
 // History popup calls this when its edit icon is tapped).
+// V3.22.0: now opens the dedicated edit screen (enterEditScreenMode,
+// js/logDetailScreen.js) instead of showing an inline banner in the
+// normal card. Delete is disabled (not hidden) for the frontier entry --
+// confirmed in chat, Sabaq-only, since deleting it would leave
+// position.sabaqTo pointing at a row that no longer exists.
 function loadSabaqEntryForEdit(entry, isLatest){
   sabaqEditingId = entry.id;
   sabaqEditingIsFrontier = isLatest;
@@ -196,18 +203,22 @@ function loadSabaqEntryForEdit(entry, isLatest){
   sabaqSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', entry);
-  document.getElementById('sabaqEditBannerDate').textContent = entry.date;
-  document.getElementById('sabaqEditBanner').classList.remove('hidden');
-  document.getElementById('sabaqSaveBtn').querySelector('.save-btn-text').textContent = 'Update';
+  document.getElementById('sabaqEditTopbarDate').textContent = entry.date;
+  document.getElementById('sabaqEditTopbar').classList.remove('hidden');
+  document.getElementById('sabaqEditBottombar').classList.remove('hidden');
+  const deleteBtn = document.getElementById('sabaqEditDeleteBtn');
+  deleteBtn.disabled = isLatest;
+  deleteBtn.title = isLatest ? "Can't delete the entry your current position is based on" : '';
+  enterEditScreenMode('card-sabaq');
 }
 function cancelSabaqEdit(){
   sabaqEditingId = null;
   sabaqEditingIsFrontier = false;
-  document.getElementById('sabaqEditBanner').classList.add('hidden');
-  document.getElementById('sabaqSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+  document.getElementById('sabaqEditTopbar').classList.add('hidden');
+  document.getElementById('sabaqEditBottombar').classList.add('hidden');
+  exitEditScreenMode('card-sabaq');
 }
-document.getElementById('sabaqEditCancelBtn').addEventListener('click', async () => {
-  cancelSabaqEdit();
+async function resetSabaqFormAfterEdit(){
   const dhorExists = await hasDhorHistory();
   const next = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
   sabaqValue = { from: next.from, to: next.to };
@@ -219,6 +230,29 @@ document.getElementById('sabaqEditCancelBtn').addEventListener('click', async ()
   sabaqSelectedTags = [];
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', null);
+}
+document.getElementById('sabaqEditCancelBtn').addEventListener('click', async () => {
+  cancelSabaqEdit();
+  await resetSabaqFormAfterEdit();
+});
+document.getElementById('sabaqEditCancelBtn2').addEventListener('click', async () => {
+  cancelSabaqEdit();
+  await resetSabaqFormAfterEdit();
+});
+document.getElementById('sabaqEditUpdateBtn').addEventListener('click', () => {
+  document.getElementById('sabaqSaveBtn').click();
+});
+document.getElementById('sabaqEditDeleteBtn').addEventListener('click', async () => {
+  if(!sabaqEditingId || sabaqEditingIsFrontier) return;
+  if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
+  try{
+    await apiSabaq.remove(sabaqEditingId);
+    cancelSabaqEdit();
+    await resetSabaqFormAfterEdit();
+    await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
+  } catch(e){
+    document.getElementById('sabaqError').textContent = "Couldn't delete: " + e.message;
+  }
 });
 EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit;
 

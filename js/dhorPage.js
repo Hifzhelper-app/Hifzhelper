@@ -152,8 +152,10 @@ function renderDhorPlanBanner(){
 
 async function renderDhorScreen(){
   dhorEditingId = null;
-  document.getElementById('dhorEditBanner').classList.add('hidden');
-  document.getElementById('dhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+  document.getElementById('dhorEditTopbar').classList.add('hidden');
+  document.getElementById('dhorEditBottombar').classList.add('hidden');
+  document.getElementById('dhorSegmentPicker').classList.remove('hidden');
+  exitEditScreenMode('card-dhor');
   dhorSelectedTags = [];
   dhorTimerExactSeconds = null;
   dhorLapTimes = null;
@@ -230,18 +232,21 @@ function loadDhorEntryForEdit(entry){
   document.getElementById('dhor_duration_minutes').value =
     dhorTimerExactSeconds !== null ? (dhorTimerExactSeconds / 60).toFixed(1) : '';
   updateDhorTimerSummary();
-  document.getElementById('dhorEditBannerDate').textContent =
+  document.getElementById('dhorEditTopbarDate').textContent =
     `${entry.date} (Seg ${entry.segment_from}-${entry.segment_to} — not editable here)`;
-  document.getElementById('dhorEditBanner').classList.remove('hidden');
-  document.getElementById('dhorSaveBtn').querySelector('.save-btn-text').textContent = 'Update';
+  document.getElementById('dhorEditTopbar').classList.remove('hidden');
+  document.getElementById('dhorEditBottombar').classList.remove('hidden');
+  document.getElementById('dhorSegmentPicker').classList.add('hidden');
+  enterEditScreenMode('card-dhor');
 }
 function cancelDhorEdit(){
   dhorEditingId = null;
-  document.getElementById('dhorEditBanner').classList.add('hidden');
-  document.getElementById('dhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+  document.getElementById('dhorEditTopbar').classList.add('hidden');
+  document.getElementById('dhorEditBottombar').classList.add('hidden');
+  document.getElementById('dhorSegmentPicker').classList.remove('hidden');
+  exitEditScreenMode('card-dhor');
 }
-document.getElementById('dhorEditCancelBtn').addEventListener('click', () => {
-  cancelDhorEdit();
+function resetDhorFormAfterEdit(){
   document.getElementById('dhor_mistakes').value = 0;
   dhorSelectedTags = [];
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
@@ -250,6 +255,29 @@ document.getElementById('dhorEditCancelBtn').addEventListener('click', () => {
   dhorLapTimes = null;
   document.getElementById('dhor_duration_minutes').value = '';
   updateDhorTimerSummary();
+}
+document.getElementById('dhorEditCancelBtn').addEventListener('click', () => {
+  cancelDhorEdit();
+  resetDhorFormAfterEdit();
+});
+document.getElementById('dhorEditCancelBtn2').addEventListener('click', () => {
+  cancelDhorEdit();
+  resetDhorFormAfterEdit();
+});
+document.getElementById('dhorEditUpdateBtn').addEventListener('click', () => {
+  document.getElementById('dhorSaveBtn').click();
+});
+document.getElementById('dhorEditDeleteBtn').addEventListener('click', async () => {
+  if(!dhorEditingId) return;
+  if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
+  try{
+    await apiDhor.remove(dhorEditingId);
+    cancelDhorEdit();
+    resetDhorFormAfterEdit();
+    await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+  } catch(e){
+    document.getElementById('dhorError').textContent = "Couldn't delete: " + e.message;
+  }
 });
 EDIT_HANDLERS.dhor = loadDhorEntryForEdit;
 
