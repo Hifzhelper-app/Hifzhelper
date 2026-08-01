@@ -7,6 +7,61 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.21.2 — CRITICAL FIX: Save was broken on all 3 cards (2026-08-01)
+
+**Root cause: `EDIT_HANDLERS` was used before it was declared.** V3.21.0
+added `js/dhorPage.js:237: EDIT_HANDLERS.dhor = loadDhorEntryForEdit;`,
+but the `const EDIT_HANDLERS = {}` declaration itself didn't get added
+until line 328 — much further down in the same file. A `const` binding
+is unusable from the top of its scope until its own declaration line
+actually runs, so line 237 threw
+`ReferenceError: Cannot access 'EDIT_HANDLERS' before initialization`
+the instant the page loaded, which halted every remaining top-level
+statement in that script.
+
+That's a much bigger problem than it sounds, because **Save's click
+handler is wired up further down in the same file, after that line** —
+so it never got attached. Since the crash meant the `const` itself never
+ran, `js/sabaqPage.js` and `js/sabaqDhorPage.js` (which load after
+`dhorPage.js` and each do their own `EDIT_HANDLERS.sabaq = ...` /
+`EDIT_HANDLERS.sabaqDhor = ...`) hit the identical error, halting their
+scripts too — and their Save handlers are wired up right after those
+lines as well. **Net effect: Save silently stopped working on Sabaq,
+Sabaq Dhor, and Dhor, and History never appeared on any of the 3 cards**
+(`renderRecentEntries`, defined further down in the crashed
+`dhorPage.js`, was never successfully reachable either). Confirmed live
+in the repo the user re-uploaded, not just suspected from re-reading the
+code.
+
+**Fix:** `EDIT_HANDLERS` is now declared right at the top of
+`js/dhorPage.js`, before anything in any of the three files can
+reference it. This is the only change needed — the assignments and
+usages elsewhere were already correct, they just needed the declaration
+to actually exist first.
+
+**Also, Sabaq Dhor's checkbox alignment — genuinely fixed this time.**
+The 80:20-grid-per-row approach from V3.20.0/V3.20.1 was the wrong tool
+for cross-row alignment: each row computed its own 80%/20% split against
+its own box, so consistency across rows was never actually guaranteed,
+just usually close. `#sabaqDhor_sections` is now itself ONE shared CSS
+grid (`1fr auto auto`); every row contributes exactly 3 direct grid
+children (text, a Move-to-Dhor button or an empty placeholder to keep
+column position stable, checkbox) so every checkbox genuinely shares the
+same column across every row, the way an HTML table's cells would.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/sabaqDhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.21.1 — Dhor duration becomes a real input (2026-08-01)
 
 **Note on this delivery: bundled with V3.21.0.** V3.21.0 was never actually

@@ -1022,6 +1022,32 @@ reused for steps 3–6.
 8. Confirm segment (Seg X-Y) is still shown as read-only/not editable
    in the edit banner, unchanged from V3.21.0.
 
+## 37. CRITICAL: Save + History on all 3 cards, checkbox alignment (V3.21.2)
+
+**Check this section first, before any other testing** — it verifies
+the fix for a bug that broke Save entirely.
+
+1. Open Sabaq, fill in a valid entry, tap Save → confirm it actually
+   saves (check for the "saved ✓" status and that History now shows the
+   new entry). Do the same for Sabaq Dhor and Dhor.
+2. On all 3 cards, confirm the History button now appears and opens the
+   popup correctly (this was completely missing before this fix).
+3. Open the browser console while loading the app (if possible) →
+   confirm there's no `ReferenceError` on page load.
+4. On Sabaq Dhor, confirm every row's checkbox now lines up in a
+   genuinely identical column regardless of label length — check this
+   with a mix of long ("Quarter 3 (current): ...") and short labels
+   visible at once, and also check a case where one row has a "Move to
+   Dhor" button and others don't, to confirm that doesn't throw off
+   alignment either.
+5. Tap "Move to Dhor" on an eligible row → confirm it still works
+   correctly (the button's own click handler wasn't touched, just its
+   DOM position).
+6. Re-run a couple of spot checks from §35/§36 (edit an entry, use the
+   Dhor timer) to confirm those still work correctly now that Save is
+   fixed — they were untestable before this fix since Save itself
+   wasn't working.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
