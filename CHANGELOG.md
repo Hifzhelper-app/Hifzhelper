@@ -7,6 +7,47 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.22.1 — Edit screen polish + null-entry crash fix (2026-08-01)
+
+Three fixes, all confirmed in chat after V3.22.0 went live:
+
+**Topbar/date order was backwards.** The confirmed layout was "Editing
+[Type] from [date]" as Row 1, date field as Row 2 below it — V3.22.0
+built it in the opposite order. Fixed by reordering the two elements in
+`index.html` for all 3 cards. The edit topbar is hidden in normal view
+regardless, so this has no effect outside edit mode.
+
+**Sabaq's Delete button now hides entirely for the frontier entry**,
+rather than just being disabled — same restriction as before (deleting
+the entry `position.sabaqTo` is currently based on isn't allowed), just
+not shown as an option at all instead of shown-but-greyed-out.
+
+**Real crash fixed: entries with a null sabaq_from/sabaq_to (shown as
+"null-null" in History) couldn't be opened for editing at all.**
+`loadSabaqEntryForEdit` called `.split(':')` directly on
+`entry.sabaq_from`/`entry.sabaq_to` — if either is genuinely `null`
+rather than a string, that throws immediately, before anything else in
+the function runs. Since the History popup had already closed by that
+point, the failure was invisible: the screen just silently stayed on
+the normal Sabaq view, with no way to reach Delete for that entry at
+all. Fixed with a small parsing helper that falls back to the same "—"
+placeholder state `renderVerseRefField` already shows for a genuinely
+empty field, instead of crashing — the edit screen (and Delete) now
+opens correctly for these entries regardless of how malformed their
+historical data is.
+
+**Files changed:**
+```
+index.html
+css/detail-pages.css
+js/sabaqPage.js
+sw.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.22.0 — Dedicated edit screen + Delete (2026-08-01)
 
 **Edit now opens as a full takeover, not an inline banner.** Confirmed
