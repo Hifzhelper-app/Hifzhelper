@@ -110,37 +110,34 @@
    the tajweed popup's checkbox list, just inline on the card itself
    rather than in a popup (there are at most 4, no need to hide them
    behind a trigger button the way tajweed's larger vocabulary needs). */
-/* V3.20.0: explicit 80:20 grid (text : checkbox) instead of flex +
-   space-between -- the checkbox now sits at a consistent horizontal
-   position across every row (the 80/20 boundary) rather than wherever
-   that particular row's text happened to end. justify-self:start left-
-   aligns it within its own 20% column, i.e. right at that boundary. */
-.sabaq-dhor-section-row {
+/* V3.21.2 fix: this used to be a separate CSS grid PER ROW (each row its
+   own .sabaq-dhor-section-row, 80:20 columns computed independently),
+   wrapped in a flex .sabaq-dhor-row-wrap to fit the optional Move to
+   Dhor button beside it. That's the wrong tool for cross-row alignment
+   -- confirmed in chat -- because each row's grid resolves its own 80%/
+   20% split against ITS OWN box, so any tiny per-row width difference
+   (rounding, or simply not being a perfectly reliable assumption) can
+   shift that row's checkbox independently of the others. #sabaqDhor_sections
+   is now ITSELF one shared grid; every row contributes exactly 3 direct
+   grid children (text, move-button-or-empty-placeholder, checkbox) so
+   every checkbox genuinely shares the same column across every row, the
+   same way an HTML table's cells would -- not just three separately-
+   computed approximations of the same column. */
+.sabaq-dhor-sections-list {
   display: grid;
-  grid-template-columns: 80% 20%;
+  grid-template-columns: 1fr auto auto;
   align-items: center;
-  gap: var(--space-sm);
-  padding: 6px 0;
-  font-size: 14px;
+  column-gap: var(--space-sm);
+  row-gap: 4px;
+  flex: 1;
+  min-width: 0;
 }
-/* V3.20.1 fix: same root cause as the earlier verse-ref grid bug -- a
-   grid item's default min-width is auto (its content's own minimum
-   width), so a longer label (e.g. "Quarter 3 (current): 83:1 - 86:2")
-   can grow past its assigned 80% column and drag that row's checkbox
-   further right than shorter rows', instead of wrapping within it. This
-   forces it to actually respect the column and wrap. */
-.sabaq-dhor-section-row span { min-width: 0; }
-.sabaq-dhor-section-row input { width: auto; justify-self: start; }
-.sabaq-dhor-row-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
+.sabaq-dhor-row-text {
+  min-width: 0;
+  font-size: 14px;
   padding: 2px 0;
 }
-.sabaq-dhor-row-wrap .sabaq-dhor-section-row { padding: 4px 0; flex: 1; }
 .move-to-dhor-btn {
-  flex: 0 0 auto;
   border: 1px solid var(--palette-evergreen);
   color: var(--palette-evergreen);
   background: none;
@@ -173,7 +170,6 @@
   cursor: pointer;
 }
 .sabaq-dhor-rollup-btn svg { width: 18px; height: 18px; }
-.sabaq-dhor-sections-list { flex: 1; min-width: 0; }
 
 /* Combined surah:ayah input field -- V3.18.0 rebuild as an explicit CSS
    grid (chevron:surah:ayah:chevron at 10:50:30:10, per the confirmed
