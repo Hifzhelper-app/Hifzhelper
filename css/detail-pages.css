@@ -48,19 +48,29 @@
   width: 100%;
   padding: 4px 6px;
 }
+/* V3.19.0: Save button restyled to match Hifzhelper's own existing
+   icon-button convention (.nav-icon-item, css/base.css -- icon on top,
+   label below, no border/background) instead of being a special-cased
+   bordered button. This becomes the default for in-app icon buttons
+   generally, not just Save (confirmed in chat). Label text stays normal
+   weight (not bold) -- text-transform handles the caps, the underlying
+   string ("Save"/"Saving") is untouched. */
 .card-header-save-btn {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  border: 1px solid var(--color-table-border);
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  padding: 4px 6px;
-  font-size: 12px;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 2px;
+  font-size: 10px;
+  font-weight: normal;
+  text-transform: uppercase;
   color: var(--color-ink);
   cursor: pointer;
 }
-.card-header-save-btn svg { width: 14px; height: 14px; }
+.card-header-save-btn:active { opacity: 0.6; }
+.card-header-save-btn svg { width: 18px; height: 18px; }
 
 /* Tajweed picker (V3.12.0) -- a compact trigger button instead of an
    inline row of toggle buttons, opening a popup with a checkbox per tag
@@ -96,11 +106,12 @@
 .sabaq-dhor-section-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-sm);
   padding: 6px 0;
   font-size: 14px;
 }
-.sabaq-dhor-section-row input { width: auto; }
+.sabaq-dhor-section-row input { width: auto; flex-shrink: 0; }
 .sabaq-dhor-row-wrap {
   display: flex;
   align-items: center;
@@ -118,16 +129,32 @@
   padding: 4px 8px;
   font-size: 12px;
 }
-.sabaq-dhor-rollup-row {
+/* V3.19.0: rollup control is now a 2-button vertical stepper sitting to
+   the left of the section list itself (js/icons.js: rollupMerge/
+   rollupSplit), replacing the old full-width row above the list. Each
+   button is display:none (not just visually hidden) when its action
+   isn't actually eligible right now -- set in JS since it depends on
+   comparing computed rows at adjacent rollup levels. */
+.sabaq-dhor-sections-row {
   display: flex;
+  align-items: center;
   gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
 }
-.sabaq-dhor-rollup-row .verse-ref-chevron {
-  border: 1px solid var(--color-table-border);
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
+.sabaq-dhor-rollup-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
 }
+.sabaq-dhor-rollup-btn {
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.sabaq-dhor-rollup-btn svg { width: 18px; height: 18px; }
+.sabaq-dhor-sections-list { flex: 1; min-width: 0; }
 
 /* Combined surah:ayah input field -- V3.18.0 rebuild as an explicit CSS
    grid (chevron:surah:ayah:chevron at 10:50:30:10, per the confirmed
@@ -417,13 +444,34 @@
 /* Dot indicators -- only meaningful while the rail actually swipes;
    hidden entirely on the desktop grid, where all 4 cards are visible at
    once and there's nothing to indicate a position within. Text labels
-   (V3.12.0) instead of plain circles -- same active/inactive states. */
+   (V3.12.0) instead of plain circles -- same active/inactive states.
+   V3.19.0: row is now a 3-col grid (spacer:dots:close) so the dots stay
+   centered independently of the xclose button on the right -- only
+   .log-detail-dots-inner hides on desktop below, not the whole row,
+   since xclose still needs to work there too. */
 .log-detail-dots {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+.log-detail-dots-inner {
+  grid-column: 2;
   display: flex;
   justify-content: center;
   gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
 }
+.log-detail-close {
+  grid-column: 3;
+  justify-self: end;
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.log-detail-close svg { width: 22px; height: 22px; }
+.log-detail-close:active { opacity: 0.6; }
 .log-detail-dots .dot {
   padding: 4px 10px;
   border-radius: 999px;
@@ -434,5 +482,5 @@
 }
 .log-detail-dots .dot.active { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
 @media (min-width: 1180px) {
-  .log-detail-dots { display: none; }
+  .log-detail-dots-inner { display: none; }
 }
