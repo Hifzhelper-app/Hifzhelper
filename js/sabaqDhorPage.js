@@ -44,14 +44,19 @@ function renderSabaqDhorRows(){
     el.innerHTML = `<p class="form-hint">Nothing to revise yet -- log a Sabaq entry first.</p>`;
     return;
   }
+  // V3.21.2: sabaqDhor_sections is now ITSELF the grid (css/detail-pages.css),
+  // not a plain container holding N independent per-row grids -- each row's
+  // checkbox kept landing at a slightly different pixel position depending
+  // on that row's own text length, because each row was computing its own
+  // 80/20 split independently rather than sharing one real column across
+  // every row (confirmed in chat: the fix is one shared grid, not flex).
+  // Every row emits exactly 3 direct grid children (text, move-button-or-
+  // empty-placeholder, checkbox) so column position is never at the mercy
+  // of which rows happen to have a Move to Dhor button and which don't.
   el.innerHTML = sabaqDhorRows.map(r => `
-    <div class="sabaq-dhor-row-wrap">
-      <label class="sabaq-dhor-section-row">
-        <span>${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</span>
-        <input type="checkbox" class="sabaqDhor-row-cb" data-id="${r.id}">
-      </label>
-      ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : ''}
-    </div>
+    <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
+    ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : '<span></span>'}
+    <input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}">
   `).join('');
   el.querySelectorAll('.move-to-dhor-btn').forEach(btn => {
     btn.addEventListener('click', () => moveRowToDhor(btn.dataset.id));
