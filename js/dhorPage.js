@@ -66,9 +66,27 @@ function segmentRangeToPicker(segment_from, segment_to, ref){
 }
 
 let dhorSelectedTags = [];
-let dhorTimerResult = null; // { duration_seconds, lap_times }
+// V3.21.1: duration is a real editable field (#dhor_duration_minutes) now,
+// not something only the timer can set. dhorTimerExactSeconds holds the
+// timer's precise result for as long as the field hasn't been manually
+// touched since -- used at save time instead of re-deriving seconds from
+// the rounded 1-decimal display text, so the timer's own real precision
+// isn't lost to display rounding. It's cleared (falls back to parsing
+// the field directly) the moment the user actually types in the field.
+// dhorLapTimes is genuinely timer-only data (no manual equivalent) and is
+// cleared whenever the user overrides the duration, since laps that no
+// longer sum to the new total would be actively misleading.
+let dhorTimerExactSeconds = null;
+let dhorLapTimes = null;
 let dhorTodaysPlans = [];    // today's plan(s) for type 'dhor', fetched fresh on every open
 let dhorActivePlanId = null; // which one (if any) is currently backing the form
+// V3.21.0: segment_from/to came from a picker reflecting today's live
+// options, not whatever was actually chosen on the day being edited --
+// there's no way to reconstruct that. Editing here never touches segment.
+// (V3.21.1: this used to also exclude duration/lap_times for the same
+// reason, but duration is a real editable field now -- see
+// dhorTimerExactSeconds above -- so those two are no longer excluded.)
+let dhorEditingId = null;
 
 function renderDhorPicker(){
   const perJuz = segmentsPerJuz(dhorCurrentRef);
@@ -116,8 +134,13 @@ function renderDhorPlanBanner(){
 }
 
 async function renderDhorScreen(){
+  dhorEditingId = null;
+  document.getElementById('dhorEditBanner').classList.add('hidden');
+  document.getElementById('dhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
   dhorSelectedTags = [];
-  dhorTimerResult = null;
+  dhorTimerExactSeconds = null;
+  dhorLapTimes = null;
+  document.getElementById('dhor_duration_minutes').value = '';
   dhorActivePlanId = null;
   document.getElementById('dhor_date').value = todayISO();
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz' ${i+1}</option>`).join('');
@@ -133,7 +156,14 @@ async function renderDhorScreen(){
   document.getElementById('dhor_mistakes').value = '0';
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', null);
-  renderTimer('dhorTimerWrap', (result) => { dhorTimerResult = result; updateDhorTimerSummary(); });
+  renderTimer('dhorTimerWrap', (result) => {
+    dhorTimerExactSeconds = result.duration_seconds;
+    dhorLapTimes = result.lap_times || null;
+    // Programmatic assignment -- deliberately doesn't fire 'input', so
+    // this doesn't trip the manual-override handler below.
+    document.getElementById('dhor_duration_minutes').value = (result.duration_seconds / 60).toFixed(1);
+    updateDhorTimerSummary();
+  });
   updateDhorTimerSummary();
 
   // Best-effort: top up the rolling schedule before asking for today's
@@ -157,17 +187,101 @@ async function renderDhorScreen(){
 
 function updateDhorTimerSummary(){
   const el = document.getElementById('dhorTimerSummary');
-  if(!dhorTimerResult){ el.textContent = ''; return; }
-  const mins = Math.floor(dhorTimerResult.duration_seconds/60);
-  const secs = dhorTimerResult.duration_seconds%60;
-  let text = `Recorded: ${mins}:${String(secs).padStart(2,'0')}`;
-  if(dhorTimerResult.lap_times) text += ` across ${dhorTimerResult.lap_times.length} laps`;
-  el.textContent = text;
+  el.textContent = dhorLapTimes ? `${dhorLapTimes.length} laps recorded` : '';
+}
+// Real user input into the field (not the timer's own programmatic
+// auto-fill above) means they're overriding it -- stop trusting the
+// timer's exact-seconds value in favour of whatever they typed, and
+// drop lap times since they'd no longer sum to the new total.
+document.getElementById('dhor_duration_minutes').addEventListener('input', () => {
+  dhorTimerExactSeconds = null;
+  dhorLapTimes = null;
+  updateDhorTimerSummary();
+});
+
+function loadDhorEntryForEdit(entry){
+  dhorEditingId = entry.id;
+  document.getElementById('dhor_mistakes').value = entry.mistakes || 0;
+  dhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
+  renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
+  renderCommentBlock('dhorCommentBlock', entry);
+  // V3.21.1: duration/lap times are no longer excluded from editing --
+  // treat the stored value as "exact" (same as a fresh timer result)
+  // until the user actually types in the field, same rule as new entries.
+  dhorTimerExactSeconds = typeof entry.duration_seconds === 'number' ? entry.duration_seconds : null;
+  dhorLapTimes = entry.lap_times || null;
+  document.getElementById('dhor_duration_minutes').value =
+    dhorTimerExactSeconds !== null ? (dhorTimerExactSeconds / 60).toFixed(1) : '';
+  updateDhorTimerSummary();
+  document.getElementById('dhorEditBannerDate').textContent =
+    `${entry.date} (Seg ${entry.segment_from}-${entry.segment_to} — not editable here)`;
+  document.getElementById('dhorEditBanner').classList.remove('hidden');
+  document.getElementById('dhorSaveBtn').querySelector('.save-btn-text').textContent = 'Update';
+}
+function cancelDhorEdit(){
+  dhorEditingId = null;
+  document.getElementById('dhorEditBanner').classList.add('hidden');
+  document.getElementById('dhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+}
+document.getElementById('dhorEditCancelBtn').addEventListener('click', () => {
+  cancelDhorEdit();
+  document.getElementById('dhor_mistakes').value = 0;
+  dhorSelectedTags = [];
+  renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
+  renderCommentBlock('dhorCommentBlock', null);
+  dhorTimerExactSeconds = null;
+  dhorLapTimes = null;
+  document.getElementById('dhor_duration_minutes').value = '';
+  updateDhorTimerSummary();
+});
+EDIT_HANDLERS.dhor = loadDhorEntryForEdit;
+
+// V3.21.1: shared by both save paths below. Uses the timer's exact
+// seconds if the field hasn't been manually touched since it was set
+// (see the 'input' listener above); otherwise parses the field's own
+// text directly, since that's the user's actual intent at that point.
+function computeDhorDuration(){
+  const minutesVal = document.getElementById('dhor_duration_minutes').value;
+  const duration_seconds = dhorTimerExactSeconds !== null
+    ? dhorTimerExactSeconds
+    : (minutesVal ? Math.round(parseFloat(minutesVal) * 60) : null);
+  return { duration_seconds, lap_times: dhorLapTimes };
 }
 
 document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('dhorError');
   errEl.textContent = '';
+
+  if(dhorEditingId){
+    // segment fields deliberately omitted -- see loadDhorEntryForEdit.
+    // duration/lap_times ARE included now (V3.21.1) -- there's a real
+    // field for them, unlike segment which still isn't reconstructable.
+    const payload = {
+      mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
+      tajweed_tags: dhorSelectedTags.join(','),
+      ...computeDhorDuration(),
+      ...readCommentBlock('dhorCommentBlock')
+    };
+    try{
+      await apiDhor.update(dhorEditingId, payload);
+      document.getElementById('dhorSaveStatus').classList.add('show');
+      setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
+      cancelDhorEdit();
+      document.getElementById('dhor_mistakes').value = 0;
+      dhorSelectedTags = [];
+      renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
+      renderCommentBlock('dhorCommentBlock', null);
+      dhorTimerExactSeconds = null;
+      dhorLapTimes = null;
+      document.getElementById('dhor_duration_minutes').value = '';
+      updateDhorTimerSummary();
+      await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+    } catch(e){
+      errEl.textContent = "Couldn't save: " + e.message;
+    }
+    return;
+  }
+
   const juz = parseInt(document.getElementById('dhor_juz').value);
   const position = parseInt(document.getElementById('dhor_position').value);
   const unit = document.getElementById('dhor_unit').value;
@@ -178,7 +292,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     segment_from, segment_to, ref: dhorCurrentRef,
     tajweed_tags: dhorSelectedTags.join(','),
     mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
-    ...(dhorTimerResult || {}),
+    ...computeDhorDuration(),
     ...readCommentBlock('dhorCommentBlock')
   };
   if(dhorActivePlanId) payload.plan_id = dhorActivePlanId;
@@ -204,6 +318,14 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 // type-specific ("Sabaq History", "Dhor History", etc.) instead of a
 // generic "History".
 const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'Dhor History' };
+// V3.21.0: each row now gets an edit (pencil) icon. Editing loads the
+// entry into that card's own form (loadXForEdit, defined per-card) rather
+// than a separate edit form -- reuses all the existing validation/
+// pickers as-is. isLatest (this row === rows[0], since rows is already
+// sorted most-recent-first) is passed through so Sabaq's save handler
+// knows whether it's safe to recompute position afterward -- see
+// js/sabaqPage.js for why that matters.
+const EDIT_HANDLERS = {}; // populated by each card's own file: EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit, etc.
 async function renderRecentEntries(type, client, railId){
   const container = document.getElementById(railId);
   let rows = [];
@@ -220,13 +342,24 @@ async function renderRecentEntries(type, client, railId){
       <button type="button" class="close-btn" id="historyPopupCloseBtn">&times;</button>
       <h2>History</h2>
       <div class="history-full-list">
-        ${rows.slice(0, 50).map(r => `<div class="history-entry-row">
-          <div class="rail-card-date">${r.date}</div>
-          <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
+        ${rows.slice(0, 50).map((r, i) => `<div class="history-entry-row">
+          <div>
+            <div class="rail-card-date">${r.date}</div>
+            <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
+          </div>
+          ${EDIT_HANDLERS[type] ? `<button type="button" class="history-entry-edit-btn" data-index="${i}" aria-label="Edit"></button>` : ''}
         </div>`).join('') || '<div class="form-hint">Nothing logged yet.</div>'}
       </div>
     </div>`;
     document.body.appendChild(overlay);
+    overlay.querySelectorAll('.history-entry-edit-btn').forEach(btn => {
+      btn.innerHTML = iconHtml('edit');
+      btn.addEventListener('click', () => {
+        const row = rows.slice(0, 50)[parseInt(btn.dataset.index, 10)];
+        overlay.remove();
+        EDIT_HANDLERS[type](row, row === rows[0]);
+      });
+    });
     overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
     document.getElementById('historyPopupCloseBtn').addEventListener('click', () => overlay.remove());
   });

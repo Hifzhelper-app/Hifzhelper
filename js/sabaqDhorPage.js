@@ -23,6 +23,16 @@ let sabaqDhorSelectedTags = [];
 let sabaqDhorRows = [];
 let sabaqDhorRef = 'waterval';
 let sabaqDhorPosition = null;
+// V3.21.0: editing state. Sabaq Dhor's checkboxes reflect TODAY's live
+// eligible sections (computeSabaqDhorRows against current position), not
+// whatever was actually checked when a past entry was saved -- there's no
+// way to reconstruct that into the same checkbox UI. So editing here
+// only ever touches mistakes/tajweed/notes; the entry's original
+// from_surah/from_ayah/to_surah/to_ayah are left exactly as they were,
+// simply never included in the PATCH payload. The section list + rollup
+// stepper are hidden while editing since they'd otherwise look editable
+// but silently do nothing.
+let sabaqDhorEditingId = null;
 let sabaqDhorRollupLevel = 'quarters';
 let sabaqDhorBaselineSelection = [];
 
@@ -120,6 +130,10 @@ document.getElementById('sabaqDhor_rollup_down').addEventListener('click', () =>
 });
 
 async function renderSabaqDhorScreen(){
+  sabaqDhorEditingId = null;
+  document.getElementById('sabaqDhorEditBanner').classList.add('hidden');
+  document.getElementById('sabaqDhor_sections').classList.remove('hidden');
+  document.getElementById('sabaqDhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
   sabaqDhorSelectedTags = [];
   document.getElementById('sabaqDhor_date').value = todayISO();
   document.getElementById('sabaqDhor_mistakes').value = '0';
@@ -152,9 +166,66 @@ function compositeCheckedSabaqDhorRows(){
   return { fromSurah: from.fromSurah, fromAyah: from.fromAyah, toSurah: to.toSurah, toAyah: to.toAyah };
 }
 
+function loadSabaqDhorEntryForEdit(entry){
+  sabaqDhorEditingId = entry.id;
+  document.getElementById('sabaqDhor_date').value = entry.date;
+  document.getElementById('sabaqDhor_mistakes').value = entry.mistakes || 0;
+  sabaqDhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
+  renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
+  renderCommentBlock('sabaqDhorCommentBlock', entry);
+  document.getElementById('sabaqDhorEditBannerDate').textContent =
+    `${entry.date} (${entry.from_surah}:${entry.from_ayah} - ${entry.to_surah}:${entry.to_ayah} — range isn't editable here)`;
+  document.getElementById('sabaqDhorEditBanner').classList.remove('hidden');
+  document.getElementById('sabaqDhor_rollup_up').style.display = 'none';
+  document.getElementById('sabaqDhor_rollup_down').style.display = 'none';
+  document.getElementById('sabaqDhor_sections').classList.add('hidden');
+  document.getElementById('sabaqDhorSaveBtn').querySelector('.save-btn-text').textContent = 'Update';
+}
+function cancelSabaqDhorEdit(){
+  sabaqDhorEditingId = null;
+  document.getElementById('sabaqDhorEditBanner').classList.add('hidden');
+  document.getElementById('sabaqDhor_sections').classList.remove('hidden');
+  document.getElementById('sabaqDhorSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+  updateRollupStepperVisibility();
+}
+document.getElementById('sabaqDhorEditCancelBtn').addEventListener('click', () => {
+  cancelSabaqDhorEdit();
+  document.getElementById('sabaqDhor_date').value = todayISO();
+  document.getElementById('sabaqDhor_mistakes').value = 0;
+  sabaqDhorSelectedTags = [];
+  renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
+  renderCommentBlock('sabaqDhorCommentBlock', null);
+});
+EDIT_HANDLERS.sabaqDhor = loadSabaqDhorEntryForEdit;
+
 document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('sabaqDhorError');
   errEl.textContent = '';
+
+  if(sabaqDhorEditingId){
+    // Range fields deliberately omitted -- see loadSabaqDhorEntryForEdit.
+    const payload = {
+      mistakes: parseInt(document.getElementById('sabaqDhor_mistakes').value) || 0,
+      tajweed_tags: sabaqDhorSelectedTags.join(','),
+      ...readCommentBlock('sabaqDhorCommentBlock')
+    };
+    try{
+      await apiSabaqDhor.update(sabaqDhorEditingId, payload);
+      document.getElementById('sabaqDhorSaveStatus').classList.add('show');
+      setTimeout(() => document.getElementById('sabaqDhorSaveStatus').classList.remove('show'), 1800);
+      cancelSabaqDhorEdit();
+      document.getElementById('sabaqDhor_date').value = todayISO();
+      document.getElementById('sabaqDhor_mistakes').value = 0;
+      sabaqDhorSelectedTags = [];
+      renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
+      renderCommentBlock('sabaqDhorCommentBlock', null);
+      await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
+    } catch(e){
+      errEl.textContent = "Couldn't save: " + e.message;
+    }
+    return;
+  }
+
   const range = compositeCheckedSabaqDhorRows();
   if(!range){
     errEl.textContent = 'Please check at least one section that was actually revised today.';

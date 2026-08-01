@@ -31,6 +31,17 @@ let sabaqRef = 'waterval';
 // combined fields' current values, kept here since the DOM only shows a
 // formatted display, not the raw numbers.
 let sabaqValue = { from: null, to: null };
+// V3.21.0: editing an existing entry (js/dhorPage.js's History popup,
+// EDIT_HANDLERS.sabaq below) loads it into this same form rather than a
+// separate edit UI. sabaqEditingId is null for a normal new entry.
+// sabaqEditingIsFrontier matters specifically for Sabaq: position should
+// only ever be recomputed from the entry that's actually the current
+// frontier (the one position.sabaqTo was derived from) -- recomputing it
+// from an older entry would silently move position backward. It's set
+// once, when the entry is loaded (is this the single most recent Sabaq
+// entry for this student?), not re-checked after saving.
+let sabaqEditingId = null;
+let sabaqEditingIsFrontier = false;
 
 function refForMushafSabaq(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
 
@@ -124,6 +135,13 @@ document.getElementById('sabaq_to_ayah').addEventListener('change', () => {
 });
 
 async function renderSabaqScreen(){
+  // V3.21.0: reset any stale editing state from a previous visit -- if
+  // the screen was closed mid-edit (e.g. via xclose) without saving or
+  // cancelling, a fresh open must not silently PATCH that old entry.
+  sabaqEditingId = null;
+  sabaqEditingIsFrontier = false;
+  document.getElementById('sabaqEditBanner').classList.add('hidden');
+  document.getElementById('sabaqSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
   sabaqSelectedTags = [];
   document.getElementById('sabaq_date').value = todayISO();
   document.getElementById('sabaq_line_count').value = '';
@@ -160,6 +178,50 @@ function recomputeSabaqLineCount(){
   document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / 13) * 4) / 4;
 }
 
+// V3.21.0: loads an existing entry into this same form for editing --
+// reuses every existing field/picker/validation rather than a separate
+// edit UI. Registered below as EDIT_HANDLERS.sabaq (js/dhorPage.js's
+// History popup calls this when its edit icon is tapped).
+function loadSabaqEntryForEdit(entry, isLatest){
+  sabaqEditingId = entry.id;
+  sabaqEditingIsFrontier = isLatest;
+  document.getElementById('sabaq_date').value = entry.date;
+  const [fromSurah, fromAyah] = entry.sabaq_from.split(':').map(Number);
+  const [toSurah, toAyah] = entry.sabaq_to.split(':').map(Number);
+  sabaqValue = { from: { surah: fromSurah, ayah: fromAyah }, to: { surah: toSurah, ayah: toAyah } };
+  renderVerseRefField('from');
+  renderVerseRefField('to');
+  document.getElementById('sabaq_line_count').value = entry.line_count || '';
+  document.getElementById('sabaq_page_count').value = entry.page_count || '';
+  sabaqSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
+  renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
+  renderCommentBlock('sabaqCommentBlock', entry);
+  document.getElementById('sabaqEditBannerDate').textContent = entry.date;
+  document.getElementById('sabaqEditBanner').classList.remove('hidden');
+  document.getElementById('sabaqSaveBtn').querySelector('.save-btn-text').textContent = 'Update';
+}
+function cancelSabaqEdit(){
+  sabaqEditingId = null;
+  sabaqEditingIsFrontier = false;
+  document.getElementById('sabaqEditBanner').classList.add('hidden');
+  document.getElementById('sabaqSaveBtn').querySelector('.save-btn-text').textContent = 'Save';
+}
+document.getElementById('sabaqEditCancelBtn').addEventListener('click', async () => {
+  cancelSabaqEdit();
+  const dhorExists = await hasDhorHistory();
+  const next = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
+  sabaqValue = { from: next.from, to: next.to };
+  renderVerseRefField('from');
+  renderVerseRefField('to');
+  document.getElementById('sabaq_date').value = todayISO();
+  document.getElementById('sabaq_line_count').value = '';
+  document.getElementById('sabaq_page_count').value = '';
+  sabaqSelectedTags = [];
+  renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
+  renderCommentBlock('sabaqCommentBlock', null);
+});
+EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit;
+
 document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('sabaqError');
   errEl.textContent = '';
@@ -182,28 +244,40 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     ...readCommentBlock('sabaqCommentBlock')
   };
   try{
-    await apiSabaq.save(payload);
+    if(sabaqEditingId){
+      await apiSabaq.update(sabaqEditingId, payload);
+    } else {
+      await apiSabaq.save(payload);
+    }
     document.getElementById('sabaqSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqSaveStatus').classList.remove('show'), 1800);
 
-    try{
-      sabaqPosition = advancePositionAfterSabaq(sabaqPosition, from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
-      await savePosition(sabaqPosition);
-      // Phase 2b (V3.17.0): the automatic half of the move-to-Dhor
-      // transition -- if a previous juz' is lingering and this save just
-      // completed at least one quarter of the new one, whatever's left
-      // of the old juz' moves to Dhor automatically. Independent of the
-      // manual tickbox on Sabaq Dhor's own card -- whichever happens first.
-      const profile = await apiGetProfile();
-      const currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
-      const autoMove = maybeAutoMoveToDhor(sabaqPosition, sabaqRef, currentPool);
-      if(autoMove.moved){
-        sabaqPosition = autoMove.position;
+    // Position only ever advances here for a genuinely new entry, or an
+    // edit to the entry that's confirmed to be the current frontier
+    // (sabaqEditingIsFrontier, set when the entry was loaded -- see
+    // loadSabaqEntryForEdit). Editing an older entry must never touch
+    // position, regardless of what changed in it.
+    if(!sabaqEditingId || sabaqEditingIsFrontier){
+      try{
+        sabaqPosition = advancePositionAfterSabaq(sabaqPosition, from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
         await savePosition(sabaqPosition);
-        await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: autoMove.baselineSelection });
-      }
-    } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
+        // Phase 2b (V3.17.0): the automatic half of the move-to-Dhor
+        // transition -- if a previous juz' is lingering and this save just
+        // completed at least one quarter of the new one, whatever's left
+        // of the old juz' moves to Dhor automatically. Independent of the
+        // manual tickbox on Sabaq Dhor's own card -- whichever happens first.
+        const profile = await apiGetProfile();
+        const currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
+        const autoMove = maybeAutoMoveToDhor(sabaqPosition, sabaqRef, currentPool);
+        if(autoMove.moved){
+          sabaqPosition = autoMove.position;
+          await savePosition(sabaqPosition);
+          await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: autoMove.baselineSelection });
+        }
+      } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
+    }
 
+    if(sabaqEditingId) cancelSabaqEdit();
     await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
     const dhorExists = await hasDhorHistory();
     const next = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
