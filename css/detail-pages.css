@@ -123,6 +123,13 @@
   padding: 6px 0;
   font-size: 14px;
 }
+/* V3.20.1 fix: same root cause as the earlier verse-ref grid bug -- a
+   grid item's default min-width is auto (its content's own minimum
+   width), so a longer label (e.g. "Quarter 3 (current): 83:1 - 86:2")
+   can grow past its assigned 80% column and drag that row's checkbox
+   further right than shorter rows', instead of wrapping within it. This
+   forces it to actually respect the column and wrap. */
+.sabaq-dhor-section-row span { min-width: 0; }
 .sabaq-dhor-section-row input { width: auto; justify-self: start; }
 .sabaq-dhor-row-wrap {
   display: flex;
@@ -386,14 +393,52 @@
   color: #fff;
   font-size: 13px;
 }
+/* V3.21.0: entry rows now hold an edit (pencil) icon button per row,
+   opening that entry for editing in the card's own form. */
 .history-entry-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
   padding: 6px 0;
   border-bottom: 1px solid var(--color-table-border);
 }
+.history-entry-edit-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.history-entry-edit-btn svg { width: 16px; height: 16px; }
 .history-full-list {
   margin-top: var(--space-md);
   max-height: 60vh;
   overflow-y: auto;
+}
+/* Shared "editing an existing entry" banner (Sabaq/Sabaq Dhor/Dhor) --
+   replaces the normal new-entry flow with a visible editing state and a
+   way back out of it. */
+.edit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  background: var(--color-page-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  font-size: 13px;
+}
+.edit-banner.hidden { display: none; }
+.edit-banner button {
+  flex-shrink: 0;
+  border: 1px solid var(--color-table-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-size: 12px;
 }
 
 /* ============================================================
