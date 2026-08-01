@@ -413,29 +413,6 @@
   max-height: 60vh;
   overflow-y: auto;
 }
-/* Shared "editing an existing entry" banner (Sabaq/Sabaq Dhor/Dhor) --
-   replaces the normal new-entry flow with a visible editing state and a
-   way back out of it. */
-.edit-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  background: var(--color-page-bg);
-  border-radius: var(--radius-sm);
-  padding: var(--space-sm) var(--space-md);
-  margin-bottom: var(--space-md);
-  font-size: 13px;
-}
-.edit-banner.hidden { display: none; }
-.edit-banner button {
-  flex-shrink: 0;
-  border: 1px solid var(--color-table-border);
-  background: var(--color-surface);
-  border-radius: var(--radius-sm);
-  padding: 4px 10px;
-  font-size: 12px;
-}
 
 /* ============================================================
    Unified day-log view (V3.6.1) -- 4 cards: Sabaq / Sabaq Dhor / Dhor /
@@ -454,6 +431,73 @@
    ultra-wide external display), the 30% is a stated ceiling rather than
    a value that changes today's math.
    ============================================================ */
+/* V3.22.0: dedicated edit "screen" for Sabaq/Sabaq Dhor/Dhor -- not a new
+   entry in the screen router (js/app.js), but a full takeover of
+   #screen-logDetail that reuses the same card DOM/pickers rather than
+   duplicating them: the tabs+dots row and every card except the one
+   being edited hide, and within the editing card the normal header/
+   History are replaced by this grey top/bottom chrome, confirmed in
+   chat specifically so it can't be confused with the normal screen. */
+#screen-logDetail.log-detail-editing .log-detail-dots { display: none; }
+#screen-logDetail.log-detail-editing .log-detail-card:not(.editing-active) { display: none; }
+.log-detail-card.editing-active .card-header-row,
+.log-detail-card.editing-active .history-container { display: none; }
+.edit-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  background: var(--color-page-bg);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  margin-bottom: var(--space-sm);
+}
+.edit-topbar button {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.edit-bottombar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  justify-items: center;
+  align-items: center;
+  background: var(--color-page-bg);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+  margin-top: var(--space-md);
+}
+.edit-bottombar button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 4px;
+  font-size: 10px;
+  font-weight: normal;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.edit-bottombar button svg { width: 22px; height: 22px; }
+.edit-bottombar-delete {
+  background: var(--color-error) !important;
+  color: #fff !important;
+  border-radius: var(--radius-sm);
+  padding: 6px 4px !important;
+}
+.edit-bottombar-delete:disabled {
+  background: var(--color-table-border) !important;
+  color: var(--color-ink-faint) !important;
+  cursor: not-allowed;
+}
+
 .log-detail-rail {
   display: flex;
   gap: var(--space-md);

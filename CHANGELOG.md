@@ -7,6 +7,63 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.22.0 — Dedicated edit screen + Delete (2026-08-01)
+
+**Edit now opens as a full takeover, not an inline banner.** Confirmed
+design: tapping the pencil icon on a History row now hides the tabs/dots
+row and every card except the one being edited, and within that card
+replaces the normal header (icon/heading/Save) with a grey top bar
+reading "Editing [Type] from [date]" + Cancel, and adds a matching grey
+bottom bar with three centered buttons: Cancel, Delete (red background),
+and Update (styled exactly like the existing Save icon). This isn't a
+new entry in the screen router (`js/app.js`) — it's a mode toggle within
+the existing log-detail screen, specifically so the already-working
+verse-ref grid, tajweed picker, and comment block don't need to be
+rebuilt a second time for a separate screen.
+
+**Delete is now wired up**, reusing the DELETE endpoints that already
+existed server-side (confirmed in an earlier chat, never previously
+attached to any button): `apiSabaq.remove`, `apiSabaqDhor.remove`,
+`apiDhor.remove`. Confirmation wording, exact as specified: "Deleting
+this entry may create gaps in your history which cannot be recovered.
+Are you sure you want to DELETE?"
+
+**Sabaq's Delete button is disabled (not hidden) for the frontier
+entry** — the one `position.sabaqTo` is currently based on — since
+deleting it would leave position pointing at a row that no longer
+exists. Sabaq Dhor and Dhor have no such restriction; neither has a
+position concept tied to individual entries.
+
+**Consistency pass while rebuilding this:** Dhor's segment picker
+(Juz'/Starting at/Amount/plan banner) now hides during edit, matching
+Sabaq Dhor's existing precedent of hiding pickers that reflect today's
+live options rather than what was actually chosen on the edited day —
+previously it stayed visible but non-functional during edit, which
+could read as if changing it did something.
+
+**Caught before shipping, not after this time:** the three `renderX
+Screen()` functions that reset stale state on every fresh screen open
+still referenced the old banner element IDs removed by this same
+change — the identical *shape* of failure as V3.21.2's critical bug
+(a missing element reference that would silently break the screen),
+just caught this time by deliberately grepping for the old IDs before
+calling this done, rather than after a user found it live.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/icons.js
+js/dhorPage.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.21.2 — CRITICAL FIX: Save was broken on all 3 cards (2026-08-01)
 
 **Root cause: `EDIT_HANDLERS` was used before it was declared.** V3.21.0
