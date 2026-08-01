@@ -30,6 +30,30 @@ document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('logDetailClose').innerHTML = iconHtml('close');
 document.getElementById('logDetailClose').addEventListener('click', () => showScreen('journal'));
 
+// V3.22.0: edit screen bottom-bar icons (Sabaq/Sabaq Dhor/Dhor), injected
+// once here like the rest of this file's icons. Update reuses the exact
+// same 'save' icon as the normal Save button, per the confirmed design.
+['sabaq', 'sabaqDhor', 'dhor'].forEach(prefix => {
+  document.getElementById(`${prefix}EditCancelIcon`).innerHTML = iconHtml('close');
+  document.getElementById(`${prefix}EditDeleteIcon`).innerHTML = iconHtml('trash');
+  document.getElementById(`${prefix}EditUpdateIcon`).innerHTML = iconHtml('save');
+});
+
+// V3.22.0: the edit "screen" is a full takeover of THIS screen rather
+// than a new entry in js/app.js's router -- reuses each card's existing
+// fields/pickers as-is instead of duplicating them. Hides the tabs/dots
+// row and every card except the one being edited; within that card, its
+// own loadXEntryForEdit (js/sabaqPage.js etc.) hides the normal header/
+// History and shows the grey top/bottom bars in their place.
+function enterEditScreenMode(cardId){
+  document.getElementById('screen-logDetail').classList.add('log-detail-editing');
+  document.getElementById(cardId).classList.add('editing-active');
+}
+function exitEditScreenMode(cardId){
+  document.getElementById('screen-logDetail').classList.remove('log-detail-editing');
+  document.getElementById(cardId).classList.remove('editing-active');
+}
+
 async function renderLogDetailScreen(initialCard){
   await Promise.all([
     renderSabaqScreen(),
