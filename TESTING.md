@@ -886,6 +886,51 @@ reused for steps 3–6.
 9. Confirm the desktop static 4-column grid (≥1180px) is unaffected —
    no dots shown, all 4 cards visible without scrolling.
 
+## 33. Detail-screen UI round 4 + prepopulation fix (V3.19.0)
+
+1. As a student with existing Sabaq history (not juz' 30, not currently
+   having any Dhor history logged), open the Sabaq card fresh → confirm
+   "Sabaq from" prepopulates one ayah PAST where the last entry actually
+   ended, not the same ayah repeated. Save an entry, reopen → confirm it
+   advances again from the new position.
+2. As a juz'-30 student in the same situation, confirm it's "Sabaq to"
+   that prepopulates instead (juz' 30 is studied backwards), and that it
+   also advances (backwards) rather than repeating.
+3. As a student with any Dhor history logged at all, confirm NEITHER
+   field prepopulates (unchanged rule).
+4. As a student with no Sabaq history yet, confirm it still prepopulates
+   114:1/114:6 (unchanged).
+5. Advance a student until their current juz' is fully complete (nothing
+   left to advance into) → confirm prepopulation goes blank rather than
+   showing something for the wrong juz'.
+6. On all 4 cards, confirm Save is now icon-on-top with a small caps
+   label below, no border/background, normal (not bold) weight — tap it,
+   confirm it still saves correctly and the "saved ✓" status still shows
+   above it briefly.
+7. On the log-detail screen, confirm there's a close (X) icon on the
+   right of the swipe-dots row. Tap it → confirm it returns to Journal.
+   Check this at both a mobile/tablet width (dots visible) and desktop
+   width ≥1180px (dots hidden, static 4-card grid) — the close icon
+   should be visible and working at both.
+8. On Sabaq Dhor, confirm "Sections to revise" text is gone and "Mark
+   sections revised" appears above the checkbox list instead. Confirm
+   each row's checkbox is now on the right side of the row.
+9. Open Sabaq Dhor fresh → confirm every checkbox starts UNCHECKED. Tap
+   Save with nothing checked → confirm the existing "please check at
+   least one section" error still shows. Check one or more, save →
+   confirm it saves the correct composite range.
+10. Confirm the rollup control is now a small 2-icon stepper to the left
+    of the section list (not a row above it). With only the current
+    quarter and nothing else complete, confirm BOTH icons are hidden
+    (nothing to merge or split yet). Complete enough quarters to make a
+    mergeable pair → confirm the merge icon appears; tap it, confirm the
+    rows merge into a half AND the merge icon's visibility updates
+    correctly for the new state (split icon should now show). Continue
+    until a full juz' is possible → confirm the same pattern holds at
+    that level too.
+11. Confirm the rollup level still persists across a screen reload
+    (position.sabaqDhorRollup), same as before this round.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
