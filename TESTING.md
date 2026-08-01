@@ -958,6 +958,70 @@ reused for steps 3–6.
 8. On Sabaq Dhor, confirm Mistakes and Tajweed now sit side by side on
    one line instead of stacked.
 
+## 35. Edit past entries + checkbox alignment fix (V3.21.0)
+
+1. On Sabaq Dhor, confirm every row's checkbox now lines up at the same
+   horizontal position regardless of label length (including "Quarter 3
+   (current): ..." style labels wrapping instead of pushing the checkbox
+   right).
+2. On any card, open History → confirm each row now shows a pencil icon.
+3. **Sabaq, editing the LATEST entry**: tap edit on the most recent Sabaq
+   entry → confirm the form loads with that entry's From/To/Lines/Pages/
+   Tajweed/Notes, the banner shows "Editing entry from [date]", and Save
+   now reads "Update". Change something (e.g. the To ayah) and Update →
+   confirm the entry saved correctly AND that reopening Sabaq fresh now
+   prepopulates from the NEW edited value, not the old one — position
+   should have recomputed.
+4. **Sabaq, editing an OLDER (non-latest) entry**: edit any entry that
+   isn't the most recent one, change something, Update → confirm it
+   saves, but reopening Sabaq fresh still prepopulates from whatever the
+   actual latest entry is — position must NOT have moved to reflect the
+   older edited entry.
+5. Tap "Cancel" mid-edit on Sabaq → confirm the banner disappears, Save
+   goes back to reading "Save", and the form resets to the normal
+   prepopulated new-entry state (not left showing the edited entry).
+6. On Sabaq Dhor, edit a past entry → confirm the banner shows the
+   date and original range, the section checkboxes and rollup stepper
+   are hidden, and only Mistakes/Tajweed/Notes are editable. Update →
+   confirm those fields saved but the entry's original range is
+   unchanged (check History again, the range shown should be identical
+   to before).
+7. Same check on Dhor: edit a past entry, confirm only Mistakes/Tajweed/
+   Notes are editable, segment and timer data stay untouched after Update.
+8. On any card, start editing an entry, then exit the whole log-detail
+   screen via the xclose icon WITHOUT saving or cancelling. Reopen the
+   screen fresh → confirm the form is back in normal "new entry" mode
+   (no stale banner, Save button says "Save") and saving a genuinely new
+   entry creates a new row rather than overwriting the one you were
+   mid-edit on.
+
+## 36. Dhor duration becomes a real input (V3.21.1)
+
+1. Open Dhor fresh → confirm there's now a "Duration (minutes)" field
+   above the Timer, empty by default.
+2. Type a duration directly (e.g. "15.5") without touching the timer at
+   all, save → confirm the entry saves with the right duration and no
+   lap times.
+3. Use the timer (start, a couple laps, stop) → confirm the minutes
+   field auto-fills with the equivalent value at 1 decimal place, and
+   the summary below the timer shows the lap count.
+4. Save that entry → check History (or the raw record) shows the
+   duration matching the timer's actual result and the lap times are
+   present.
+5. Use the timer again, then manually change the minutes field
+   afterward → confirm the lap-count summary disappears immediately
+   (laps cleared) as soon as you start typing, and saving records only
+   the duration you typed, no lap times.
+6. Leave duration blank entirely and save → confirm it still saves fine
+   with no duration (unchanged "nothing compulsory" rule).
+7. Edit a past Dhor entry that has both duration and lap times → confirm
+   the minutes field and lap summary both populate correctly. Update
+   without touching duration → confirm it's unchanged after saving.
+   Edit again and this time change the duration → confirm lap times are
+   now gone from that entry after Update.
+8. Confirm segment (Seg X-Y) is still shown as read-only/not editable
+   in the edit banner, unchanged from V3.21.0.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
