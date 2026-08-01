@@ -193,9 +193,18 @@ function loadSabaqEntryForEdit(entry, isLatest){
   sabaqEditingId = entry.id;
   sabaqEditingIsFrontier = isLatest;
   document.getElementById('sabaq_date').value = entry.date;
-  const [fromSurah, fromAyah] = entry.sabaq_from.split(':').map(Number);
-  const [toSurah, toAyah] = entry.sabaq_to.split(':').map(Number);
-  sabaqValue = { from: { surah: fromSurah, ayah: fromAyah }, to: { surah: toSurah, ayah: toAyah } };
+  // V3.22.1 fix: some historical rows have a genuinely null sabaq_from/
+  // sabaq_to (shown as "null-null" in History) -- calling .split() on
+  // null threw immediately, before anything else in this function ran,
+  // so the edit screen never actually opened for those entries and
+  // Delete was unreachable. parseVerseRef falls back to null (the same
+  // "—" placeholder state renderVerseRefField already handles for a
+  // genuinely empty field) instead of crashing.
+  const parseVerseRef = (raw) => {
+    const parts = String(raw || '').split(':').map(Number);
+    return (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) ? { surah: parts[0], ayah: parts[1] } : null;
+  };
+  sabaqValue = { from: parseVerseRef(entry.sabaq_from), to: parseVerseRef(entry.sabaq_to) };
   renderVerseRefField('from');
   renderVerseRefField('to');
   document.getElementById('sabaq_line_count').value = entry.line_count || '';
@@ -207,8 +216,7 @@ function loadSabaqEntryForEdit(entry, isLatest){
   document.getElementById('sabaqEditTopbar').classList.remove('hidden');
   document.getElementById('sabaqEditBottombar').classList.remove('hidden');
   const deleteBtn = document.getElementById('sabaqEditDeleteBtn');
-  deleteBtn.disabled = isLatest;
-  deleteBtn.title = isLatest ? "Can't delete the entry your current position is based on" : '';
+  deleteBtn.style.display = isLatest ? 'none' : '';
   enterEditScreenMode('card-sabaq');
 }
 function cancelSabaqEdit(){

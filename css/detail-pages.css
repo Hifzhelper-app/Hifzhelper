@@ -492,11 +492,6 @@
   border-radius: var(--radius-sm);
   padding: 6px 4px !important;
 }
-.edit-bottombar-delete:disabled {
-  background: var(--color-table-border) !important;
-  color: var(--color-ink-faint) !important;
-  cursor: not-allowed;
-}
 
 .log-detail-rail {
   display: flex;

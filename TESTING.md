@@ -1080,6 +1080,24 @@ the fix for a bug that broke Save entirely.
    console errors appear on that reopen (this is exactly the failure
    mode V3.21.2 had — re-verify it didn't reappear here).
 
+## 39. Edit screen polish + null-entry crash fix (V3.22.1)
+
+1. Open the edit screen on any card → confirm "Editing [Type] from
+   [date]" appears ABOVE the date field, not below it.
+2. On Sabaq, open the edit screen for the most recent entry → confirm
+   Delete is gone entirely (not just greyed out) from the bottom bar,
+   leaving Cancel and Update. Open an older entry → confirm Delete is
+   there again.
+3. Find (or create, by saving an entry with From/To left blank if that's
+   reachable, or via a direct DB check) a Sabaq history entry showing
+   "null-null" → tap its edit icon → confirm the edit screen actually
+   opens this time (previously it silently failed and dropped back to
+   the normal Sabaq view). Confirm "Sabaq from"/"Sabaq to" show the "—"
+   placeholder rather than any error, and that Delete works correctly
+   on this entry.
+4. Re-run a couple of spot checks from §38 (edit a normal entry, cancel,
+   update) to confirm the reordering didn't break anything else.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
