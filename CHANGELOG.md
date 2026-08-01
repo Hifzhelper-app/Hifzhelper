@@ -58,9 +58,22 @@ js/icons.js
 js/dhorPage.js
 js/sabaqPage.js
 js/sabaqDhorPage.js
+js/logDetailScreen.js
 CHANGELOG.md
 TESTING.md
 ```
+
+**Post-delivery correction:** `js/logDetailScreen.js` — which holds
+`enterEditScreenMode`/`exitEditScreenMode` themselves, referenced by all
+three of the files above — was edited as part of this change but
+accidentally left out of the zip that was actually delivered. Confirmed
+live: `ReferenceError: Can't find variable: exitEditScreenMode`, and
+History disappearing again, for the same underlying reason as V3.21.2
+(a function call to something that doesn't exist where it's being
+called from) but caused by an incomplete delivery this time, not a code
+ordering mistake. Re-delivered as a single-file follow-up; no code
+changes, no version bump — `js/logDetailScreen.js` was already tagged
+`?v=3.22.0` in `index.html`, it just hadn't actually been uploaded yet.
 
 ---
 
