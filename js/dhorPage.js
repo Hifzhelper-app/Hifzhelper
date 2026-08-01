@@ -37,6 +37,23 @@
 // — same reasoning as the other two log cards.
 // ============================================================
 
+// V3.21.2 fix: this MUST be declared before anything in this file (or in
+// js/sabaqPage.js / js/sabaqDhorPage.js, which load after this one and
+// assign into it too) can reference it. It was previously declared much
+// further down, after line 237's `EDIT_HANDLERS.dhor = ...` had already
+// tried to use it -- a `const` binding is unusable from the top of its
+// scope until its own declaration line runs, so that threw
+// ReferenceError: Cannot access 'EDIT_HANDLERS' before initialization
+// the instant the page loaded. That halted the rest of THIS script,
+// which is why Save stopped working on Dhor (its click handler is wired
+// up further down in this same file) -- and since the crash meant this
+// const never actually ran, js/sabaqPage.js and js/sabaqDhorPage.js hit
+// the exact same error on their own EDIT_HANDLERS.sabaq/sabaqDhor lines,
+// which is why Save broke on those two cards as well, and why History
+// never appeared anywhere (renderRecentEntries, defined further down in
+// this file, was never successfully reachable either).
+const EDIT_HANDLERS = {}; // populated by each card's own file: EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit, etc.
+
 let dhorCurrentRef = 'waterval'; // derived from profile.mushaf on every open, see renderDhorScreen()
 function refForMushaf(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
 
@@ -325,7 +342,6 @@ const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor Histo
 // sorted most-recent-first) is passed through so Sabaq's save handler
 // knows whether it's safe to recompute position afterward -- see
 // js/sabaqPage.js for why that matters.
-const EDIT_HANDLERS = {}; // populated by each card's own file: EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit, etc.
 async function renderRecentEntries(type, client, railId){
   const container = document.getElementById(railId);
   let rows = [];
