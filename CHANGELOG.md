@@ -7,6 +7,67 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.25.0 — Pure queue model, Phase A: scheduling engine rewrite (2026-08-02)
+
+First of a 4-phase rebuild (confirmed in chat) correcting the underlying
+Dhor scheduling model. The model shipped through V3.24.1 treated `plans`
+as a calendar of dated commitments — a rolling window of future rows,
+pre-generated ahead of time, with "missed" (backdated catch-up) and
+"future" (borrowed early) fallbacks for whenever that window didn't line
+up with today. Confirmed wrong: `plans` is a single ordered QUEUE, no
+dates baked into any not-yet-done item. "Continue from where it left off"
+always means the last thing actually logged in `dhor_log`, with the queue
+picking up right after it — nothing else. If a daily quota is 4 halves and
+only 2 get done, the other 2 simply stay first in the queue, done
+whenever the student next does Dhor; there's no separate "missed" or
+"future" concept to reconcile.
+
+**`ensureDhorSchedule` (`worker/src/dhorSchedule.js`)**: the entire
+rolling-window generation loop is removed — it used to walk the next 7
+active days and INSERT dated `plans` rows ahead of time; now it's a
+harmless no-op (`{ generated: 0 }`), unconditionally. Kept rather than
+deleted so its two existing callers (dhorPage.js's open-time top-up, and
+Setup's save handler, which would otherwise show a false "Couldn't save"
+error if this started throwing) don't need to change in this phase. The
+now-unused `DAY_ABBR`/`WINDOW_DAYS`/`addDays`/`dateToUTCWeekday` helpers,
+which only existed to support that loop, are removed with it.
+
+**`computeDefaultDhorEntry`**: collapses from 5 branches to 1 rule — an
+explicit override for today if a `plans` row exists for it (the only way
+one currently can, since generation no longer creates any), else ALWAYS
+the segment following the last logged entry. The "missed plan" and
+"future plan" branches are removed entirely — they only ever existed
+because plans used to carry dates. `buildChunks`/`findChunkIndexForSegment`
+are unchanged and still do the actual chunking work for the fallback
+branch. Verified directly (not just read over): a small standalone
+harness mocking `env.DB` confirmed `ensureDhorSchedule` now touches the
+database zero times, and confirmed `computeDefaultDhorEntry`'s three
+remaining outcomes (today's plan / continue from last / genuinely blank)
+each still produce the right shape.
+
+**Not touched in this delivery, by design**: dhorPage.js still has
+handling code for the now-impossible `missed_plan`/`future_plan` sources
+(dead, not broken — same pattern as `first_segment` becoming dead code in
+V3.24.0) — cleaning that up, and wiring the card's own prepopulation to
+auto-populate the first item of a multi-item batch, is Phase B. Plan
+Dhor's Dhor Plan tab (yesterday/today/next-5-days) is Phase C. Setup's
+"Tomorrow's Portion" and the live-DB purge of existing `plan_type='dhor'`
+rows are Phase D — confirmed to ship without an intentional pause after
+this phase, rather than holding D back as a separately-timed step. Also
+carried forward, unaffected by this phase: the two prepopulation gaps
+documented in V3.24.1 (pool-emptiness checked before `dhor_log`; the
+manual picker's Save not updating `baseline_selection`).
+
+**Files changed:**
+```
+worker/src/dhorSchedule.js
+SCHEMA.md
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.24.1 — Dhor Schedule generation fix + Dhor Plan tab redesign (2026-08-02)
 
 Found through live debugging on two real accounts, both traced to
