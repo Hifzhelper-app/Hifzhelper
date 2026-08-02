@@ -287,9 +287,14 @@ export async function computeDefaultDhorEntry(env, studentId) {
     return { source: 'continue_last', date: today, segment_from: chunk.segment_from, segment_to: chunk.segment_to, ref, plan_id: null };
   }
 
-  const chunks = buildChunks(pool, ref, 'quarter', 1);
-  if (chunks.length === 0) return { source: 'none', reason: 'Could not build a starting segment from the current pool' };
-  return { source: 'first_segment', date: today, segment_from: chunks[0].segment_from, segment_to: chunks[0].segment_to, ref, plan_id: null };
+  // V3.24.0 correction: no plan AND no history at all used to default to
+  // the first eligible segment (quarter granularity) -- changed to
+  // genuinely blank, confirmed in chat. A brand-new student with
+  // nothing logged in dhor_log yet realistically isn't doing Dhor at
+  // all, so there's nothing sensible to default to; once their first
+  // entry is ever saved (from Plan Dhor or the manual picker), the
+  // 'continue_last' branch above takes over normally from then on.
+  return { source: 'none', reason: 'No Dhor history yet -- enter this session manually' };
 }
 
 export async function handleGetDhorDefaultEntry(request, env, auth) {

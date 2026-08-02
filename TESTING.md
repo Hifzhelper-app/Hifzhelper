@@ -1160,6 +1160,55 @@ the fix for a bug that broke Save entirely.
 7. Cancel out of that edit → confirm the Amount+View Plan row reappears
    correctly.
 
+## 42. Plan Dhor (V3.24.0)
+
+1. Confirm "Juz" (no apostrophe) appears everywhere in the app you'd
+   previously seen "Juz'" — Dhor's own Juz label/dropdown, Setup's Juz
+   grid heading and buttons, the quick-add placeholder.
+2. Open Dhor → confirm Row 2 is Date/Plan Dhor/History in one row, Row
+   3 is a Quarter/Half/Full switch (not a dropdown) sized visibly
+   shorter than Row 2's buttons.
+3. Type "12" into Duration (no colon) → confirm it's read as 12:00 once
+   you tab away or save, not 12 seconds. Type "5:30" → confirm it's
+   read as-is. Confirm the label above it now reads "Timer".
+4. Tap Plan Dhor → confirm the screen opens with Save/Close icons at
+   top and a Dhor Plan / View All Completed / View All switch below.
+5. On Dhor Plan tab (with a plan scheduled today), confirm it's a plain
+   checkbox list, not a range-select.
+6. On View All Completed or View All, tap one row, then tap a
+   different row further down → confirm everything in between becomes
+   selected/checked, including rows that were originally at a coarser
+   rollup level than what got selected (confirm those show correctly,
+   including a genuinely partial row showing as indeterminate — a dash,
+   not fully checked or unchecked).
+7. Tap a third row after that → confirm the previous range selection is
+   completely cleared and this becomes a fresh single-row selection,
+   not an addition to the old range.
+8. Tap Select All → confirm everything in the current tab becomes
+   selected.
+9. Select exactly one clean quarter, save → confirm it populates
+   Juz/Position/Amount normally and Mistakes/Duration/Tajweed/Timer all
+   still work; save the entry and confirm it's correct in History.
+10. Select something that spans 2 juz (or an odd shape within one juz),
+    save → confirm the exact confirmation text appears, and confirm
+    Cancel leaves your selection untouched for editing. Confirm OK
+    switches the card to From/To fields with Mistakes/Tajweed/Timer/
+    Duration all visibly disabled, Notes still usable.
+11. Tap From or To in that disabled state → confirm Plan Dhor reopens
+    with the same selection already ticked.
+12. Save that entry → confirm it saves successfully with null
+    mistakes/duration and no tajweed tags, and check it doesn't crash.
+13. On View All, select something not yet marked complete and save it
+    (as a clean unit) → confirm it now shows as complete (not greyed)
+    next time you open View All Completed.
+14. Edit a past Dhor entry while a raw-range selection is still active
+    on the card → confirm Mistakes/Duration are enabled again in the
+    edit screen (not stuck disabled), and the stale From/To row is
+    gone.
+15. As a genuinely brand-new student (nothing in Setup, no Dhor
+    history at all), open Dhor → confirm the fields are blank, not
+    pre-filled with a first segment.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

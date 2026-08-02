@@ -113,17 +113,17 @@ function segmentRangeToPicker(segment_from, segment_to, ref){
 }
 
 let dhorSelectedTags = [];
-// V3.21.1: duration is a real editable field (#dhor_duration_minutes) now,
-// not something only the timer can set. dhorTimerExactSeconds holds the
-// timer's precise result for as long as the field hasn't been manually
-// touched since -- used at save time instead of re-deriving seconds from
-// the rounded 1-decimal display text, so the timer's own real precision
-// isn't lost to display rounding. It's cleared (falls back to parsing
-// the field directly) the moment the user actually types in the field.
+// V3.24.0: duration switched from decimal minutes to mm:ss text. Unlike
+// the old 1-decimal-minute display, mm:ss is a LOSSLESS round-trip (any
+// whole-second value formats and reparses back to the exact same
+// seconds) -- so the V3.21.1 dhorTimerExactSeconds mechanism (trusting a
+// remembered exact value instead of reparsing the rounded display text)
+// is no longer needed and has been removed; parseDhorDuration/
+// formatDhorDuration below always convert directly, with no precision
+// lost either way.
 // dhorLapTimes is genuinely timer-only data (no manual equivalent) and is
-// cleared whenever the user overrides the duration, since laps that no
-// longer sum to the new total would be actively misleading.
-let dhorTimerExactSeconds = null;
+// still cleared whenever the user overrides the duration, since laps
+// that no longer sum to the new total would be actively misleading.
 let dhorLapTimes = null;
 let dhorTodaysPlans = [];    // today's plan(s) for type 'dhor', fetched fresh on every open
 let dhorActivePlanId = null; // which one (if any) is currently backing the form
@@ -131,9 +131,33 @@ let dhorActivePlanId = null; // which one (if any) is currently backing the form
 // options, not whatever was actually chosen on the day being edited --
 // there's no way to reconstruct that. Editing here never touches segment.
 // (V3.21.1: this used to also exclude duration/lap_times for the same
-// reason, but duration is a real editable field now -- see
-// dhorTimerExactSeconds above -- so those two are no longer excluded.)
+// reason, but duration is a real editable field now -- so those two are
+// no longer excluded.)
 let dhorEditingId = null;
+
+// V3.24.0: mm:ss parsing/formatting for the Duration field. A colon-less
+// digit entry (e.g. "12") is read as whole minutes with 0 seconds --
+// confirmed in chat for exactly 2 digits; extended here to any digit
+// count (1 or 3+), flagged as Claude's own extension since only the
+// 2-digit case was specified.
+function parseDhorDuration(text){
+  const trimmed = String(text || '').trim();
+  if(!trimmed) return null;
+  if(trimmed.includes(':')){
+    const [mPart, sPart] = trimmed.split(':');
+    const m = parseInt(mPart, 10) || 0;
+    const s = parseInt(sPart, 10) || 0;
+    return m * 60 + s;
+  }
+  const mins = parseInt(trimmed, 10);
+  return isNaN(mins) ? null : mins * 60;
+}
+function formatDhorDuration(totalSeconds){
+  if(totalSeconds == null || isNaN(totalSeconds)) return '';
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 function renderDhorPicker(){
   const perJuz = segmentsPerJuz(dhorCurrentRef);
@@ -145,13 +169,27 @@ function renderDhorPicker(){
 // Fills the form from one plan row and remembers its id for save-time
 // linking. Never called with null — clearing back to manual entry just
 // means dhorActivePlanId stays null, which callers set directly.
+// V3.24.0: Amount is now a 3-way switch (js/uiSwitch.js's shared
+// renderSwitch/wireSwitch, same component already used elsewhere, e.g.
+// Setup's Dhor Schedule granularity switch) instead of a <select>.
+// dhor_unit stays a hidden input so the 4 existing .value reads/writes
+// throughout this file don't need to change -- this helper is the one
+// place that also keeps the visible switch synced whenever the value is
+// set from code (a real switch click already updates itself via
+// wireSwitch's own handler, further below).
+function setDhorUnit(unit){
+  document.getElementById('dhor_unit').value = unit;
+  renderSwitch('dhor_unit_switch', unit);
+}
+wireSwitch('dhor_unit_switch', (value) => setDhorUnit(value));
+
 function applyDhorPlan(plan){
   dhorActivePlanId = plan.id;
   if(plan.segment_from != null && plan.segment_to != null){
     const { juz, positionInJuz, unit } = segmentRangeToPicker(plan.segment_from, plan.segment_to, dhorCurrentRef);
     document.getElementById('dhor_juz').value = String(juz);
     document.getElementById('dhor_position').value = String(positionInJuz);
-    document.getElementById('dhor_unit').value = unit;
+    setDhorUnit(unit);
   }
 }
 
@@ -197,14 +235,14 @@ async function renderDhorScreen(){
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
   document.getElementById('dhorTimerPanel').classList.add('hidden');
+  exitDhorRawRangeMode();
   exitEditScreenMode('card-dhor');
   dhorSelectedTags = [];
-  dhorTimerExactSeconds = null;
   dhorLapTimes = null;
   document.getElementById('dhor_duration_minutes').value = '';
   dhorActivePlanId = null;
   document.getElementById('dhor_date').value = todayISO();
-  document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz' ${i+1}</option>`).join('');
+  document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
 
   try{
     const profile = await apiGetProfile();
@@ -213,16 +251,17 @@ async function renderDhorScreen(){
     dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
   }
   renderDhorPicker();
-  document.getElementById('dhor_unit').value = 'quarter';
+  setDhorUnit('quarter');
   document.getElementById('dhor_mistakes').value = '0';
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', null);
   renderTimer('dhorTimerWrap', (result) => {
-    dhorTimerExactSeconds = result.duration_seconds;
     dhorLapTimes = result.lap_times || null;
     // Programmatic assignment -- deliberately doesn't fire 'input', so
-    // this doesn't trip the manual-override handler below.
-    document.getElementById('dhor_duration_minutes').value = (result.duration_seconds / 60).toFixed(1);
+    // this doesn't trip the manual-override handler below. mm:ss is a
+    // lossless format (unlike the old 1-decimal-minute display), so this
+    // is the exact value, not an approximation.
+    document.getElementById('dhor_duration_minutes').value = formatDhorDuration(result.duration_seconds);
     updateDhorTimerSummary();
   });
   updateDhorTimerSummary();
@@ -256,7 +295,7 @@ async function renderDhorScreen(){
       const { juz, positionInJuz, unit } = segmentRangeToPicker(result.segment_from, result.segment_to, dhorCurrentRef);
       document.getElementById('dhor_juz').value = String(juz);
       document.getElementById('dhor_position').value = String(positionInJuz);
-      document.getElementById('dhor_unit').value = unit;
+      setDhorUnit(unit);
       renderDhorPlanBanner(result.source);
     } else {
       dhorTodaysPlans = [];
@@ -287,54 +326,400 @@ document.getElementById('dhorStopwatchToggle').addEventListener('click', () => {
 // as renderRecentEntries's History popup (js/dhorPage.js, further below)
 // for visual consistency, since it's the same "compact button opens a
 // popup list" idea just facing the other direction in time.
-document.getElementById('dhorViewPlanBtn').addEventListener('click', async () => {
-  let plans = [];
-  try{
-    const all = await apiPlans.get({ since: todayISO() });
-    plans = (all || []).filter(p => p.plan_type === 'dhor' && p.status === 'planned');
-  } catch(e){ plans = []; }
+// V3.24.0: Plan Dhor replaces the old read-only "View Plan" popup
+// entirely -- a single unified selection surface across 3 views (Dhor
+// Plan / View All Completed / View All), all sharing ONE underlying
+// selection set (planDhorSelectedUnits, quarter-unit IDs) regardless of
+// which tab a given unit was toggled from. This is what makes the save
+// logic below genuinely uniform across all 3 tabs, per the confirmed
+// design, rather than needing separate reconciliation per tab.
+let planDhorPool = [];              // sorted quarter-unit IDs currently in baseline_selection
+let planDhorTodaysPlans = [];       // today's plan_type='dhor', status='planned' rows
+let planDhorSelectedUnits = new Set();
+let planDhorRollup = {};            // { juzNum: 'quarters'|'half'|'full' }, default 'quarters'
+let planDhorTab = 'plan';
+// V3.24.0 (revised): tap-first/tap-last range-select for the 2 Juz-grid
+// tabs (Dhor Plan tab keeps simple per-plan checkbox toggles instead --
+// plans are discrete scheduled sessions, not really a "range" concept).
+// null = no anchor yet (next tap starts a fresh single-row selection);
+// {min,max} = first tap's quarter-unit bounds, waiting for a second tap
+// to complete the range. A genuine 3rd tap always starts over rather
+// than extending, which is what makes a non-contiguous selection
+// structurally impossible to create at all.
+let planDhorRangeStart = null;
+
+// Converts a plan's (or any) segment_from/segment_to into the underlying
+// quarter-unit IDs it spans -- the common representation every tab's
+// selections get reduced to. Mirrors describeDhorSegment's own
+// juz'/unit derivation (segmentRangeToPicker) rather than a second way.
+function segmentToQuarterUnits(segment_from, segment_to, ref){
+  const { juz, positionInJuz, unit } = segmentRangeToPicker(segment_from, segment_to, ref);
+  if(unit === 'full') return quarterUnitsForJuz(juz);
+  const perJuz = segmentsPerJuz(ref);
+  if(unit === 'half'){
+    const halfIdx = positionInJuz <= perJuz / 2 ? 1 : 2;
+    return quarterUnitsForHalf(juz, halfIdx);
+  }
+  const quarterSize = perJuz / 4;
+  const quarterIdx = Math.ceil(positionInJuz / quarterSize);
+  return [quarterUnitId(juz, quarterIdx)];
+}
+
+// Given which quarter-unit IDs are "available" for juzNum in the current
+// tab (pool membership for View All Completed; always all 4 for View
+// All, just visually greyed if not actually in the pool) and that juz's
+// current rollup level, returns the rows to show: merging into a half/
+// full row only where ALL the quarters it needs are actually available
+// -- falls back to individual quarters otherwise, the same "only a
+// clean, fully-available group merges" rule Sabaq Dhor's own rollup
+// uses, just evaluated per-juz here instead of for one active juz'.
+function computePlanDhorRowsForJuz(juzNum, availableSet){
+  const level = planDhorRollup[juzNum] || 'quarters';
+  const all4 = quarterUnitsForJuz(juzNum);
+  const present = all4.filter(u => availableSet.has(u));
+  if(present.length === 0) return [];
+  if(level === 'full' && all4.every(u => availableSet.has(u))){
+    return [{ units: all4, label: `Juz ${juzNum}` }];
+  }
+  if(level === 'half' || level === 'full'){
+    const h1 = quarterUnitsForHalf(juzNum, 1), h2 = quarterUnitsForHalf(juzNum, 2);
+    const rows = [];
+    if(h1.every(u => availableSet.has(u))) rows.push({ units: h1, label: `Juz ${juzNum} H1` });
+    else h1.filter(u => availableSet.has(u)).forEach(u => rows.push({ units: [u], label: quarterUnitLabel(u) }));
+    if(h2.every(u => availableSet.has(u))) rows.push({ units: h2, label: `Juz ${juzNum} H2` });
+    else h2.filter(u => availableSet.has(u)).forEach(u => rows.push({ units: [u], label: quarterUnitLabel(u) }));
+    return rows;
+  }
+  return present.map(u => ({ units: [u], label: quarterUnitLabel(u) }));
+}
+function quarterUnitLabel(unitId){
+  const { juz, quarter } = quarterUnitToJuzQuarter(unitId);
+  return `Juz ${juz} Q${quarter}`;
+}
+function planDhorCanMergeUp(juzNum, availableSet){
+  const level = planDhorRollup[juzNum] || 'quarters';
+  if(level === 'full') return false;
+  const rowsNow = computePlanDhorRowsForJuz(juzNum, availableSet).map(r => r.units.join(','));
+  const nextLevel = level === 'quarters' ? 'half' : 'full';
+  const saved = planDhorRollup[juzNum];
+  planDhorRollup[juzNum] = nextLevel;
+  const rowsNext = computePlanDhorRowsForJuz(juzNum, availableSet).map(r => r.units.join(','));
+  planDhorRollup[juzNum] = saved;
+  return rowsNow.join('|') !== rowsNext.join('|');
+}
+function planDhorCanSplitDown(juzNum){
+  return (planDhorRollup[juzNum] || 'quarters') !== 'quarters';
+}
+
+// V3.24.0: raw-range mode -- the main Dhor form's alternate state for a
+// selection that doesn't reduce to one clean quarter/half/juz (or spans
+// more than one juz). Only ever entered/exited by Plan Dhor's save
+// step below; nothing else in this file toggles it directly.
+let dhorRawRange = null; // { units, fromLabel, toLabel } or null
+function enterDhorRawRangeMode(range){
+  dhorRawRange = range;
+  document.getElementById('dhorSegmentPicker').classList.add('hidden');
+  document.getElementById('dhorAmountRow').classList.add('hidden');
+  document.getElementById('dhorRawRangeRow').classList.remove('hidden');
+  document.getElementById('dhorRawFromBtn').textContent = range.fromLabel;
+  document.getElementById('dhorRawToBtn').textContent = range.toLabel;
+  document.getElementById('dhor_mistakes').disabled = true;
+  document.getElementById('dhor_duration_minutes').disabled = true;
+  document.getElementById('dhorStopwatchToggle').disabled = true;
+  const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
+  if(tajweedBtn) tajweedBtn.disabled = true;
+  dhorActivePlanId = null;
+}
+function exitDhorRawRangeMode(){
+  dhorRawRange = null;
+  document.getElementById('dhorRawRangeRow').classList.add('hidden');
+  document.getElementById('dhorSegmentPicker').classList.remove('hidden');
+  document.getElementById('dhorAmountRow').classList.remove('hidden');
+  document.getElementById('dhor_mistakes').disabled = false;
+  document.getElementById('dhor_duration_minutes').disabled = false;
+  document.getElementById('dhorStopwatchToggle').disabled = false;
+  const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
+  if(tajweedBtn) tajweedBtn.disabled = false;
+}
+document.getElementById('dhorRawFromBtn').addEventListener('click', () => { if(dhorRawRange) openPlanDhorModal(dhorRawRange.units); });
+document.getElementById('dhorRawToBtn').addEventListener('click', () => { if(dhorRawRange) openPlanDhorModal(dhorRawRange.units); });
+
+// Returns {juz, positionInJuz, unit} if sortedUnits is EXACTLY one clean
+// quarter, one clean half, or one full juz within a SINGLE juz -- null
+// for anything else (spans >1 juz, or an odd shape within one juz).
+// Converts to a segment range and reuses the EXISTING
+// segmentRangeToPicker to derive juz/positionInJuz/unit, rather than
+// re-deriving that a second way.
+function isCleanSingleUnit(sortedUnits, ref){
+  if(sortedUnits.length === 0) return null;
+  const { juz: juzFrom } = quarterUnitToJuzQuarter(sortedUnits[0]);
+  const { juz: juzTo } = quarterUnitToJuzQuarter(sortedUnits[sortedUnits.length - 1]);
+  if(juzFrom !== juzTo) return null;
+  const all4 = quarterUnitsForJuz(juzFrom);
+  const h1 = quarterUnitsForHalf(juzFrom, 1), h2 = quarterUnitsForHalf(juzFrom, 2);
+  const key = sortedUnits.join(',');
+  const isClean = key === all4.join(',') || key === h1.join(',') || key === h2.join(',') || sortedUnits.length === 1;
+  if(!isClean) return null;
+  const perJuz = segmentsPerJuz(ref);
+  const quarterSize = perJuz / 4;
+  const firstQuarter = quarterUnitToJuzQuarter(sortedUnits[0]).quarter;
+  const lastQuarter = quarterUnitToJuzQuarter(sortedUnits[sortedUnits.length - 1]).quarter;
+  const segFrom = (juzFrom - 1) * perJuz + (firstQuarter - 1) * quarterSize + 1;
+  const segTo = (juzFrom - 1) * perJuz + lastQuarter * quarterSize;
+  return segmentRangeToPicker(segFrom, segTo, ref);
+}
+
+function savePlanDhorSelection(){
+  const errEl = document.getElementById('planDhorError');
+  errEl.textContent = '';
+  const sorted = [...planDhorSelectedUnits].sort((a,b) => a-b);
+  if(sorted.length === 0){
+    errEl.textContent = 'Please select at least one section.';
+    return;
+  }
+
+  const finish = () => {
+    const newUnits = sorted.filter(u => !planDhorPool.includes(u));
+    if(newUnits.length > 0){
+      const merged = [...new Set([...planDhorPool, ...newUnits])].sort((a,b) => a-b);
+      apiSaveProfile({ baseline_mode: 'juz', baseline_selection: merged }).catch(() => { /* best-effort */ });
+    }
+    document.getElementById('planDhorModal').remove();
+  };
+
+  const clean = isCleanSingleUnit(sorted, dhorCurrentRef);
+  if(clean){
+    exitDhorRawRangeMode();
+    document.getElementById('dhor_juz').value = String(clean.juz);
+    document.getElementById('dhor_position').value = String(clean.positionInJuz);
+    setDhorUnit(clean.unit);
+    finish();
+    return;
+  }
+
+  if(!confirm('Your times and mistakes will not be recorded for this selection. Cancel to review, OK to continue.')) return;
+  enterDhorRawRangeMode({
+    units: sorted,
+    fromLabel: quarterUnitLabel(sorted[0]),
+    toLabel: quarterUnitLabel(sorted[sorted.length - 1])
+  });
+  finish();
+}
+
+document.getElementById('dhorViewPlanBtn').addEventListener('click', () => openPlanDhorModal());
+
+async function openPlanDhorModal(preselectUnits){
+  let profile = {};
+  try{ profile = await apiGetProfile(); } catch(e){}
+  planDhorPool = Array.isArray(profile.baseline_selection)
+    ? [...new Set(profile.baseline_selection.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a,b) => a-b)
+    : [];
+
+  let allPlans = [];
+  try{ allPlans = await apiPlans.get({ date: todayISO() }); } catch(e){ allPlans = []; }
+  planDhorTodaysPlans = (allPlans || []).filter(p => p.plan_type === 'dhor' && p.status === 'planned');
+
+  planDhorSelectedUnits = preselectUnits ? new Set(preselectUnits) : new Set();
+  planDhorRangeStart = null;
+  planDhorRollup = {};
+  planDhorTab = preselectUnits ? 'all' : 'plan';
+  renderPlanDhorModal();
+}
+
+function renderPlanDhorModal(){
+  const already = document.getElementById('planDhorModal');
+  if(already) already.remove();
 
   const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay history-popup-modal';
-  overlay.innerHTML = `<div class="modal-card">
-    <button type="button" class="close-btn" id="viewPlanCloseBtn">&times;</button>
-    <h2>Upcoming Dhor Plan</h2>
-    <div class="history-full-list">
-      ${plans.map(p => `<div class="history-entry-row">
-        <div>
-          <div class="rail-card-date">${p.target_date}</div>
-          <div class="rail-card-body">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</div>
-        </div>
-      </div>`).join('') || '<div class="form-hint">Nothing scheduled yet.</div>'}
+  overlay.className = 'modal-overlay plan-dhor-modal';
+  overlay.id = 'planDhorModal';
+  overlay.innerHTML = `<div class="modal-card plan-dhor-card">
+    <div class="plan-dhor-row1">
+      <span class="plan-dhor-title">Plan Dhor</span>
+      <div class="plan-dhor-row1-icons">
+        <button type="button" id="planDhorSaveBtn"><span class="btn-icon" id="planDhorSaveIcon"></span><span>Save</span></button>
+        <button type="button" id="planDhorCloseBtn"><span class="btn-icon" id="planDhorCloseIcon"></span><span>Close</span></button>
+      </div>
     </div>
+    <div class="switch-track" id="planDhorTabSwitch">
+      <div class="switch-thumb"></div>
+      <button type="button" class="switch-option" data-value="plan">Dhor Plan</button>
+      <button type="button" class="switch-option" data-value="completed">View All Completed</button>
+      <button type="button" class="switch-option" data-value="all">View All</button>
+    </div>
+    <button type="button" class="plan-dhor-select-all hidden" id="planDhorSelectAllBtn">Select All</button>
+    <div class="form-error" id="planDhorError"></div>
+    <div id="planDhorContent" class="plan-dhor-content"></div>
   </div>`;
   document.body.appendChild(overlay);
+  document.getElementById('planDhorSaveIcon').innerHTML = iconHtml('save');
+  document.getElementById('planDhorCloseIcon').innerHTML = iconHtml('close');
+  renderSwitch('planDhorTabSwitch', planDhorTab);
+  wireSwitch('planDhorTabSwitch', (value) => {
+    planDhorTab = value;
+    planDhorRangeStart = null;
+    renderPlanDhorTabContent();
+  });
+  document.getElementById('planDhorSelectAllBtn').addEventListener('click', planDhorSelectAll);
+  document.getElementById('planDhorCloseBtn').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
-  document.getElementById('viewPlanCloseBtn').addEventListener('click', () => overlay.remove());
-});
+  document.getElementById('planDhorSaveBtn').addEventListener('click', savePlanDhorSelection);
+  renderPlanDhorTabContent();
+}
+
+// Select All applies to whichever set the current tab actually shows --
+// the pool for View All Completed, all 120 quarter-units for View All
+// (matching that tab's own "everything, greyed if incomplete" scope).
+function planDhorSelectAll(){
+  planDhorSelectedUnits = planDhorTab === 'completed'
+    ? new Set(planDhorPool)
+    : new Set(Array.from({length:120}, (_,i) => i+1));
+  planDhorRangeStart = null;
+  renderPlanDhorTabContent();
+}
+
+function renderPlanDhorTabContent(){
+  const el = document.getElementById('planDhorContent');
+  const selectAllBtn = document.getElementById('planDhorSelectAllBtn');
+  selectAllBtn.classList.toggle('hidden', planDhorTab === 'plan');
+  if(planDhorTab === 'plan'){
+    if(planDhorTodaysPlans.length === 0){
+      el.innerHTML = '<p class="form-hint">Nothing scheduled for today.</p>';
+      return;
+    }
+    // Dhor Plan tab: simple per-plan checkbox toggles, not range-select --
+    // plans are discrete scheduled sessions, confirmed as a different
+    // interaction from the two Juz-grid tabs below.
+    el.innerHTML = `<div class="plan-dhor-grid">` + planDhorTodaysPlans.map(p => {
+      const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
+      const checked = units.every(u => planDhorSelectedUnits.has(u));
+      return `<label class="plan-dhor-row-text">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</label>
+        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}"${checked ? ' checked' : ''}>`;
+    }).join('') + `</div>`;
+    wirePlanDhorContent();
+    return;
+  }
+
+  const availableSet = planDhorTab === 'completed' ? new Set(planDhorPool) : new Set(Array.from({length:120}, (_,i) => i+1));
+  const juzNumbers = planDhorTab === 'completed'
+    ? [...new Set(planDhorPool.map(u => quarterUnitToJuzQuarter(u).juz))].sort((a,b) => a-b)
+    : Array.from({length:30}, (_,i) => i+1);
+  if(juzNumbers.length === 0){
+    el.innerHTML = '<p class="form-hint">Nothing marked complete yet.</p>';
+    return;
+  }
+  el.innerHTML = juzNumbers.map(juzNum => {
+    const rows = computePlanDhorRowsForJuz(juzNum, availableSet);
+    if(rows.length === 0) return '';
+    const mergeUp = planDhorCanMergeUp(juzNum, availableSet);
+    const splitDown = planDhorCanSplitDown(juzNum);
+    return `<div class="plan-dhor-juz-block">
+      <div class="plan-dhor-juz-rollup">
+        ${mergeUp ? `<button type="button" class="plan-dhor-rollup-btn" data-action="up" data-juz="${juzNum}">${iconHtml('rollupMerge')}</button>` : ''}
+        ${splitDown ? `<button type="button" class="plan-dhor-rollup-btn" data-action="down" data-juz="${juzNum}">${iconHtml('rollupSplit')}</button>` : ''}
+      </div>
+      <div class="plan-dhor-grid">
+        ${rows.map(r => {
+          const greyed = planDhorTab === 'all' && !r.units.every(u => planDhorPool.includes(u));
+          return `<div class="plan-dhor-tap-row" data-units="${r.units.join(',')}">
+            <span class="plan-dhor-row-text${greyed ? ' plan-dhor-row-greyed' : ''}">${r.label}</span>
+            <input type="checkbox" class="plan-dhor-unit-cb" data-units="${r.units.join(',')}" tabindex="-1">
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  wirePlanDhorContent();
+}
+
+function wirePlanDhorContent(){
+  // Reflect current selection state on every checkbox, including the
+  // 3-way checked/unchecked/indeterminate distinction a tap-based range
+  // needs (a range boundary can fall inside a currently-rolled-up row,
+  // e.g. half its underlying quarters selected and half not) -- native
+  // indeterminate is exactly the right tool for that, no need to force
+  // a rollup-level change just to make a partial selection displayable.
+  document.querySelectorAll('.plan-dhor-unit-cb').forEach(cb => {
+    const units = cb.dataset.units.split(',').map(Number);
+    const selectedCount = units.filter(u => planDhorSelectedUnits.has(u)).length;
+    cb.checked = selectedCount === units.length;
+    cb.indeterminate = selectedCount > 0 && selectedCount < units.length;
+  });
+
+  if(planDhorTab === 'plan'){
+    // Simple independent toggle, one plan at a time.
+    document.querySelectorAll('.plan-dhor-unit-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const units = cb.dataset.units.split(',').map(Number);
+        units.forEach(u => cb.checked ? planDhorSelectedUnits.add(u) : planDhorSelectedUnits.delete(u));
+      });
+    });
+  } else {
+    // Tap-first/tap-last range-select -- the whole row is the tap
+    // target (the checkbox itself is display-only, tabindex=-1 and not
+    // directly wired), so tapping the label works exactly like tapping
+    // the checkbox.
+    document.querySelectorAll('.plan-dhor-tap-row').forEach(row => {
+      row.addEventListener('click', () => {
+        const units = row.dataset.units.split(',').map(Number);
+        planDhorHandleRowTap(units);
+      });
+    });
+  }
+
+  document.querySelectorAll('.plan-dhor-rollup-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const juzNum = parseInt(btn.dataset.juz, 10);
+      const level = planDhorRollup[juzNum] || 'quarters';
+      if(btn.dataset.action === 'up') planDhorRollup[juzNum] = level === 'quarters' ? 'half' : 'full';
+      else planDhorRollup[juzNum] = level === 'full' ? 'half' : 'quarters';
+      renderPlanDhorTabContent();
+    });
+  });
+}
+
+// First tap on a Juz-grid row: single-row selection, remembered as the
+// range anchor. Second tap: completes the range from whichever anchor
+// bound is earlier to whichever new bound is later (works regardless of
+// tap order), then clears the anchor -- so a genuine third tap always
+// starts a brand new range rather than extending this one.
+function planDhorHandleRowTap(units){
+  const minU = Math.min(...units), maxU = Math.max(...units);
+  if(planDhorRangeStart === null){
+    planDhorSelectedUnits = new Set(units);
+    planDhorRangeStart = { min: minU, max: maxU };
+  } else {
+    const rangeMin = Math.min(planDhorRangeStart.min, minU);
+    const rangeMax = Math.max(planDhorRangeStart.max, maxU);
+    planDhorSelectedUnits = new Set();
+    for(let u = rangeMin; u <= rangeMax; u++) planDhorSelectedUnits.add(u);
+    planDhorRangeStart = null;
+  }
+  renderPlanDhorTabContent();
+}
 // Real user input into the field (not the timer's own programmatic
-// auto-fill above) means they're overriding it -- stop trusting the
-// timer's exact-seconds value in favour of whatever they typed, and
-// drop lap times since they'd no longer sum to the new total.
+// auto-fill above) means they're overriding it -- drop lap times since
+// they'd no longer sum to the new total (mm:ss itself needs no special
+// handling here, it's parsed fresh from whatever's in the field at save
+// time either way -- see parseDhorDuration above).
 document.getElementById('dhor_duration_minutes').addEventListener('input', () => {
-  dhorTimerExactSeconds = null;
   dhorLapTimes = null;
   updateDhorTimerSummary();
 });
 
 function loadDhorEntryForEdit(entry){
+  exitDhorRawRangeMode();
   dhorEditingId = entry.id;
   document.getElementById('dhor_mistakes').value = entry.mistakes || 0;
   dhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', entry);
-  // V3.21.1: duration/lap times are no longer excluded from editing --
-  // treat the stored value as "exact" (same as a fresh timer result)
-  // until the user actually types in the field, same rule as new entries.
-  dhorTimerExactSeconds = typeof entry.duration_seconds === 'number' ? entry.duration_seconds : null;
+  // V3.21.1: duration/lap times are no longer excluded from editing.
+  // V3.24.0: mm:ss is lossless, so this is just a direct format now --
+  // no more "trust as exact until touched" bookkeeping needed.
   dhorLapTimes = entry.lap_times || null;
-  document.getElementById('dhor_duration_minutes').value =
-    dhorTimerExactSeconds !== null ? (dhorTimerExactSeconds / 60).toFixed(1) : '';
+  document.getElementById('dhor_duration_minutes').value = formatDhorDuration(entry.duration_seconds);
   updateDhorTimerSummary();
   document.getElementById('dhorEditTopbarDate').textContent =
     `${entry.date} (${describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef)} — not editable here)`;
@@ -357,7 +742,6 @@ function resetDhorFormAfterEdit(){
   dhorSelectedTags = [];
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', null);
-  dhorTimerExactSeconds = null;
   dhorLapTimes = null;
   document.getElementById('dhor_duration_minutes').value = '';
   updateDhorTimerSummary();
@@ -387,12 +771,12 @@ EDIT_HANDLERS.dhor = loadDhorEntryForEdit;
 // seconds if the field hasn't been manually touched since it was set
 // (see the 'input' listener above); otherwise parses the field's own
 // text directly, since that's the user's actual intent at that point.
+// V3.24.0: used by both save paths below. Simple direct parse now --
+// mm:ss has no precision to lose, so there's no need to distinguish
+// "the timer's own untouched value" from "whatever's in the field".
 function computeDhorDuration(){
-  const minutesVal = document.getElementById('dhor_duration_minutes').value;
-  const duration_seconds = dhorTimerExactSeconds !== null
-    ? dhorTimerExactSeconds
-    : (minutesVal ? Math.round(parseFloat(minutesVal) * 60) : null);
-  return { duration_seconds, lap_times: dhorLapTimes };
+  const raw = document.getElementById('dhor_duration_minutes').value;
+  return { duration_seconds: parseDhorDuration(raw), lap_times: dhorLapTimes };
 }
 
 document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
@@ -414,14 +798,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
       document.getElementById('dhorSaveStatus').classList.add('show');
       setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
       cancelDhorEdit();
-      document.getElementById('dhor_mistakes').value = 0;
-      dhorSelectedTags = [];
-      renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
-      renderCommentBlock('dhorCommentBlock', null);
-      dhorTimerExactSeconds = null;
-      dhorLapTimes = null;
-      document.getElementById('dhor_duration_minutes').value = '';
-      updateDhorTimerSummary();
+      resetDhorFormAfterEdit();
       await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
     } catch(e){
       errEl.textContent = "Couldn't save: " + e.message;
@@ -429,17 +806,33 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     return;
   }
 
-  const juz = parseInt(document.getElementById('dhor_juz').value);
-  const position = parseInt(document.getElementById('dhor_position').value);
-  const unit = document.getElementById('dhor_unit').value;
-  const { segment_from, segment_to } = computeSegmentRange(juz, position, dhorCurrentRef, unit);
+  let segment_from, segment_to;
+  if(dhorRawRange){
+    // V3.24.0: a Plan Dhor selection that didn't reduce to one clean
+    // quarter/half/juz -- the raw range IS the segment, computed once
+    // already when the selection was made (dhorRawRange.units). Mistakes/
+    // duration/tajweed are disabled fields in this mode and deliberately
+    // excluded below, not just left at whatever they happen to show.
+    const sorted = dhorRawRange.units;
+    const perJuz = segmentsPerJuz(dhorCurrentRef);
+    const quarterSize = perJuz / 4;
+    const first = quarterUnitToJuzQuarter(sorted[0]);
+    const last = quarterUnitToJuzQuarter(sorted[sorted.length - 1]);
+    segment_from = (first.juz - 1) * perJuz + (first.quarter - 1) * quarterSize + 1;
+    segment_to = (last.juz - 1) * perJuz + last.quarter * quarterSize;
+  } else {
+    const juz = parseInt(document.getElementById('dhor_juz').value);
+    const position = parseInt(document.getElementById('dhor_position').value);
+    const unit = document.getElementById('dhor_unit').value;
+    ({ segment_from, segment_to } = computeSegmentRange(juz, position, dhorCurrentRef, unit));
+  }
 
   const payload = {
     date: document.getElementById('dhor_date').value || todayISO(),
     segment_from, segment_to, ref: dhorCurrentRef,
-    tajweed_tags: dhorSelectedTags.join(','),
-    mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
-    ...computeDhorDuration(),
+    tajweed_tags: dhorRawRange ? '' : dhorSelectedTags.join(','),
+    mistakes: dhorRawRange ? null : (parseInt(document.getElementById('dhor_mistakes').value) || 0),
+    ...(dhorRawRange ? { duration_seconds: null, lap_times: null } : computeDhorDuration()),
     ...readCommentBlock('dhorCommentBlock')
   };
   if(dhorActivePlanId) payload.plan_id = dhorActivePlanId;
@@ -448,6 +841,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     await apiDhor.save(payload);
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
+    if(dhorRawRange) exitDhorRawRangeMode();
     await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;

@@ -108,7 +108,7 @@ function computeLingeringRows(previousJuz, ref, rollupLevel, baselineSelection){
 
   const juzBounds = { from: structuralQuarterBounds(previousJuz, 1, ref), to: structuralQuarterBounds(previousJuz, 4, ref) };
   if(!firstHalfMoved && !secondHalfMoved && rollupLevel === 'full'){
-    return [{ id: 'lingering-full', label: `Juz' ${previousJuz} (complete)`,
+    return [{ id: 'lingering-full', label: `Juz ${previousJuz} (complete)`,
       fromSurah: juzBounds.from.startSurah, fromAyah: juzBounds.from.startAyah,
       toSurah: juzBounds.to.endSurah, toAyah: juzBounds.to.endAyah,
       complete: true, canMoveToDhor: true, isFull: true, lingeringJuz: previousJuz }];
@@ -125,11 +125,11 @@ function computeLingeringRows(previousJuz, ref, rollupLevel, baselineSelection){
   // moved), not whether the row is shown at all.
   if(!firstHalfMoved){
     const b = halfBounds(1);
-    rows.push(Object.assign({ id: 'lingering-h1', label: `Juz' ${previousJuz}, First Half` }, b, { complete: true, canMoveToDhor: true, isHalf: true, halfIndex: 1, lingeringJuz: previousJuz }));
+    rows.push(Object.assign({ id: 'lingering-h1', label: `Juz ${previousJuz}, First Half` }, b, { complete: true, canMoveToDhor: true, isHalf: true, halfIndex: 1, lingeringJuz: previousJuz }));
   }
   if(!secondHalfMoved){
     const b = halfBounds(2);
-    rows.push(Object.assign({ id: 'lingering-h2', label: `Juz' ${previousJuz}, Second Half` }, b, { complete: true, canMoveToDhor: firstHalfMoved, isHalf: true, halfIndex: 2, lingeringJuz: previousJuz }));
+    rows.push(Object.assign({ id: 'lingering-h2', label: `Juz ${previousJuz}, Second Half` }, b, { complete: true, canMoveToDhor: firstHalfMoved, isHalf: true, halfIndex: 2, lingeringJuz: previousJuz }));
   }
   return rows;
 }

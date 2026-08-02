@@ -95,14 +95,14 @@ function openSectionGridModal(mode){
         : baselineSelection.slice())
     : [];
   const items = mode === 'juz'
-    ? Array.from({length: 30}, (_, i) => [i + 1, `Juz' ${i + 1}`])
+    ? Array.from({length: 30}, (_, i) => [i + 1, `Juz ${i + 1}`])
     : SURAHS.map(([num, name]) => [num, `${num}. ${name}`]);
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay section-grid-modal';
   overlay.innerHTML = `<div class="modal-card">
     <button type="button" class="close-btn" id="sectionGridCloseBtn">&times;</button>
-    <h2>${mode === 'juz' ? "Mark completed Juz'" : 'Mark completed Surahs'}</h2>
+    <h2>${mode === 'juz' ? "Mark completed Juz" : 'Mark completed Surahs'}</h2>
     <div class="section-grid ${mode === 'juz' ? 'grid-juz' : 'grid-surah'}" id="sectionGridCells"></div>
   </div>`;
   document.body.appendChild(overlay);
