@@ -23,15 +23,29 @@
 // like the one-plan case; leaving none picked behaves like the zero-plan
 // case.
 //
-// V3.23.0 (Dhor detail rebuild, Phase A): the zero-plan-for-today case no
+// V3.23.0 (Dhor detail rebuild, Phase A -- an earlier, unrelated phase
+// numbering than the "Phase A/B" below): the zero-plan-for-today case no
 // longer just falls back to a blank manual picker. apiGetDhorDefaultEntry
-// (worker/src/dhorSchedule.js's computeDefaultDhorEntry) now checks, in
-// order: a missed plan (backdated to ITS OWN date, a catch-up entry) →
-// the closest future plan (today's date, borrowed early) → continuing
-// from the last actual Dhor entry (at THAT entry's own granularity,
-// walking the eligible pool forward) → the very first eligible segment.
-// Only when none of those produce anything does the manual picker stay
-// genuinely blank, same as before this round.
+// used to check, in order: a missed plan (backdated to ITS OWN date, a
+// catch-up entry) → the closest future plan (today's date, borrowed
+// early) → continuing from the last actual Dhor entry → the very first
+// eligible segment. Superseded below.
+//
+// Pure queue model (2026-08-02, Phases A+B of a separate 4-phase rebuild):
+// the model above was confirmed wrong -- `plans` isn't a calendar of
+// dated commitments, it's a single ordered queue with no dates on
+// anything not yet done, so "missed" and "future" never really existed
+// as distinct concepts; they only looked like they did because rows used
+// to be pre-generated with dates attached. Phase A
+// (worker/src/dhorSchedule.js) collapsed computeDefaultDhorEntry to just
+// today's plan (an explicit override, if one exists) or else always
+// continuing from the last logged entry. Phase B (this file) matches
+// that: the missed/future branches and the first_segment source are gone
+// from here too, and a same-day batch of more than one plan no longer
+// shows an inline "which one do you mean" picker (the "never
+// auto-selected" rule from V3.9.0, above -- deliberately reversed) -- the
+// first item in the batch is always what's pre-filled, and the rest
+// stays reachable via Plan Dhor only.
 //
 // segmentsPerJuz/unitMarkerCount used to be defined locally here — moved
 // to shared/data.js (V3.9.0) since the new server-side schedule generator
@@ -193,37 +207,24 @@ function applyDhorPlan(plan){
   }
 }
 
-// V3.23.0: now takes the source computeDefaultDhorEntry reported, so the
-// student can see WHY something got pre-filled rather than just seeing
-// fields silently populated. dateInfo is only meaningful for
-// 'missed_plan' (the backdated catch-up date).
-function renderDhorPlanBanner(source, dateInfo){
+// Pure queue model (2026-08-02, Phase B): source is one of 'today_plan'/
+// 'continue_last'/null now -- 'missed_plan'/'future_plan' can no longer
+// be reported (Phase A), and 'first_segment' already couldn't be
+// (V3.24.0). 'today_plan' no longer branches on how many rows there are:
+// a same-day batch of >1 is named in the text, but never shown as an
+// inline picker any more (see renderDhorScreen) -- Plan Dhor is the one
+// place left to see or choose among the rest of the batch.
+function renderDhorPlanBanner(source){
   const el = document.getElementById('dhorPlanBanner');
   if(!el) return;
-  if(source === 'today_plan' && dhorTodaysPlans.length > 1){
-    // More than one planned session for today — a plain selector, never
-    // auto-picked (per the "never auto-selected" rule already agreed for
-    // this feature). Reuses .tajweed-tag's pill look for consistency with
-    // every other single-select control in the app.
-    el.innerHTML = `<div class="form-hint">More than one plan for today — pick one, or leave unpicked to enter manually:</div>
-      <div id="dhorPlanChoices">` +
-      dhorTodaysPlans.map(p => `<button type="button" class="tajweed-tag" data-plan-id="${p.id}">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</button>`).join('') +
-      `</div>`;
-    el.querySelectorAll('[data-plan-id]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const plan = dhorTodaysPlans.find(p => p.id === parseInt(btn.dataset.planId, 10));
-        applyDhorPlan(plan);
-        el.querySelectorAll('[data-plan-id]').forEach(b => b.classList.toggle('active', b === btn));
-      });
-    });
+  if(source === 'today_plan'){
+    el.innerHTML = dhorTodaysPlans.length > 1
+      ? `<div class="form-hint">Pre-filled from today's plan (1 of ${dhorTodaysPlans.length} — see Plan Dhor for the rest).</div>`
+      : `<div class="form-hint">Pre-filled from today's plan.</div>`;
     return;
   }
   const TEXT = {
-    today_plan: `Pre-filled from today's plan.`,
-    missed_plan: `No plan for today — catching up on ${dateInfo}, which was missed.`,
-    future_plan: `Nothing planned for today — pre-filled from your next upcoming session.`,
-    continue_last: `No plan set up yet — continuing from your last Dhor session.`,
-    first_segment: `No plan or history yet — starting from your first eligible segment.`
+    continue_last: `No plan set up yet — continuing from your last Dhor session.`
   };
   el.innerHTML = TEXT[source] ? `<div class="form-hint">${TEXT[source]}</div>` : '';
 }
@@ -266,30 +267,26 @@ async function renderDhorScreen(){
   });
   updateDhorTimerSummary();
 
-  // Best-effort: top up the rolling schedule before asking for today's
-  // plan, so a fresh day gets its row without the student needing to
-  // open Setup first. Never blocks or errors the rest of the screen —
-  // the manual picker is always the fallback if this fails (e.g. no
-  // schedule configured yet).
-  try{ await apiEnsureDhorSchedule(); } catch(e){ /* not configured yet, or offline — fine */ }
-
-  // V3.23.0: computeDefaultDhorEntry (worker/src/dhorSchedule.js) checks
-  // today's plan(s) first, then falls through missed → future → continue-
-  // from-last-entry → first-ever-segment, in that order. Only 'today_plan'
-  // with more than one row still needs a picker here (dhorTodaysPlans) --
-  // every other source is a single, fully-resolved answer.
+  // Pure queue model (2026-08-02, Phase B): computeDefaultDhorEntry
+  // (worker/src/dhorSchedule.js) now only ever reports one of 3 things --
+  // today's plan(s) (an explicit override for today, if one exists),
+  // continuing from the last logged entry, or genuinely nothing. The old
+  // "top up the rolling schedule" call that used to run here is gone --
+  // ensureDhorSchedule doesn't generate anything any more (Phase A), so
+  // calling it before this fetch never changed what it would return.
   try{
     const result = await apiGetDhorDefaultEntry();
     if(result.source === 'today_plan'){
+      // A same-day batch of >1 rows used to force an inline "which one do
+      // you mean" picker here (the "never auto-selected" rule, V3.9.0) --
+      // deliberately reversed for the queue model: always pre-fill the
+      // FIRST item in the batch directly. The rest of the batch is still
+      // reachable via Plan Dhor, which shows the whole set, not just this
+      // one.
       dhorTodaysPlans = result.plans;
       renderDhorPlanBanner('today_plan');
-      if(dhorTodaysPlans.length === 1) applyDhorPlan(dhorTodaysPlans[0]);
-    } else if(result.source === 'missed_plan' || result.source === 'future_plan'){
-      dhorTodaysPlans = [];
-      applyDhorPlan({ id: result.plan_id, segment_from: result.segment_from, segment_to: result.segment_to });
-      if(result.source === 'missed_plan') document.getElementById('dhor_date').value = result.date;
-      renderDhorPlanBanner(result.source, result.date);
-    } else if(result.source === 'continue_last' || result.source === 'first_segment'){
+      applyDhorPlan(dhorTodaysPlans[0]);
+    } else if(result.source === 'continue_last'){
       dhorTodaysPlans = [];
       dhorActivePlanId = null;
       const { juz, positionInJuz, unit } = segmentRangeToPicker(result.segment_from, result.segment_to, dhorCurrentRef);
