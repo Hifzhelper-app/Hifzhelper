@@ -170,7 +170,7 @@ function quickAddFieldsHtml(type, plan){
     // that computation isn't wired into the frontend yet (same gap noted
     // in sabaqDhorPage.js), so there's no clean value to put here without
     // guessing. Left manual rather than fabricated.
-    return `<label>Zone</label><input type="text" id="qa_zone" placeholder="e.g. Juz' 29, 30">
+    return `<label>Zone</label><input type="text" id="qa_zone" placeholder="e.g. Juz 29, 30">
       <label>Mistakes</label><input type="number" id="qa_mistakes" value="0">`;
   }
   if(type === 'dhor'){

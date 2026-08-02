@@ -7,6 +7,92 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.24.0 — Plan Dhor (2026-08-02)
+
+The full Plan Dhor rebuild, replacing the read-only "View Plan" popup
+entirely, plus the row layout changes and a global spelling sweep that
+were queued alongside it.
+
+**Global spelling sweep**: "Juz'" → "Juz" across every piece of
+user-facing text in the app (10 fixes across 5 files) — deliberately
+scoped to display text only, not internal code comments.
+
+**Dhor card layout**: Row 2 is now Date : Plan Dhor : Dhor History in a
+40:30:30 grid with fixed-height, wrapping (not truncating) buttons. Row
+3 is Amount as a 3-way switch (Quarter/Half/Full), reusing the app's
+existing shared switch component, sized to 75% of Row 2's height via a
+CSS custom property rather than a guessed value. Row 6's Duration field
+changed from decimal minutes to mm:ss text (placeholder "mm:ss",
+colon-less digits read as whole minutes), labeled "TIMER" instead of
+"Stopwatch" — and since mm:ss is a lossless round-trip (unlike the old
+1-decimal-minute display), the V3.21.1 exact-seconds-bypass mechanism
+is gone entirely, a real simplification, not just a rename.
+
+**Plan Dhor**: the "View Plan" button is renamed "Plan Dhor" and opens a
+much richer screen — a title/Save/Close row, then a 3-way tab switch
+(Dhor Plan / View All Completed / View All). Dhor Plan shows today's
+scheduled sessions as simple independent checkboxes (this is also where
+the old inline "more than one plan for today" picker moves to and is
+removed from the card entirely). The two View tabs show all 30 Juz,
+grouped with the same roll-up/down mechanism already proven for Sabaq
+Dhor, using **tap-first, tap-last range-select** rather than per-row
+checkboxes — tap a start point, tap an end point, everything between is
+selected; a third tap starts an entirely new range rather than
+extending it, which makes a non-contiguous selection structurally
+impossible to create. A Select All action is included. View All greys
+out anything not yet marked complete but keeps it selectable — saving
+something not yet in the pool adds it to `baseline_selection`.
+
+**Save logic, deliberately simple**: if the selection reduces to one
+clean quarter/half/juz, it populates Juz/Position/Amount exactly as the
+manual picker already does, and Mistakes/Duration work normally.
+Anything else (doesn't reduce to one clean unit, or spans more than one
+juz) shows: *"Your times and mistakes will not be recorded for this
+selection. Cancel to review, OK to continue."* Continuing switches the
+card into a From/To display — Mistakes, Tajweed, and the Timer become
+disabled, Notes stays available — and tapping either From or To reopens
+Plan Dhor with the current selection already ticked, rather than being
+edited inline. The user still has to hit the card's own Save to create
+the record; Plan Dhor only ever populates the form. (An earlier,
+considerably more complex design — decomposing a selection into
+multiple clean groups and proportionally splitting mistakes/duration
+across them, with a 5-checkbox cap and a 2-run non-contiguous cap — was
+fully worked through in chat and then deliberately scrapped in favor of
+this simpler version before any of it was built.)
+
+**Backend correction**: `computeDefaultDhorEntry`'s "no plan, no
+history at all" case used to default to the first eligible segment —
+changed to genuinely blank, since a brand-new student with nothing in
+their pool yet realistically isn't doing Dhor. Once their first entry
+is ever saved, the existing "continue from last entry" logic takes over
+normally — logging builds history the same way Setup's baseline marking
+does.
+
+**Caught before shipping:** two real gaps found while reviewing this
+before packaging, not after. (1) No CSS had actually been written for
+the entire Plan Dhor modal — it would have rendered completely
+unstyled. Added comprehensively, reusing the same shared-grid pattern
+already proven for Sabaq Dhor's checkbox list. (2) Editing an existing
+Dhor entry while raw-range mode was active would have left Mistakes/
+Duration stuck disabled and a stale From/To row visible underneath the
+edit screen — `loadDhorEntryForEdit` now exits raw-range mode first.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/journal.js
+js/position.js
+js/dhorPage.js
+js/settingsScreen.js
+worker/src/dhorSchedule.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.23.1 — Dhor layout polish, pre-Phase B (2026-08-01)
 
 Confirmed batch of Dhor-specific UI changes, requested before moving on

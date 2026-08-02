@@ -63,6 +63,51 @@
   padding: 4px 6px;
   box-sizing: border-box;
 }
+/* V3.24.0: Row 2 replaces the old date-row + separate Amount/View-Plan
+   row with ONE 40:30:30 grid (date : Plan Dhor : History) -- a shared
+   --dhor-row2-h custom property (defined on the whole card so both this
+   row AND Row 3's switch below can reference it) gives both buttons a
+   real fixed height with wrapping (not truncating) labels, scoped here
+   rather than changing .history-btn's general sizing, since Sabaq/Sabaq
+   Dhor still use that for their own differently-laid-out History
+   buttons. */
+#card-dhor { --dhor-row2-h: 40px; }
+.dhor-row2 {
+  display: grid;
+  grid-template-columns: 40% 30% 30%;
+  align-items: stretch;
+  gap: var(--space-sm);
+  margin-top: 4px;
+}
+.dhor-row2 .card-header-date { width: 100%; height: var(--dhor-row2-h); }
+.dhor-row2-btn,
+.dhor-row2 #dhorRecentRail .history-btn {
+  width: 100%;
+  height: var(--dhor-row2-h);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+  padding: 4px 6px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--palette-evergreen);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.15;
+}
+/* Row 3: Amount as a 3-way switch (reusing js/uiSwitch.js's shared
+   component, same one Setup's Dhor Schedule granularity switch already
+   uses), sized to 75% of Row 2's button height specifically -- not an
+   independent hardcoded value -- so the two rows visibly relate. */
+.switch-track.dhor-amount-switch {
+  height: calc(var(--dhor-row2-h) * 0.75);
+  margin: 0 auto;
+  max-width: 320px;
+}
 /* V3.19.0: Save button restyled to match Hifzhelper's own existing
    icon-button convention (.nav-icon-item, css/base.css -- icon on top,
    label below, no border/background) instead of being a special-cased
@@ -620,4 +665,117 @@
 .log-detail-dots .dot.active { background: var(--color-accent); color: #fff; border-color: var(--color-accent); }
 @media (min-width: 1180px) {
   .log-detail-dots-inner { display: none; }
+}
+
+/* V3.24.0: Plan Dhor modal -- reuses .modal-overlay/.modal-card as its
+   base (same as History's popup), plus the shared checkbox-grid pattern
+   already proven for Sabaq Dhor (.sabaq-dhor-sections-list) here as
+   .plan-dhor-grid, for the same reason it was built as one shared grid
+   there: every row needs to align in a genuinely shared column. */
+.plan-dhor-card {
+  max-width: 480px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+.plan-dhor-row1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+.plan-dhor-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+.plan-dhor-row1-icons {
+  display: flex;
+  gap: var(--space-md);
+}
+.plan-dhor-row1-icons button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.plan-dhor-row1-icons button svg { width: 20px; height: 20px; }
+.plan-dhor-select-all {
+  align-self: center;
+  margin: var(--space-sm) 0;
+  border: 1px solid var(--palette-evergreen);
+  color: var(--palette-evergreen);
+  background: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.plan-dhor-content {
+  overflow-y: auto;
+  flex: 1;
+}
+.plan-dhor-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: var(--space-sm);
+  row-gap: 4px;
+}
+.plan-dhor-row-text {
+  min-width: 0;
+  font-size: 14px;
+  padding: 4px 0;
+}
+.plan-dhor-row-greyed { color: var(--color-ink-faint); }
+.plan-dhor-juz-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-table-border);
+}
+.plan-dhor-juz-rollup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+.plan-dhor-rollup-btn {
+  border: none;
+  background: none;
+  padding: 4px;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.plan-dhor-rollup-btn svg { width: 16px; height: 16px; }
+/* display:contents -- this wrapper's own box disappears, so its 2
+   children (label, checkbox) become direct participants in the parent
+   .plan-dhor-grid's 2-column layout, exactly like V3.21.2's shared-grid
+   fix for Sabaq Dhor. Click still bubbles up to this element normally. */
+.plan-dhor-tap-row { display: contents; }
+.plan-dhor-tap-row .plan-dhor-row-text,
+.plan-dhor-tap-row .plan-dhor-unit-cb { cursor: pointer; }
+
+/* V3.24.0: From/To buttons replace Juz/Starting-at when a Plan Dhor
+   selection doesn't reduce to one clean quarter/half/juz -- styled to
+   look like a plain field (matching the selects they replace) even
+   though tapping either reopens Plan Dhor rather than editing inline. */
+.dhor-raw-range-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--color-table-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  font-size: 14px;
+  color: var(--color-ink);
+  cursor: pointer;
 }

@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.23.1"></script>
+<script src="js/pwaManifest.js?v=3.24.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.23.1">
-<link rel="stylesheet" href="css/base.css?v=3.23.1">
-<link rel="stylesheet" href="css/nav.css?v=3.23.1">
-<link rel="stylesheet" href="css/journal-table.css?v=3.23.1">
-<link rel="stylesheet" href="css/components.css?v=3.23.1">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.23.1">
-<link rel="stylesheet" href="css/settings.css?v=3.23.1">
-<link rel="stylesheet" href="css/admin.css?v=3.23.1">
+<link rel="stylesheet" href="css/tokens.css?v=3.24.0">
+<link rel="stylesheet" href="css/base.css?v=3.24.0">
+<link rel="stylesheet" href="css/nav.css?v=3.24.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.24.0">
+<link rel="stylesheet" href="css/components.css?v=3.24.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.24.0">
+<link rel="stylesheet" href="css/settings.css?v=3.24.0">
+<link rel="stylesheet" href="css/admin.css?v=3.24.0">
 </head>
 <body>
 
@@ -338,18 +338,30 @@
             <div class="edit-topbar hidden" id="dhorEditTopbar">
               <span>Editing Dhor from <span id="dhorEditTopbarDate"></span></span>
             </div>
-            <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"><div class="history-container" id="dhorRecentRail"></div></div>
-            <!-- V3.23.1: Amount + View Plan sit in their own row right below
-                 the date, reusing .card-date-row's exact grid (auto-sized
-                 left column, right-justified/height-matched button on the
-                 right) for visual consistency with the row above. -->
+            <!-- V3.24.0: Row 2 combines Date/Plan Dhor/History into one
+                 40:30:30 grid (was Date+History on one row, Amount+View
+                 Plan on a second row below it). Both buttons get a fixed
+                 size with wrapping (not truncating) labels via the
+                 scoped .dhor-row2-btn/.dhor-row2 .history-btn rules
+                 below, rather than reusing the general .history-btn
+                 sizing used elsewhere (Sabaq/Sabaq Dhor keep that). -->
+            <div class="dhor-row2" id="dhorRow2">
+              <input type="date" id="dhor_date" class="card-header-date">
+              <button type="button" class="dhor-row2-btn" id="dhorViewPlanBtn">Plan Dhor</button>
+              <div id="dhorRecentRail"></div>
+            </div>
+            <!-- Row 3: Amount as a 3-way switch (was a dropdown), reusing
+                 the same .switch-track/.switch-option pattern already
+                 used elsewhere (e.g. Dhor Schedule's own granularity
+                 switch in Setup) rather than inventing a new control. -->
             <div class="card-date-row" id="dhorAmountRow">
-              <select id="dhor_unit">
-                <option value="quarter">Quarter</option>
-                <option value="half">Half juz'</option>
-                <option value="full">Full juz'</option>
-              </select>
-              <div class="history-container"><button type="button" class="history-btn" id="dhorViewPlanBtn">View Plan</button></div>
+              <input type="hidden" id="dhor_unit" value="quarter">
+              <div class="switch-track dhor-amount-switch" id="dhor_unit_switch">
+                <div class="switch-thumb"></div>
+                <button type="button" class="switch-option" data-value="quarter">Quarter</button>
+                <button type="button" class="switch-option" data-value="half">Half</button>
+                <button type="button" class="switch-option" data-value="full">Full</button>
+              </div>
             </div>
             <div id="dhorSegmentPicker">
               <div id="dhorPlanBanner"></div>
@@ -359,9 +371,18 @@
                    all resolve consistently), not a separate per-device pick
                    living only on this one page. -->
               <div class="picker-row">
-                <div><label>Juz'</label><select id="dhor_juz"></select></div>
+                <div><label>Juz</label><select id="dhor_juz"></select></div>
                 <div><label>Starting at</label><select id="dhor_position"></select></div>
               </div>
+            </div>
+            <!-- V3.24.0: shown INSTEAD of dhorSegmentPicker/dhorAmountRow
+                 when Plan Dhor's selection doesn't reduce to one clean
+                 quarter/half/juz -- tapping either button reopens Plan
+                 Dhor with the current selection already ticked, rather
+                 than being editable inline here. -->
+            <div class="picker-row hidden" id="dhorRawRangeRow">
+              <div><label>From</label><button type="button" class="dhor-raw-range-btn" id="dhorRawFromBtn"></button></div>
+              <div><label>To</label><button type="button" class="dhor-raw-range-btn" id="dhorRawToBtn"></button></div>
             </div>
             <div class="picker-row">
               <div><label>Mistakes</label><input type="number" inputmode="numeric" id="dhor_mistakes"></div>
@@ -372,13 +393,16 @@
                  auto-fills this field (and separately captures lap times,
                  which manual entry can't provide) but stays fully
                  editable on its own.
-                 V3.23.1: Stopwatch is now a toggle (dhorStopwatchToggle)
-                 that shows/hides the actual timer widget below, rather
-                 than the widget always taking up its own space. -->
+                 V3.24.0: format changed from decimal minutes to mm:ss
+                 text (placeholder shown when empty) -- js/dhorPage.js's
+                 parseDhorDuration/formatDhorDuration handle the
+                 conversion. Stopwatch label -> TIMER, toggles the actual
+                 timer widget below rather than the widget always taking
+                 up its own space. -->
             <div class="picker-row">
-              <div><label>Duration (minutes)</label><input type="number" step="0.1" inputmode="decimal" id="dhor_duration_minutes"></div>
+              <div><label>Duration</label><input type="text" inputmode="numeric" id="dhor_duration_minutes" placeholder="mm:ss"></div>
               <div class="dhor-stopwatch-col">
-                <button type="button" id="dhorStopwatchToggle"><span class="btn-icon" id="dhorStopwatchIcon"></span><span>Stopwatch</span></button>
+                <button type="button" id="dhorStopwatchToggle"><span class="btn-icon" id="dhorStopwatchIcon"></span><span>Timer</span></button>
               </div>
             </div>
             <div id="dhorTimerPanel" class="hidden">
@@ -540,7 +564,7 @@
         <label style="margin-top:20px;">Mark completed sections using</label>
         <div class="switch-track" id="section_grid_switch">
           <div class="switch-thumb neutral"></div>
-          <button type="button" class="switch-option" id="openJuzGridBtn" data-value="juz">Juz'</button>
+          <button type="button" class="switch-option" id="openJuzGridBtn" data-value="juz">Juz</button>
           <div class="switch-neutral-zone"></div>
           <button type="button" class="switch-option" id="openSurahGridBtn" data-value="surah">Surah</button>
         </div>
@@ -574,7 +598,7 @@
           <div class="quantity-input-wrap"><input type="number" inputmode="numeric" id="dhor_quantity" min="1" value="1"></div>
           <div class="switch-track" id="dhor_granularity_switch">
             <div class="switch-thumb"></div>
-            <button type="button" class="switch-option" data-value="juz">Juz'</button>
+            <button type="button" class="switch-option" data-value="juz">Juz</button>
             <button type="button" class="switch-option" data-value="half">Half</button>
             <button type="button" class="switch-option" data-value="quarter">Quarter</button>
           </div>
@@ -639,24 +663,24 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.23.1"></script>
-<script src="js/icons.js?v=3.23.1"></script>
-<script src="js/api.js?v=3.23.1"></script>
-<script src="js/uiSwitch.js?v=3.23.1"></script>
-<script src="js/position.js?v=3.23.1"></script>
-<script src="js/auth.js?v=3.23.1"></script>
-<script src="js/home.js?v=3.23.1"></script>
-<script src="js/tajweed.js?v=3.23.1"></script>
-<script src="js/commentPrivacy.js?v=3.23.1"></script>
-<script src="js/timer.js?v=3.23.1"></script>
-<script src="js/journal.js?v=3.23.1"></script>
-<script src="js/dhorPage.js?v=3.23.1"></script>
-<script src="js/sabaqPage.js?v=3.23.1"></script>
-<script src="js/sabaqDhorPage.js?v=3.23.1"></script>
-<script src="js/reflectionCard.js?v=3.23.1"></script>
-<script src="js/logDetailScreen.js?v=3.23.1"></script>
-<script src="js/settingsScreen.js?v=3.23.1"></script>
-<script src="js/adminPage.js?v=3.23.1"></script>
-<script src="js/app.js?v=3.23.1"></script>
+<script src="shared/data.js?v=3.24.0"></script>
+<script src="js/icons.js?v=3.24.0"></script>
+<script src="js/api.js?v=3.24.0"></script>
+<script src="js/uiSwitch.js?v=3.24.0"></script>
+<script src="js/position.js?v=3.24.0"></script>
+<script src="js/auth.js?v=3.24.0"></script>
+<script src="js/home.js?v=3.24.0"></script>
+<script src="js/tajweed.js?v=3.24.0"></script>
+<script src="js/commentPrivacy.js?v=3.24.0"></script>
+<script src="js/timer.js?v=3.24.0"></script>
+<script src="js/journal.js?v=3.24.0"></script>
+<script src="js/dhorPage.js?v=3.24.0"></script>
+<script src="js/sabaqPage.js?v=3.24.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.24.0"></script>
+<script src="js/reflectionCard.js?v=3.24.0"></script>
+<script src="js/logDetailScreen.js?v=3.24.0"></script>
+<script src="js/settingsScreen.js?v=3.24.0"></script>
+<script src="js/adminPage.js?v=3.24.0"></script>
+<script src="js/app.js?v=3.24.0"></script>
 </body>
 </html>
