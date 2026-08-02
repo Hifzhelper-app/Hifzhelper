@@ -7,6 +7,69 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.26.0 — Pure queue model, Phase B: Dhor card prepopulation rewire (2026-08-02)
+
+Second of the 4-phase rebuild. Rewires `js/dhorPage.js` to actually match
+the engine V3.25.0 shipped, rather than still branching on sources that
+engine can no longer produce.
+
+**The open-time top-up call is gone.** `renderDhorScreen` used to call
+`apiEnsureDhorSchedule()` before asking for today's default entry, on the
+theory that this would generate a fresh row if one was missing. Since
+V3.25.0 made that function an unconditional no-op, the call never changed
+what the next fetch would return — removed entirely rather than left as
+a pointless round-trip.
+
+**Result-handling collapses to the 3 sources that can actually occur**:
+`today_plan`, `continue_last`, or nothing. The `missed_plan`/`future_plan`
+branches (impossible since V3.25.0) and the `first_segment` reference
+(already impossible since V3.24.0, just never cleaned up) are removed
+from both the result-handling `if`/`else` chain and `renderDhorPlanBanner`'s
+text map.
+
+**The inline "which one do you mean" picker is gone.** A same-day batch
+of more than one `plans` row used to force the student to pick one before
+anything pre-filled (the "never auto-selected" rule from V3.9.0) — this
+is the one deliberate behavior reversal in the whole 4-phase rebuild,
+confirmed in chat. Now the FIRST item in the batch is always pre-filled
+directly, fully editable same as any other default; the banner names the
+count ("Pre-filled from today's plan (1 of 4 — see Plan Dhor for the
+rest)") rather than offering an inline chooser. The rest of the batch
+stays visible and selectable through Plan Dhor, which is untouched by
+this phase and still shows every row.
+
+**Versioning**: bumped every `?v=` reference in `index.html` and `sw.js`'s
+`ASSETS`/`CACHE_NAME` from 3.24.1 to 3.26.0, across all files, not just
+`dhorPage.js` — per `CONVENTIONS.md` principle 10, even though only one
+JS file's content actually changed.
+
+**Verified, not just read over**: extracted the actual (post-edit)
+`renderDhorPlanBanner` function from the delivered file and ran it
+against a minimal fake DOM for a single plan, a batch of 4, `continue_last`,
+a null source, and a now-dead source (`missed_plan`) — confirmed each
+produces the right text, and specifically confirmed the old inline-picker
+markup (`data-plan-id`, `#dhorPlanChoices`) is genuinely never generated
+any more, not merely hidden.
+
+**Not touched in this delivery, by design**: Plan Dhor's own "Dhor Plan"
+tab content (still the yesterday/today/next-5-days layout from V3.24.1)
+is Phase C. Setup's "Tomorrow's Portion" and the live purge of existing
+`plan_type='dhor'` rows are Phase D. The two prepopulation gaps documented
+in V3.24.1 (pool-emptiness checked before `dhor_log`; the manual picker's
+Save not updating `baseline_selection`) remain parked, unaffected by this
+phase.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.25.0 — Pure queue model, Phase A: scheduling engine rewrite (2026-08-02)
 
 First of a 4-phase rebuild (confirmed in chat) correcting the underlying

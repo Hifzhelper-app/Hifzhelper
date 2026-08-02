@@ -1275,6 +1275,40 @@ the fix for a bug that broke Save entirely.
    the Dhor card and saving Setup's Dhor Schedule section both still
    behave exactly as before (no new errors introduced by this change).
 
+## 45. Pure queue model, Phase B: Dhor card prepopulation rewire (V3.26.0)
+
+1. Manually insert exactly ONE `plans` row for TODAY for a test student
+   (`plan_type='dhor'`, `status='planned'`, `target_date` = today) → open
+   their Dhor card → confirm it silently pre-fills from that row (no
+   picker of any kind) and the banner reads exactly "Pre-filled from
+   today's plan." (no count mentioned).
+2. Manually insert a SECOND (and a third) `plans` row for the same
+   student, same today's date → reopen the Dhor card → confirm:
+   - No inline picker/buttons appear anywhere on the card (this is the
+     main behavior change — compare against pre-V3.26.0 screenshots or
+     TESTING.md history if unsure what the old picker looked like).
+   - The form is pre-filled from the FIRST of those rows in creation
+     order (the earliest one you inserted).
+   - The banner reads "Pre-filled from today's plan (1 of 3 — see Plan
+     Dhor for the rest)."
+3. With that same batch still in place, edit the pre-filled Juz/Position/
+   Amount before saving → confirm the edit is accepted normally and Save
+   works, same as manual entry always has (prepopulation is a default,
+   not a lock).
+4. Open Plan Dhor (separately) with that same batch still in place →
+   confirm all 3 rows are visible and selectable there — this is what
+   "the rest of the batch is still reachable via Plan Dhor" means in
+   practice.
+5. Clear today's rows, confirm the student has real `dhor_log` history →
+   open the Dhor card → confirm it still pre-fills the next segment after
+   the last logged entry, banner reads "No plan set up yet — continuing
+   from your last Dhor session." (unchanged from before this phase).
+6. For a student with no plan and no history at all → confirm a genuinely
+   blank form, no banner text, no console errors.
+7. Open your browser's dev tools Network tab, then open the Dhor card →
+   confirm there's no request to `/dhor-schedule/ensure` at all any more
+   (only `/dhor-schedule/default-entry`).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
