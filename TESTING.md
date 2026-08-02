@@ -1239,6 +1239,42 @@ the fix for a bug that broke Save entirely.
 8. Confirm there's no way to edit a plan's own date or portion anywhere
    in this tab — selecting only ever loads into the card's form.
 
+## 44. Pure queue model, Phase A: scheduling engine rewrite (V3.25.0)
+
+1. Pick a test student with an existing Dhor Schedule configured and some
+   `dhor_log` history. Note the current row count for `plan_type='dhor'`
+   in `plans` (D1 console: `SELECT COUNT(*) FROM plans WHERE student_id =
+   '<id>' AND plan_type = 'dhor';`).
+2. Open the Dhor card for that student (triggers the open-time
+   `/dhor-schedule/ensure` call) → confirm no error appears on screen, and
+   re-run the count query from step 1 → confirm the count is UNCHANGED
+   (no new dated rows were inserted — the main behavior change here).
+3. With no `plans` row for today, confirm the Dhor card still pre-fills
+   from `dhor_log` history as before ("continuing from your last Dhor
+   session") and that the segment shown is genuinely the next one after
+   the last logged entry.
+4. Manually insert a `plans` row for TODAY via D1 console
+   (`plan_type='dhor'`, `status='planned'`, `target_date` = today) →
+   reopen the Dhor card → confirm it still pre-fills from that row
+   ("Pre-filled from today's plan.") exactly as before.
+5. Manually insert a `plans` row for a FUTURE date (a few days out) via D1
+   console, then reopen the Dhor card with no today-row present → confirm
+   it does NOT borrow that future row anymore (no "pre-filled from your
+   next upcoming session" banner) — it should fall through to
+   continue-from-last (or blank, if no history) instead.
+6. Manually insert a `plans` row for a PAST date, still `status='planned'`
+   (simulating a leftover "missed" row from before this deploy), then
+   reopen the Dhor card with no today-row present → confirm it's simply
+   ignored (no "catching up on a missed session" banner) — same
+   continue-from-last/blank fallback as step 5.
+7. In Setup, save the Dhor Schedule section (with or without a Tomorrow's
+   Portion picked) → confirm the normal save-success indicator still
+   appears, with no "Couldn't save" error — confirms `ensureDhorSchedule`
+   returning its now-empty result doesn't throw.
+8. For a student with no Dhor Schedule configured at all, confirm opening
+   the Dhor card and saving Setup's Dhor Schedule section both still
+   behave exactly as before (no new errors introduced by this change).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
