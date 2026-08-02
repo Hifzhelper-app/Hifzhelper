@@ -511,6 +511,33 @@
   padding: 6px 4px !important;
 }
 
+/* V3.23.1: Stopwatch toggle sits beside Duration (its shared .picker-row
+   parent already gives both a 50/50 split) -- reuses the same icon-on-
+   top/no-border convention as Save and the edit-bottombar buttons,
+   centered within its own column since it isn't paired with a label the
+   way Duration's input is. #dhorTimerPanel is what it shows/hides --
+   the timer widget used to always take up its own space below Duration;
+   now it's hidden by default. */
+.dhor-stopwatch-col {
+  display: flex;
+  justify-content: center;
+}
+#dhorStopwatchToggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 4px;
+  font-size: 10px;
+  font-weight: normal;
+  text-transform: uppercase;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+#dhorStopwatchToggle svg { width: 22px; height: 22px; }
+
 .log-detail-rail {
   display: flex;
   gap: var(--space-md);
