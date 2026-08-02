@@ -779,3 +779,29 @@
   color: var(--color-ink);
   cursor: pointer;
 }
+
+/* V3.24.1: Dhor Plan tab's rolled-up day rows -- a plain button styled
+   to look like the same .plan-dhor-row-text label it sits alongside
+   (not like a normal button), since it's a row in the same grid, just
+   with an expand affordance built into its own text rather than a
+   separate checkbox (there's no single meaningful checked state to
+   show when completion is genuinely mixed for that day). */
+.plan-dhor-expand-btn {
+  min-width: 0;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.plan-dhor-subrow {
+  padding-left: var(--space-md);
+  color: var(--color-ink-soft);
+}
+.plan-dhor-unit-cb:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
