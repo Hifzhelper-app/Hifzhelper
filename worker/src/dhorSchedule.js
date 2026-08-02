@@ -47,10 +47,17 @@ function todayISO() { return new Date().toISOString().slice(0, 10); }
 // that silently swallows an ineligible quarter. A chunk can come out
 // shorter than `quantity` units right at a gap — a minor, harmless
 // unevenness, not a bug (same as the old per-juz' version of this).
-function buildChunks(quarterPool, ref, granularity, quantity) {
+// V3.24.1 fix: quantity used to multiply INTO the chunk size here
+// (quartersPerUnit * quantity), so "Half, quantity 2" produced one
+// combined full-juz-sized chunk per session instead of two separate
+// half-sized ones -- confirmed wrong in chat. Each chunk is now always
+// exactly ONE granularity-unit (a plain quarter, a clean half, or a
+// full juz) regardless of quantity; quantity now only controls how many
+// separate chunks get consumed per session, in ensureDhorSchedule's own
+// generation loop below, not the size of any individual chunk.
+function buildChunks(quarterPool, ref, granularity) {
   const sortedUnits = [...new Set(quarterPool)].sort((a, b) => a - b);
   const quartersPerUnit = granularity === 'quarter' ? 1 : granularity === 'half' ? 2 : 4;
-  const sessionSize = quartersPerUnit * quantity; // how many consecutive quarter-units make one session
   const chunks = [];
   let i = 0;
   while (i < sortedUnits.length) {
@@ -59,7 +66,7 @@ function buildChunks(quarterPool, ref, granularity, quantity) {
     while (runEnd + 1 < sortedUnits.length && sortedUnits[runEnd + 1] === sortedUnits[runEnd] + 1) runEnd++;
     let cursor = i;
     while (cursor <= runEnd) {
-      const groupEnd = Math.min(cursor + sessionSize - 1, runEnd);
+      const groupEnd = Math.min(cursor + quartersPerUnit - 1, runEnd);
       const first = quarterUnitToJuzQuarter(sortedUnits[cursor]);
       const last = quarterUnitToJuzQuarter(sortedUnits[groupEnd]);
       const startRange = segmentRangeForUnitIndex(first.juz, first.quarterIndex, ref, 'quarter');
@@ -137,7 +144,7 @@ export async function ensureDhorSchedule(env, studentId, startSegment) {
   // as a plain 13-line account, so no special case is needed beyond the
   // existing default.
   const ref = student.mushaf === '15line_madani' ? 'uthmani' : 'waterval';
-  const chunks = buildChunks(pool, ref, student.dhor_granularity, student.dhor_quantity);
+  const chunks = buildChunks(pool, ref, student.dhor_granularity);
   if (chunks.length === 0) return { generated: 0, reason: 'Could not build a schedule from the current settings' };
 
   let nextChunkIndex;
@@ -162,7 +169,14 @@ export async function ensureDhorSchedule(env, studentId, startSegment) {
     nextChunkIndex = (Math.max(logIndex, planIndex) + 1) % chunks.length;
   }
 
+  // V3.24.1 fix: quantity used to be baked into each chunk's SIZE (see
+  // buildChunks above); it now controls how many separate chunks get
+  // assigned per session instead -- confirmed in chat: Half granularity,
+  // quantity 2, twice a day should generate 4 separate half-sized rows
+  // every active day (2 sessions x 2 portions/session), not 2 combined
+  // full-juz-sized rows.
   const sessionsPerActiveDay = student.dhor_frequency === 'twice' ? 2 : 1;
+  const rowsPerActiveDay = sessionsPerActiveDay * student.dhor_quantity;
   const today = todayISO();
   let generated = 0;
   let calendarDaysCovered = 0;
@@ -187,7 +201,7 @@ export async function ensureDhorSchedule(env, studentId, startSegment) {
       const { count } = await env.DB.prepare(
         "SELECT COUNT(*) as count FROM plans WHERE student_id = ? AND plan_type = 'dhor' AND target_date = ?"
       ).bind(studentId, date).first();
-      const needed = sessionsPerActiveDay - count;
+      const needed = rowsPerActiveDay - count;
       for (let i = 0; i < needed; i++) {
         const chunk = chunks[nextChunkIndex];
         const now = new Date().toISOString();
@@ -279,7 +293,7 @@ export async function computeDefaultDhorEntry(env, studentId) {
     const perJuz = segmentsPerJuz(ref);
     const span = lastLog.segment_to - lastLog.segment_from + 1;
     const granularity = span === perJuz ? 'full' : span === perJuz / 2 ? 'half' : 'quarter';
-    const chunks = buildChunks(pool, ref, granularity, 1);
+    const chunks = buildChunks(pool, ref, granularity);
     if (chunks.length === 0) return { source: 'none', reason: 'Could not build a next segment from the current pool' };
     const idx = findChunkIndexForSegment(chunks, lastLog.segment_from, lastLog.segment_to);
     const nextIdx = (idx >= 0 ? idx + 1 : 0) % chunks.length;

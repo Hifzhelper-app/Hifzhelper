@@ -7,6 +7,72 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.24.1 — Dhor Schedule generation fix + Dhor Plan tab redesign (2026-08-02)
+
+Found through live debugging on two real accounts, both traced to
+verified root causes rather than assumed — two earlier hypotheses
+(an empty `dhor_days_of_week`, a silently-failing generator) were
+checked directly against the data and ruled out before the actual
+cause was found.
+
+**Real bug in `buildChunks`**: `sessionSize = quartersPerUnit *
+quantity` was multiplying quantity INTO each chunk's size, so "Half
+granularity, quantity 2" produced one combined full-juz-sized chunk per
+session instead of two separate half-sized ones. Confirmed correct
+behavior: "Two half juz twice a day should generate four rows every
+day" (2 sessions × 2 portions/session = 4 separate half-sized rows).
+Fixed: `buildChunks` now always produces chunks at exactly one
+granularity-unit each; `quantity` multiplies into rows-per-active-day
+in `ensureDhorSchedule`'s generation loop instead. Worth knowing: this
+only affects rows generated *after* this fix — a day's row-count is
+locked in whenever that day was "tomorrow" in an earlier generation
+run, so already-existing plan rows (e.g. from before this update) won't
+retroactively split into the corrected shape; only fresh generation for
+not-yet-reached days will.
+
+**Dhor Plan tab was missing every row's date** — fixed, now shows
+`target_date` on every row.
+
+**The Dhor Plan tab's actual job, reframed and rebuilt**: not just
+"today's session," but yesterday (was it covered) / today (confirm
+what's expected) / the next 5 days (what's coming) — confirmed as the
+minimum useful view. Today shows every row individually. Yesterday and
+each of the next 5 days roll up into ONE summary row per day when there
+are multiple sessions that day — "[date]: Portion A to Portion B" (the
+earliest session's start through the latest session's end). Every row
+gets a checkbox; a plan already `status='completed'` shows checked and
+disabled rather than a live control. A rolled-up day with genuinely
+mixed completion (some sessions logged, some not) is expandable instead
+of trying to represent that in one ambiguous checkbox — tapping it
+reveals the individual underlying sessions, each with its own normal
+state. Confirmed: this tab stays view-only for plans themselves (no
+edit/delete facility for a plan's date or portion exists anywhere) —
+selecting a portion here loads it into the Dhor card's own form, same
+as everywhere else in Plan Dhor; the user still saves from there.
+
+**Not in this delivery, documented but not yet fixed**: two other
+prepopulation bugs found during this same debugging session —
+`computeDefaultDhorEntry` checks whether the pool is empty before ever
+querying `dhor_log`, so a student with an empty Setup pool but real
+logged Dhor history never gets branch 4 ("continue from last entry") a
+chance to fire; and only Plan Dhor's own save path adds a newly-logged
+segment to `baseline_selection` — the regular manual picker's Save does
+not, breaking "logging Dhor builds history" for that path specifically.
+Both documented for a future round, not folded into this one.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+worker/src/dhorSchedule.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.24.0 — Plan Dhor (2026-08-02)
 
 The full Plan Dhor rebuild, replacing the read-only "View Plan" popup

@@ -1209,6 +1209,36 @@ the fix for a bug that broke Save entirely.
     history at all), open Dhor → confirm the fields are blank, not
     pre-filled with a first segment.
 
+## 43. Dhor Schedule generation fix + Dhor Plan tab redesign (V3.24.1)
+
+1. Configure a student's Dhor Schedule for Half granularity, quantity 2,
+   twice a day, all 7 days selected. Clear any existing 'planned' Dhor
+   plan rows for this student (so generation runs completely fresh),
+   then trigger generation (open Dhor). Confirm the next active day gets
+   FOUR separate half-sized rows (not two full-juz rows) — check via
+   Plan Dhor's Dhor Plan tab for that day.
+2. Confirm every row in the Dhor Plan tab now shows its date.
+3. Open Plan Dhor on a day with a real, pre-existing Dhor history (any
+   account) → confirm you see: yesterday (rolled up into one row if it
+   had multiple sessions), today (every row shown individually), and
+   the next 5 days (each rolled up).
+4. Find or create a day with multiple sessions where SOME are logged
+   (completed) and some aren't → confirm that day shows as an
+   expandable row (a small triangle + the date/portion summary), not a
+   plain checkbox. Tap it → confirm it expands to show each individual
+   session with its own correct checked/unchecked-or-disabled state.
+5. Find a day where ALL sessions are already logged → confirm it shows
+   as ONE row, checked AND visibly disabled/greyed — not selectable.
+6. Find a day where NONE are logged yet → confirm it shows as one
+   normal, selectable checkbox summary row.
+7. Select a rolled-up day (or an expanded individual session) → confirm
+   it correctly loads into the Dhor card's form (clean unit → normal
+   fields; anything spanning >1 juz or not a clean shape → the
+   confirmation + From/To disabled-fields flow, same as the rest of
+   Plan Dhor).
+8. Confirm there's no way to edit a plan's own date or portion anywhere
+   in this tab — selecting only ever loads into the card's form.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
