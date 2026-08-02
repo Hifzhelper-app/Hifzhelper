@@ -7,6 +7,56 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.23.1 — Dhor layout polish, pre-Phase B (2026-08-01)
+
+Confirmed batch of Dhor-specific UI changes, requested before moving on
+to Phase B:
+
+- **Amount + View Plan** now sit in their own row directly below the
+  date (reusing the date row's exact grid for visual consistency).
+  **View Plan** is new — a popup listing upcoming scheduled Dhor
+  sessions (`plan_type='dhor'`, `status='planned'`, `target_date >=`
+  today), the mirror image of History's popup but facing forward in
+  time instead of back. Reuses the existing `/plans?since=` query,
+  no backend changes needed for this one.
+- **Mistakes + Tajweed** now share one line, matching the pattern
+  already used elsewhere (Sabaq's Lines/Pages, Sabaq Dhor's own
+  Mistakes/Tajweed from V3.20.0).
+- **Duration + Stopwatch**: Duration's column is now a clean 50% (same
+  `.picker-row` grid used everywhere else), with a Stopwatch icon
+  button (user's exact `timer.svg`) beside it, centered. The actual
+  timer widget (Start/Stop/Lap) is no longer always visible — it's
+  hidden by default and toggles open/closed via the Stopwatch button.
+- **"Seg X-Y" replaced with "Juz X" / "Juz X H1"-"H2" / "Juz X
+  Q1"-"Q4" everywhere it appeared** — the History popup, the
+  multi-plan-for-today picker, and the edit-screen's "not editable
+  here" text. This was explicitly parked in three earlier rounds
+  specifically for "when Dhor's own detail work happens" — this is
+  that moment. New `describeDhorSegment` helper reuses the existing
+  `segmentRangeToPicker` rather than re-deriving juz'/unit a second way.
+
+**Also fixed while restructuring:** Amount is functionally part of the
+same segment-determination system as Juz'/Starting-at (all three
+together produce `segment_from`/`segment_to`), so it needed to hide
+during edit alongside the segment picker for the same reason those two
+already do — moving it into its own row for layout purposes had
+initially left it out of that hide/show toggle; caught and fixed before
+shipping rather than after.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/icons.js
+js/dhorPage.js
+js/logDetailScreen.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.23.0 — Dhor detail rebuild, Phase A (2026-08-01)
 
 **Dhor's default entry is no longer just "today's plan or blank."**

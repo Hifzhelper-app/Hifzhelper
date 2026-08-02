@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.23.0"></script>
+<script src="js/pwaManifest.js?v=3.23.1"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.23.0">
-<link rel="stylesheet" href="css/base.css?v=3.23.0">
-<link rel="stylesheet" href="css/nav.css?v=3.23.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.23.0">
-<link rel="stylesheet" href="css/components.css?v=3.23.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.23.0">
-<link rel="stylesheet" href="css/settings.css?v=3.23.0">
-<link rel="stylesheet" href="css/admin.css?v=3.23.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.23.1">
+<link rel="stylesheet" href="css/base.css?v=3.23.1">
+<link rel="stylesheet" href="css/nav.css?v=3.23.1">
+<link rel="stylesheet" href="css/journal-table.css?v=3.23.1">
+<link rel="stylesheet" href="css/components.css?v=3.23.1">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.23.1">
+<link rel="stylesheet" href="css/settings.css?v=3.23.1">
+<link rel="stylesheet" href="css/admin.css?v=3.23.1">
 </head>
 <body>
 
@@ -339,6 +339,18 @@
               <span>Editing Dhor from <span id="dhorEditTopbarDate"></span></span>
             </div>
             <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"><div class="history-container" id="dhorRecentRail"></div></div>
+            <!-- V3.23.1: Amount + View Plan sit in their own row right below
+                 the date, reusing .card-date-row's exact grid (auto-sized
+                 left column, right-justified/height-matched button on the
+                 right) for visual consistency with the row above. -->
+            <div class="card-date-row" id="dhorAmountRow">
+              <select id="dhor_unit">
+                <option value="quarter">Quarter</option>
+                <option value="half">Half juz'</option>
+                <option value="full">Full juz'</option>
+              </select>
+              <div class="history-container"><button type="button" class="history-btn" id="dhorViewPlanBtn">View Plan</button></div>
+            </div>
             <div id="dhorSegmentPicker">
               <div id="dhorPlanBanner"></div>
               <!-- V3.10.0: the standalone reference dropdown is gone -- ref
@@ -350,26 +362,29 @@
                 <div><label>Juz'</label><select id="dhor_juz"></select></div>
                 <div><label>Starting at</label><select id="dhor_position"></select></div>
               </div>
-              <label>Amount</label>
-              <select id="dhor_unit">
-                <option value="quarter">Quarter</option>
-                <option value="half">Half juz'</option>
-                <option value="full">Full juz'</option>
-              </select>
             </div>
-            <label>Mistakes</label><input type="number" inputmode="numeric" id="dhor_mistakes">
+            <div class="picker-row">
+              <div><label>Mistakes</label><input type="number" inputmode="numeric" id="dhor_mistakes"></div>
+              <div><label>Tajweed</label><div id="dhorTajweedPicker"></div></div>
+            </div>
             <!-- V3.21.1: duration is a real user input now, not something
                  only the timer can set (confirmed in chat) -- the timer
                  auto-fills this field (and separately captures lap times,
                  which manual entry can't provide) but stays fully
-                 editable on its own. -->
-            <label>Duration (minutes)</label>
-            <input type="number" step="0.1" inputmode="decimal" id="dhor_duration_minutes">
-            <label>Timer</label>
-            <div id="dhorTimerWrap"></div>
-            <div id="dhorTimerSummary"></div>
-            <label>Tajweed</label>
-            <div id="dhorTajweedPicker"></div>
+                 editable on its own.
+                 V3.23.1: Stopwatch is now a toggle (dhorStopwatchToggle)
+                 that shows/hides the actual timer widget below, rather
+                 than the widget always taking up its own space. -->
+            <div class="picker-row">
+              <div><label>Duration (minutes)</label><input type="number" step="0.1" inputmode="decimal" id="dhor_duration_minutes"></div>
+              <div class="dhor-stopwatch-col">
+                <button type="button" id="dhorStopwatchToggle"><span class="btn-icon" id="dhorStopwatchIcon"></span><span>Stopwatch</span></button>
+              </div>
+            </div>
+            <div id="dhorTimerPanel" class="hidden">
+              <div id="dhorTimerWrap"></div>
+              <div id="dhorTimerSummary"></div>
+            </div>
             <div id="dhorCommentBlock"></div>
             <div class="form-error" id="dhorError"></div>
             <div class="edit-bottombar hidden" id="dhorEditBottombar">
@@ -624,24 +639,24 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.23.0"></script>
-<script src="js/icons.js?v=3.23.0"></script>
-<script src="js/api.js?v=3.23.0"></script>
-<script src="js/uiSwitch.js?v=3.23.0"></script>
-<script src="js/position.js?v=3.23.0"></script>
-<script src="js/auth.js?v=3.23.0"></script>
-<script src="js/home.js?v=3.23.0"></script>
-<script src="js/tajweed.js?v=3.23.0"></script>
-<script src="js/commentPrivacy.js?v=3.23.0"></script>
-<script src="js/timer.js?v=3.23.0"></script>
-<script src="js/journal.js?v=3.23.0"></script>
-<script src="js/dhorPage.js?v=3.23.0"></script>
-<script src="js/sabaqPage.js?v=3.23.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.23.0"></script>
-<script src="js/reflectionCard.js?v=3.23.0"></script>
-<script src="js/logDetailScreen.js?v=3.23.0"></script>
-<script src="js/settingsScreen.js?v=3.23.0"></script>
-<script src="js/adminPage.js?v=3.23.0"></script>
-<script src="js/app.js?v=3.23.0"></script>
+<script src="shared/data.js?v=3.23.1"></script>
+<script src="js/icons.js?v=3.23.1"></script>
+<script src="js/api.js?v=3.23.1"></script>
+<script src="js/uiSwitch.js?v=3.23.1"></script>
+<script src="js/position.js?v=3.23.1"></script>
+<script src="js/auth.js?v=3.23.1"></script>
+<script src="js/home.js?v=3.23.1"></script>
+<script src="js/tajweed.js?v=3.23.1"></script>
+<script src="js/commentPrivacy.js?v=3.23.1"></script>
+<script src="js/timer.js?v=3.23.1"></script>
+<script src="js/journal.js?v=3.23.1"></script>
+<script src="js/dhorPage.js?v=3.23.1"></script>
+<script src="js/sabaqPage.js?v=3.23.1"></script>
+<script src="js/sabaqDhorPage.js?v=3.23.1"></script>
+<script src="js/reflectionCard.js?v=3.23.1"></script>
+<script src="js/logDetailScreen.js?v=3.23.1"></script>
+<script src="js/settingsScreen.js?v=3.23.1"></script>
+<script src="js/adminPage.js?v=3.23.1"></script>
+<script src="js/app.js?v=3.23.1"></script>
 </body>
 </html>

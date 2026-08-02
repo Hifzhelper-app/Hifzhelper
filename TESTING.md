@@ -1134,6 +1134,32 @@ the fix for a bug that broke Save entirely.
    same height as the date field, with a bit of padding before the
    screen edge.
 
+## 41. Dhor layout polish, pre-Phase B (V3.23.1)
+
+1. Open Dhor → confirm the layout order is now: Date+History, then
+   Amount+View Plan directly below it, then Juz'/Starting at, then
+   Mistakes+Tajweed on one line, then Duration+Stopwatch on one line.
+2. Tap View Plan → confirm a popup opens listing upcoming scheduled
+   Dhor sessions with readable "Juz X"/"Juz X H1"/"Juz X Q1" labels
+   (not raw "Seg X-Y" numbers), sorted by date. If nothing's scheduled,
+   confirm it says so rather than showing an empty list.
+3. Confirm the Stopwatch button beside Duration is icon-on-top, no
+   border, centered in its half of the row. Tap it → confirm the
+   Start/Stop/Lap timer widget appears below; tap again → confirm it
+   hides. Confirm using the timer still correctly fills Duration same
+   as before this round.
+4. Open History on Dhor → confirm entries show "Juz X"-style text
+   instead of "Seg X-Y".
+5. As a student with more than one plan for today, confirm the
+   multi-plan picker buttons also show "Juz X"-style text now.
+6. Edit a past Dhor entry → confirm the "not editable here" note in the
+   banner reads "Juz X..." instead of "Seg X-Y", and confirm the
+   Amount+View Plan row hides while editing (same as Juz'/Starting at
+   already did) rather than staying visible and misleadingly
+   interactive.
+7. Cancel out of that edit → confirm the Amount+View Plan row reappears
+   correctly.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

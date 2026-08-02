@@ -74,6 +74,26 @@ function computeSegmentRange(juz, positionInJuz, ref, unit){
   return { segment_from: startMarker, segment_to: startMarker + count - 1 };
 }
 
+// V3.23.1: replaces raw "Seg X-Y" (segment_from/segment_to, a ref-
+// dependent internal marker range with no meaning to a student) with a
+// human-readable "Juz X" / "Juz X H1"/"H2" / "Juz X Q1"-"Q4" — deferred
+// from earlier rounds specifically until Dhor's own detail work. Reuses
+// segmentRangeToPicker below rather than re-deriving juz'/unit a second
+// way; an unrecognized (non-clean) span falls back through the same
+// 'quarter' approximation that function already uses for its own picker.
+function describeDhorSegment(segment_from, segment_to, ref){
+  const { juz, positionInJuz, unit } = segmentRangeToPicker(segment_from, segment_to, ref);
+  if(unit === 'full') return `Juz ${juz}`;
+  const perJuz = segmentsPerJuz(ref);
+  if(unit === 'half'){
+    const halfIndex = positionInJuz <= perJuz / 2 ? 1 : 2;
+    return `Juz ${juz} H${halfIndex}`;
+  }
+  const quarterSize = perJuz / 4;
+  const quarterIndex = Math.ceil(positionInJuz / quarterSize);
+  return `Juz ${juz} Q${quarterIndex}`;
+}
+
 // Reverse of the above: given a stored segment range, figure out which
 // juz'/raw-marker-position/unit this page's OWN picker should show to
 // represent it. Only needs to handle spans that are a clean quarter/half/
@@ -149,7 +169,7 @@ function renderDhorPlanBanner(source, dateInfo){
     // every other single-select control in the app.
     el.innerHTML = `<div class="form-hint">More than one plan for today — pick one, or leave unpicked to enter manually:</div>
       <div id="dhorPlanChoices">` +
-      dhorTodaysPlans.map(p => `<button type="button" class="tajweed-tag" data-plan-id="${p.id}">Seg ${p.segment_from}-${p.segment_to}</button>`).join('') +
+      dhorTodaysPlans.map(p => `<button type="button" class="tajweed-tag" data-plan-id="${p.id}">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</button>`).join('') +
       `</div>`;
     el.querySelectorAll('[data-plan-id]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -175,6 +195,8 @@ async function renderDhorScreen(){
   document.getElementById('dhorEditTopbar').classList.add('hidden');
   document.getElementById('dhorEditBottombar').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
+  document.getElementById('dhorAmountRow').classList.remove('hidden');
+  document.getElementById('dhorTimerPanel').classList.add('hidden');
   exitEditScreenMode('card-dhor');
   dhorSelectedTags = [];
   dhorTimerExactSeconds = null;
@@ -252,6 +274,44 @@ function updateDhorTimerSummary(){
   const el = document.getElementById('dhorTimerSummary');
   el.textContent = dhorLapTimes ? `${dhorLapTimes.length} laps recorded` : '';
 }
+// V3.23.1: the timer widget (Start/Stop/Lap) used to always take up its
+// own space below Duration -- now hidden by default, toggled open/closed
+// by the Stopwatch button beside Duration.
+document.getElementById('dhorStopwatchToggle').addEventListener('click', () => {
+  document.getElementById('dhorTimerPanel').classList.toggle('hidden');
+});
+
+// V3.23.1: View Plan mirrors History's popup, but for what's still
+// UPCOMING (today onward, still 'planned') rather than what's already
+// been logged. Reuses the exact same .modal-overlay/.modal-card markup
+// as renderRecentEntries's History popup (js/dhorPage.js, further below)
+// for visual consistency, since it's the same "compact button opens a
+// popup list" idea just facing the other direction in time.
+document.getElementById('dhorViewPlanBtn').addEventListener('click', async () => {
+  let plans = [];
+  try{
+    const all = await apiPlans.get({ since: todayISO() });
+    plans = (all || []).filter(p => p.plan_type === 'dhor' && p.status === 'planned');
+  } catch(e){ plans = []; }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay history-popup-modal';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" id="viewPlanCloseBtn">&times;</button>
+    <h2>Upcoming Dhor Plan</h2>
+    <div class="history-full-list">
+      ${plans.map(p => `<div class="history-entry-row">
+        <div>
+          <div class="rail-card-date">${p.target_date}</div>
+          <div class="rail-card-body">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</div>
+        </div>
+      </div>`).join('') || '<div class="form-hint">Nothing scheduled yet.</div>'}
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.getElementById('viewPlanCloseBtn').addEventListener('click', () => overlay.remove());
+});
 // Real user input into the field (not the timer's own programmatic
 // auto-fill above) means they're overriding it -- stop trusting the
 // timer's exact-seconds value in favour of whatever they typed, and
@@ -277,10 +337,11 @@ function loadDhorEntryForEdit(entry){
     dhorTimerExactSeconds !== null ? (dhorTimerExactSeconds / 60).toFixed(1) : '';
   updateDhorTimerSummary();
   document.getElementById('dhorEditTopbarDate').textContent =
-    `${entry.date} (Seg ${entry.segment_from}-${entry.segment_to} — not editable here)`;
+    `${entry.date} (${describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef)} — not editable here)`;
   document.getElementById('dhorEditTopbar').classList.remove('hidden');
   document.getElementById('dhorEditBottombar').classList.remove('hidden');
   document.getElementById('dhorSegmentPicker').classList.add('hidden');
+  document.getElementById('dhorAmountRow').classList.add('hidden');
   enterEditScreenMode('card-dhor');
 }
 function cancelDhorEdit(){
@@ -288,6 +349,7 @@ function cancelDhorEdit(){
   document.getElementById('dhorEditTopbar').classList.add('hidden');
   document.getElementById('dhorEditBottombar').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
+  document.getElementById('dhorAmountRow').classList.remove('hidden');
   exitEditScreenMode('card-dhor');
 }
 function resetDhorFormAfterEdit(){
@@ -449,7 +511,7 @@ async function renderRecentEntries(type, client, railId){
   });
 }
 function describeEntryForRail(type, r){
-  if(type === 'dhor') return `Seg ${r.segment_from}-${r.segment_to} (${r.ref}) · ${r.mistakes||0} mistakes${r.duration_seconds?` · ${Math.round(r.duration_seconds/60)} min`:''}`;
+  if(type === 'dhor') return `${describeDhorSegment(r.segment_from, r.segment_to, r.ref || dhorCurrentRef)} · ${r.mistakes||0} mistakes${r.duration_seconds?` · ${Math.round(r.duration_seconds/60)} min`:''}`;
   if(type === 'sabaq') return `${r.sabaq_from}-${r.sabaq_to}${r.line_count?` · ${r.line_count} lines`:''}${r.page_count?` · ${r.page_count} pages`:''}`;
   if(type === 'sabaqDhor') return `${r.from_surah}:${r.from_ayah}-${r.to_surah}:${r.to_ayah} · ${r.mistakes||0} mistakes`;
   return '';
