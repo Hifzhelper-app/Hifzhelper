@@ -4,10 +4,11 @@
 // ONE continuous page with 4 independently-saved sections: Profile,
 // Hifz Setup, Dhor Plan (renamed from "Dhor Schedule" in V3.11.0), Haidh.
 // V3.10.0 turned every plain either/or into a genuine switch; V3.11.0
-// adds explanatory hints for all 3 mushaf options, corrects the
+// adds explanatory hints for all 3 mushaf options and corrects the
 // Juz'/Surah switch to always rest neutral (not slide to reflect the
-// mode), and adds Tomorrow's Portion — an explicit starting point for
-// the Dhor Plan rotation, picked from the student's own memorised juz'.
+// mode). V3.11.0 also added Tomorrow's Portion, an explicit starting
+// point for the Dhor Plan rotation -- removed entirely 2026-08-03 (see
+// the Dhor Plan save handler below for why).
 //
 // Reached two ways: the "Settings" nav item (any time), and automatically
 // on a new user's first login before setup_complete (see app.js) — the
@@ -54,7 +55,6 @@ wireSwitch('mushaf_switch', (value) => {
   setupSelectedMushaf = value;
   renderSwitch('mushaf_switch', setupSelectedMushaf);
   document.getElementById('mushafHint').textContent = MUSHAF_HINTS[value] || '';
-  renderTomorrowPortionOptions();
 });
 
 // ---------- Hifz Setup: completed-sections slide-in grids ----------
@@ -127,7 +127,6 @@ function openSectionGridModal(mode){
       : draft;
     renderBaselineSummary();
     renderSwitch('section_grid_switch', null); // V3.11.0: always back to neutral, never reflects baselineMode
-    renderTomorrowPortionOptions();
     overlay.remove();
   };
   overlay.addEventListener('click', e => { if(e.target === overlay) commitAndClose(); });
@@ -144,7 +143,6 @@ let setupSelectedDays = [];
 wireSwitch('dhor_granularity_switch', (value) => {
   setupSelectedGranularity = value;
   renderSwitch('dhor_granularity_switch', setupSelectedGranularity);
-  renderTomorrowPortionOptions();
 });
 wireSwitch('dhor_frequency_switch', (value) => {
   setupSelectedFrequency = value;
@@ -164,65 +162,6 @@ document.querySelectorAll('#dhor_days_picker [data-day]').forEach(btn => {
     renderDaysPicker();
   });
 });
-
-// ---------- Tomorrow's Portion (new, V3.11.0) ----------
-// Labels one (juz, unitIndexInJuz) position in the naming convention
-// confirmed for each print. 13-line and Hybrid share one convention
-// (Hybrid always uses 13-line quarter/half/juz' rules); 15-line's is
-// different — and per clarification, Hizb is numbered globally across
-// the whole Quran (a global count is already unambiguous, unlike a
-// 13-line "half" which has no name of its own to fall back on), while
-// Rub' stays per-juz'.
-function segmentLabel(juz, unitIndexInJuz, ref, granularity){
-  if(ref === 'uthmani'){
-    if(granularity === 'juz') return `Juz-${juz}`;
-    if(granularity === 'half') return `Hizb-${(juz - 1) * 2 + unitIndexInJuz}`;
-    return `Rub-${juz}-${unitIndexInJuz}`; // granularity === 'quarter'
-  }
-  if(granularity === 'juz') return `Juz-${juz}`;
-  if(granularity === 'half') return `H-Juz-${juz}-${unitIndexInJuz}`;
-  return `Q-Juz-${juz}-${unitIndexInJuz}`; // granularity === 'quarter'
-}
-
-// Every individual granularity-sized unit across the student's memorised
-// (baseline) juz', ascending — mirrors dhorSchedule.js's own
-// buildChunks() at the single-unit level (quantity=1), so the resulting
-// segment_from/segment_to values line up exactly with what the generator
-// itself produces.
-function buildSegmentOptions(pool, ref, granularity){
-  const perJuz = segmentsPerJuz(ref);
-  const unitSize = unitMarkerCount(ref, granularity);
-  const unitsPerJuz = perJuz / unitSize;
-  const options = [];
-  for(const juz of pool.slice().sort((a,b) => a-b)){
-    for(let u = 1; u <= unitsPerJuz; u++){
-      const { segment_from, segment_to } = segmentRangeForUnitIndex(juz, u, ref, granularity);
-      options.push({ segment_from, segment_to, label: segmentLabel(juz, u, ref, granularity) });
-    }
-  }
-  return options;
-}
-
-function renderTomorrowPortionOptions(){
-  const sel = document.getElementById('dhor_tomorrow_portion');
-  if(!sel) return;
-  const previousValue = sel.value;
-  const granularity = setupSelectedGranularity;
-  if(!granularity || !baselineSelection.length){
-    sel.innerHTML = `<option value="">Let the plan continue from where it left off</option>`;
-    return;
-  }
-  const ref = refForMushaf(setupSelectedMushaf);
-  // V3.15.0: baselineSelection now holds quarter-unit IDs — Tomorrow's
-  // Portion still lists whole juz' worth of options, so derive which
-  // juz' are FULLY covered (all 4 quarter-units present) first.
-  const wholeJuzPool = Array.from({length: 30}, (_, i) => i + 1)
-    .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u)));
-  const options = buildSegmentOptions(wholeJuzPool, ref, granularity);
-  sel.innerHTML = `<option value="">Let the plan continue from where it left off</option>` +
-    options.map(o => `<option value="${o.segment_from}-${o.segment_to}">${o.label}</option>`).join('');
-  if(Array.from(sel.options).some(o => o.value === previousValue)) sel.value = previousValue;
-}
 
 // ---------- Load + render ----------
 async function renderSettingsScreen(){
@@ -261,7 +200,6 @@ async function renderSettingsScreen(){
   renderSwitch('dhor_frequency_switch', setupSelectedFrequency);
   setupSelectedDays = Array.isArray(profile.dhor_days_of_week) ? profile.dhor_days_of_week.slice() : [];
   renderDaysPicker();
-  renderTomorrowPortionOptions();
 
   // Haidh section
   document.getElementById('haidh_cycle_length').value = profile.haidh_cycle_length || '';
@@ -317,11 +255,14 @@ document.getElementById('hifzSetupSaveBtn').addEventListener('click', async () =
   }
 });
 
-// Dhor Plan — saves the settings, then immediately kicks off generation
-// (rather than waiting for the next time dhorPage.js happens to open) so
-// the rolling window is populated right away. If the student picked a
-// Tomorrow's Portion starting point, that's passed through as an
-// explicit anchor for this one generation call only.
+// Dhor Plan — just saves the settings now. Used to also kick off
+// ensureDhorSchedule's generation immediately after (optionally anchored
+// to a Tomorrow's Portion pick) -- both removed 2026-08-03 (confirmed in
+// chat): Tomorrow's Portion served no purpose once a student could
+// already redirect the queue by saving a different portion via Plan
+// Dhor, and removing it was ensureDhorSchedule's last remaining caller
+// anywhere in the app, so that whole mechanism (worker/src/
+// dhorSchedule.js, js/api.js's apiEnsureDhorSchedule) is gone too.
 document.getElementById('dhorScheduleSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('dhorScheduleError');
   errEl.textContent = '';
@@ -341,15 +282,8 @@ document.getElementById('dhorScheduleSaveBtn').addEventListener('click', async (
     dhor_days_of_week: setupSelectedDays,
     setup_complete: true
   };
-  const portionValue = document.getElementById('dhor_tomorrow_portion').value;
-  let startSegment = null;
-  if(portionValue){
-    const [segment_from, segment_to] = portionValue.split('-').map(Number);
-    startSegment = { segment_from, segment_to };
-  }
   try{
     await apiSaveProfile(payload);
-    await apiEnsureDhorSchedule(startSegment);
     document.getElementById('dhorScheduleSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorScheduleSaveStatus').classList.remove('show'), 1800);
   } catch(e){

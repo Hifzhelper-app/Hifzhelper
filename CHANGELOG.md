@@ -7,6 +7,99 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.27.0 — Tomorrow's Portion removed; Pure queue model, Phase C: Plan Dhor's queue view (2026-08-03)
+
+Two pieces of work, done together: closing out the last loose end from
+Phase A/D, and the 4-phase rebuild's final planned phase.
+
+**Tomorrow's Portion removed entirely.** Confirmed in chat: it served no
+purpose once a student could already redirect the queue by simply saving
+a different portion via Plan Dhor. Removed from Setup (`index.html`'s
+dropdown/label/hint; `js/settingsScreen.js`'s `renderTomorrowPortionOptions`/
+`segmentLabel`/`buildSegmentOptions`, all 4 places that called the render
+function, and the save handler's `startSegment` construction). This was
+also the last remaining caller of `ensureDhorSchedule`/
+`handleEnsureDhorSchedule` anywhere in the app (Phase B had already
+removed the only other one, dhorPage.js's open-time top-up) — so that
+whole mechanism is now gone too: the function, its route
+(`/dhor-schedule/ensure`), and the frontend wrapper
+(`js/api.js`'s `apiEnsureDhorSchedule`). Per the standing instruction
+confirmed this session — delete superseded code promptly rather than
+keeping it for a possible future tie-in, since there are no dependent
+users yet to break — nothing here was left as a stub.
+
+**The Dhor card's default Amount/Unit changed from Quarter to Half**,
+confirmed in chat. This isn't purely cosmetic any more either: it's now
+also the source Plan Dhor's "no Setup configured yet" fallback (below)
+reads its granularity from.
+
+**Phase C: Plan Dhor's "Dhor Plan" tab.** Replaces V3.24.1's whole
+yesterday/today/next-5-days date-grouped view — dead since Phase A
+stopped generating dated rows and Phase D purged what existed — with a
+new backend computation, `computeUpcomingDhorQueue`
+(`worker/src/dhorSchedule.js`, exposed at `GET /dhor-schedule/upcoming`):
+several days' worth of upcoming QUEUE batches, no dates involved
+anywhere, reusing `buildChunks`/`findChunkIndexForSegment` rather than
+re-deriving the chunking logic a second time. Batch size and granularity
+come from `dhor_granularity`/`dhor_quantity`/`dhor_frequency` when Setup's
+been configured (e.g. 2 halves twice a day = 4 items/day, the exact
+example confirmed in chat); otherwise from the Dhor card's own live
+Amount/Unit switch, 1 item/day. Number of day-groups returned is
+`dhor_days_of_week`'s own length when set (its cardinality, not specific
+weekdays — no calendar involved), else 7. **Flagging rather than
+silently assuming**: extending the "has Setup, no history yet" case to
+also start from the pool's beginning was Claude's own generalisation of
+what was confirmed for the "no Setup, no history" case specifically —
+chat didn't address that exact combination, and this was the least-bad
+reading available; worth double-checking it matches intent.
+
+On the frontend (`js/dhorPage.js`): `openPlanDhorModal` now calls the new
+endpoint instead of three date-keyed `apiPlans.get()` calls, and
+pre-selects the first item of today's batch so the tab and the card
+visually agree. Today's batch always renders individually, no dates, no
+completion status (there's nothing here that can be "done" yet — these
+are computed queue positions, not real rows). The rest of the week rolls
+up one row per batch (`renderPlanDhorQueueDayRow`, replacing the old
+`renderPlanDhorDayGroupRow`) — confirmed as the one deliberate exception
+to "no rollup," since a future batch can never have the mixed-completion
+ambiguity the old date-grouped rollup had to represent; expand/collapse
+here is purely a "see more" affordance, always collapsed again the next
+time the modal opens.
+
+**A real bug found and fixed along the way, not something new**:
+`quarterUnitLabel` destructured `{ juz, quarter }` from
+`quarterUnitToJuzQuarter`, which actually returns `{ juz, quarterIndex }`
+— producing "Qundefined" every time. This was already visible in the old
+V3.24.1 tab (confirmed from an earlier screenshot showing exactly that
+artifact); caught this round via testing while rebuilding the code that
+calls it, not newly introduced by this rebuild.
+
+**Verified, not just read over**: ran `computeUpcomingDhorQueue` for real
+against 4 scenarios (no pool; no-Setup-no-history with a fallback unit;
+continuing correctly after a logged entry; Setup configured with a
+3-day-of-week schedule) — confirmed correct wraparound both within a
+day's batch and across day boundaries when the pool is smaller than what
+a batch needs. Separately ran the actual `renderPlanDhorQueueDayRow`
+against collapsed, expanded, and single-item cases, confirming the
+`quarterUnitLabel` fix and that a single-item day never renders an
+expand control.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/settingsScreen.js
+js/api.js
+js/dhorPage.js
+worker/src/dhorSchedule.js
+worker/src/index.js
+SCHEMA.md
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.26.2 — Nav dropdown menu fixed to the viewport (2026-08-03)
 
 Standalone fix, unrelated to the Dhor queue rebuild — reported after scrolling

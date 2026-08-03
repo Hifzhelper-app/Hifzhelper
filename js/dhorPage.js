@@ -305,9 +305,14 @@ async function renderDhorScreen(){
   // displayed selection to the first option automatically every time
   // this screen opened; a hidden input has no such built-in behavior, so
   // this has to be deliberate now. setDhorUnit (next line) reads this
-  // value when it rebuilds Position's slot options for 'quarter'.
+  // value when it rebuilds Position's slot options for whichever unit is
+  // being defaulted to.
   document.getElementById('dhor_position').value = '1';
-  setDhorUnit('quarter');
+  // Default unit changed from Quarter to Half (confirmed in chat
+  // 2026-08-03) -- this same default is also what Plan Dhor's "no setup,
+  // no history" fallback reads live from this switch, so it isn't purely
+  // cosmetic here any more.
+  setDhorUnit('half');
   document.getElementById('dhor_mistakes').value = '0';
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', null);
@@ -386,9 +391,8 @@ document.getElementById('dhorStopwatchToggle').addEventListener('click', () => {
 // logic below genuinely uniform across all 3 tabs, per the confirmed
 // design, rather than needing separate reconciliation per tab.
 let planDhorPool = [];              // sorted quarter-unit IDs currently in baseline_selection
-let planDhorTodaysPlans = [];       // today's plan_type='dhor' rows (any status), shown individually
-let planDhorYesterdayGroup = null;  // { date, plans } or null -- rolled up
-let planDhorFutureGroups = [];      // [{ date, plans }] for the next 5 days, each rolled up
+let planDhorTodaysPlans = [];       // today's batch (queueDays[0].items), shown individually
+let planDhorQueueDays = [];         // Phase C (2026-08-03): [{day, items:[{segment_from,segment_to,ref}]}] from /dhor-schedule/upcoming -- no dates, day is just this array's own index
 let planDhorExpandedDates = new Set(); // which rolled-up days are currently expanded (mixed completion only)
 let planDhorSelectedUnits = new Set();
 let planDhorRollup = {};            // { juzNum: 'quarters'|'half'|'full' }, default 'quarters'
@@ -447,9 +451,15 @@ function computePlanDhorRowsForJuz(juzNum, availableSet){
   }
   return present.map(u => ({ units: [u], label: quarterUnitLabel(u) }));
 }
+// Bug fix (2026-08-03, found via testing while rebuilding Phase C, not
+// something new -- this was already producing "Qundefined" in the old
+// V3.24.1 Dhor Plan tab too, visible in an earlier screenshot):
+// quarterUnitToJuzQuarter (shared/data.js) returns { juz, quarterIndex },
+// not { juz, quarter } -- this was destructuring a property name that
+// was never actually there.
 function quarterUnitLabel(unitId){
-  const { juz, quarter } = quarterUnitToJuzQuarter(unitId);
-  return `Juz ${juz} Q${quarter}`;
+  const { juz, quarterIndex } = quarterUnitToJuzQuarter(unitId);
+  return `Juz ${juz} Q${quarterIndex}`;
 }
 
 // V3.24.1: "Portion A to Portion B" for a rolled-up day -- the earliest
@@ -464,33 +474,31 @@ function planDhorDaySummaryLabel(plans){
   return `${quarterUnitLabel(firstUnits[0])} to ${quarterUnitLabel(lastUnits[lastUnits.length - 1])}`;
 }
 
-// Renders one day's row(s) for the Dhor Plan tab: a single combined row
-// when there's nothing ambiguous to show (only one plan that day, or
-// every plan agrees on completion status), or an expandable summary
-// when completion is genuinely mixed -- confirmed in chat: "the user
-// can expand and select the portion he wants to log" rather than
-// representing partial completion in one ambiguous checkbox.
-function renderPlanDhorDayGroupRow(group){
-  const allComplete = group.plans.every(p => p.status === 'completed');
-  const noneComplete = group.plans.every(p => p.status !== 'completed');
-  const allUnits = [...new Set(group.plans.flatMap(p => segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)))];
-  const summaryLabel = `${group.date} — ${planDhorDaySummaryLabel(group.plans)}`;
+// Renders one "rest of week" row for the Dhor Plan tab: a single row
+// when the batch is only 1 item, otherwise an expandable summary --
+// always collapsed by default (planDhorExpandedDates resets fresh every
+// time the modal opens). No completion-status branching here at all
+// (unlike the old date-grouped version this replaces): these are pure
+// queue projections, computed on the fly, not real rows that could be
+// partly done -- there's nothing to be ambiguous about, so the
+// expand/collapse here is purely a "see more" affordance, not a "resolve
+// mixed state" one.
+function renderPlanDhorQueueDayRow(dayGroup){
+  const allUnits = [...new Set(dayGroup.items.flatMap(p => segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)))];
+  const summaryLabel = planDhorDaySummaryLabel(dayGroup.items);
 
-  if(group.plans.length === 1 || allComplete || noneComplete){
-    const checked = allUnits.every(u => planDhorSelectedUnits.has(u));
+  if(dayGroup.items.length === 1){
     return `<label class="plan-dhor-row-text">${summaryLabel}</label>
-      <input type="checkbox" class="plan-dhor-unit-cb" data-units="${allUnits.join(',')}"${allComplete ? ' checked disabled' : (checked ? ' checked' : '')}>`;
+      <input type="checkbox" class="plan-dhor-unit-cb" data-units="${allUnits.join(',')}">`;
   }
 
-  const expanded = planDhorExpandedDates.has(group.date);
-  let html = `<button type="button" class="plan-dhor-expand-btn" data-date="${group.date}">${expanded ? '▾' : '▸'} ${summaryLabel}</button><span></span>`;
+  const expanded = planDhorExpandedDates.has(dayGroup.day);
+  let html = `<button type="button" class="plan-dhor-expand-btn" data-day="${dayGroup.day}">${expanded ? '▾' : '▸'} ${summaryLabel}</button><span></span>`;
   if(expanded){
-    group.plans.forEach(p => {
+    dayGroup.items.forEach(p => {
       const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
-      const checked = units.every(u => planDhorSelectedUnits.has(u));
-      const isComplete = p.status === 'completed';
       html += `<label class="plan-dhor-row-text plan-dhor-subrow">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</label>
-        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}"${isComplete ? ' checked disabled' : (checked ? ' checked' : '')}>`;
+        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}">`;
     });
   }
   return html;
@@ -614,31 +622,29 @@ async function openPlanDhorModal(preselectUnits){
     ? [...new Set(profile.baseline_selection.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a,b) => a-b)
     : [];
 
-  // V3.24.1: the Dhor Plan tab is now a view spanning yesterday (rolled
-  // up) / today (each row shown individually) / the next 5 days (each
-  // rolled up) -- confirmed in chat as the tab's actual job: check
-  // yesterday was covered, confirm today, see what's coming. Every
-  // status is fetched now (not just 'planned'), since a completed plan
-  // still needs to show, just checked and disabled.
-  const today = todayISO();
-  const yesterday = addDaysISO(today, -1);
-  const isDhorPlan = p => p.plan_type === 'dhor';
-  let yesterdayPlans = [], todayPlans = [], futurePlans = [];
-  try{ yesterdayPlans = (await apiPlans.get({ date: yesterday }) || []).filter(isDhorPlan); } catch(e){ yesterdayPlans = []; }
-  try{ todayPlans = (await apiPlans.get({ date: today }) || []).filter(isDhorPlan); } catch(e){ todayPlans = []; }
-  try{ futurePlans = (await apiPlans.get({ since: addDaysISO(today, 1) }) || []).filter(isDhorPlan); } catch(e){ futurePlans = []; }
-
-  planDhorTodaysPlans = todayPlans;
-
-  const futureByDate = {};
-  futurePlans.forEach(p => { (futureByDate[p.target_date] = futureByDate[p.target_date] || []).push(p); });
-  const next5Dates = Object.keys(futureByDate).sort().slice(0, 5);
-
-  planDhorYesterdayGroup = yesterdayPlans.length > 0 ? { date: yesterday, plans: yesterdayPlans } : null;
-  planDhorFutureGroups = next5Dates.map(d => ({ date: d, plans: futureByDate[d] }));
-  planDhorExpandedDates = new Set();
+  // Pure queue model, Phase C (2026-08-03): replaces V3.24.1's whole
+  // yesterday/today/next-5-days date-grouped fetch with one call to the
+  // queue engine's own "what's upcoming" computation -- no dates
+  // anywhere in here any more, just queue position. dhor_unit (the
+  // card's own live Amount/Unit switch value) is passed through as the
+  // fallback granularity for a student who hasn't configured Setup's
+  // Dhor Schedule yet -- confirmed in chat as the source for that one
+  // case; the backend ignores it otherwise.
+  let queueResult = { hasPool: false, days: [] };
+  try{ queueResult = await apiGetUpcomingDhorQueue(document.getElementById('dhor_unit').value); } catch(e){ queueResult = { hasPool: false, days: [] }; }
+  planDhorQueueDays = queueResult.days || [];
+  planDhorTodaysPlans = planDhorQueueDays.length > 0 ? planDhorQueueDays[0].items : [];
+  planDhorExpandedDates = new Set(); // always collapsed on open, confirmed in chat
 
   planDhorSelectedUnits = preselectUnits ? new Set(preselectUnits) : new Set();
+  // Item 1 of today's batch is what's already loaded on the card itself
+  // (renderDhorScreen's own prepopulation) -- pre-checking it here too,
+  // confirmed in chat, keeps the tab and the card visually agreeing.
+  if(!preselectUnits && planDhorTodaysPlans.length > 0){
+    const first = planDhorTodaysPlans[0];
+    segmentToQuarterUnits(first.segment_from, first.segment_to, first.ref || dhorCurrentRef)
+      .forEach(u => planDhorSelectedUnits.add(u));
+  }
   planDhorRangeStart = null;
   planDhorRollup = {};
   planDhorTab = preselectUnits ? 'all' : 'plan';
@@ -702,25 +708,27 @@ function renderPlanDhorTabContent(){
   const selectAllBtn = document.getElementById('planDhorSelectAllBtn');
   selectAllBtn.classList.toggle('hidden', planDhorTab === 'plan');
   if(planDhorTab === 'plan'){
-    const hasAnything = planDhorTodaysPlans.length > 0 || planDhorYesterdayGroup || planDhorFutureGroups.length > 0;
-    if(!hasAnything){
-      el.innerHTML = '<p class="form-hint">Nothing scheduled.</p>';
+    if(planDhorQueueDays.length === 0){
+      el.innerHTML = '<p class="form-hint">Nothing to show yet — mark some Juz\' complete in Hifz Setup first.</p>';
       return;
     }
-    // V3.24.1: the Dhor Plan tab now spans yesterday (rolled up) / today
-    // (each row individually) / the next 5 days (each rolled up) --
-    // confirmed in chat as the tab's actual job: check yesterday was
-    // covered, confirm today, see what's coming.
+    // Pure queue model, Phase C (2026-08-03): today (queueDays[0]) is
+    // always shown individually, no dates, no completion status --
+    // there's nothing here to be "complete" yet, these are computed
+    // queue positions, not real plans rows. The rest of the week
+    // (queueDays[1] onward) rolls up one row per batch via
+    // renderPlanDhorQueueDayRow (below), confirmed in chat as the one
+    // deliberate exception to "no rollup" -- future batches can't have
+    // mixed completion state the way V3.24.1's date-grouped rows could,
+    // so there's no ambiguity left to hide behind an expand toggle; it's
+    // purely a "see more" affordance here, not a "resolve ambiguity" one.
     let html = '<div class="plan-dhor-grid">';
-    if(planDhorYesterdayGroup) html += renderPlanDhorDayGroupRow(planDhorYesterdayGroup);
     html += planDhorTodaysPlans.map(p => {
       const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
-      const checked = units.every(u => planDhorSelectedUnits.has(u));
-      const isComplete = p.status === 'completed';
-      return `<label class="plan-dhor-row-text">${p.target_date} — ${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</label>
-        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}"${isComplete ? ' checked disabled' : (checked ? ' checked' : '')}>`;
+      return `<label class="plan-dhor-row-text">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</label>
+        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}">`;
     }).join('');
-    planDhorFutureGroups.forEach(g => { html += renderPlanDhorDayGroupRow(g); });
+    planDhorQueueDays.slice(1).forEach(g => { html += renderPlanDhorQueueDayRow(g); });
     html += '</div>';
     el.innerHTML = html;
     wirePlanDhorContent();
@@ -788,9 +796,9 @@ function wirePlanDhorContent(){
     });
     document.querySelectorAll('.plan-dhor-expand-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const date = btn.dataset.date;
-        if(planDhorExpandedDates.has(date)) planDhorExpandedDates.delete(date);
-        else planDhorExpandedDates.add(date);
+        const day = btn.dataset.day;
+        if(planDhorExpandedDates.has(day)) planDhorExpandedDates.delete(day);
+        else planDhorExpandedDates.add(day);
         renderPlanDhorTabContent();
       });
     });
