@@ -22,9 +22,12 @@ import { segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex, quarterUnitT
 //   C. Plan Dhor's "Dhor Plan" tab -- the whole yesterday/today/next-5-
 //      days date-grouping goes away, replaced by a flat "next N in the
 //      queue" list.
-//   D. Setup's "Tomorrow's Portion" becomes a one-time queue-start seed
-//      (not a standing override) + an active DELETE of every existing
-//      plan_type='dhor' row from the live `plans` table.
+//   D. Setup's "Tomorrow's Portion" removed entirely (2026-08-03,
+//      confirmed in chat: served no purpose once a student could already
+//      redirect the queue by saving a different portion via Plan Dhor --
+//      not rebuilt as a seed mechanism as originally scoped) + an active
+//      DELETE of every existing plan_type='dhor' row from the live
+//      `plans` table (executed 2026-08-03).
 // Not yet built: B, C, D.
 //
 // V3.15.0: baseline_selection is still a flat pool of QUARTER-UNIT IDs
@@ -104,42 +107,15 @@ function findChunkIndexForSegment(chunks, segment_from, segment_to) {
   return best;
 }
 
-// POST /dhor-schedule/ensure — historically topped up a rolling 7-day
-// window with DATED future `plans` rows (pre-generated ahead of time).
-// Confirmed in chat (2026-08-02): that whole idea was the wrong model --
-// a `plans` row shouldn't carry a date for anything not yet done at all.
-// computeDefaultDhorEntry (below) now computes the next queue item live,
-// from dhor_log, on every call, so there's nothing left here to
-// pre-generate or "top up." This is now a harmless no-op, kept (rather
-// than deleting the route outright) so its two existing callers --
-// dhorPage.js's open-time top-up, and Setup's save handler, which awaits
-// this and would show a false "Couldn't save" error if it started
-// throwing -- don't need to change in this phase; neither one reads this
-// response body today. studentId/startSegment are accepted but unused for
-// now: Phase D gives Setup's "Tomorrow's Portion" a real seeding
-// mechanism again -- a small, one-time queue-start seed -- not a revival
-// of this function's old bulk-generation behaviour.
-export async function ensureDhorSchedule(env, studentId, startSegment) {
-  return { generated: 0 };
-}
-
-export async function handleEnsureDhorSchedule(request, env, auth) {
-  let body = {};
-  try { body = await request.json(); } catch (e) { /* no body sent — the normal case for routine top-ups */ }
-  const startSegment = (body && body.segment_from != null)
-    ? { segment_from: body.segment_from, segment_to: body.segment_to }
-    : null;
-  const result = await ensureDhorSchedule(env, auth.id, startSegment);
-  return { data: result };
-}
-
 // GET /dhor-schedule/default-entry — what should today's Dhor form show by
 // default. Pure queue model (confirmed in chat 2026-08-02), one rule:
-//   1. An explicit override for today, if one exists (currently: a real
-//      `plans` row with plan_type='dhor', status='planned', target_date =
-//      today -- the only way one of these can exist today, since
-//      ensureDhorSchedule no longer generates any; Phase D gives Setup's
-//      "Tomorrow's Portion" a real seeding mechanism for this again).
+//   1. An explicit override for today, if one exists (a real `plans` row
+//      with plan_type='dhor', status='planned', target_date = today --
+//      currently dormant in practice: Setup's "Tomorrow's Portion", the
+//      one thing that used to populate this, was removed entirely
+//      2026-08-03 rather than rebuilt, and nothing else creates a
+//      same-day dhor-type plan row today. The check itself stays, since
+//      a row created directly via POST /plans would still be honoured).
 //   2. Otherwise, ALWAYS the segment that follows the last logged entry --
 //      walking the eligible pool forward at THAT ENTRY'S OWN granularity
 //      (not the account's configured Setup granularity/quantity -- this
@@ -200,5 +176,100 @@ export async function computeDefaultDhorEntry(env, studentId) {
 
 export async function handleGetDhorDefaultEntry(request, env, auth) {
   const result = await computeDefaultDhorEntry(env, auth.id);
+  return { data: result };
+}
+
+// GET /dhor-schedule/upcoming?fallback_unit=quarter|half|full — Phase C:
+// Plan Dhor's "Dhor Plan" tab. Confirmed in chat 2026-08-03: this replaces
+// V3.24.1's whole yesterday/today/next-5-days date-grouped view (dead
+// since Phase A stopped generating dated rows and Phase D purged what
+// existed) with a flat set of upcoming QUEUE batches -- "day 0" is
+// today's batch (shown individually on the frontend), "day 1" onward is
+// "the rest of the week" (rolled up on the frontend). No dates are
+// computed or returned anywhere here, deliberately -- consistent with
+// the whole pure-queue model, this is queue-position, not calendar-
+// position; the frontend's "day N" is just this array's index.
+//
+// Batch size (how many items per day) and granularity:
+//   - Setup configured (dhor_granularity/quantity/frequency all set):
+//     granularity = dhor_granularity; count/day = dhor_quantity *
+//     (dhor_frequency === 'twice' ? 2 : 1) -- e.g. 2 halves twice a day
+//     = 4 half-sized items/day, confirmed via that exact example in chat.
+//   - Not configured: granularity = fallback_unit (the Dhor card's own
+//     live Amount/Unit switch state, confirmed in chat as the source --
+//     defaults to 'quarter' here only if the frontend somehow omits it,
+//     as a safety net, since the card itself now defaults to Half);
+//     count/day = 1.
+//
+// Number of day-groups returned: dhor_days_of_week's own length if
+// configured (its cardinality, not specific weekdays -- there's no
+// calendar involved here at all), else 7 (today + 6, confirmed in chat
+// for the not-configured case specifically). This is Claude's own
+// extrapolation for the CONFIGURED case, not something spelled out
+// verbatim in chat -- flagging it here rather than silently assuming,
+// since honoring dhor_days_of_week's cardinality without reintroducing
+// actual calendar dates was the least-bad reading available.
+//
+// Starting position: same anchor computeDefaultDhorEntry's continue_last
+// branch uses (the chunk after the last logged entry, at THAT entry's
+// own implied granularity -- reused via findChunkIndexForSegment's
+// gap-tolerant matching, not re-derived a second way) when dhor_log has
+// anything; otherwise the very first chunk in the pool, ascending --
+// confirmed in chat for the no-history case, extended here to also cover
+// "has Setup configured, but hasn't logged anything yet" on the same
+// reasoning, since chat didn't address that specific combination and
+// this was the natural generalisation of what WAS said.
+export async function computeUpcomingDhorQueue(env, studentId, fallbackUnit) {
+  const student = await env.DB.prepare(
+    'SELECT mushaf, baseline_mode, baseline_selection, dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week FROM students WHERE id = ?'
+  ).bind(studentId).first();
+  if (!student) return { hasPool: false, days: [] };
+  if (student.baseline_mode !== 'juz') return { hasPool: false, days: [] };
+  let pool;
+  try { pool = JSON.parse(student.baseline_selection || '[]'); } catch (e) { pool = []; }
+  pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b);
+  if (pool.length === 0) return { hasPool: false, days: [] };
+
+  const ref = student.mushaf === '15line_madani' ? 'uthmani' : 'waterval';
+  const setupConfigured = !!(student.dhor_granularity && student.dhor_quantity && student.dhor_frequency);
+  const granularity = setupConfigured ? student.dhor_granularity : (fallbackUnit || 'quarter');
+  const perDay = setupConfigured
+    ? student.dhor_quantity * (student.dhor_frequency === 'twice' ? 2 : 1)
+    : 1;
+
+  let daysOfWeek = [];
+  try { daysOfWeek = JSON.parse(student.dhor_days_of_week || '[]'); } catch (e) { daysOfWeek = []; }
+  const totalDays = Array.isArray(daysOfWeek) && daysOfWeek.length > 0 ? daysOfWeek.length : 7;
+
+  const chunks = buildChunks(pool, ref, granularity);
+  if (chunks.length === 0) return { hasPool: true, days: [] };
+
+  const lastLog = await env.DB.prepare(
+    'SELECT segment_from, segment_to FROM dhor_log WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1'
+  ).bind(studentId).first();
+  let startIdx = 0;
+  if (lastLog) {
+    const idx = findChunkIndexForSegment(chunks, lastLog.segment_from, lastLog.segment_to);
+    startIdx = (idx >= 0 ? idx + 1 : 0) % chunks.length;
+  }
+
+  const days = [];
+  let cursor = startIdx;
+  for (let d = 0; d < totalDays; d++) {
+    const items = [];
+    for (let i = 0; i < perDay; i++) {
+      const chunk = chunks[cursor % chunks.length];
+      items.push({ segment_from: chunk.segment_from, segment_to: chunk.segment_to, ref });
+      cursor++;
+    }
+    days.push({ day: d, items });
+  }
+  return { hasPool: true, days };
+}
+
+export async function handleGetUpcomingDhorQueue(request, env, auth) {
+  const url = new URL(request.url);
+  const fallbackUnit = url.searchParams.get('fallback_unit');
+  const result = await computeUpcomingDhorQueue(env, auth.id, fallbackUnit);
   return { data: result };
 }

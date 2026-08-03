@@ -133,24 +133,22 @@ const apiPlans = {
   remove: (id) => apiFetch('/plans?id=' + encodeURIComponent(id), { method: 'DELETE' })
 };
 
-// ---------- dhor schedule (V3.9.0) ----------
-// Tops up the rolling window — see worker/src/dhorSchedule.js. Returns
-// { generated } normally, or { generated: 0, reason } when nothing can be
-// generated yet (schedule not configured, no juz' baseline, etc.) — not
-// an error, just "nothing to do", so callers don't need a catch just for
-// that case (though one is still wise for genuine network/auth failures).
-// startSegment (V3.11.0, optional): { segment_from, segment_to } — passed
-// through only when the student explicitly picked a "Tomorrow's portion"
-// starting point in Setup; omitted on every routine call (dhorPage.js's
-// own top-up, or a Setup save where nothing was picked).
-function apiEnsureDhorSchedule(startSegment){
-  return apiFetch('/dhor-schedule/ensure', {
-    method: 'POST',
-    body: startSegment ? JSON.stringify(startSegment) : undefined
-  });
-}
+// ---------- dhor schedule ----------
+// ensureDhorSchedule/apiEnsureDhorSchedule removed entirely 2026-08-03:
+// Phase A (2026-08-02) had already made the backend side a no-op, kept
+// alive only so its 2 then-existing callers didn't need to change yet.
+// Phase B removed the first (dhorPage.js's open-time top-up); removing
+// Tomorrow's Portion from Setup removed the second and last one
+// (settingsScreen.js's save handler) -- nothing calls this any more.
 function apiGetDhorDefaultEntry(){
   return apiFetch('/dhor-schedule/default-entry');
+}
+// Phase C (2026-08-03): fallbackUnit is the Dhor card's own live Amount/
+// Unit switch value -- only actually used server-side for the "no Setup
+// configured yet" case, but always passed since the frontend has no way
+// to know in advance which case it'll turn out to be.
+function apiGetUpcomingDhorQueue(fallbackUnit){
+  return apiFetch('/dhor-schedule/upcoming?fallback_unit=' + encodeURIComponent(fallbackUnit));
 }
 
 // ---------- attendance ----------

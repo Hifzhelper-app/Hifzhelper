@@ -1369,6 +1369,41 @@ the fix for a bug that broke Save entirely.
    it still lines up correctly rather than using a stale measurement
    from before the rotation.
 
+## 48. Tomorrow's Portion removed; Pure queue model, Phase C: Plan Dhor's queue view (V3.27.0)
+
+1. Open Setup for any student → confirm "Tomorrow's portion" no longer
+   appears anywhere in the Dhor Schedule section.
+2. Save Setup's Dhor Schedule section → confirm it still saves
+   successfully (no error), same as before.
+3. Open a fresh Dhor card → confirm the Amount switch now defaults to
+   Half (not Quarter).
+4. For a student with NO pool at all (nothing marked in Hifz Setup) →
+   open Plan Dhor's "Dhor Plan" tab → confirm it shows the "nothing to
+   show yet" message, not an error.
+5. For a student with a pool but no Setup configured and no dhor_log
+   history → open Plan Dhor → confirm it shows 7 single-item rows, each
+   1 unit at whatever the Dhor card's Amount switch currently shows
+   (default Half) — change the card's switch, reopen Plan Dhor, confirm
+   the granularity shown updates to match.
+6. For a student with real `dhor_log` history and Setup configured (e.g.
+   granularity=half, quantity=2, frequency=twice) → open Plan Dhor →
+   confirm today shows 4 individual half-juz' rows (no dates, no
+   checkboxes pre-disabled), with the first one already checked matching
+   what's pre-filled on the card itself.
+7. Confirm the "rest of the week" rows below today are rolled up (one
+   row per remaining day, "Juz X to Juz Y" label) → tap one to expand →
+   confirm it shows each individual item with its own checkbox → close
+   Plan Dhor and reopen it → confirm every row is back to collapsed.
+8. Select a few individual rows across different rolled-up days, then
+   Save → confirm this behaves the same as any other Plan Dhor
+   selection (populates the card directly if it resolves to one clean
+   unit, otherwise switches the card into raw-range mode) — the save
+   logic itself wasn't touched by this phase.
+9. Check the History rail or D1 console for any entry description that
+   used to show "Qundefined" → confirm it now reads correctly (e.g.
+   "Juz 3 Q4"), not just for new entries but for the label itself
+   wherever it's used.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

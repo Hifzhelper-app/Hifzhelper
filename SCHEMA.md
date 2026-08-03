@@ -136,11 +136,17 @@ from a student's `dhor_granularity`/`dhor_quantity`/`dhor_frequency`/
 explicit-anchor variant for Setup's "Tomorrow's Portion" field. Confirmed
 wrong and removed as of V3.25.0 (see `CHANGELOG.md`) — a `plans` row isn't
 supposed to carry a date for anything not yet done at all.
-`worker/src/dhorSchedule.js`'s `ensureDhorSchedule` is now a no-op;
+`worker/src/dhorSchedule.js`'s `ensureDhorSchedule` was kept briefly as a
+no-op, then removed entirely as of V3.27.0 once Setup's "Tomorrow's
+Portion" (its last remaining caller) was itself removed — confirmed in
+chat: it served no purpose once a student could already redirect the
+queue by saving a different portion via Plan Dhor.
 `computeDefaultDhorEntry` computes the next queue item live, from
-`dhor_log`, instead of relying on pre-generated dated rows. Phase D (not
-yet built) gives "Tomorrow's Portion" a new, much smaller seeding
-mechanism of its own.
+`dhor_log`, instead of relying on pre-generated dated rows — its
+`today_plan`/explicit-override branch is currently dormant in practice
+(nothing creates a same-day dhor-type row any more), though the check
+itself still stands, since a row created directly via `POST /plans`
+would still be honoured.
 
 | Column | Type | Notes |
 |---|---|---|
