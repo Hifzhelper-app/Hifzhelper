@@ -173,11 +173,47 @@ function formatDhorDuration(totalSeconds){
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function renderDhorPicker(){
+// Pure queue model follow-up (2026-08-02): replaces the old flat
+// "Quarter 1".."Quarter N" dropdown (renderDhorPicker, same options
+// regardless of which unit was selected) with a switch tied to the
+// Amount/Unit value, confirmed in chat. Quarter always has exactly 4
+// valid starting markers and Half always has exactly 2 -- true for BOTH
+// 13-line and 15-line accounts, even though the underlying raw marker
+// values differ (13-line quarters: 1,2,3,4; 15-line quarters: 1,3,5,7,
+// since segmentsPerJuz is 8 there, not 4) -- so the slot COUNT never
+// needs to branch on ref, only each slot's data-value does. Full has
+// exactly one valid starting marker, so the whole field hides rather
+// than showing a single, meaningless button -- this is also the fix for
+// a real latent bug: previously nothing ever reset a stale Position when
+// Full got selected, so an old Quarter/Half value could silently produce
+// a segment that ran into part of the next juz' instead of the whole
+// current one. Only rebuilds the available SLOTS for a unit; deciding
+// what value they should reflect is left to the caller (setDhorUnit
+// itself never overwrites dhor_position -- see its own comment below for
+// why that split matters).
+function renderDhorPositionOptions(unit){
+  const field = document.getElementById('dhorPositionField');
+  const row = document.getElementById('dhorJuzPositionRow');
+  if(unit === 'full'){
+    field.classList.add('hidden');
+    row.classList.add('picker-row-single');
+    document.getElementById('dhor_position').value = '1';
+    return;
+  }
+  field.classList.remove('hidden');
+  row.classList.remove('picker-row-single');
   const perJuz = segmentsPerJuz(dhorCurrentRef);
-  const posSel = document.getElementById('dhor_position');
-  posSel.innerHTML = Array.from({length: perJuz}, (_,i) =>
-    `<option value="${i+1}">${dhorCurrentRef === 'waterval' ? 'Quarter' : '1/8'} ${i+1}</option>`).join('');
+  const step = unitMarkerCount(dhorCurrentRef, unit); // raw markers per slot
+  const slotCount = perJuz / step; // always 4 (quarter) or 2 (half), any ref
+  const track = document.getElementById('dhor_position_switch');
+  track.innerHTML = '<div class="switch-thumb"></div>' +
+    Array.from({length: slotCount}, (_, i) =>
+      `<button type="button" class="switch-option" data-value="${i * step + 1}">${i + 1}</button>`).join('');
+  wireSwitch('dhor_position_switch', (value) => {
+    document.getElementById('dhor_position').value = value;
+    renderSwitch('dhor_position_switch', value);
+  });
+  renderSwitch('dhor_position_switch', document.getElementById('dhor_position').value);
 }
 
 // Fills the form from one plan row and remembers its id for save-time
@@ -191,11 +227,24 @@ function renderDhorPicker(){
 // place that also keeps the visible switch synced whenever the value is
 // set from code (a real switch click already updates itself via
 // wireSwitch's own handler, further below).
+// 2026-08-02: also rebuilds Position's own available slots for the new
+// unit, but deliberately never touches dhor_position's VALUE itself --
+// callers that restore a specific plan/segment (applyDhorPlan, the
+// continue_last branch below) already set dhor_position BEFORE calling
+// this, and rely on that value sticking; if this function reset it too,
+// prepopulation would always show slot 1 regardless of what was actually
+// planned. The "jump to slot 1 on a manual change" behavior confirmed in
+// chat lives in the click handler just below instead, specifically
+// because that's the one caller where resetting is actually wanted.
 function setDhorUnit(unit){
   document.getElementById('dhor_unit').value = unit;
   renderSwitch('dhor_unit_switch', unit);
+  renderDhorPositionOptions(unit);
 }
-wireSwitch('dhor_unit_switch', (value) => setDhorUnit(value));
+wireSwitch('dhor_unit_switch', (value) => {
+  document.getElementById('dhor_position').value = '1';
+  setDhorUnit(value);
+});
 
 function applyDhorPlan(plan){
   dhorActivePlanId = plan.id;
@@ -251,7 +300,13 @@ async function renderDhorScreen(){
   } catch(e){
     dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
   }
-  renderDhorPicker();
+  // Explicit reset (2026-08-02): dhor_position is now a hidden input, not
+  // a <select> -- rebuilding a select's innerHTML used to reset its own
+  // displayed selection to the first option automatically every time
+  // this screen opened; a hidden input has no such built-in behavior, so
+  // this has to be deliberate now. setDhorUnit (next line) reads this
+  // value when it rebuilds Position's slot options for 'quarter'.
+  document.getElementById('dhor_position').value = '1';
   setDhorUnit('quarter');
   document.getElementById('dhor_mistakes').value = '0';
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);

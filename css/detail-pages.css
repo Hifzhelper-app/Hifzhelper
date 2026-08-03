@@ -14,6 +14,14 @@
 .picker-row {
   display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);
 }
+/* V3.26.1: Juz/position row -- when the position switch hides itself
+   entirely (Full/Juz unit has exactly one valid starting marker, so
+   there's nothing to choose -- see dhorPage.js's renderDhorPositionOptions),
+   this collapses the row to one column so Juz's own field expands to
+   fill the space rather than leaving an empty gap beside it. */
+.picker-row.picker-row-single {
+  grid-template-columns: 1fr;
+}
 
 /* V3.18.0: header rebuilt as two explicit CSS grids per the confirmed
    spec, replacing V3.12.0's flex row -- row 1 is icon:heading:save at
