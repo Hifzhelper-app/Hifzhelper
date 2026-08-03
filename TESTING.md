@@ -1404,6 +1404,45 @@ the fix for a bug that broke Save entirely.
    "Juz 3 Q4"), not just for new entries but for the label itself
    wherever it's used.
 
+## 49. Urgent TODO list cleared; Dhor card UI polish + Plan Dhor behavior fixes (V3.28.0)
+
+1. In Plan Dhor, select a clean half-juz portion (e.g. exactly the 2
+   quarters making up one half) and Save → confirm the Dhor card
+   populates with the correct Juz number and Half selected — not a blank
+   Juz dropdown. Repeat for a full juz and a single quarter.
+2. Manually pick a selection that spans more than one juz' (a raw range)
+   and Save → confirm the card switches into its disabled-fields From/To
+   display showing the correct Juz/segment labels, not blank or
+   "undefined" anywhere.
+3. Check a recent `dhor_log` row saved via the raw-range path *before*
+   this fix (if one exists) — via History or the D1 console — for a
+   `NaN` or garbage `segment_from`/`segment_to`. This confirms the bug's
+   real-world impact; whether/how to repair it is a separate decision.
+4. Confirm `POST`/`PATCH`/`DELETE /plans` are gone (a manual request to
+   any of them should 404 or route-not-found) while `GET /plans` still
+   works normally — open the Journal landing page and confirm upcoming
+   plans still display.
+5. Open the Dhor card: confirm "Plan" and "History" (not "Plan Dhor"/
+   "Dhor History") as the Row 2 button labels, with no visible text
+   wrapping or overlap. Confirm the Amount switch reads all 3 words
+   ("Quarter"/"Half"/"Full") without clipping, roughly centered with
+   visible margin on both sides.
+6. Confirm there's no banner text anywhere above Juz/Position (neither
+   the old "Pre-filled from…" nor "No plan set up yet…"), and that
+   "Starting at" no longer appears as a label — while Juz and Position
+   still start at the same vertical position as each other.
+7. Confirm the Timer icon is vertically centered next to the Duration
+   field, not sitting above/below it.
+8. In Plan Dhor's "Dhor Plan" tab, tap today's first item, then tap a
+   later item (either another one of today's, or one inside an expanded
+   "rest of week" row) → confirm everything between the two gets
+   selected, and a third tap starts a fresh selection — same behavior as
+   "View All Completed"/"View All".
+9. Tap a "rest of week" row with more than one item → confirm it
+   actually expands this time (▸ becomes ▾, individual items appear) —
+   this was the confirmed bug. Collapse it again, close Plan Dhor, and
+   reopen → confirm it's back to collapsed.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

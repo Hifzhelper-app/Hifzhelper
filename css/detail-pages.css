@@ -114,7 +114,7 @@
 .switch-track.dhor-amount-switch {
   height: calc(var(--dhor-row2-h) * 0.75);
   margin: 0 auto;
-  max-width: 320px;
+  width: 78%;
 }
 /* V3.19.0: Save button restyled to match Hifzhelper's own existing
    icon-button convention (.nav-icon-item, css/base.css -- icon on top,
@@ -574,6 +574,7 @@
 .dhor-stopwatch-col {
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 #dhorStopwatchToggle {
   display: flex;

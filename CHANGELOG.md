@@ -7,6 +7,87 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.28.0 — Urgent TODO list cleared: 3 real bugs, dead plan-CRUD removed; Dhor card UI polish + Plan Dhor behavior fixes (2026-08-03)
+
+Everything from TODO.md's "Urgent" section, then the previously-deferred
+Dhor card/Plan Dhor items in the same delivery.
+
+**Three real bugs, all the same root cause, all fixed.** `isCleanSingleUnit`
+and the raw-range Save handler (`js/dhorPage.js`) both destructured
+`.quarter` from `quarterUnitToJuzQuarter`'s result — a property that was
+never actually there (it returns `.quarterIndex`). `isCleanSingleUnit`'s
+version corrupted the Dhor card's Juz/Position fields after a clean
+selection from Plan Dhor (`NaN` matching no `<option>`, leaving Juz blank).
+The raw-range version is more serious: it's in the actual Save path, so
+any raw-range Dhor entry logged before this fix has `NaN` written into
+`dhor_log`'s `segment_from`/`segment_to` — flagged on TODO.md as a
+decision still needed (repair existing rows, or leave as-is). Both fixed
+and verified directly: a half-juz, a full juz, and a single-quarter
+selection all now resolve to correct, non-`NaN` values.
+
+**`quarterUnitToJuzQuarter` (`shared/data.js`) is hardened so this exact
+mistake can't ship silently a 5th time.** This was the 4th real occurrence
+of the same `.quarter`/`.quarterIndex` confusion in this codebase. Its
+return value is now wrapped in a `Proxy` — any access to a property other
+than `juz`/`quarterIndex` throws immediately, turning a future typo into
+a loud, instant error at the exact wrong line instead of a silent `NaN`
+surfacing as a confusing symptom several steps downstream. Verified: it
+throws on `.quarter`, and works normally for the real properties.
+
+**`apiPlans.create`/`.update`/`.remove` removed entirely** (`js/api.js`,
+`handleCreatePlan`/`handleUpdatePlan`/`handleDeletePlan` in
+`worker/src/plans.js`, and their 3 routes in `worker/src/index.js`) —
+confirmed zero callers anywhere in the app: Dhor's own plan features go
+through the queue model instead, and Sabaq/Sabaq Dhor have no planning UI
+at all. `GET /plans` (the one real caller, `journal.js`) and its handler
+are untouched. `validateBody`/its `isValidDate`/`isInRange` imports are
+removed from `plans.js` too — nothing else in that file used them.
+
+**Dhor card UI fixes, originally raised and then dropped from the thread**:
+"Plan Dhor"/"Dhor History" shortened to "Plan"/"History" (the likely fix
+for the reported button overlap too — the real cause was long text
+wrapping inside a fixed-height button, not a missing grid). The Amount
+switch is now a percentage width (78%) instead of a fixed 320px cap, so
+"Half" no longer clips on wider cards. The "Pre-filled from today's
+plan…"/"No plan set up yet…" banner is deleted entirely, along with its
+now-empty container div and the `renderDhorPlanBanner` function itself.
+"Starting at"'s label text is removed (an invisible spacer keeps Position
+vertically aligned with Juz's own label above it). The Timer/stopwatch
+column is now vertically centered against Duration beside it.
+
+**Plan Dhor behavior fixes**: rows across all 3 tabs — including Dhor
+Plan, which previously used independent checkboxes — now share the same
+tap-first/tap-last range-select `.plan-dhor-tap-row` mechanism, so a
+selection can't end up non-contiguous. One limitation flagged on
+TODO.md, not solved this round: the range is computed by quarter-unit
+*number*, correct for the other 2 tabs' plain ascending Juz' grid, but
+Dhor Plan's rows follow queue order, which wraps around near the end of
+the pool — tapping across a wrap point could select more than intended.
+Separately, the "rest of week" rows' expand/collapse is fixed: the day
+index was stored as a number when rendered but read back as a string on
+tap, so the `Set` lookup could never match and no row would ever expand.
+
+**Verified, not just read over, throughout**: real extracted-code tests
+for the Proxy hardening, `isCleanSingleUnit`'s 3 clean-selection shapes,
+the new tap-row markup, and the reused range-select logic across 2 taps.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/api.js
+js/dhorPage.js
+shared/data.js
+worker/src/plans.js
+worker/src/index.js
+TODO.md
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.27.0 — Tomorrow's Portion removed; Pure queue model, Phase C: Plan Dhor's queue view (2026-08-03)
 
 Two pieces of work, done together: closing out the last loose end from

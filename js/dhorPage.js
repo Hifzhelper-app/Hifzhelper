@@ -263,21 +263,11 @@ function applyDhorPlan(plan){
 // a same-day batch of >1 is named in the text, but never shown as an
 // inline picker any more (see renderDhorScreen) -- Plan Dhor is the one
 // place left to see or choose among the rest of the batch.
-function renderDhorPlanBanner(source){
-  const el = document.getElementById('dhorPlanBanner');
-  if(!el) return;
-  if(source === 'today_plan'){
-    el.innerHTML = dhorTodaysPlans.length > 1
-      ? `<div class="form-hint">Pre-filled from today's plan (1 of ${dhorTodaysPlans.length} — see Plan Dhor for the rest).</div>`
-      : `<div class="form-hint">Pre-filled from today's plan.</div>`;
-    return;
-  }
-  const TEXT = {
-    continue_last: `No plan set up yet — continuing from your last Dhor session.`
-  };
-  el.innerHTML = TEXT[source] ? `<div class="form-hint">${TEXT[source]}</div>` : '';
-}
-
+// renderDhorPlanBanner removed entirely 2026-08-03 (confirmed in chat --
+// Row 4: delete the banner text, not just shorten it). #dhorPlanBanner's
+// container div is removed from index.html too, since nothing writes to
+// it any more -- per the standing "no keeping unused things for a
+// possible future tie-in" preference, not left as an empty stub.
 async function renderDhorScreen(){
   dhorEditingId = null;
   document.getElementById('dhorEditTopbar').classList.add('hidden');
@@ -344,7 +334,6 @@ async function renderDhorScreen(){
       // reachable via Plan Dhor, which shows the whole set, not just this
       // one.
       dhorTodaysPlans = result.plans;
-      renderDhorPlanBanner('today_plan');
       applyDhorPlan(dhorTodaysPlans[0]);
     } else if(result.source === 'continue_last'){
       dhorTodaysPlans = [];
@@ -353,14 +342,11 @@ async function renderDhorScreen(){
       document.getElementById('dhor_juz').value = String(juz);
       document.getElementById('dhor_position').value = String(positionInJuz);
       setDhorUnit(unit);
-      renderDhorPlanBanner(result.source);
     } else {
       dhorTodaysPlans = [];
-      renderDhorPlanBanner(null);
     }
   } catch(e){
     dhorTodaysPlans = [];
-    renderDhorPlanBanner(null);
   }
 
   await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
@@ -488,8 +474,10 @@ function renderPlanDhorQueueDayRow(dayGroup){
   const summaryLabel = planDhorDaySummaryLabel(dayGroup.items);
 
   if(dayGroup.items.length === 1){
-    return `<label class="plan-dhor-row-text">${summaryLabel}</label>
-      <input type="checkbox" class="plan-dhor-unit-cb" data-units="${allUnits.join(',')}">`;
+    return `<div class="plan-dhor-tap-row" data-units="${allUnits.join(',')}">
+      <span class="plan-dhor-row-text">${summaryLabel}</span>
+      <input type="checkbox" class="plan-dhor-unit-cb" data-units="${allUnits.join(',')}" tabindex="-1">
+    </div>`;
   }
 
   const expanded = planDhorExpandedDates.has(dayGroup.day);
@@ -497,8 +485,10 @@ function renderPlanDhorQueueDayRow(dayGroup){
   if(expanded){
     dayGroup.items.forEach(p => {
       const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
-      html += `<label class="plan-dhor-row-text plan-dhor-subrow">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</label>
-        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}">`;
+      html += `<div class="plan-dhor-tap-row" data-units="${units.join(',')}">
+        <span class="plan-dhor-row-text plan-dhor-subrow">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</span>
+        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}" tabindex="-1">
+      </div>`;
     });
   }
   return html;
@@ -569,8 +559,14 @@ function isCleanSingleUnit(sortedUnits, ref){
   if(!isClean) return null;
   const perJuz = segmentsPerJuz(ref);
   const quarterSize = perJuz / 4;
-  const firstQuarter = quarterUnitToJuzQuarter(sortedUnits[0]).quarter;
-  const lastQuarter = quarterUnitToJuzQuarter(sortedUnits[sortedUnits.length - 1]).quarter;
+  // Bug fix (2026-08-03, found via testing): quarterUnitToJuzQuarter
+  // returns { juz, quarterIndex }, not { juz, quarter } -- this was
+  // reading a property name that was never actually there, so
+  // firstQuarter/lastQuarter were always undefined and every segFrom/
+  // segTo computed here came out NaN. This is what was writing "NaN" to
+  // dhor_juz's value on save, leaving the Juz dropdown blank.
+  const firstQuarter = quarterUnitToJuzQuarter(sortedUnits[0]).quarterIndex;
+  const lastQuarter = quarterUnitToJuzQuarter(sortedUnits[sortedUnits.length - 1]).quarterIndex;
   const segFrom = (juzFrom - 1) * perJuz + (firstQuarter - 1) * quarterSize + 1;
   const segTo = (juzFrom - 1) * perJuz + lastQuarter * quarterSize;
   return segmentRangeToPicker(segFrom, segTo, ref);
@@ -722,11 +718,17 @@ function renderPlanDhorTabContent(){
     // mixed completion state the way V3.24.1's date-grouped rows could,
     // so there's no ambiguity left to hide behind an expand toggle; it's
     // purely a "see more" affordance here, not a "resolve ambiguity" one.
+    // 2026-08-03: rows use the same .plan-dhor-tap-row pattern as "View
+    // All Completed"/"View All" now, not independent checkboxes --
+    // confirmed in chat, so a selection across today's items and/or the
+    // rest of the week can't end up non-contiguous.
     let html = '<div class="plan-dhor-grid">';
     html += planDhorTodaysPlans.map(p => {
       const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
-      return `<label class="plan-dhor-row-text">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</label>
-        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}">`;
+      return `<div class="plan-dhor-tap-row" data-units="${units.join(',')}">
+        <span class="plan-dhor-row-text">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</span>
+        <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}" tabindex="-1">
+      </div>`;
     }).join('');
     planDhorQueueDays.slice(1).forEach(g => { html += renderPlanDhorQueueDayRow(g); });
     html += '</div>';
@@ -785,35 +787,35 @@ function wirePlanDhorContent(){
     cb.indeterminate = selectedCount > 0 && selectedCount < units.length;
   });
 
-  if(planDhorTab === 'plan'){
-    // Simple independent toggle, one plan/day-group at a time.
-    document.querySelectorAll('.plan-dhor-unit-cb').forEach(cb => {
-      if(cb.disabled) return;
-      cb.addEventListener('change', () => {
-        const units = cb.dataset.units.split(',').map(Number);
-        units.forEach(u => cb.checked ? planDhorSelectedUnits.add(u) : planDhorSelectedUnits.delete(u));
-      });
+  // Tap-first/tap-last range-select — 2026-08-03: now the same mechanism
+  // for all 3 tabs, including Dhor Plan (confirmed in chat: a selection
+  // spanning today's items and/or the rest of the week shouldn't be able
+  // to end up non-contiguous any more than "View All Completed"/"View
+  // All" already prevent). The whole row is the tap target (the checkbox
+  // itself is display-only, tabindex=-1 and not directly wired), so
+  // tapping the label works exactly like tapping the checkbox.
+  document.querySelectorAll('.plan-dhor-tap-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const units = row.dataset.units.split(',').map(Number);
+      planDhorHandleRowTap(units);
     });
-    document.querySelectorAll('.plan-dhor-expand-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const day = btn.dataset.day;
-        if(planDhorExpandedDates.has(day)) planDhorExpandedDates.delete(day);
-        else planDhorExpandedDates.add(day);
-        renderPlanDhorTabContent();
-      });
+  });
+  // Expand/collapse for Dhor Plan's "rest of week" rows only exist when
+  // that tab is showing (renderPlanDhorQueueDayRow), but querying for
+  // them elsewhere is harmless -- there simply aren't any to find.
+  document.querySelectorAll('.plan-dhor-expand-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Bug fix (2026-08-03): dataset values are always strings, but
+      // dayGroup.day (renderPlanDhorQueueDayRow, above) is a number --
+      // a Set treats 1 and "1" as different members, so without this
+      // parseInt, planDhorExpandedDates.has(...) could never match
+      // what was actually added, and no row would ever expand.
+      const day = parseInt(btn.dataset.day, 10);
+      if(planDhorExpandedDates.has(day)) planDhorExpandedDates.delete(day);
+      else planDhorExpandedDates.add(day);
+      renderPlanDhorTabContent();
     });
-  } else {
-    // Tap-first/tap-last range-select -- the whole row is the tap
-    // target (the checkbox itself is display-only, tabindex=-1 and not
-    // directly wired), so tapping the label works exactly like tapping
-    // the checkbox.
-    document.querySelectorAll('.plan-dhor-tap-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const units = row.dataset.units.split(',').map(Number);
-        planDhorHandleRowTap(units);
-      });
-    });
-  }
+  });
 
   document.querySelectorAll('.plan-dhor-rollup-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -966,8 +968,13 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     const quarterSize = perJuz / 4;
     const first = quarterUnitToJuzQuarter(sorted[0]);
     const last = quarterUnitToJuzQuarter(sorted[sorted.length - 1]);
-    segment_from = (first.juz - 1) * perJuz + (first.quarter - 1) * quarterSize + 1;
-    segment_to = (last.juz - 1) * perJuz + last.quarter * quarterSize;
+    // Bug fix (2026-08-03, found via audit): same .quarter/.quarterIndex
+    // property-name mistake as isCleanSingleUnit -- this one is worse,
+    // since it's in the actual Save path: every raw-range Dhor entry
+    // logged before this fix has NaN written to dhor_log's segment_from/
+    // segment_to.
+    segment_from = (first.juz - 1) * perJuz + (first.quarterIndex - 1) * quarterSize + 1;
+    segment_to = (last.juz - 1) * perJuz + last.quarterIndex * quarterSize;
   } else {
     const juz = parseInt(document.getElementById('dhor_juz').value);
     const position = parseInt(document.getElementById('dhor_position').value);
@@ -1006,7 +1013,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 // confirmed scope -- button alone is enough for now. Button text is now
 // type-specific ("Sabaq History", "Dhor History", etc.) instead of a
 // generic "History".
-const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'Dhor History' };
+const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'History' };
 // V3.21.0: each row now gets an edit (pencil) icon. Editing loads the
 // entry into that card's own form (loadXForEdit, defined per-card) rather
 // than a separate edit form -- reuses all the existing validation/

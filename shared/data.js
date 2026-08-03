@@ -325,8 +325,24 @@ function segmentRangeForUnitIndex(juz, unitIndexInJuz, ref, unit){
 // 2nd, 3rd, 4th) regardless of mushaf — only the exact ayah boundaries
 // differ by ref, resolved separately via segmentRangeForUnitIndex.
 function quarterUnitId(juz, quarterIndex){ return (juz - 1) * 4 + quarterIndex; }
+// Hardened 2026-08-03 (confirmed in chat): a wrong property name read
+// off this return value (`.quarter` instead of `.quarterIndex`) has now
+// caused 4 separate real bugs across this codebase -- silently producing
+// `undefined`, then `NaN`, then a confusing symptom several steps
+// downstream (a blank Juz dropdown, "Qundefined" in a label, corrupted
+// segment values actually written to dhor_log). A Proxy here turns any
+// future occurrence of that exact mistake into an immediate, loud error
+// at the exact line that's wrong, instead of a silent NaN -- the small
+// per-call overhead is a non-issue at this function's actual scale (at
+// most ~120 pool entries per call, never a hot loop).
 function quarterUnitToJuzQuarter(unitId){
-  return { juz: Math.ceil(unitId / 4), quarterIndex: ((unitId - 1) % 4) + 1 };
+  const result = { juz: Math.ceil(unitId / 4), quarterIndex: ((unitId - 1) % 4) + 1 };
+  return new Proxy(result, {
+    get(target, prop){
+      if(!(prop in target)) throw new Error(`quarterUnitToJuzQuarter: no property "${String(prop)}" on the result -- did you mean "quarterIndex"? (valid properties: juz, quarterIndex)`);
+      return target[prop];
+    }
+  });
 }
 // The 4 quarter-unit IDs that make up a whole juz' — used when Setup's
 // Juz' grid marks (or Sabaq's own juz'-completion) a full juz' complete.

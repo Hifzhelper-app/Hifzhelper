@@ -122,15 +122,17 @@ const apiDhor = makeLogClient('/dhor');
 const apiReflections = makeLogClient('/reflections');
 
 // ---------- plans ----------
+// create/update/remove removed 2026-08-03 (confirmed in chat): zero
+// callers anywhere in the app -- Dhor's own plan features go through
+// baseline_selection/the queue model instead, and Sabaq/Sabaq Dhor have
+// no planning UI at all. Backing handlers (worker/src/plans.js) and
+// their routes removed alongside this.
 const apiPlans = {
   get: (params) => {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiFetch('/plans' + qs);
   },
-  getForDate: (date) => apiFetch('/plans?date=' + encodeURIComponent(date)),
-  create: (plan) => apiFetch('/plans', { method: 'POST', body: JSON.stringify(plan) }),
-  update: (id, fields) => apiFetch('/plans', { method: 'PATCH', body: JSON.stringify(Object.assign({ id }, fields)) }),
-  remove: (id) => apiFetch('/plans?id=' + encodeURIComponent(id), { method: 'DELETE' })
+  getForDate: (date) => apiFetch('/plans?date=' + encodeURIComponent(date))
 };
 
 // ---------- dhor schedule ----------
