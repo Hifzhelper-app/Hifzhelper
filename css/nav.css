@@ -36,13 +36,29 @@
 #authBandToggle svg { width: 20px; height: 20px; transition: transform 0.15s; }
 #authBandToggle.open svg { transform: rotate(180deg); }
 
-/* Slide-down menu — appears directly under the band */
+/* Slide-down menu — appears directly under the band.
+   2026-08-03: now fixed to the viewport rather than sitting in normal
+   document flow. #authBand is sticky, so it correctly stays pinned to
+   the top as the page scrolls -- but this element had no positioning of
+   its own, so it opened at its original spot near the top of the
+   document. Once scrolled past, tapping the (still-reachable) toggle
+   looked like it did nothing: the menu genuinely opened, just off-screen
+   above the current view. --auth-band-height is set live in JS
+   (js/auth.js's toggleAuthDropdown) rather than hardcoded here, since
+   the band's real height varies by device (env(safe-area-inset-top) for
+   a notch) -- the fallback below only matters before that JS has run
+   for the first time. */
 #authDropdown {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-table-border);
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.2s ease;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--auth-band-height, 60px);
+  z-index: 99;
 }
 #authDropdown.open {
   max-height: 400px;

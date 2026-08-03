@@ -43,10 +43,21 @@ function renderAuthBand(){
   document.querySelector('#authBand .user-name').textContent = currentUser.name || 'Hifzhelper';
 }
 
+// 2026-08-03: #authDropdown is now position:fixed (css/nav.css) so it
+// stays visible regardless of scroll position, rather than opening in
+// its old document-flow spot near the top of the page. The band's real
+// height isn't a fixed number (it grows for a device's notch via
+// env(safe-area-inset-top)), so it's measured live here instead of
+// guessed at in CSS -- only needs to happen on open, since that's the
+// only moment the dropdown's position is actually visible/relevant.
 function toggleAuthDropdown(){
   const dd = document.getElementById('authDropdown');
   const toggle = document.getElementById('authBandToggle');
   const opening = !dd.classList.contains('open');
+  if(opening){
+    const bandHeight = document.getElementById('authBand').getBoundingClientRect().height;
+    document.getElementById('appShell').style.setProperty('--auth-band-height', bandHeight + 'px');
+  }
   dd.classList.toggle('open', opening);
   toggle.classList.toggle('open', opening);
 }
