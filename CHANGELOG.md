@@ -7,6 +7,69 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.26.1 — Dhor card position-selector redesign + a real latent bug fix (2026-08-02)
+
+Follow-up patch within the Phase B round, confirmed in chat after reviewing
+a live screenshot: the "Starting at" field always read "Quarter N" even
+when Half or Full was the selected unit, which looked contradictory
+("Half" next to "Quarter 1") even though the two fields were internally
+consistent.
+
+**The dropdown is now a switch, tied to the Amount/Unit value.** Quarter
+shows a 4-way switch labeled 1/2/3/4; Half shows a 2-way switch labeled
+1/2; Full (Juz) hides the position field entirely — a whole juz' has
+exactly one valid starting point, so there's nothing to choose. The Juz/
+position row collapses to one column when Full is selected, so Juz's own
+field expands to fill the space rather than leaving an empty gap.
+
+**A real bug, not just a labeling one**: switching the Amount switch
+never reset Position. Pick Quarter 3, then flip to Full without touching
+Position again, and the app would silently compute a segment running
+into part of the *next* juz' — not the whole current one — since nothing
+ever forced Position back to a value that made sense for the new unit.
+Hiding the field for Full (and forcing it to the one valid value) closes
+that off structurally, not just visually.
+
+**Works identically for 15-line accounts**, which store raw positions
+differently under the hood (15-line has 8 raw markers/juz', not 4) —
+Quarter and Half always resolve to exactly 4 and 2 valid slots regardless
+of which print is active; only which underlying raw value each slot maps
+to differs by ref. Confirmed directly: extracted the real
+`renderDhorPositionOptions` code and ran it against both reference
+systems, checking the exact raw values each slot produces, not just the
+labels.
+
+**Reused, not rebuilt**: the shared switch component (`js/uiSwitch.js`)
+already computes option width as a percentage of however many slots
+exist — no changes needed there to go from 3-way to 2-way/4-way. A 2-way
+variant already existed elsewhere (gender), so this wasn't new ground for
+that component, just a new caller of it.
+
+**One behavior worth knowing**: switching Quarter↔Half manually resets
+Position to the first slot rather than trying to carry over an
+equivalent position — confirmed as the simpler, more predictable choice.
+Prepopulation (today's plan, continuing from history, or a Plan Dhor
+selection) is unaffected by this reset — those paths set Position to the
+actual planned value before the unit switch runs, and that value is
+deliberately left alone.
+
+**`renderDhorPicker`** (the old function that unconditionally rebuilt the
+position dropdown's options, regardless of unit) is removed — fully
+superseded by `renderDhorPositionOptions`, which `setDhorUnit` now calls
+directly.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.26.0 — Pure queue model, Phase B: Dhor card prepopulation rewire (2026-08-02)
 
 Second of the 4-phase rebuild. Rewires `js/dhorPage.js` to actually match

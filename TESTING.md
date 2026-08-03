@@ -1309,6 +1309,44 @@ the fix for a bug that broke Save entirely.
    confirm there's no request to `/dhor-schedule/ensure` at all any more
    (only `/dhor-schedule/default-entry`).
 
+## 46. Dhor card position-selector redesign + a real latent bug fix (V3.26.1)
+
+1. Open the Dhor card fresh (any student). Confirm the Amount switch
+   defaults to Quarter, and "Starting at" shows a 4-way switch labeled
+   1/2/3/4, slot 1 selected.
+2. Tap Half on the Amount switch → confirm "Starting at" immediately
+   rebuilds as a 2-way switch labeled 1/2, and resets to slot 1 (not
+   whatever quarter slot was previously selected).
+3. Tap Full (Juz) → confirm the whole "Starting at" field disappears, and
+   the Juz dropdown expands to fill the row (no empty gap beside it).
+4. Save an entry with Full (Juz) selected → confirm via History or the
+   D1 console that the saved `segment_from`/`segment_to` covers the
+   ENTIRE juz' (a full-perJuz span starting at the juz's own first
+   marker) — this is the actual bug check: before this fix, saving Full
+   right after having had a non-1 Quarter/Half position selected could
+   silently save a segment that ran into part of the next juz' instead.
+5. Tap back to Quarter → confirm 4 options reappear, reset to slot 1.
+   Tap Half again → confirm 2 options, reset to slot 1. Tapping between
+   units repeatedly should never leave the switch showing a selection
+   that doesn't match one of the currently-visible slots.
+6. Select slot 2 under Half, then Save → confirm (via `describeDhorSegment`
+   in the History rail, or the D1 console) this recorded as "H2" — the
+   *second* half, not a quarter or an off-boundary range.
+7. Open the card for a 15-line (Madani) account → repeat steps 1-6.
+   Confirm the switch still shows 4 labeled 1/2/3/4 for Quarter and 2
+   labeled 1/2 for Half (same labels as 13-line) — the underlying stored
+   segment numbers will differ from a 13-line account's, but nothing
+   about what's on screen should look different.
+8. Apply a plan from Plan Dhor, or let the card prepopulate from
+   `continue_last` — confirm the position switch correctly reflects
+   whichever slot that plan/history entry actually falls on (not reset to
+   slot 1) — this is the "prepopulation is left alone" behavior, distinct
+   from the "manual switch reset" behavior in steps 2/5.
+9. Start editing an existing History entry (pencil icon) → confirm the
+   whole Juz/Position/Amount picker (including the new switch) is hidden
+   during edit, same as before this change — editing never touches
+   segment/position, only mistakes/tajweed/comment/duration.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
