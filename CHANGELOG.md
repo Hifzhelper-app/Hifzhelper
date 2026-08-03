@@ -7,6 +7,75 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.29.0 — Pool updates moved to the Dhor card's actual Save; Dhor Plan's range-select fixed for queue wraparound (2026-08-03)
+
+Two related fixes, both confirmed in chat, both about when/how
+`baseline_selection` (the Dhor pool) is allowed to change.
+
+**"Execution of the plan happens on the card, not in the plan."** Plan
+Dhor's own Save used to merge any newly-selected units into the pool
+immediately — before the student had touched the Dhor card at all. If
+they then closed the card without logging anything, the pool had already
+grown permanently even though nothing was recited and nothing exists in
+`dhor_log`. That merge is removed from `savePlanDhorSelection` entirely —
+selecting in Plan Dhor now only ever populates the card, same as before,
+but touches nothing else.
+
+The merge moves to the Dhor card's own Save handler instead, covering
+both the clean-segment path and the raw-range path (both already compute
+a real `segment_from`/`segment_to` before this point) — and running
+regardless of whether the entry came from a Plan Dhor selection or was
+entered fully manually. Fetches the profile fresh rather than trusting
+`planDhorPool`, since that's only populated once Plan Dhor's modal has
+actually been opened this session — a fully manual entry might never
+touch it. Net effect: the pool now only ever grows at the exact moment
+something is genuinely logged, from either path, so "in the pool" and
+"in Dhor History" can no longer drift apart the way they could before.
+
+**Dhor Plan's tap-first/tap-last range-select is rebuilt to range by
+position in the rendered queue, not by quarter-unit value.** The
+previous fix (V3.28.0) reused "View All Completed"/"View All"'s existing
+range logic as-is, which works by taking the numeric min/max of the two
+tapped rows' quarter-units. That's correct for those two tabs' plain
+ascending Juz' grid, but Dhor Plan's own rows follow queue order, which
+wraps around near the end of the pool — two rows that are genuinely
+adjacent in the queue can have numerically distant unit values, and a
+value-based range would sweep in anything numerically in between,
+whether or not it was ever actually shown between the two tapped rows.
+
+The fix: `renderPlanDhorTabContent`/`renderPlanDhorQueueDayRow` now build
+`planDhorQueueRowUnits`, a flat, render-order list of each visible row's
+own units, fresh every render; each row carries `data-row-index` instead
+of relying on its raw unit values for ranging. A new
+`planDhorHandleQueueRowTap(rowIndex)` ranges by index into that list —
+tapping two rows selects the union of every row's units strictly between
+them, never anything else. As a direct consequence, this also resolves
+the earlier "exclude non-pool units" ask as a side effect, with no
+separate filtering logic needed: nothing rendered in this tab can hold a
+unit outside the pool in the first place, since every row comes from
+`computeUpcomingDhorQueue`, itself built entirely from the pool. "View
+All Completed"/"View All" are untouched — their rows never wrap, so the
+original value-based `planDhorHandleRowTap` still applies there.
+
+**Verified, not just read over**: ran the actual `planDhorHandleQueueRowTap`
+against a simulated wrapped queue (today's row far along the pool
+numerically, later rows wrapping back near the start) — confirmed that
+tapping two rows adjacent in the queue but numerically distant selects
+exactly their two rows' units, not anything sitting numerically between
+them that was never actually tapped.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.28.0 — Urgent TODO list cleared: 3 real bugs, dead plan-CRUD removed; Dhor card UI polish + Plan Dhor behavior fixes (2026-08-03)
 
 Everything from TODO.md's "Urgent" section, then the previously-deferred

@@ -383,14 +383,20 @@ let planDhorExpandedDates = new Set(); // which rolled-up days are currently exp
 let planDhorSelectedUnits = new Set();
 let planDhorRollup = {};            // { juzNum: 'quarters'|'half'|'full' }, default 'quarters'
 let planDhorTab = 'plan';
-// V3.24.0 (revised): tap-first/tap-last range-select for the 2 Juz-grid
-// tabs (Dhor Plan tab keeps simple per-plan checkbox toggles instead --
-// plans are discrete scheduled sessions, not really a "range" concept).
-// null = no anchor yet (next tap starts a fresh single-row selection);
-// {min,max} = first tap's quarter-unit bounds, waiting for a second tap
-// to complete the range. A genuine 3rd tap always starts over rather
-// than extending, which is what makes a non-contiguous selection
-// structurally impossible to create at all.
+let planDhorQueueRowUnits = []; // 2026-08-03: flat, render-order list of each Dhor Plan row's own units -- rebuilt fresh every render, used to range-select by POSITION in the queue rather than by quarter-unit value (see planDhorHandleQueueRowTap)
+// Tap-first/tap-last range-select. null = no anchor yet (next tap starts
+// a fresh single-row selection); a genuine 3rd tap always starts over
+// rather than extending, which is what makes a non-contiguous selection
+// structurally impossible to create at all -- same rule across all 3
+// tabs now (2026-08-03: Dhor Plan's own rows used to be simple
+// independent checkboxes instead; unified onto this same mechanism).
+// {min,max} (quarter-unit value bounds) for "View All Completed"/"View
+// All"'s plain ascending Juz' grid; a plain row-index number for Dhor
+// Plan specifically (planDhorHandleQueueRowTap) -- queue order can wrap
+// near the end of the pool, so ranging by value there could span more
+// than the two rows actually tapped; ranging by position in the
+// rendered list can't, and as a side effect can never include a unit
+// outside the pool either, since nothing rendered here holds one.
 let planDhorRangeStart = null;
 
 // Converts a plan's (or any) segment_from/segment_to into the underlying
@@ -474,7 +480,8 @@ function renderPlanDhorQueueDayRow(dayGroup){
   const summaryLabel = planDhorDaySummaryLabel(dayGroup.items);
 
   if(dayGroup.items.length === 1){
-    return `<div class="plan-dhor-tap-row" data-units="${allUnits.join(',')}">
+    const rowIndex = planDhorQueueRowUnits.push(allUnits) - 1;
+    return `<div class="plan-dhor-tap-row" data-row-index="${rowIndex}">
       <span class="plan-dhor-row-text">${summaryLabel}</span>
       <input type="checkbox" class="plan-dhor-unit-cb" data-units="${allUnits.join(',')}" tabindex="-1">
     </div>`;
@@ -485,7 +492,8 @@ function renderPlanDhorQueueDayRow(dayGroup){
   if(expanded){
     dayGroup.items.forEach(p => {
       const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
-      html += `<div class="plan-dhor-tap-row" data-units="${units.join(',')}">
+      const rowIndex = planDhorQueueRowUnits.push(units) - 1;
+      html += `<div class="plan-dhor-tap-row" data-row-index="${rowIndex}">
         <span class="plan-dhor-row-text plan-dhor-subrow">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</span>
         <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}" tabindex="-1">
       </div>`;
@@ -581,12 +589,13 @@ function savePlanDhorSelection(){
     return;
   }
 
+  // Pool update moved to the Dhor card's own Save (2026-08-03, confirmed
+  // in chat): "execution of the plan happens on the card, not in the
+  // plan" -- this modal only ever populates the card now. Previously,
+  // hitting Save here already grew the pool immediately, even if the
+  // student then closed the card without ever logging anything --
+  // nothing was recited, but the pool had already changed permanently.
   const finish = () => {
-    const newUnits = sorted.filter(u => !planDhorPool.includes(u));
-    if(newUnits.length > 0){
-      const merged = [...new Set([...planDhorPool, ...newUnits])].sort((a,b) => a-b);
-      apiSaveProfile({ baseline_mode: 'juz', baseline_selection: merged }).catch(() => { /* best-effort */ });
-    }
     document.getElementById('planDhorModal').remove();
   };
 
@@ -721,11 +730,15 @@ function renderPlanDhorTabContent(){
     // 2026-08-03: rows use the same .plan-dhor-tap-row pattern as "View
     // All Completed"/"View All" now, not independent checkboxes --
     // confirmed in chat, so a selection across today's items and/or the
-    // rest of the week can't end up non-contiguous.
+    // rest of the week can't end up non-contiguous. Ranged by POSITION
+    // in this rendered list (planDhorQueueRowUnits), not by quarter-unit
+    // value -- see planDhorHandleQueueRowTap for why.
+    planDhorQueueRowUnits = [];
     let html = '<div class="plan-dhor-grid">';
     html += planDhorTodaysPlans.map(p => {
       const units = segmentToQuarterUnits(p.segment_from, p.segment_to, p.ref || dhorCurrentRef);
-      return `<div class="plan-dhor-tap-row" data-units="${units.join(',')}">
+      const rowIndex = planDhorQueueRowUnits.push(units) - 1;
+      return `<div class="plan-dhor-tap-row" data-row-index="${rowIndex}">
         <span class="plan-dhor-row-text">${describeDhorSegment(p.segment_from, p.segment_to, p.ref || dhorCurrentRef)}</span>
         <input type="checkbox" class="plan-dhor-unit-cb" data-units="${units.join(',')}" tabindex="-1">
       </div>`;
@@ -796,8 +809,12 @@ function wirePlanDhorContent(){
   // tapping the label works exactly like tapping the checkbox.
   document.querySelectorAll('.plan-dhor-tap-row').forEach(row => {
     row.addEventListener('click', () => {
-      const units = row.dataset.units.split(',').map(Number);
-      planDhorHandleRowTap(units);
+      if(row.dataset.rowIndex !== undefined){
+        planDhorHandleQueueRowTap(parseInt(row.dataset.rowIndex, 10));
+      } else {
+        const units = row.dataset.units.split(',').map(Number);
+        planDhorHandleRowTap(units);
+      }
     });
   });
   // Expand/collapse for Dhor Plan's "rest of week" rows only exist when
@@ -844,6 +861,31 @@ function planDhorHandleRowTap(units){
     const rangeMax = Math.max(planDhorRangeStart.max, maxU);
     planDhorSelectedUnits = new Set();
     for(let u = rangeMin; u <= rangeMax; u++) planDhorSelectedUnits.add(u);
+    planDhorRangeStart = null;
+  }
+  renderPlanDhorTabContent();
+}
+// Dhor Plan's own version of the same tap-first/tap-last idea (2026-08-03,
+// confirmed in chat), ranging by POSITION in the rendered queue list
+// (planDhorQueueRowUnits, built fresh every render -- see
+// renderPlanDhorTabContent/renderPlanDhorQueueDayRow) rather than by
+// quarter-unit value like planDhorHandleRowTap above. Queue order can
+// wrap around near the end of the pool, so two rows that are adjacent in
+// the actual queue could have numerically distant unit values -- ranging
+// by value there could sweep in unrelated pool units sitting numerically
+// in between, which never happens here, since the range is built purely
+// from the actual rows between the two taps. That also means it can
+// never include a unit outside the pool either: nothing rendered in this
+// tab holds one in the first place, so no separate filtering is needed.
+function planDhorHandleQueueRowTap(rowIndex){
+  if(planDhorRangeStart === null){
+    planDhorSelectedUnits = new Set(planDhorQueueRowUnits[rowIndex]);
+    planDhorRangeStart = rowIndex;
+  } else {
+    const lo = Math.min(planDhorRangeStart, rowIndex);
+    const hi = Math.max(planDhorRangeStart, rowIndex);
+    planDhorSelectedUnits = new Set();
+    for(let i = lo; i <= hi; i++) planDhorQueueRowUnits[i].forEach(u => planDhorSelectedUnits.add(u));
     planDhorRangeStart = null;
   }
   renderPlanDhorTabContent();
@@ -994,6 +1036,28 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 
   try{
     await apiDhor.save(payload);
+    // Pool update, moved here from Plan Dhor's own Save (2026-08-03,
+    // confirmed in chat): "logged entries go into history and add to
+    // the dhor pool... any save from the dhor card should add to the
+    // dhor pool" -- covers both branches above (a clean segment and a
+    // raw range both already computed a real segment_from/segment_to),
+    // and runs regardless of whether this entry came from a Plan Dhor
+    // selection or was entered fully manually, so the two paths can no
+    // longer drift apart the way they could before. Fetches the profile
+    // fresh rather than trusting planDhorPool, since that's only ever
+    // populated once Plan Dhor's own modal has been opened this session
+    // -- a fully manual entry might never have touched it at all.
+    let profile = {};
+    try{ profile = await apiGetProfile(); } catch(e){}
+    const currentPool = Array.isArray(profile.baseline_selection)
+      ? [...new Set(profile.baseline_selection.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a,b) => a-b)
+      : [];
+    const loggedUnits = segmentToQuarterUnits(segment_from, segment_to, dhorCurrentRef);
+    const newUnits = loggedUnits.filter(u => !currentPool.includes(u));
+    if(newUnits.length > 0){
+      const merged = [...new Set([...currentPool, ...newUnits])].sort((a,b) => a-b);
+      apiSaveProfile({ baseline_mode: 'juz', baseline_selection: merged }).catch(() => { /* best-effort, matches the original behaviour this moved from */ });
+    }
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
     if(dhorRawRange) exitDhorRawRangeMode();
