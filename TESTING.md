@@ -1443,6 +1443,37 @@ the fix for a bug that broke Save entirely.
    this was the confirmed bug. Collapse it again, close Plan Dhor, and
    reopen → confirm it's back to collapsed.
 
+## 50. Pool updates moved to the Dhor card's Save; Dhor Plan's range-select fixed for queue wraparound (V3.29.0)
+
+1. In Plan Dhor, select something not currently in the pool and hit
+   Save → confirm the card populates as before, but check the pool
+   (Setup's Juz' grid, or a direct `baseline_selection` query) — it
+   should be UNCHANGED at this point, not yet include the new selection.
+2. Now actually log the entry from the card (hit the card's own Save) →
+   confirm the pool updates now, and the new units are present.
+3. Close Plan Dhor / abandon the card without logging anything after a
+   Plan Dhor selection → confirm the pool is still unchanged (this is
+   the actual bug case: previously the pool would have grown here even
+   with nothing logged).
+4. Log a fully manual entry (never opened Plan Dhor this session) for a
+   segment not yet in the pool → confirm the pool still updates
+   correctly — this path shouldn't depend on Plan Dhor ever having been
+   opened.
+5. Log an entry for a segment already fully inside the pool → confirm
+   no unnecessary profile save happens (or if it does, that the pool
+   content is unchanged either way) — this is the no-op case.
+6. Log a raw-range entry (spanning multiple juz') → confirm its
+   underlying quarter-units are added to the pool the same as a clean
+   single-unit entry would be.
+7. For a student whose pool is small enough that the Dhor Plan queue
+   wraps around within the displayed week (or manufacture this via D1 —
+   a small pool, high quota) → tap two rows that are adjacent in the
+   displayed list but come from opposite ends of the pool numerically →
+   confirm only those rows (and whatever's strictly between them in the
+   list) get selected — not everything numerically in between.
+8. Confirm "View All Completed"/"View All" still range-select exactly as
+   before — untouched by this change.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
