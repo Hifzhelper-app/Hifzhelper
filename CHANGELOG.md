@@ -7,6 +7,48 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.26.2 — Nav dropdown menu fixed to the viewport (2026-08-03)
+
+Standalone fix, unrelated to the Dhor queue rebuild — reported after scrolling
+down any page and finding the menu button appeared unresponsive.
+
+**Root cause**: `#authBand` (the top bar) is `position: sticky`, so it
+correctly stays pinned to the top as the page scrolls — that part was
+never broken, which is why the toggle button itself always felt
+reachable. `#authDropdown` (the menu panel it opens) had no positioning
+of its own, though, so it sat in normal document flow at its original
+spot near the top of the page. Tapping the toggle after scrolling down
+genuinely opened it (`max-height` really did expand) — just off-screen,
+above the current scroll position, making it look like the tap did
+nothing.
+
+**Fix**: `#authDropdown` is now `position: fixed`, anchored directly
+under the band regardless of scroll position. The band's actual height
+isn't a fixed number (it grows for a device's notch via
+`env(safe-area-inset-top)`), so rather than hardcoding an estimate,
+`toggleAuthDropdown` (`js/auth.js`) measures the band's real rendered
+height and sets it as a CSS variable (`--auth-band-height`) fresh every
+time the menu opens.
+
+**Verified, not just read over**: extracted the actual `toggleAuthDropdown`
+code and ran it against a fake DOM across open → close → reopen, including
+reopening with a deliberately different band height (simulating e.g. a
+device rotation between opens) — confirmed it re-measures fresh each open
+rather than caching a stale value, and that closing never touches the
+height variable.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/nav.css
+js/auth.js
+CHANGELOG.md
+TESTING.md
+```
+
+---
+
 ## V3.26.1 — Dhor card position-selector redesign + a real latent bug fix (2026-08-02)
 
 Follow-up patch within the Phase B round, confirmed in chat after reviewing

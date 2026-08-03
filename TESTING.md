@@ -1347,6 +1347,28 @@ the fix for a bug that broke Save entirely.
    during edit, same as before this change — editing never touches
    segment/position, only mistakes/tajweed/comment/duration.
 
+## 47. Nav dropdown menu fixed to the viewport (V3.26.2)
+
+1. Open any screen with enough content to scroll (Journal, or a long
+   History list). Scroll down a good amount first.
+2. Tap the menu icon in the top band → confirm the dropdown appears
+   immediately below the band, fully visible, without needing to scroll
+   back up — this is the actual bug: before this fix, it opened
+   off-screen near the top of the page instead.
+3. Tap a nav item inside the open dropdown → confirm it navigates AND
+   closes the dropdown, same as before this change.
+4. Reopen the dropdown, then tap the menu icon again to close it without
+   picking anything → confirm it closes cleanly.
+5. Repeat step 1-2 on a notched phone (iPhone with a Dynamic Island/
+   notch) if available → confirm the dropdown still lines up flush
+   under the band, not overlapping it or leaving a gap — this checks the
+   live-measured height actually accounts for the device's safe-area
+   inset correctly, not just on devices without one.
+6. Rotate the device (or resize the browser window enough to change the
+   safe-area calculation) while logged in, then open the menu → confirm
+   it still lines up correctly rather than using a stale measurement
+   from before the rotation.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
