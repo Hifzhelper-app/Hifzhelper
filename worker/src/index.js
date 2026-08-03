@@ -4,7 +4,7 @@ import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq }
 import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
 import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
 import { handleGetReflections, handleSaveReflection, handleUpdateReflection, handleDeleteReflection } from './reflections.js';
-import { handleGetPlans, handleCreatePlan, handleUpdatePlan, handleDeletePlan } from './plans.js';
+import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
 import { handleGetProfile, handleSaveProfile } from './profile.js';
@@ -77,9 +77,6 @@ export default {
       if (path === '/reflections' && request.method === 'DELETE') return respond(await handleDeleteReflection(request, env, auth));
 
       if (path === '/plans' && request.method === 'GET') return respond(await handleGetPlans(request, env, auth));
-      if (path === '/plans' && request.method === 'POST') return respond(await handleCreatePlan(request, env, auth));
-      if (path === '/plans' && request.method === 'PATCH') return respond(await handleUpdatePlan(request, env, auth));
-      if (path === '/plans' && request.method === 'DELETE') return respond(await handleDeletePlan(request, env, auth));
 
       if (path === '/attendance' && request.method === 'GET') return respond(await handleGetAttendance(request, env, auth));
       if (path === '/attendance' && request.method === 'POST') return respond(await handleSetAttendance(request, env, auth));

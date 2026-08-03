@@ -128,25 +128,30 @@ those only exist once something's actually occurred). The Dhor input
 screen's *default* view is driven by this table: a day with a plan shows it
 pre-filled to complete; a day without one falls back to the manual picker.
 
-`dhor`-type rows can currently only come from one source: created directly
-(`POST /plans`). Through V3.24.1, they could also come from a rolling
+`dhor`-type rows have no creation path left at all as of V3.28.0. They
+used to come from either a direct `POST /plans` call, or from a rolling
 Dhor Schedule generator that pre-generated a window of dated future rows
 from a student's `dhor_granularity`/`dhor_quantity`/`dhor_frequency`/
 `dhor_days_of_week` settings (added migration 0011), including an
-explicit-anchor variant for Setup's "Tomorrow's Portion" field. Confirmed
-wrong and removed as of V3.25.0 (see `CHANGELOG.md`) — a `plans` row isn't
-supposed to carry a date for anything not yet done at all.
+explicit-anchor variant for Setup's "Tomorrow's Portion" field. The
+generator was confirmed wrong and removed as of V3.25.0 (see
+`CHANGELOG.md`) — a `plans` row isn't supposed to carry a date for
+anything not yet done at all.
 `worker/src/dhorSchedule.js`'s `ensureDhorSchedule` was kept briefly as a
 no-op, then removed entirely as of V3.27.0 once Setup's "Tomorrow's
 Portion" (its last remaining caller) was itself removed — confirmed in
 chat: it served no purpose once a student could already redirect the
-queue by saving a different portion via Plan Dhor.
+queue by saving a different portion via Plan Dhor. `POST`/`PATCH`/
+`DELETE /plans` (`handleCreatePlan`/`handleUpdatePlan`/`handleDeletePlan`)
+were removed as of V3.28.0 too — confirmed zero callers anywhere in the
+app for any of the 3 plan types, not just dhor. Only `GET /plans`
+remains, for `journal.js`'s own upcoming-plans view.
 `computeDefaultDhorEntry` computes the next queue item live, from
 `dhor_log`, instead of relying on pre-generated dated rows — its
-`today_plan`/explicit-override branch is currently dormant in practice
-(nothing creates a same-day dhor-type row any more), though the check
-itself still stands, since a row created directly via `POST /plans`
-would still be honoured.
+`today_plan`/explicit-override branch is now fully dormant (nothing in
+the app can create a `plans` row at all any more, dhor-type or otherwise);
+the check itself is left in place rather than removed, since it's cheap
+and doesn't assume anything false.
 
 | Column | Type | Notes |
 |---|---|---|
