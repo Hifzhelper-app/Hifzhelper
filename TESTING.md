@@ -1524,6 +1524,24 @@ the fix for a bug that broke Save entirely.
 8. Confirm there's now visible space between the Quarter/Half/Full
    switch and Row 2 above it, not touching.
 
+## 53. Plan Dhor: granularity-aware rollup labels, pill-tracking bug fixed, View All Completed removed, switch centering fixed (V3.32.0)
+
+1. For a student whose Setup is configured for halves (not quarters) →
+   open Plan Dhor's "Dhor Plan" tab → confirm a "rest of week" row that
+   doesn't span a full juz' shows "H1"/"H2" language, not "Q1"/"Q4".
+2. Confirm a row that genuinely spans complete juz' (starts at the very
+   beginning of one juz' and ends at the very end of another) still
+   shows the plain "Juz X to Juz Y" form.
+3. Open Plan Dhor → tap "View All" → confirm the pill/highlight actually
+   moves to "View All" and "Dhor Plan" is no longer marked active — not
+   just the content changing underneath.
+4. Confirm there are only 2 tabs now ("Dhor Plan"/"View All") — "View
+   All Completed" is gone.
+5. On "View All" → confirm it still shows every juz' 1-30, with anything
+   not yet in the pool greyed out, same as before.
+6. Confirm the tab switch's labels look properly centered vertically —
+   not sitting oddly high/low or looking squeezed within the pill.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

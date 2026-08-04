@@ -458,12 +458,30 @@ function quarterUnitLabel(unitId){
 // plan's own start point through the latest plan's own end point,
 // ordered by segment_from since a day's sessions are generated
 // sequentially advancing through the pool.
+// Boundary label for one rollup row's "first to last" summary. 2026-08-04
+// (confirmed in chat): matches the actual granularity each boundary is
+// built from (reusing describeDhorSegment, the same "Juz 2 H1" style
+// used everywhere else on the card) instead of always describing
+// positions in quarter terms regardless of what granularity the batch
+// actually is -- a half-juz' batch (what most Setup configurations
+// actually produce) was being described with "Q1"/"Q3" even though no
+// quarter-level granularity was ever involved. Collapses to the plain
+// "Juz X to Juz Y" form only when a batch genuinely runs from the very
+// start to the very end of those juz' -- checked by quarter-unit
+// position, independent of whatever granularity the batch itself is.
 function planDhorDaySummaryLabel(plans){
   const sorted = [...plans].sort((a,b) => a.segment_from - b.segment_from);
   const first = sorted[0], last = sorted[sorted.length - 1];
   const firstUnits = segmentToQuarterUnits(first.segment_from, first.segment_to, first.ref || dhorCurrentRef);
   const lastUnits = segmentToQuarterUnits(last.segment_from, last.segment_to, last.ref || dhorCurrentRef);
-  return `${quarterUnitLabel(firstUnits[0])} to ${quarterUnitLabel(lastUnits[lastUnits.length - 1])}`;
+  const firstPos = quarterUnitToJuzQuarter(firstUnits[0]);
+  const lastPos = quarterUnitToJuzQuarter(lastUnits[lastUnits.length - 1]);
+  if(firstPos.quarterIndex === 1 && lastPos.quarterIndex === 4){
+    return firstPos.juz === lastPos.juz ? `Juz ${firstPos.juz}` : `Juz ${firstPos.juz} to Juz ${lastPos.juz}`;
+  }
+  const firstLabel = describeDhorSegment(first.segment_from, first.segment_to, first.ref || dhorCurrentRef);
+  const lastLabel = describeDhorSegment(last.segment_from, last.segment_to, last.ref || dhorCurrentRef);
+  return `${firstLabel} to ${lastLabel}`;
 }
 
 // Renders one "rest of week" row for the Dhor Plan tab: a single row
@@ -674,7 +692,6 @@ function renderPlanDhorModal(){
     <div class="switch-track" id="planDhorTabSwitch">
       <div class="switch-thumb"></div>
       <button type="button" class="switch-option" data-value="plan">Dhor Plan</button>
-      <button type="button" class="switch-option" data-value="completed">View All Completed</button>
       <button type="button" class="switch-option" data-value="all">View All</button>
     </div>
     <button type="button" class="plan-dhor-select-all hidden" id="planDhorSelectAllBtn">Select All</button>
@@ -688,6 +705,13 @@ function renderPlanDhorModal(){
   wireSwitch('planDhorTabSwitch', (value) => {
     planDhorTab = value;
     planDhorRangeStart = null;
+    // Bug fix (2026-08-04): this callback used to update planDhorTab and
+    // redraw the content below without ever re-running renderSwitch --
+    // the pill position and each option's .active state were computed
+    // once at modal-open time and never touched again, so tapping a tab
+    // correctly changed the view but left the switch itself looking
+    // stuck on whichever tab was active when the modal first opened.
+    renderSwitch('planDhorTabSwitch', planDhorTab);
     renderPlanDhorTabContent();
   });
   document.getElementById('planDhorSelectAllBtn').addEventListener('click', planDhorSelectAll);
@@ -698,12 +722,13 @@ function renderPlanDhorModal(){
 }
 
 // Select All applies to whichever set the current tab actually shows --
-// the pool for View All Completed, all 120 quarter-units for View All
-// (matching that tab's own "everything, greyed if incomplete" scope).
+// all 120 quarter-units for View All (matching that tab's own
+// "everything, greyed if incomplete" scope). View All Completed removed
+// entirely 2026-08-04 (confirmed in chat): View All already showed
+// everything it did, just with incomplete portions greyed out rather
+// than hidden, making it redundant.
 function planDhorSelectAll(){
-  planDhorSelectedUnits = planDhorTab === 'completed'
-    ? new Set(planDhorPool)
-    : new Set(Array.from({length:120}, (_,i) => i+1));
+  planDhorSelectedUnits = new Set(Array.from({length:120}, (_,i) => i+1));
   planDhorRangeStart = null;
   renderPlanDhorTabContent();
 }
@@ -750,14 +775,13 @@ function renderPlanDhorTabContent(){
     return;
   }
 
-  const availableSet = planDhorTab === 'completed' ? new Set(planDhorPool) : new Set(Array.from({length:120}, (_,i) => i+1));
-  const juzNumbers = planDhorTab === 'completed'
-    ? [...new Set(planDhorPool.map(u => quarterUnitToJuzQuarter(u).juz))].sort((a,b) => a-b)
-    : Array.from({length:30}, (_,i) => i+1);
-  if(juzNumbers.length === 0){
-    el.innerHTML = '<p class="form-hint">Nothing marked complete yet.</p>';
-    return;
-  }
+  // View All Completed removed entirely 2026-08-04 (confirmed in chat):
+  // View All already showed everything it did, just with incomplete
+  // portions greyed out rather than hidden -- redundant to keep both.
+  // Only "all" behavior remains for anything reaching this point (the
+  // 'plan' tab returns above before this line).
+  const availableSet = new Set(Array.from({length:120}, (_,i) => i+1));
+  const juzNumbers = Array.from({length:30}, (_,i) => i+1);
   el.innerHTML = juzNumbers.map(juzNum => {
     const rows = computePlanDhorRowsForJuz(juzNum, availableSet);
     if(rows.length === 0) return '';

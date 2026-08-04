@@ -7,6 +7,58 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.32.0 — Plan Dhor: granularity-aware rollup labels, pill-tracking bug fixed, View All Completed removed, switch centering fixed (2026-08-04)
+
+**Rollup labels now match the actual granularity a batch is built from,
+not always quarter language.** `planDhorDaySummaryLabel` used to describe
+every rollup row's first-to-last span in quarter terms ("Q1"/"Q4")
+regardless of what granularity the batch actually was — so a half-juz'
+batch (what most Setup configurations, halves not quarters, actually
+produce) was being described with quarter positions that were never
+really there. Now reuses `describeDhorSegment` (the same "Juz 2 H1" style
+already used everywhere else on the card) for each boundary, matching
+whatever granularity that specific batch is. Still collapses to the
+plain "Juz 29 to Juz 30" form, but only when a batch genuinely runs from
+the very start to the very end of those juz' — checked by quarter-unit
+position, independent of the granularity in between. Verified directly:
+a whole-juz' span still simplifies correctly, a half-juz' batch that
+doesn't end on a juz' boundary now shows "Juz 2 H1 to Juz 3 H1" instead
+of quarter language, and a single full juz' shows just "Juz 2."
+
+**The tab switch's pill genuinely wasn't tracking selection — confirmed
+and fixed.** Tapping a tab updated `planDhorTab` and redrew the content
+below it, but the switch's own visual state (pill position, which option
+is marked active) was only ever computed once, at modal-open time — the
+tab-change handler never re-ran it. Now it does.
+
+**"View All Completed" removed entirely** — confirmed redundant: "View
+All" already showed everything it did, just with incomplete portions
+greyed out rather than hidden. Frontend down to 2 tabs; the two
+now-single-branch ternaries in `renderPlanDhorTabContent`/
+`planDhorSelectAll` simplified to their one remaining case, and a
+resulting unreachable "nothing marked complete" check removed.
+
+**Vertical compression — fixed at the actual cause, not just by removing
+the crowded label.** `.switch-option` (used by every switch in the app,
+not just this one) had no vertical centering of its own; text sat on
+whatever baseline a bare button defaults to inside a fixed-height,
+overflow-hidden track. Added explicit `display:flex; align-items:center;
+justify-content:center` so this can't happen again on any switch, on any
+future long label, not just resolved incidentally by having fewer tabs.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/settings.css
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.31.0 — Unified spacing/sizing system across all 3 detail cards; date-display bug fixed at its root (2026-08-04)
 
 Confirmed in chat: rather than patching one row at a time again, this
