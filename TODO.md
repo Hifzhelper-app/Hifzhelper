@@ -4,6 +4,22 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.6 (2026-08-04)
+
+- [x] Fixed: editing Sabaq Dhor/Dhor from History returned to the Sabaq
+  card afterward. Root cause: editing collapses the rail's scrollable
+  width to just the one card being edited, so scroll position is
+  effectively 0 throughout -- once the other cards reappear, that stale
+  0 points at Sabaq regardless of which card was actually edited.
+  exitEditScreenMode now explicitly restores the correct position.
+- [x] Duration split into 2 plain number fields (Minutes/Seconds)
+  instead of 1 text field holding "mm:ss" -- native numeric keypad
+  works cleanly for both now. 2 digits in Minutes auto-advances to
+  Seconds; leaving Minutes with 1 digit defaults Seconds to 00 on blur
+  (covers iOS checkmark, Android Next, and manual tap-away, all the
+  same underlying signal). Tested the actual helpers and the exact
+  typing sequences directly, not just described.
+
 ## Done — V3.34.5 (2026-08-04)
 
 - [x] Tadabbur moved out of the rail into its own standalone nav

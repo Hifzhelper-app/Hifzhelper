@@ -132,9 +132,9 @@ let dhorSelectedTags = [];
 // whole-second value formats and reparses back to the exact same
 // seconds) -- so the V3.21.1 dhorTimerExactSeconds mechanism (trusting a
 // remembered exact value instead of reparsing the rounded display text)
-// is no longer needed and has been removed; parseDhorDuration/
-// formatDhorDuration below always convert directly, with no precision
-// lost either way.
+// is no longer needed and has been removed; getDhorDurationSeconds/
+// formatDhorDuration/setDhorDurationFields below always convert
+// directly, with no precision lost either way.
 // dhorLapTimes is genuinely timer-only data (no manual equivalent) and is
 // still cleared whenever the user overrides the duration, since laps
 // that no longer sum to the new total would be actively misleading.
@@ -149,23 +149,52 @@ let dhorActivePlanId = null; // which one (if any) is currently backing the form
 // no longer excluded.)
 let dhorEditingId = null;
 
-// V3.24.0: mm:ss parsing/formatting for the Duration field. A colon-less
-// digit entry (e.g. "12") is read as whole minutes with 0 seconds --
-// confirmed in chat for exactly 2 digits; extended here to any digit
-// count (1 or 3+), flagged as Claude's own extension since only the
-// 2-digit case was specified.
-function parseDhorDuration(text){
-  const trimmed = String(text || '').trim();
-  if(!trimmed) return null;
-  if(trimmed.includes(':')){
-    const [mPart, sPart] = trimmed.split(':');
-    const m = parseInt(mPart, 10) || 0;
-    const s = parseInt(sPart, 10) || 0;
-    return m * 60 + s;
-  }
-  const mins = parseInt(trimmed, 10);
-  return isNaN(mins) ? null : mins * 60;
+// 2026-08-04, confirmed in chat: Duration is now 2 plain number fields
+// (dhor_duration_min/dhor_duration_sec) instead of one text field
+// holding "mm:ss" -- a colon in a single field doesn't play well with
+// the native numeric keypad, which expects plain digits. Replaces
+// parseDhorDuration entirely (that function's one and only caller, the
+// old single-field payload construction, is what's being replaced here).
+function getDhorDurationSeconds(){
+  const minRaw = document.getElementById('dhor_duration_min').value;
+  const secRaw = document.getElementById('dhor_duration_sec').value;
+  if(!minRaw && !secRaw) return null;
+  const min = parseInt(minRaw, 10) || 0;
+  const sec = parseInt(secRaw, 10) || 0;
+  return min * 60 + sec;
 }
+function setDhorDurationFields(totalSeconds){
+  const minEl = document.getElementById('dhor_duration_min');
+  const secEl = document.getElementById('dhor_duration_sec');
+  if(totalSeconds == null || isNaN(totalSeconds)){
+    minEl.value = '';
+    secEl.value = '';
+    return;
+  }
+  const total = Math.max(0, Math.round(totalSeconds));
+  minEl.value = String(Math.floor(total / 60));
+  secEl.value = String(total % 60).padStart(2, '0');
+}
+// Auto-advance (confirmed in chat): typing a 2nd digit into Minutes
+// (max 99, per maxlength="2" in index.html) moves focus straight to
+// Seconds, no manual tap needed for the common case.
+document.getElementById('dhor_duration_min').addEventListener('input', () => {
+  if(document.getElementById('dhor_duration_min').value.length >= 2){
+    document.getElementById('dhor_duration_sec').focus();
+  }
+});
+// Blur (confirmed in chat): if Minutes is left with exactly 1 digit when
+// focus leaves it -- by any means: iOS's checkmark, Android's Next,
+// tapping Seconds manually, or tapping away entirely -- that single
+// digit is treated as the whole value, defaulting Seconds to 00 rather
+// than requiring it to be typed out explicitly. Only fires when Seconds
+// is still genuinely empty, so it never overwrites a value someone
+// already entered there.
+document.getElementById('dhor_duration_min').addEventListener('blur', () => {
+  const minEl = document.getElementById('dhor_duration_min');
+  const secEl = document.getElementById('dhor_duration_sec');
+  if(minEl.value.length === 1 && !secEl.value) secEl.value = '00';
+});
 function formatDhorDuration(totalSeconds){
   if(totalSeconds == null || isNaN(totalSeconds)) return '';
   const m = Math.floor(totalSeconds / 60);
@@ -285,7 +314,7 @@ async function renderDhorScreen(){
   dhorSelectedTags = [];
   dhorLapTimes = null;
   renderDhorLapRollup();
-  document.getElementById('dhor_duration_minutes').value = '';
+  setDhorDurationFields(null);
   dhorActivePlanId = null;
   document.getElementById('dhor_date').value = todayISO();
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
@@ -435,7 +464,7 @@ document.getElementById('dhorTimerHost').addEventListener('timer-save', (e) => {
   if(!confirm('Would you like to save this Dhor entry?\n\nCancel: no save, leave data in place.\nOK: save Dhor log.')) return;
   const { elapsed, laps } = e.detail;
   dhorLapTimes = laps && laps.length > 0 ? laps.map(ms => Math.round(ms / 1000)) : null;
-  document.getElementById('dhor_duration_minutes').value = formatDhorDuration(Math.round(elapsed / 1000));
+  setDhorDurationFields(Math.round(elapsed / 1000));
   renderDhorLapRollup();
   e.target.reset();
 });
@@ -649,7 +678,8 @@ function enterDhorRawRangeMode(range){
   document.getElementById('dhorRawFromBtn').textContent = range.fromLabel;
   document.getElementById('dhorRawToBtn').textContent = range.toLabel;
   document.getElementById('dhor_mistakes').disabled = true;
-  document.getElementById('dhor_duration_minutes').disabled = true;
+  document.getElementById('dhor_duration_min').disabled = true;
+  document.getElementById('dhor_duration_sec').disabled = true;
   document.getElementById('dhorStopwatchToggle').disabled = true;
   const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
   if(tajweedBtn) tajweedBtn.disabled = true;
@@ -661,7 +691,8 @@ function exitDhorRawRangeMode(){
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
   document.getElementById('dhor_mistakes').disabled = false;
-  document.getElementById('dhor_duration_minutes').disabled = false;
+  document.getElementById('dhor_duration_min').disabled = false;
+  document.getElementById('dhor_duration_sec').disabled = false;
   document.getElementById('dhorStopwatchToggle').disabled = false;
   const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
   if(tajweedBtn) tajweedBtn.disabled = false;
@@ -1016,14 +1047,17 @@ function planDhorHandleQueueRowTap(rowIndex){
   }
   renderPlanDhorTabContent();
 }
-// Real user input into the field (not the timer's own programmatic
+// Real user input into either field (not the timer's own programmatic
 // auto-fill above) means they're overriding it -- drop lap times since
-// they'd no longer sum to the new total (mm:ss itself needs no special
-// handling here, it's parsed fresh from whatever's in the field at save
-// time either way -- see parseDhorDuration above).
-document.getElementById('dhor_duration_minutes').addEventListener('input', () => {
-  dhorLapTimes = null;
-  renderDhorLapRollup();
+// they'd no longer sum to the new total (the total itself needs no
+// special handling here, it's read fresh from both fields at save time
+// either way -- see getDhorDurationSeconds above). Attached to both
+// Minutes and Seconds now that Duration is 2 fields, not 1.
+['dhor_duration_min', 'dhor_duration_sec'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    dhorLapTimes = null;
+    renderDhorLapRollup();
+  });
 });
 
 function loadDhorEntryForEdit(entry){
@@ -1038,7 +1072,7 @@ function loadDhorEntryForEdit(entry){
   // no more "trust as exact until touched" bookkeeping needed.
   dhorLapTimes = entry.lap_times || null;
   renderDhorLapRollup();
-  document.getElementById('dhor_duration_minutes').value = formatDhorDuration(entry.duration_seconds);
+  setDhorDurationFields(entry.duration_seconds);
   document.getElementById('dhorEditTopbarDate').textContent =
     `${entry.date} (${describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef)} — not editable here)`;
   document.getElementById('dhorEditTopbar').classList.remove('hidden');
@@ -1062,7 +1096,7 @@ function resetDhorFormAfterEdit(){
   renderCommentBlock('dhorCommentBlock', null);
   dhorLapTimes = null;
   renderDhorLapRollup();
-  document.getElementById('dhor_duration_minutes').value = '';
+  setDhorDurationFields(null);
 }
 document.getElementById('dhorEditCancelBtn2').addEventListener('click', () => {
   cancelDhorEdit();
@@ -1085,16 +1119,12 @@ document.getElementById('dhorEditDeleteBtn').addEventListener('click', async () 
 });
 EDIT_HANDLERS.dhor = loadDhorEntryForEdit;
 
-// V3.21.1: shared by both save paths below. Uses the timer's exact
-// seconds if the field hasn't been manually touched since it was set
-// (see the 'input' listener above); otherwise parses the field's own
-// text directly, since that's the user's actual intent at that point.
-// V3.24.0: used by both save paths below. Simple direct parse now --
-// mm:ss has no precision to lose, so there's no need to distinguish
-// "the timer's own untouched value" from "whatever's in the field".
+// Shared by both save paths below -- reads whatever's currently sitting
+// in the 2 duration fields (Minutes/Seconds), same whether they were
+// populated by the timer's own Note Time or typed in directly, since
+// there's nothing left to distinguish once a value is in the fields.
 function computeDhorDuration(){
-  const raw = document.getElementById('dhor_duration_minutes').value;
-  return { duration_seconds: parseDhorDuration(raw), lap_times: dhorLapTimes };
+  return { duration_seconds: getDhorDurationSeconds(), lap_times: dhorLapTimes };
 }
 
 document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
@@ -1133,7 +1163,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   // for a real session is still sitting at its just-populated default.
   // Only applies to new entries -- an edit is always modifying real,
   // already-logged data, not risking an accidental blank save.
-  const dhorNothingEntered = !document.getElementById('dhor_duration_minutes').value
+  const dhorNothingEntered = getDhorDurationSeconds() == null
     && (parseInt(document.getElementById('dhor_mistakes').value) || 0) === 0
     && dhorSelectedTags.length === 0
     && !readCommentBlock('dhorCommentBlock').student_comment;
