@@ -719,9 +719,27 @@
    above (index.html) now takes up the same space Duration's real label
    does, and both the input and this button share an explicit height, so
    their bottom edges line up exactly rather than approximately. */
-#dhor_duration_minutes {
+/* 2026-08-04, confirmed in chat: Duration split into 2 plain number
+   fields (Minutes/Seconds) instead of one text field holding "mm:ss" --
+   a colon in the middle of a single field doesn't play well with the
+   native numeric keypad (inputmode="numeric" expects plain digits), so
+   each field being purely numeric lets the native keypad work exactly
+   as designed for both, with the colon here now just a visual separator
+   between them, not something either field actually contains. */
+.dhor-duration-split {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#dhor_duration_min, #dhor_duration_sec {
   height: var(--dhor-row2-h);
   box-sizing: border-box;
+  width: 100%;
+  text-align: center;
+}
+.dhor-duration-colon {
+  font-weight: 600;
+  color: var(--color-ink-faint);
 }
 #dhorStopwatchToggle {
   height: var(--dhor-row2-h);

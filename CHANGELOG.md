@@ -7,6 +7,59 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.6 — Rail scroll position fixed after editing; Duration split into 2 numeric fields (2026-08-04)
+
+**Fixed: editing a Sabaq Dhor or Dhor entry from History returned to the
+Sabaq card afterward, not the card actually being edited.** Root cause:
+during editing, every card except the one being edited is `display:
+none`'d (an existing rule), which collapses the rail's scrollable width
+down to just that single card — so its scroll position is effectively 0
+throughout. Once editing finishes and the other cards reappear, that
+stale 0 now points at Sabaq (the first card), regardless of which card
+was actually being edited — invisible when editing from Sabaq itself,
+since 0 already happens to be correct there, which is exactly why this
+only showed up on the other two. `exitEditScreenMode` now explicitly
+restores the rail's scroll position to the edited card before handing
+control back.
+
+**Duration split into 2 plain number fields (Minutes/Seconds) instead
+of 1 text field holding "mm:ss".** Confirmed in chat after a real
+back-and-forth on the actual mechanism: a colon in the middle of a
+single field doesn't suit the native numeric keypad, which expects
+plain digits — so each field being purely numeric lets the keypad work
+exactly as designed for both. Typing a 2nd digit into Minutes (capped
+at 2, so max 99) auto-advances straight into Seconds; leaving Minutes
+with just 1 digit when focus moves away — by any means: iOS's
+checkmark, Android's Next, tapping Seconds directly, or tapping away
+entirely — defaults Seconds to 00, so a single-digit minute value never
+needs its own explicit "00" typed out. `parseDhorDuration` is retired
+entirely (its one and only caller was the field this replaces); Duration
+now flows through 2 new helpers, `getDhorDurationSeconds`/
+`setDhorDurationFields`, threaded through all 9 places the old single
+field was read or written — the timer's own auto-fill, the raw-range
+disable/enable toggle, edit-load, the "nothing entered" check, and the
+form resets.
+
+**Verified, not just read over**: ran the actual helpers against a real
+split-and-reassemble round trip, the both-empty case, and the exact
+typing sequences described in chat — 1 digit not auto-advancing, 2
+digits advancing, and the blur-default filling Seconds with "00" only
+when it's still genuinely empty.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/logDetailScreen.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.5 — Rail restructured: Timer is now a permanent card, Tadabbur has its own screen (2026-08-04)
 
 The largest single restructuring of this screen since the original

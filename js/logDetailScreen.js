@@ -59,6 +59,20 @@ function enterEditScreenMode(cardId){
 function exitEditScreenMode(cardId){
   document.getElementById('screen-logDetail').classList.remove('log-detail-editing');
   document.getElementById(cardId).classList.remove('editing-active');
+  // Bug fix (2026-08-04, found by the user): while editing, every card
+  // except the one being edited is display:none'd (the CSS rule right
+  // above this file's own comment on enterEditScreenMode), which
+  // collapses the rail's scrollable width down to just that one card --
+  // so its scrollLeft is effectively 0 throughout editing. Once the
+  // other cards reappear here, that stale 0 now points at Sabaq (the
+  // first card), not wherever the student actually was, unless the card
+  // being edited happened to already be Sabaq itself. Restoring scrollLeft
+  // explicitly to the edited card's own position fixes this regardless
+  // of which of the 3 cards was being edited.
+  const rail = document.getElementById('logDetailRail');
+  const card = document.getElementById(cardId);
+  rail.scrollLeft = card.offsetLeft;
+  updateLogDetailDots();
 }
 
 async function renderLogDetailScreen(initialCard){

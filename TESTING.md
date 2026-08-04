@@ -1702,6 +1702,29 @@ the fix for a bug that broke Save entirely.
 11. Tap Close on the timer (full or pill) → confirm it resets (time
     back to 00:00) but doesn't disappear or leave a gap in the rail.
 
+## 61. Rail scroll position fixed after editing; Duration split into 2 numeric fields (V3.34.6)
+
+1. From History, edit a Sabaq Dhor entry and save → confirm the view
+   returns to the Sabaq Dhor card, not Sabaq.
+2. Repeat for a Dhor entry → confirm it returns to the Dhor card.
+3. Repeat for a Sabaq entry (should already have worked, confirm no
+   regression) → confirm it returns to Sabaq.
+4. On the Dhor card, tap into Minutes and type a single digit (e.g. "7")
+   → tap into Seconds directly (not via keyboard Next) → confirm Minutes
+   still just shows "7" (not auto-cleared or reformatted).
+5. Type 2 digits into Minutes (e.g. "45") → confirm focus jumps
+   automatically to Seconds without tapping.
+6. Type a single digit into Minutes (e.g. "5"), then tap Save directly
+   (skip Seconds entirely) → confirm the entry saves with 5:00, not 5
+   seconds or a validation error.
+7. Confirm the native numeric keypad appears for both fields on a real
+   mobile device, with no colon or other non-numeric character expected
+   in either field.
+8. Use the Timer's Note Time to populate Duration → confirm both fields
+   populate correctly (e.g. a 7:05 session shows "7" and "05").
+9. Edit an existing Dhor entry with a real duration → confirm both
+   fields load correctly from history.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
