@@ -274,7 +274,12 @@ async function renderDhorScreen(){
   document.getElementById('dhorEditBottombar').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
-  document.getElementById('dhorTimerPanel').classList.add('hidden');
+  // 2026-08-04: only ensure-hidden if nothing's actually running -- an
+  // active or paused-with-elapsed-time session should persist across
+  // navigation (that's the whole point of the mini pill), not get reset
+  // just because this screen happens to open again.
+  const timerHost = document.getElementById('dhorTimerHost');
+  if(timerHost.elapsed === 0) timerHost.classList.add('hidden');
   exitDhorRawRangeMode();
   exitEditScreenMode('card-dhor');
   dhorSelectedTags = [];
@@ -306,16 +311,11 @@ async function renderDhorScreen(){
   document.getElementById('dhor_mistakes').value = '0';
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', null);
-  renderTimer('dhorTimerWrap', (result) => {
-    dhorLapTimes = result.lap_times || null;
-    // Programmatic assignment -- deliberately doesn't fire 'input', so
-    // this doesn't trip the manual-override handler below. mm:ss is a
-    // lossless format (unlike the old 1-decimal-minute display), so this
-    // is the exact value, not an approximation.
-    document.getElementById('dhor_duration_minutes').value = formatDhorDuration(result.duration_seconds);
-    updateDhorTimerSummary();
-  });
-  updateDhorTimerSummary();
+  // 2026-08-04: the timer (js/session-timer.js) is wired once, further
+  // down this file, not re-created here every time this screen opens --
+  // it's a static, persistent element (index.html), not something this
+  // render function owns any more, the way the old inline #dhorTimerWrap
+  // briefly was.
 
   // Pure queue model (2026-08-02, Phase B): computeDefaultDhorEntry
   // (worker/src/dhorSchedule.js) now only ever reports one of 3 things --
@@ -352,15 +352,66 @@ async function renderDhorScreen(){
   await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
 }
 
-function updateDhorTimerSummary(){
-  const el = document.getElementById('dhorTimerSummary');
-  el.textContent = dhorLapTimes ? `${dhorLapTimes.length} laps recorded` : '';
+// 2026-08-04: the timer is now a persistent, static overlay element
+// (index.html's #dhorTimerHost, js/session-timer.js) rather than an
+// inline panel this screen used to own and re-create -- wired once here,
+// not inside renderDhorScreen.
+//
+// Target (2026-08-04): now reads the student's own configured
+// target_minutes_per_juz (Setup's "Minutes / juz'" field, worker/src/
+// profile.js -- default 40 there too, so nothing changes for a student
+// who's never touched that field), scaled by the card's current Amount/
+// Unit selection. V3.34.0 briefly hardcoded 40 here directly -- flagged
+// at the time as Claude's own unconfirmed choice, since a real, live
+// Setup field turned out to already exist and this wasn't reading it;
+// linked properly now, confirmed in chat.
+function dhorTimerTargetMinutes(perJuzMinutes){
+  const unit = document.getElementById('dhor_unit').value;
+  if(unit === 'half') return perJuzMinutes / 2;
+  if(unit === 'quarter') return perJuzMinutes / 4;
+  return perJuzMinutes; // 'full'
 }
-// V3.23.1: the timer widget (Start/Stop/Lap) used to always take up its
-// own space below Duration -- now hidden by default, toggled open/closed
-// by the Stopwatch button beside Duration.
-document.getElementById('dhorStopwatchToggle').addEventListener('click', () => {
-  document.getElementById('dhorTimerPanel').classList.toggle('hidden');
+document.getElementById('dhorStopwatchToggle').addEventListener('click', async () => {
+  const host = document.getElementById('dhorTimerHost');
+  let perJuzMinutes = 40;
+  try{
+    const profile = await apiGetProfile();
+    if(profile.target_minutes_per_juz != null) perJuzMinutes = profile.target_minutes_per_juz;
+  } catch(e){ /* fall back to the same 40 the field itself defaults to */ }
+  host.setAttribute('target', String(dhorTimerTargetMinutes(perJuzMinutes)));
+  host.classList.remove('hidden');
+  host.mode = 'full';
+});
+// "Close" (session-timer's own X icon) minimises to the floating pill
+// rather than dismissing the timer outright -- confirmed in chat: the
+// point of the mini pill is that the timer keeps running underneath
+// while the rest of the card is still usable, not that closing throws
+// the session away. The component's own close handler already pauses
+// before emitting this, matching Stop/Start's own general semantics.
+document.getElementById('dhorTimerHost').addEventListener('timer-close', (e) => {
+  e.target.mode = 'mini';
+});
+// Tapping the mini pill (session-timer's own "expand" action) re-opens
+// the full view -- the timer was never actually hidden in between, just
+// repositioned, so nothing about its running state needs restoring here.
+document.getElementById('dhorTimerHost').addEventListener('timer-expand', (e) => {
+  e.target.mode = 'full';
+});
+// Save (2026-08-04, confirmed in chat): the elapsed total and lap times
+// both transfer into the card's own fields -- Duration stays the single
+// source of truth the save payload actually reads from (computeDhorDuration,
+// further below), same as it always has; this just changes where that
+// value comes from. Programmatic assignment deliberately doesn't fire
+// 'input', so it doesn't trip the manual-override handler that clears
+// laps when a person types into Duration directly. Hides the timer
+// entirely afterward -- the session's data has now been captured into
+// the form, so there's nothing left for the overlay/pill to keep doing.
+document.getElementById('dhorTimerHost').addEventListener('timer-save', (e) => {
+  const { elapsed, laps } = e.detail;
+  dhorLapTimes = laps && laps.length > 0 ? laps.map(ms => Math.round(ms / 1000)) : null;
+  document.getElementById('dhor_duration_minutes').value = formatDhorDuration(Math.round(elapsed / 1000));
+  e.target.classList.add('hidden');
+  e.target.reset();
 });
 
 // V3.23.1: View Plan mirrors History's popup, but for what's still
@@ -921,7 +972,6 @@ function planDhorHandleQueueRowTap(rowIndex){
 // time either way -- see parseDhorDuration above).
 document.getElementById('dhor_duration_minutes').addEventListener('input', () => {
   dhorLapTimes = null;
-  updateDhorTimerSummary();
 });
 
 function loadDhorEntryForEdit(entry){
@@ -936,7 +986,6 @@ function loadDhorEntryForEdit(entry){
   // no more "trust as exact until touched" bookkeeping needed.
   dhorLapTimes = entry.lap_times || null;
   document.getElementById('dhor_duration_minutes').value = formatDhorDuration(entry.duration_seconds);
-  updateDhorTimerSummary();
   document.getElementById('dhorEditTopbarDate').textContent =
     `${entry.date} (${describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef)} — not editable here)`;
   document.getElementById('dhorEditTopbar').classList.remove('hidden');
@@ -960,7 +1009,6 @@ function resetDhorFormAfterEdit(){
   renderCommentBlock('dhorCommentBlock', null);
   dhorLapTimes = null;
   document.getElementById('dhor_duration_minutes').value = '';
-  updateDhorTimerSummary();
 }
 document.getElementById('dhorEditCancelBtn2').addEventListener('click', () => {
   cancelDhorEdit();
@@ -1129,6 +1177,7 @@ async function renderRecentEntries(type, client, railId){
           <div>
             <div class="rail-card-date">${r.date}</div>
             <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
+            ${type === 'dhor' && r.lap_times && r.lap_times.length > 0 ? `<div class="rail-card-laps">${r.lap_times.map(formatDhorDuration).join(' · ')}</div>` : ''}
           </div>
           ${EDIT_HANDLERS[type] ? `<button type="button" class="history-entry-edit-btn" data-index="${i}" aria-label="Edit"></button>` : ''}
         </div>`).join('') || '<div class="form-hint">Nothing logged yet.</div>'}
