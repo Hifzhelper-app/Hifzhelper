@@ -22,6 +22,18 @@
 .picker-row.picker-row-single {
   grid-template-columns: 1fr;
 }
+/* 2026-08-03: Juz's <select> had no explicit height (relying on padding +
+   line-height, which varies by platform/browser and commonly doesn't
+   match a fixed value), while the Position switch has always had an
+   explicit 42px -- so their bottom edges didn't line up. Both now share
+   one explicit height instead of one side guessing at the other's. */
+#dhor_juz {
+  height: 44px;
+  box-sizing: border-box;
+}
+#dhor_position_switch {
+  height: 44px;
+}
 
 /* V3.18.0: header rebuilt as two explicit CSS grids per the confirmed
    spec, replacing V3.12.0's flex row -- row 1 is icon:heading:save at
@@ -71,6 +83,42 @@
   padding: 4px 6px;
   box-sizing: border-box;
 }
+/* Custom date display (2026-08-03, confirmed in chat): a native
+   <input type="date">'s own displayed text is entirely browser/OS-
+   controlled -- no CSS can reformat it, which is why desktop Chrome and
+   mobile Safari were showing 2 different formats for the same date.
+   wireCustomDateDisplay (js/customDate.js) wraps each date input in
+   .custom-date-wrap, hides the input itself (still fully functional,
+   just invisible) and adds this visible button in its place, showing a
+   consistent "DDD dd-MMM" format everywhere. Clicking it calls the
+   input's own .showPicker() -- same native picker as before, just a
+   different visible face on top of it. Padding/font-size reduced here
+   too, per the earlier separate request. */
+.custom-date-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.native-date-hidden {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.custom-date-display {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 4px 4px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--color-ink);
+}
 /* V3.24.0: Row 2 replaces the old date-row + separate Amount/View-Plan
    row with ONE 40:30:30 grid (date : Plan Dhor : History) -- a shared
    --dhor-row2-h custom property (defined on the whole card so both this
@@ -87,6 +135,13 @@
   gap: var(--space-sm);
   margin-top: 4px;
 }
+/* 2026-08-03: grid items default to min-width:auto, which refuses to
+   shrink a child below its own content's natural size even when the
+   column is narrower -- on a wide card this goes unnoticed, but on a
+   narrow mobile width it can push a button past its assigned column and
+   touch the card's edge. min-width:0 on all 3 columns forces each to
+   actually respect its 40%/30%/30% share instead. */
+.dhor-row2 > * { min-width: 0; }
 .dhor-row2 .card-header-date { width: 100%; height: var(--dhor-row2-h); }
 .dhor-row2-btn,
 .dhor-row2 #dhorRecentRail .history-btn {
@@ -573,13 +628,27 @@
    now it's hidden by default. */
 .dhor-stopwatch-col {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
 }
+/* 2026-08-03: was centered within the whole cell, which isn't the same
+   as lining up with the Duration INPUT specifically -- Duration has its
+   own label pushing the input down, so a plain vertical center landed
+   slightly above the input's actual bottom edge. The invisible label
+   above (index.html) now takes up the same space Duration's real label
+   does, and both the input and this button share an explicit height, so
+   their bottom edges line up exactly rather than approximately. */
+#dhor_duration_minutes {
+  height: 44px;
+  box-sizing: border-box;
+}
 #dhorStopwatchToggle {
+  height: 44px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   border: none;
   background: none;
@@ -590,7 +659,9 @@
   color: var(--color-ink);
   cursor: pointer;
 }
-#dhorStopwatchToggle svg { width: 22px; height: 22px; }
+/* Bigger than the shared default icon size (was 22px) -- confirmed in
+   chat this space could take a larger icon. */
+#dhorStopwatchToggle svg { width: 28px; height: 28px; }
 
 .log-detail-rail {
   display: flex;

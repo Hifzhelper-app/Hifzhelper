@@ -1474,6 +1474,33 @@ the fix for a bug that broke Save entirely.
 8. Confirm "View All Completed"/"View All" still range-select exactly as
    before — untouched by this change.
 
+## 51. Dhor card UI: real root causes fixed, custom date display, rollup default flipped (V3.30.0)
+
+1. Open the Dhor card on a normal-width screen → confirm the Amount
+   switch now spans a clear majority of the row width, centered, all 3
+   labels ("Quarter"/"Half"/"Full") fully readable with no clipping.
+2. Open the Dhor card on a narrow mobile width → confirm "Plan" and
+   "History" (Row 2) stay fully inside the card, no button touching or
+   crossing the card's edge.
+3. Compare the Juz dropdown and the Position switch side by side →
+   confirm their top AND bottom edges now line up exactly.
+4. Compare the Duration input and the Timer button side by side →
+   confirm their bottom edges line up exactly (not just "roughly
+   centered"). Confirm the Timer icon is noticeably bigger than before.
+5. On all 3 cards with a date field (Sabaq, Sabaq Dhor, Dhor) → confirm
+   the date shows as "DDD dd-MMM" (e.g. "Mon 03-Aug"), identically across
+   different browsers/devices, not whatever the browser's own native
+   format happens to be.
+6. Tap the date display on each card → confirm the native date picker
+   opens (same picker as before), pick a different date → confirm the
+   display updates to show the new date in the same consistent format.
+7. Save an entry after changing the date this way → confirm the saved
+   date is correct (the underlying native input's value is what actually
+   gets sent, unchanged from before this round).
+8. Open Plan Dhor's "View All Completed" and "View All" tabs fresh (a
+   juz' that's never been manually expanded/collapsed before) → confirm
+   it shows rolled up to Juz level by default, not individual quarters.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
