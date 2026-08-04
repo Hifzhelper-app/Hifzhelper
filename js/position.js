@@ -72,13 +72,16 @@ function nextSabaqDefaults(position, ref, hasDhor){
     if(hasDhor) return { from: null, to: null };
     return { from: { surah: 114, ayah: 1 }, to: { surah: 114, ayah: 6 } };
   }
-  const juz = getJuzForPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
   const next = nextSabaqPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
   if(next.juzComplete) return { from: null, to: null };
-  if(juz === 30){
-    return { from: null, to: { surah: next.surah, ayah: next.ayah } };
-  }
-  return { from: { surah: next.surah, ayah: next.ayah }, to: null };
+  // 2026-08-04, confirmed in chat: both From and To now prepopulate with
+  // the same starting ayah -- previously only one field got a value
+  // (which one depended on juz' 30's backwards study direction vs every
+  // other juz' ascending), leaving the other blank/dashed for no clear
+  // reason visible to the student. getJuzForPosition (used only for that
+  // now-removed branching) is no longer called from here -- still used
+  // elsewhere in this file, so not dead code.
+  return { from: { surah: next.surah, ayah: next.ayah }, to: { surah: next.surah, ayah: next.ayah } };
 }
 
 // Phase 2a (V3.16.0): builds the actual DISPLAYABLE rows for Sabaq Dhor,

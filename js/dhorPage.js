@@ -1101,6 +1101,21 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     return;
   }
 
+  // Item 3 (2026-08-04, confirmed in chat): catches an accidentally-
+  // saved, completely untouched form. Not a comparison against the last
+  // logged entry -- that wouldn't actually catch this, since the segment
+  // always legitimately differs as the queue advances after every save,
+  // so "same as last time" is never true for a normal, working save.
+  // Instead: whether every field that would normally carry SOME value
+  // for a real session is still sitting at its just-populated default.
+  // Only applies to new entries -- an edit is always modifying real,
+  // already-logged data, not risking an accidental blank save.
+  const dhorNothingEntered = !document.getElementById('dhor_duration_minutes').value
+    && (parseInt(document.getElementById('dhor_mistakes').value) || 0) === 0
+    && dhorSelectedTags.length === 0
+    && !readCommentBlock('dhorCommentBlock').student_comment;
+  if(dhorNothingEntered && !confirm('It looks like nothing was entered for this session (no duration, mistakes, tajweed, or notes).\n\nOK to save anyway, Cancel to go back.')) return;
+
   let segment_from, segment_to;
   if(dhorRawRange){
     // V3.24.0: a Plan Dhor selection that didn't reduce to one clean
@@ -1163,13 +1178,19 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     }
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
-    // 2026-08-04, confirmed in chat: the lap-times rollup is visible
-    // "until log is saved" -- now that it genuinely has been, History
-    // is the record of it going forward, not this card.
-    dhorLapTimes = null;
-    renderDhorLapRollup();
-    if(dhorRawRange) exitDhorRawRangeMode();
     await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+    // Items 1+2 (2026-08-04, confirmed in chat): every successful save --
+    // whether the entry came from the timer or was entered fully
+    // manually -- clears the whole form and immediately repopulates it
+    // with the next queue item, rather than leaving the just-saved
+    // entry's values sitting on screen until the student navigates away
+    // and back. renderDhorScreen already does exactly this (fresh reset
+    // + a real fetch of the next default entry) every time the screen
+    // opens, so reusing it here directly is simpler and more consistent
+    // than duplicating a second, partial version of the same reset --
+    // this replaces what used to be 3 separate lines doing part of the
+    // same job (clearing laps/the rollup, exiting raw-range mode).
+    await renderDhorScreen();
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;
   }

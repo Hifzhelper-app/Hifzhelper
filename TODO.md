@@ -4,6 +4,25 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.3 (2026-08-04)
+
+- [x] Sabaq Dhor's checkboxes never cleared after a save (found by the
+  user before this delivery went out) -- made an accidental duplicate
+  save possible by tapping Save twice. Fixed by reusing
+  renderSabaqDhorScreen's own fresh-open logic, same pattern as the
+  Dhor fix below.
+- [x] After every Dhor save, the card clears and repopulates with the
+  next queue item immediately (reuses renderDhorScreen directly).
+- [x] "Nothing entered" confirmation for new Dhor and Sabaq entries --
+  not a comparison against the last entry (confirmed with the user this
+  wouldn't actually catch it, since Dhor's segment always legitimately
+  differs as the queue advances), but whether Duration/Lines-Pages,
+  Mistakes, tajweed, and Notes are all still at their defaults. Tested
+  directly against a blank form and each field individually. Sabaq Dhor
+  doesn't need this -- it already hard-blocks with nothing checked.
+- [x] Sabaq's From and To now prepopulate with the same starting ayah,
+  not one field left blank/dashed.
+
 ## Done — V3.34.2 (2026-08-04)
 
 - [x] Close now stops and fully discards (was minimise); Reset now also

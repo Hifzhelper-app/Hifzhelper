@@ -272,6 +272,18 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     errEl.textContent = "This range crosses more than one juz' boundary — please split it into separate entries.";
     return;
   }
+  // Item 3 (2026-08-04, confirmed in chat): same "nothing entered" check
+  // as Dhor's, only for new entries (an edit is always modifying real,
+  // already-logged data). From/To can't be part of this signal since
+  // they're always prepopulated regardless of whether the form was
+  // actually touched.
+  if(!sabaqEditingId){
+    const sabaqNothingEntered = !document.getElementById('sabaq_line_count').value
+      && !document.getElementById('sabaq_page_count').value
+      && sabaqSelectedTags.length === 0
+      && !readCommentBlock('sabaqCommentBlock').student_comment;
+    if(sabaqNothingEntered && !confirm('It looks like nothing was entered for this session (no lines, pages, tajweed, or notes).\n\nOK to save anyway, Cancel to go back.')) return;
+  }
   const payload = {
     date: document.getElementById('sabaq_date').value || todayISO(),
     sabaq_from: formatVerseRef(from.surah, from.ayah),
