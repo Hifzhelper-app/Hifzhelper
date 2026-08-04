@@ -47,6 +47,26 @@ function wireCustomDateDisplay(inputId){
   wrap.appendChild(display);
 
   const render = () => { display.textContent = formatCustomDate(input.value); };
+
+  // Bug fix (2026-08-04): every page sets this input's date with a plain
+  // input.value = todayISO() assignment (or entry.date, when loading an
+  // entry for edit) -- that NEVER fires a 'change' event on its own,
+  // which is standard, unavoidable DOM behavior, not a bug in those
+  // files. A listener on 'change' alone only ever catches the user
+  // actually using the picker; it missed every one of those programmatic
+  // sets entirely, which is exactly why the display stayed stuck on
+  // "Select date" even once the real value had been set moments later.
+  // Overriding the native value property itself means ANY assignment --
+  // from the picker, or from any of those other call sites, present or
+  // future -- re-renders automatically, without needing to find and
+  // update every caller individually.
+  const nativeDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  Object.defineProperty(input, 'value', {
+    get(){ return nativeDescriptor.get.call(input); },
+    set(v){ nativeDescriptor.set.call(input, v); render(); },
+    configurable: true
+  });
+
   render();
 
   display.addEventListener('click', () => {

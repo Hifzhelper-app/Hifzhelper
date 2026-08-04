@@ -4,6 +4,26 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.31.0 (2026-08-04)
+
+- [x] Date display bug fixed at its root — every page sets its date
+  field with a plain `.value = todayISO()` assignment, which never fires
+  a `change` event (unavoidable DOM behavior). The display now overrides
+  the input's own `value` property so any assignment, from anywhere,
+  triggers a re-render. Verified against a fake `HTMLInputElement` with
+  a real prototype-level `value` getter/setter, not just a plain object.
+- [x] One shared row-height variable (`--dhor-row2-h`, 44px) for every
+  card instead of 3 separate values that happened to coincide — Row 2,
+  Juz, Position, Duration, Timer, and Sabaq/Sabaq Dhor's date row all
+  reference the same one now.
+- [x] Dhor's date field now sizes to its own content (grid changed from
+  a fixed 40/30/30 to auto/1fr/1fr), matching Sabaq/Sabaq Dhor exactly —
+  resolves the width question from V3.30.0 by making "content-sized"
+  the system-wide rule rather than picking one specific percentage.
+  Plan/History gained room as a result.
+- [x] Margin added above the Amount switch row so it stops touching
+  Row 2 directly above it.
+
 ## Done — V3.30.0 (2026-08-03)
 
 - [x] Row 3 (Amount switch) — root cause found and fixed: `#dhorAmountRow`

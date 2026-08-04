@@ -1501,6 +1501,29 @@ the fix for a bug that broke Save entirely.
    juz' that's never been manually expanded/collapsed before) → confirm
    it shows rolled up to Juz level by default, not individual quarters.
 
+## 52. Unified spacing/sizing system across all 3 detail cards; date-display bug fixed at its root (V3.31.0)
+
+1. Open the Dhor card fresh (not from editing an existing entry) →
+   confirm the date shows today's actual date in "DDD dd-MMM" format
+   immediately, not "Select date."
+2. Open Sabaq and Sabaq Dhor fresh → confirm the same.
+3. Edit an existing entry on any of the 3 cards (loads a past date via
+   `entry.date`) → confirm the display updates to that entry's date
+   correctly, not stuck on whatever was showing before.
+4. Compare the date field's height and width across all 3 cards side by
+   side → confirm they now look like the same component sized to the
+   same short text, not one noticeably wider than the others.
+5. On the Dhor card specifically → confirm "Plan" and "History" are
+   visibly bigger/roomier now that the date isn't taking a fixed 40% of
+   the row.
+6. Compare Row 2, Juz, Position, Duration, and the Timer button's
+   heights across the Dhor card → confirm all of them match exactly.
+7. Compare Sabaq/Sabaq Dhor's date+history row height against Dhor's
+   Row 2 → confirm they now match too (previously Sabaq/Sabaq Dhor had
+   no explicit height at all).
+8. Confirm there's now visible space between the Quarter/Half/Full
+   switch and Row 2 above it, not touching.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

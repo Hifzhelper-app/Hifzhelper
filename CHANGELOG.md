@@ -7,6 +7,69 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.31.0 — Unified spacing/sizing system across all 3 detail cards; date-display bug fixed at its root (2026-08-04)
+
+Confirmed in chat: rather than patching one row at a time again, this
+consolidates every card's spacing and sizing onto one shared system, plus
+fixes the date display bug this round's screenshot caught.
+
+**The date display bug — root cause was a fundamental DOM behavior, not
+a logic error.** Every page sets its date field with a plain
+`input.value = todayISO()` assignment (or `entry.date`, when loading an
+entry for edit) — a plain assignment never fires a `change` event, full
+stop, regardless of what code does the assigning. V3.30.0's display only
+re-rendered on wiring (when the field was still empty) and on `change`,
+so it never saw any of these later assignments and stayed stuck on
+"Select date." Fixed by overriding the input's own `value` property
+(`Object.defineProperty` against the real `HTMLInputElement.prototype`
+descriptor) so *any* assignment — from the native picker or from any
+page's own render code, present or future — re-renders the display
+automatically, rather than requiring every call site to be found and
+updated individually.
+
+**One shared row-height variable for every card, not several separate
+values that happened to coincide.** `--dhor-row2-h` used to be scoped to
+`#card-dhor` alone (40px), while Juz/Position and Duration/Timer each had
+their own separately-hardcoded 44px, and Sabaq/Sabaq Dhor's date+history
+row had no explicit height at all. All of it now reads from one variable
+defined on `.detail-page` (shared by all 4 cards), set once to 44px —
+Row 2, Juz, Position, Duration, the Timer button, and Sabaq/Sabaq Dhor's
+date row all reference the exact same value now.
+
+**The date field sizes to its own content everywhere, matching Sabaq/
+Sabaq Dhor exactly, resolving last round's width question.** Dhor's
+Row 2 grid changes from a fixed `40% 30% 30%` to `auto 1fr 1fr` — the
+date column now sizes to its own short text (identical to how Sabaq/
+Sabaq Dhor's date field has always worked), and Plan/History split
+whatever space is left evenly between them, staying comfortably large to
+tap rather than being squeezed by a wide date field. This is a system-
+level rule now (a content-sized date column), not a one-off percentage
+tuned to look right by coincidence.
+
+**Amount switch row given breathing room** — `#dhorAmountRow` gets
+`margin-top`, matching the spacing every other row in the card already
+has, so it stops crowding Row 2 directly above it.
+
+**Verified, not just read over**: rebuilt the fake-DOM test with a real
+`HTMLInputElement`-like prototype (the earlier version's plain object
+wasn't a faithful enough stand-in to actually exercise a property-
+descriptor override) and confirmed a plain `.value` assignment — the
+exact pattern every page uses — now updates the display correctly, while
+reading `.value` back still works normally.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/customDate.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.30.0 — Dhor card UI: real root causes fixed, custom date display, rollup default flipped (2026-08-03)
 
 Everything from the last two rounds of UI feedback, including two root
