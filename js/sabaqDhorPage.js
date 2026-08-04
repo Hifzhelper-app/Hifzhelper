@@ -269,7 +269,19 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     await apiSabaqDhor.save(payload);
     document.getElementById('sabaqDhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqDhorSaveStatus').classList.remove('show'), 1800);
-    await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
+    // Bug fix (2026-08-04, found by the user): the checkboxes never got
+    // cleared after a save, so the exact same sections stayed checked --
+    // tapping Save a second time (accidental double-tap, or simply not
+    // realising it had already saved) would recompute the identical
+    // range and duplicate the entry. renderSabaqDhorScreen already
+    // rebuilds the rows from scratch on every fresh open (rebuildRowsFromPosition,
+    // reflecting the student's current position/pool, which may well have
+    // changed if this save just triggered a Dhor-transition) -- reusing it
+    // here means the checkboxes come back genuinely unchecked as a natural
+    // consequence, not a separate manual reset that could drift out of
+    // sync with what a fresh open actually does. Also handles updating
+    // History, so the separate renderRecentEntries call below is gone.
+    await renderSabaqDhorScreen();
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;
   }

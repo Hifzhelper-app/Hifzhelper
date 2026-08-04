@@ -1634,6 +1634,32 @@ the fix for a bug that broke Save entirely.
    centered, not spanning the full screen. Confirm mobile width still
    shows it full-screen.
 
+## 58. Auto-repopulate after Dhor save, "nothing entered" confirmation, Sabaq same-ayah prepopulation, Sabaq Dhor duplicate-save fix (V3.34.3)
+
+1. Save a Dhor entry (any valid one) → confirm the card immediately
+   clears and shows the next queue item, ready to log again, without
+   navigating away.
+2. On a fresh Dhor card, without touching anything, tap Save → confirm
+   a confirmation dialog appears. Tap Cancel → confirm nothing was
+   saved. Tap Save again, confirm OK this time → confirm it saves
+   normally.
+3. Fill in just Mistakes (leave everything else untouched) and Save →
+   confirm no confirmation dialog appears — one real field is enough.
+4. Repeat for Duration, Tajweed, and Notes individually — each alone
+   should be enough to skip the confirmation.
+5. Edit an existing Dhor entry and Save without changing anything →
+   confirm no confirmation dialog appears (edits are exempt).
+6. Repeat steps 2-5 for Sabaq (Lines/Pages/Tajweed/Notes as the 4
+   fields).
+7. Confirm Sabaq Dhor is unaffected — it should still hard-block (not
+   just warn) when nothing is checked, same as before.
+8. Open Sabaq fresh → confirm both From and To now show the same
+   starting ayah, not one populated and the other showing a dash.
+9. Check a section in Sabaq Dhor and Save → confirm the checkbox is
+   unchecked afterward, not still showing checked. Tap Save again
+   immediately (nothing checked now) → confirm it correctly blocks with
+   "please check at least one section," not a silent duplicate save.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

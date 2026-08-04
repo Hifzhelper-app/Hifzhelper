@@ -7,6 +7,72 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.3 — Auto-repopulate after Dhor save, "nothing entered" confirmation, Sabaq same-ayah prepopulation, Sabaq Dhor duplicate-save fix (2026-08-04)
+
+**Sabaq Dhor's checkboxes never cleared after a save** — found by the
+user before this delivery went out, holding it back rather than
+uploading a version with a live duplicate-save risk in it. The exact
+same "mark sections revised" boxes stayed checked after saving, so
+tapping Save a second time (an accidental double-tap, or simply not
+noticing the first one had gone through) would recompute the identical
+range and log a genuine duplicate. Fixed by reusing
+`renderSabaqDhorScreen`'s own existing fresh-open logic — it already
+rebuilds every row from scratch on each real open
+(`rebuildRowsFromPosition`, reflecting the student's current position/
+pool, which may well have just changed if this very save triggered a
+Dhor-transition), so the checkboxes come back genuinely unchecked as a
+natural side effect of that rebuild, not a second, separately-maintained
+reset that could drift out of sync with what a real fresh open does —
+same underlying pattern as this version's own Dhor auto-repopulate fix.
+
+**After every Dhor save, the card clears and immediately repopulates
+with the next queue item** — reuses `renderDhorScreen`'s own existing
+fresh-open logic directly rather than a second, partial version of the
+same reset, so the student can keep logging consecutive sessions without
+navigating away and back each time.
+
+**"Nothing entered" confirmation, Dhor and Sabaq.** Confirmed in chat
+after discussing (and correctly ruling out) comparing against the last
+saved entry — that approach wouldn't actually have caught an accidental
+blank save, since Dhor's segment always legitimately differs from the
+last entry as the queue advances, so "same as last time" is never true
+even for a normal working save. What actually distinguishes an
+accidentally-saved default form from a real session: Duration/Lines-
+Pages, Mistakes, tajweed tags, and Notes are all still sitting at their
+just-populated defaults. When every one of those is still empty/zero at
+Save time, a confirmation now appears before proceeding — for new
+entries only; editing an existing entry is always modifying real,
+already-logged data, not risking this scenario. Sabaq Dhor doesn't get
+this check: it already hard-blocks saving with nothing checked ("please
+check at least one section"), a stronger existing protection for the
+same underlying concern, not something to duplicate.
+
+**Sabaq's From and To now prepopulate with the same starting ayah**,
+instead of one field prepopulating and the other staying blank/dashed
+(which field used to depend on juz' 30's backwards study direction vs.
+every other juz' ascending) — `nextSabaqDefaults` (js/position.js)
+simplified accordingly, one fewer branch than before.
+
+**Verified, not just read over**: ran the actual nothing-entered check
+against a genuinely blank form and against each field individually
+being the only one filled in, confirming each real entry correctly
+prevents the confirmation from firing.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/dhorPage.js
+js/sabaqPage.js
+js/sabaqDhorPage.js
+js/position.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.2 — Timer icon semantics redefined, card-level lap rollup, responsive width cap (2026-08-04)
 
 Confirmed in chat across several rounds — the largest single change to
