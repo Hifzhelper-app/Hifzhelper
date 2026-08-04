@@ -7,6 +7,41 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.7 — Fixed: Timer card was invisible on every screen load (2026-08-04)
+
+Root cause of the "Timer card missing" issue reported across several
+rounds — confirmed via a live DOM inspection, since the static HTML and
+every deployed file checked out clean the whole time.
+
+**`renderDhorScreen` still contained `if(timerHost.elapsed === 0)
+timerHost.classList.add('hidden');`** — logic that made sense before
+V3.34.5, when the timer needed to hide itself by default on a fresh
+screen-open. Once the timer became a permanent rail card, this line
+became actively wrong: `renderDhorScreen` runs every single time the
+day-log screen opens, and a fresh timer's elapsed time is always 0 — so
+it was re-hiding the timer immediately on every load, regardless of what
+the deployed HTML or scripts actually said. This is why checking the
+GitHub source, the deployed script versions, and the zip all came back
+clean: none of them were wrong. The bug was runtime behavior inside a
+function that ran after every page load, invisible to anything that
+only inspects source or file versions — only a live DOM inspection
+during the session actually caught it.
+
+Removed the line entirely and swept the rest of the codebase for
+anything similar targeting the timer — confirmed nothing else does.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.6 — Rail scroll position fixed after editing; Duration split into 2 numeric fields (2026-08-04)
 
 **Fixed: editing a Sabaq Dhor or Dhor entry from History returned to the

@@ -303,12 +303,15 @@ async function renderDhorScreen(){
   document.getElementById('dhorEditBottombar').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
-  // 2026-08-04: only ensure-hidden if nothing's actually running -- an
-  // active or paused-with-elapsed-time session should persist across
-  // navigation (that's the whole point of the mini pill), not get reset
-  // just because this screen happens to open again.
-  const timerHost = document.getElementById('dhorTimerHost');
-  if(timerHost.elapsed === 0) timerHost.classList.add('hidden');
+  // 2026-08-04: found and fixed -- this used to ensure-hide the timer
+  // overlay on a fresh screen-open (back when it was hidden by default,
+  // pre-V3.34.5). Since the rail restructuring, the Timer is a
+  // permanent rail card, never something this function should hide at
+  // all -- this leftover line was undoing that every single time the
+  // screen opened, since a fresh timer's elapsed is always 0. Missed
+  // during V3.34.5 because it lived here, in the screen's general reset,
+  // not alongside the timer's own event handlers where the rest of that
+  // cleanup happened.
   exitDhorRawRangeMode();
   exitEditScreenMode('card-dhor');
   dhorSelectedTags = [];
