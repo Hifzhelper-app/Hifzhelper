@@ -7,6 +7,101 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.1 — Timer's target linked to the real Setup value (2026-08-04)
+
+Confirmed in chat: V3.34.0 briefly hardcoded the timer's per-session
+target at 40 minutes, flagged at the time as an unconfirmed guess. There
+was a real, live Setup field this should have read from instead —
+"Minutes / juz'" (`target_minutes_per_juz`, defaulting to 40 there too,
+which is why nothing visibly changes for a student who's never touched
+it). The Stopwatch button's click handler now fetches the profile and
+reads that value before opening the timer, scaling it by the card's
+current Amount/Unit selection the same way as before — a student who's
+set their own target to, say, 60 minutes/juz' now actually sees 30 for
+a half, not a fixed 20.
+
+Also confirmed in chat: the floating mini pill persisting across every
+screen (not just while the Dhor card is showing) is the intended
+behavior, not something to narrow — "if it's running it should be
+visible everywhere." No code change needed for that; it already worked
+this way as a side effect of the pill living outside the screen-toggling
+mechanism entirely, confirmed by tracing `showScreen` directly.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
+## V3.34.0 — Dhor's timer replaced with the supplied session-timer component (items 1-4 of 5; item 5, mini-pill lap/stop controls, deferred to a later round) (2026-08-04)
+
+**Old `js/timer.js` (Start/Lap/Stop, inline panel) removed entirely**,
+replaced with the user-supplied `js/session-timer.js` — a self-contained
+custom element (`<session-timer>`), adapted with "Start Dhor"/"Stop Dhor"
+text labels added beneath its two round control buttons (everything
+else in the supplied file is untouched).
+
+**Structural change, not just a swap**: the old timer was an inline panel
+inside the card, toggled open/closed, re-created every time the Dhor
+screen opened. The new one is a single persistent element living outside
+any one card — full-screen when active (matching the app's existing
+modal z-index), repositioned to a bottom-floating pill via CSS when its
+own "mini" mode is active. Its "Close" action minimises to that pill
+rather than dismissing outright, since the point of the mini pill is a
+running session that survives navigation rather than one that gets
+thrown away — confirmed this is what "minimise... rather than blocking
+the rest of the form" (specified for this feature well before this
+component existed) actually meant. Re-opening the Dhor screen no longer
+resets an in-progress session either: it only ensures the timer is
+hidden if nothing's actually running, so switching tabs and coming back
+doesn't lose a session someone's mid-way through — deferring item 5 to a
+later round doesn't mean an active timer is fragile in the meantime.
+
+**Save wired into the existing fields, not a new pipeline**: `dhor_log`
+already had `duration_seconds`/`lap_times` fully wired end to end
+(save, edit, validation) — the only new work was on `timer-save`,
+converting the component's elapsed/laps (milliseconds) into the same
+`dhor_duration_minutes` field and `dhorLapTimes` variable the save
+payload already reads from.
+
+**Laps now display in History** — confirmed this didn't exist anywhere
+before (lap_times was saved but never shown): each Dhor history row
+with recorded laps now lists them beneath its existing summary line.
+
+**Target for the ring** (Claude's own choice this round, flagged since
+it wasn't specified): reuses the existing "40 min per juz'" default from
+the not-yet-built Dhor rings spec, scaled by the card's current
+Half/Quarter/Full selection — the only established "how long should
+this take" concept anywhere in the app, so it seemed the more grounded
+choice than inventing a new number. Worth confirming.
+
+**Verified, not just read over**: ran the actual target-minutes mapping
+and the save handler's exact data-conversion logic (milliseconds to
+whole seconds, for both the total and each individual lap) — confirmed
+correct rounding and confirmed every lap value produced would pass the
+backend's own existing validation (non-negative integers).
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/session-timer.js (new)
+js/timer.js (deleted)
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.33.0 — Plan Dhor's vertical compression fixed at its actual root: a flex-shrink gotcha (2026-08-04)
 
 Found via the user's own DevTools experiment, isolating viewport height

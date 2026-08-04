@@ -1557,6 +1557,51 @@ the fix for a bug that broke Save entirely.
 4. Confirm the content list itself still scrolls properly when it's
    taller than the available space.
 
+## 55. Dhor's timer replaced with the session-timer component (V3.34.0)
+
+1. Open the Dhor card, tap Stopwatch → confirm the new full-screen timer
+   opens (black background, big ring, "Start Dhor"/"Stop Dhor" labels
+   under the 2 round buttons).
+2. Tap Start Dhor (the play button) → confirm it starts counting, the
+   ring fills, and the icon switches to pause.
+3. Tap Lap a few times → confirm each lap appears in the list.
+4. Tap the Close (X) icon → confirm the timer minimises to a small
+   floating pill at the bottom of the screen, still showing elapsed time
+   ticking, rather than disappearing entirely.
+5. Tap the pill → confirm it re-expands to the full view with the same
+   elapsed time and lap list intact (nothing reset).
+6. Tap the Save icon → confirm the timer closes, and the Dhor card's own
+   Duration field now shows the correct mm:ss total.
+7. Save the Dhor entry → open History → confirm the entry shows the
+   correct duration AND a line listing each lap's time.
+8. Start a NEW timer session, minimise it (Close), then switch to
+   Sabaq/Sabaq Dhor/Tadabbur and back to Dhor → confirm the mini pill
+   (or full view, if it was left open) still shows the timer running,
+   not reset.
+9. Test with Amount set to Full, Half, and Quarter → confirm the ring's
+   target (the "of XX:XX" reading) changes to 40/20/10 minutes
+   respectively.
+10. Edit an existing Dhor entry that has lap_times → confirm Duration
+    still loads correctly (this path doesn't go through the new timer
+    at all, so should behave exactly as before).
+
+## 56. Timer's target linked to the real Setup value (V3.34.1)
+
+1. Confirm Setup's Hifz Setup section shows a "Minutes / juz'" field
+   (default 40 if never touched).
+2. Change it to something else (e.g. 60), save Setup.
+3. Open the Dhor card, set Amount to Full, tap Stopwatch → confirm the
+   ring's "of XX:XX" reading shows 60:00, not 40:00.
+4. Change Amount to Half → close and reopen the timer → confirm it now
+   shows 30:00 (half of the configured 60).
+5. Reset Setup's target back to 40 (or leave a fresh student untouched)
+   → confirm the timer still defaults to 40/20/10 as before — no
+   regression for anyone who's never customized this field.
+6. Start a timer, minimise it, navigate to Settings and then Journal →
+   confirm the floating pill is visible and still ticking on both
+   screens, not just while the Dhor card itself is showing — confirmed
+   as the intended behavior this round.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

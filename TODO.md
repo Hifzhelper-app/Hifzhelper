@@ -4,6 +4,38 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.1 (2026-08-04)
+
+- [x] Timer's target now reads the student's own configured
+  target_minutes_per_juz (Setup's "Minutes / juz'" field) instead of a
+  hardcoded 40 -- verified the scaling logic against both the default
+  and a custom value. Confirmed: the mini pill persisting across every
+  screen, not just the Dhor card, is the intended behavior ("if it's
+  running it should be visible everywhere") -- no code change needed,
+  it already worked this way.
+
+## Done — V3.34.0 (2026-08-04)
+
+- [x] Old timer.js removed entirely, replaced with the user-supplied
+  session-timer.js (adapted with Start Dhor/Stop Dhor labels beneath
+  the round buttons). Now a persistent overlay (full-screen when
+  active, floating pill when minimised via Close) instead of an inline
+  panel re-created every screen-open -- an active session now survives
+  navigation between tabs rather than resetting.
+- [x] Save wired into the existing duration_seconds/lap_times fields
+  (already fully wired end to end on the backend) -- just a new data
+  source, not a new pipeline. Verified the ms-to-seconds conversion for
+  both the total and individual laps directly.
+- [x] Laps now display in History -- confirmed this never existed
+  before (lap_times was saved but never shown anywhere).
+- [ ] Item 5, still deferred (not tied to a specific version yet):
+  minimised pill currently only supports tap-to-expand (the component's
+  own native mini mode) -- adding dedicated lap/pause-stop buttons
+  directly on the pill itself requires editing the supplied component's
+  internal mini markup, deliberately held back as a separate, more
+  invasive round. (The timer's target-minutes link, also originally
+  flagged here, is resolved -- see V3.34.1 above.)
+
 ## Done — V3.33.0 (2026-08-04)
 
 - [x] Vertical compression genuinely fixed this time -- root cause was a
