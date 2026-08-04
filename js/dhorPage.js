@@ -357,22 +357,28 @@ async function renderDhorScreen(){
 // inline panel this screen used to own and re-create -- wired once here,
 // not inside renderDhorScreen.
 //
-// Target (2026-08-04, Claude's own choice, flagged since it wasn't
-// explicitly specified this round): reuses the existing 40min/juz'
-// default from the not-yet-built Dhor rings spec (confirmed in chat
-// separately), scaled by the card's current Amount/Unit selection --
-// the only established "how long should this take" concept anywhere in
-// this app, so re-using it here seemed more grounded than inventing a
-// new number. Worth confirming this is actually wanted.
-function dhorTimerTargetMinutes(){
+// Target (2026-08-04): now reads the student's own configured
+// target_minutes_per_juz (Setup's "Minutes / juz'" field, worker/src/
+// profile.js -- default 40 there too, so nothing changes for a student
+// who's never touched that field), scaled by the card's current Amount/
+// Unit selection. V3.34.0 briefly hardcoded 40 here directly -- flagged
+// at the time as Claude's own unconfirmed choice, since a real, live
+// Setup field turned out to already exist and this wasn't reading it;
+// linked properly now, confirmed in chat.
+function dhorTimerTargetMinutes(perJuzMinutes){
   const unit = document.getElementById('dhor_unit').value;
-  if(unit === 'half') return 20;
-  if(unit === 'quarter') return 10;
-  return 40; // 'full'
+  if(unit === 'half') return perJuzMinutes / 2;
+  if(unit === 'quarter') return perJuzMinutes / 4;
+  return perJuzMinutes; // 'full'
 }
-document.getElementById('dhorStopwatchToggle').addEventListener('click', () => {
+document.getElementById('dhorStopwatchToggle').addEventListener('click', async () => {
   const host = document.getElementById('dhorTimerHost');
-  host.setAttribute('target', String(dhorTimerTargetMinutes()));
+  let perJuzMinutes = 40;
+  try{
+    const profile = await apiGetProfile();
+    if(profile.target_minutes_per_juz != null) perJuzMinutes = profile.target_minutes_per_juz;
+  } catch(e){ /* fall back to the same 40 the field itself defaults to */ }
+  host.setAttribute('target', String(dhorTimerTargetMinutes(perJuzMinutes)));
   host.classList.remove('hidden');
   host.mode = 'full';
 });

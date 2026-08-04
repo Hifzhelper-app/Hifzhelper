@@ -1585,6 +1585,23 @@ the fix for a bug that broke Save entirely.
     still loads correctly (this path doesn't go through the new timer
     at all, so should behave exactly as before).
 
+## 56. Timer's target linked to the real Setup value (V3.34.1)
+
+1. Confirm Setup's Hifz Setup section shows a "Minutes / juz'" field
+   (default 40 if never touched).
+2. Change it to something else (e.g. 60), save Setup.
+3. Open the Dhor card, set Amount to Full, tap Stopwatch → confirm the
+   ring's "of XX:XX" reading shows 60:00, not 40:00.
+4. Change Amount to Half → close and reopen the timer → confirm it now
+   shows 30:00 (half of the configured 60).
+5. Reset Setup's target back to 40 (or leave a fresh student untouched)
+   → confirm the timer still defaults to 40/20/10 as before — no
+   regression for anyone who's never customized this field.
+6. Start a timer, minimise it, navigate to Settings and then Journal →
+   confirm the floating pill is visible and still ticking on both
+   screens, not just while the Dhor card itself is showing — confirmed
+   as the intended behavior this round.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
