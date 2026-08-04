@@ -27,12 +27,16 @@
    match a fixed value), while the Position switch has always had an
    explicit 42px -- so their bottom edges didn't line up. Both now share
    one explicit height instead of one side guessing at the other's. */
+/* 2026-08-04: was hardcoded to 44px separately from Row 2's own
+   --dhor-row2-h (also 44px, coincidentally the same number, but two
+   separate values that could easily drift apart again) -- now the same
+   single shared variable everywhere. */
 #dhor_juz {
-  height: 44px;
+  height: var(--dhor-row2-h);
   box-sizing: border-box;
 }
 #dhor_position_switch {
-  height: 44px;
+  height: var(--dhor-row2-h);
 }
 
 /* V3.18.0: header rebuilt as two explicit CSS grids per the confirmed
@@ -76,6 +80,7 @@
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: stretch;
+  height: var(--dhor-row2-h);
   margin-top: 4px;
   gap: var(--space-sm);
 }
@@ -127,10 +132,22 @@
    rather than changing .history-btn's general sizing, since Sabaq/Sabaq
    Dhor still use that for their own differently-laid-out History
    buttons. */
-#card-dhor { --dhor-row2-h: 40px; }
+/* 2026-08-04: unified spacing/sizing system, confirmed in chat -- one
+   shared row-height variable for every card instead of each row picking
+   its own value (this used to be 40px here, 44px on Juz/Position and
+   Duration/Timer, and nothing explicit at all on Sabaq/Sabaq Dhor's date
+   row, which is exactly why nothing lined up between cards). Defined on
+   .detail-page so all 4 cards share the exact same value. */
+.detail-page { --dhor-row2-h: 44px; }
+/* 2026-08-04: was a fixed 40:30:30 split -- confirmed in chat, changed
+   to auto:1fr:1fr so the date sizes to its own short text (matching
+   Sabaq/Sabaq Dhor's date field exactly, which has always been
+   auto-sized) instead of being stretched to fill a fixed share of the
+   row regardless of its content. Plan and History split whatever's left
+   evenly. */
 .dhor-row2 {
   display: grid;
-  grid-template-columns: 40% 30% 30%;
+  grid-template-columns: auto 1fr 1fr;
   align-items: stretch;
   gap: var(--space-sm);
   margin-top: 4px;
@@ -140,9 +157,9 @@
    column is narrower -- on a wide card this goes unnoticed, but on a
    narrow mobile width it can push a button past its assigned column and
    touch the card's edge. min-width:0 on all 3 columns forces each to
-   actually respect its 40%/30%/30% share instead. */
+   actually respect its assigned share instead. */
 .dhor-row2 > * { min-width: 0; }
-.dhor-row2 .card-header-date { width: 100%; height: var(--dhor-row2-h); }
+.dhor-row2 .card-header-date { height: var(--dhor-row2-h); }
 .dhor-row2-btn,
 .dhor-row2 #dhorRecentRail .history-btn {
   width: 100%;
@@ -161,6 +178,13 @@
   color: #fff;
   font-size: 12px;
   line-height: 1.15;
+}
+/* 2026-08-04: was sitting directly under Row 2 with no breathing room --
+   confirmed in chat. Matches the margin-top every other row in this card
+   already uses (.card-date-row, .dhor-row2, .picker-row's own natural
+   label spacing) for consistency. */
+#dhorAmountRow {
+  margin-top: var(--space-sm);
 }
 /* Row 3: Amount as a 3-way switch (reusing js/uiSwitch.js's shared
    component, same one Setup's Dhor Schedule granularity switch already
@@ -639,11 +663,11 @@
    does, and both the input and this button share an explicit height, so
    their bottom edges line up exactly rather than approximately. */
 #dhor_duration_minutes {
-  height: 44px;
+  height: var(--dhor-row2-h);
   box-sizing: border-box;
 }
 #dhorStopwatchToggle {
-  height: 44px;
+  height: var(--dhor-row2-h);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
