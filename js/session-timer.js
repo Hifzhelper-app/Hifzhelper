@@ -95,18 +95,21 @@
 .rnd:hover{background:#e6e6e6}
 .sq{width:30px;height:30px;border-radius:4px;display:block}
 .mini{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box}
-.mini-top{display:flex;justify-content:center;gap:28px}
+.mini-top{display:flex;justify-content:center;align-items:center;gap:24px}
 .mini-ic{background:none;border:0;padding:2px;color:#8e8e93;cursor:pointer;display:flex}
 .mini-ic:hover{color:#fff}
 .mini-ic svg{width:16px;height:16px}
-.mini-row{display:flex;align-items:center;gap:12px}
-.mini-time{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;flex:1;min-width:0}
-.mini-lap{background:none;border:1px solid #47474d;border-radius:999px;padding:6px 13px;color:#fff;font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;flex:none}
-.mini-lap:hover{border-color:#8e8e93}
-.mini-toggle{width:36px;height:36px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
-.mini-max{background:none;border:0;color:#8e8e93;cursor:pointer;display:flex;flex:none;padding:4px}
+.mini-max{background:none;border:0;color:#8e8e93;cursor:pointer;display:flex;padding:2px}
 .mini-max:hover{color:#fff}
-.mini-max svg{width:18px;height:18px}
+.mini-max svg{width:16px;height:16px}
+.mini-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.mini-toggle{width:36px;height:36px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.mini-time{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;flex:1;text-align:center;min-width:0}
+.mini-lap-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none}
+.mini-lap{background:none;border:1px solid #47474d;border-radius:999px;padding:6px 13px;color:#fff;font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.mini-lap:hover{border-color:#8e8e93}
+.mini-lap-dots{display:flex;gap:3px;min-height:5px}
+.mini-lap-dots span{width:5px;height:5px;border-radius:50%;background:#fff;display:block}
 .hide{display:none}`;
 
   class SessionTimer extends HTMLElement {
@@ -154,11 +157,12 @@
         '<div class="ctrls"><div class="ctrl-col"><button class="rnd" data-act="toggle" type="button"></button><span class="ctrl-label">Start Dhor</span></div>' +
         '<div class="ctrl-col"><button class="rnd" data-act="stop" type="button"><span class="sq"></span></button><span class="ctrl-label">Stop Dhor</span></div></div></div>' +
         '<div class="mini">' +
-        '<div class="mini-top">' + iconBtn('close', 'Close', 'mini-ic') + iconBtn('reset', 'Reset', 'mini-ic') + iconBtn('notetime', 'Note Time', 'mini-ic') + '</div>' +
-        '<div class="mini-row"><span class="mini-time">00:00</span>' +
-        '<button class="mini-lap" data-act="lap" type="button">Lap</button>' +
+        '<div class="mini-top">' + iconBtn('close', 'Close', 'mini-ic') + iconBtn('reset', 'Reset', 'mini-ic') + iconBtn('notetime', 'Note Time', 'mini-ic') +
+        '<button class="mini-max" data-act="maximize" type="button" aria-label="Maximise"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON.maximize + '</svg></button></div>' +
+        '<div class="mini-row">' +
         '<button class="mini-toggle" data-act="toggle" type="button"></button>' +
-        '<button class="mini-max" data-act="maximize" type="button" aria-label="Maximise"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON.maximize + '</svg></button>' +
+        '<span class="mini-time">00:00</span>' +
+        '<div class="mini-lap-wrap"><button class="mini-lap" data-act="lap" type="button">Lap</button><div class="mini-lap-dots"></div></div>' +
         '</div></div>';
       this.$ = (s) => root.querySelector(s);
       this.$$ = (s) => root.querySelectorAll(s);
@@ -235,6 +239,11 @@
         '<div class="laprow' + (i === a.length - 1 ? ' last' : '') + '"><span>Lap ' +
         (this._laps.length - a.length + i + 1) + '</span><span>' + fmt(v) + '</span></div>').join('');
       this.$('.mini-time').textContent = fmt(this._ms);
+      // Item 8 (2026-08-04, confirmed in chat): one small white dot per
+      // recorded lap, right under the Lap button -- at-a-glance
+      // confirmation of how many laps have actually been recorded, not
+      // just that at least one was.
+      this.$('.mini-lap-dots').innerHTML = this._laps.map(() => '<span></span>').join('');
     }
   }
 

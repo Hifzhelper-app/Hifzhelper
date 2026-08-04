@@ -1660,6 +1660,19 @@ the fix for a bug that broke Save entirely.
    immediately (nothing checked now) → confirm it correctly blocks with
    "please check at least one section," not a silent duplicate save.
 
+## 59. Timer pill layout finalised: Maximise repositioned, row order fixed, lap dots, mobile safe-area (V3.34.4)
+
+1. Minimise the timer → confirm the top row shows 4 icons in order:
+   Close, Reset, Note Time, Maximise (rightmost).
+2. Confirm the second row shows, left to right: the Pause/Restart
+   toggle, elapsed time (roughly centered), Lap.
+3. Tap Lap 3 times → confirm 3 small white dots appear under the Lap
+   button. Tap Reset → confirm the dots clear along with the time.
+4. On an actual mobile device (or simulated mobile viewport with a
+   notch/home indicator) → open the full-view timer → confirm none of
+   its controls (top row icons, the round Start/Stop buttons) are
+   hidden behind or overlapping the status bar or home indicator area.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

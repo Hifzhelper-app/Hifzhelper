@@ -7,6 +7,41 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.4 — Timer pill layout finalised: Maximise repositioned, row order fixed, lap dots, mobile safe-area (2026-08-04)
+
+Confirmed in chat — the last of the pill's own layout details.
+
+**Maximise moved into the top row**, rightmost of the 4 icons (Close,
+Reset, Note Time, Maximise) — was in the second row before.
+
+**Second row reordered**: Pause/Restart toggle on the left, elapsed time
+centered in the middle, Lap on the right — was time-left/lap-middle/
+toggle-right/maximise-far-right before.
+
+**A small white dot now appears under Lap for every lap actually
+recorded** — 3 laps means 3 dots, not just one indicator meaning "at
+least one." Tested the exact rendering logic directly: 0 laps produces
+no dots, 3 laps produces exactly 3.
+
+**Full-screen mode now respects the device's own safe-area insets**
+(status bar, home indicator) instead of claiming the literal 100% of
+the viewport — this is what was actually causing controls to overlap
+mobile indicators; the earlier tablet/desktop width cap (V3.34.2) was a
+separate, different gap on larger screens and didn't touch this.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/session-timer.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.3 — Auto-repopulate after Dhor save, "nothing entered" confirmation, Sabaq same-ayah prepopulation, Sabaq Dhor duplicate-save fix (2026-08-04)
 
 **Sabaq Dhor's checkboxes never cleared after a save** — found by the

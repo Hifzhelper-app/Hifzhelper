@@ -4,6 +4,16 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.4 (2026-08-04)
+
+- [x] Maximise icon moved into the pill's top row, rightmost of 4.
+- [x] Second row reordered: toggle-left, elapsed time-center, Lap-right.
+- [x] White dot per recorded lap under the Lap button -- tested the
+  rendering logic directly (0 laps = no dots, 3 laps = exactly 3).
+- [x] Full-screen timer now respects the device's own safe-area insets
+  instead of claiming the literal 100% viewport -- the actual fix for
+  controls overlapping mobile status bar/home indicator.
+
 ## Done — V3.34.3 (2026-08-04)
 
 - [x] Sabaq Dhor's checkboxes never cleared after a save (found by the

@@ -658,7 +658,10 @@
    its shadow root's :host rules) until Dhor's Stopwatch button opens it. */
 #dhorTimerHost:not(.hidden) {
   position: fixed;
-  inset: 0;
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  left: env(safe-area-inset-left, 0px);
   z-index: 300;
 }
 #dhorTimerHost:not(.hidden)[mode="mini"] {
