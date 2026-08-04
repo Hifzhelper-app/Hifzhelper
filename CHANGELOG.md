@@ -7,7 +7,39 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.34.0 — Dhor's timer replaced with the supplied session-timer component (items 1-4 of 5; item 5, mini-pill lap/stop controls, deferred to V3.34.1) (2026-08-04)
+## V3.34.1 — Timer's target linked to the real Setup value (2026-08-04)
+
+Confirmed in chat: V3.34.0 briefly hardcoded the timer's per-session
+target at 40 minutes, flagged at the time as an unconfirmed guess. There
+was a real, live Setup field this should have read from instead —
+"Minutes / juz'" (`target_minutes_per_juz`, defaulting to 40 there too,
+which is why nothing visibly changes for a student who's never touched
+it). The Stopwatch button's click handler now fetches the profile and
+reads that value before opening the timer, scaling it by the card's
+current Amount/Unit selection the same way as before — a student who's
+set their own target to, say, 60 minutes/juz' now actually sees 30 for
+a half, not a fixed 20.
+
+Also confirmed in chat: the floating mini pill persisting across every
+screen (not just while the Dhor card is showing) is the intended
+behavior, not something to narrow — "if it's running it should be
+visible everywhere." No code change needed for that; it already worked
+this way as a side effect of the pill living outside the screen-toggling
+mechanism entirely, confirmed by tracing `showScreen` directly.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
+## V3.34.0 — Dhor's timer replaced with the supplied session-timer component (items 1-4 of 5; item 5, mini-pill lap/stop controls, deferred to a later round) (2026-08-04)
 
 **Old `js/timer.js` (Start/Lap/Stop, inline panel) removed entirely**,
 replaced with the user-supplied `js/session-timer.js` — a self-contained
