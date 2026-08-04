@@ -4,16 +4,6 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
-## Done — V3.34.1 (2026-08-04)
-
-- [x] Timer's target now reads the student's own configured
-  target_minutes_per_juz (Setup's "Minutes / juz'" field) instead of a
-  hardcoded 40 -- verified the scaling logic against both the default
-  and a custom value. Confirmed: the mini pill persisting across every
-  screen, not just the Dhor card, is the intended behavior ("if it's
-  running it should be visible everywhere") -- no code change needed,
-  it already worked this way.
-
 ## Done — V3.34.0 (2026-08-04)
 
 - [x] Old timer.js removed entirely, replaced with the user-supplied
@@ -28,13 +18,15 @@ section.
   both the total and individual laps directly.
 - [x] Laps now display in History -- confirmed this never existed
   before (lap_times was saved but never shown anywhere).
-- [ ] Item 5, still deferred (not tied to a specific version yet):
-  minimised pill currently only supports tap-to-expand (the component's
-  own native mini mode) -- adding dedicated lap/pause-stop buttons
-  directly on the pill itself requires editing the supplied component's
-  internal mini markup, deliberately held back as a separate, more
-  invasive round. (The timer's target-minutes link, also originally
-  flagged here, is resolved -- see V3.34.1 above.)
+- [ ] Item 5, deferred to V3.34.1: minimised pill currently only
+  supports tap-to-expand (the component's own native mini mode) --
+  adding dedicated lap/pause-stop buttons directly on the pill itself
+  requires editing the supplied component's internal mini markup, which
+  was deliberately held back as a separate, more invasive round.
+- [ ] Flagged, not confirmed: the timer's per-session target (drives
+  how full the ring gets) reuses the existing 40min/juz' default,
+  scaled by Half/Quarter/Full -- Claude's own choice this round, not
+  something explicitly specified. Worth confirming.
 
 ## Done — V3.33.0 (2026-08-04)
 
