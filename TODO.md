@@ -4,6 +4,18 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.7 (2026-08-04)
+
+- [x] Fixed the actual root cause of the missing Timer card, reported
+  across several rounds: renderDhorScreen still had a leftover
+  if(timerHost.elapsed === 0) classList.add('hidden') line from before
+  V3.34.5 (when the timer needed to hide by default). Since it's a
+  permanent rail card now, and this function runs on every screen open,
+  it was re-hiding the timer immediately every single time -- explaining
+  why the source, deployed scripts, and zip all checked out clean while
+  the live behavior was still wrong. Only a live DOM inspection caught
+  it. Removed, swept for anything similar, found nothing else.
+
 ## Done — V3.34.6 (2026-08-04)
 
 - [x] Fixed: editing Sabaq Dhor/Dhor from History returned to the Sabaq

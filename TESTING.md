@@ -1725,6 +1725,22 @@ the fix for a bug that broke Save entirely.
 9. Edit an existing Dhor entry with a real duration → confirm both
    fields load correctly from history.
 
+## 62. Fixed: Timer card was invisible on every screen load (V3.34.7)
+
+1. Load the day-log view fresh (first visit, or after a hard refresh) →
+   confirm the Timer is visible as the 4th card in the rail immediately,
+   not just after some other interaction.
+2. Swipe/scroll to it on mobile, or confirm it's visible in the desktop
+   grid alongside Sabaq/Sabaq Dhor/Dhor.
+3. Save a Dhor entry (which re-runs renderDhorScreen per V3.34.3's
+   auto-repopulate) → confirm the Timer card is still visible afterward,
+   not hidden by the save's own screen refresh.
+4. Navigate away to Settings and back to the day-log view → confirm the
+   Timer card is still there on return.
+5. Start the timer, minimise it, navigate around, then maximise back →
+   confirm the full view (the actual rail card, not an overlay) is
+   visible and shows the correct running state.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
