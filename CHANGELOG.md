@@ -7,6 +7,44 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.33.0 — Plan Dhor's vertical compression fixed at its actual root: a flex-shrink gotcha (2026-08-04)
+
+Found via the user's own DevTools experiment, isolating viewport height
+as the real variable rather than which tab was selected — a genuinely
+useful diagnostic that led straight to the actual mechanism, after two
+earlier rounds patched the wrong layer (text centering, then a long
+label) without touching the real cause underneath.
+
+**The modal is a vertical flex column (title row, switch, content list)
+capped at 85% of the viewport's height.** `.plan-dhor-content` already
+had `flex:1; overflow-y:auto` — the clear original intent was for the
+list to be the one part that scrolls internally once content exceeds
+that cap. But without `flex-shrink:0` on its siblings, every flex child
+shrinks by default to help make room when things don't fit — so the
+title row, the switch, and the Select All button were all shrinking too,
+proportional to how much the list overflowed. "View All" (30 rows)
+squeezed things far more than "Dhor Plan" (a handful of rows) because
+there was more overflow to make room for, not because of anything about
+which tab was active per se. A shorter browser viewport made it worse
+for the same reason: 85% of a smaller number is a smaller number.
+
+Fixed by giving the title row, the switch, and Select All `flex-shrink:
+0` — only the content list absorbs overflow now, by scrolling
+internally the way it always could, while everything above it holds its
+real size regardless of how long the list underneath it gets.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.32.0 — Plan Dhor: granularity-aware rollup labels, pill-tracking bug fixed, View All Completed removed, switch centering fixed (2026-08-04)
 
 **Rollup labels now match the actual granularity a batch is built from,

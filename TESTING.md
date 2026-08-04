@@ -1542,6 +1542,21 @@ the fix for a bug that broke Save entirely.
 6. Confirm the tab switch's labels look properly centered vertically —
    not sitting oddly high/low or looking squeezed within the pill.
 
+## 54. Plan Dhor's vertical compression fixed at its actual root: a flex-shrink gotcha (V3.33.0)
+
+1. Open Plan Dhor on "Dhor Plan" → confirm the switch, title row, and
+   Select All button all look normal-sized.
+2. Switch to "View All" (30 rows, much longer than Dhor Plan's list) →
+   confirm the switch and title row look exactly the same size as they
+   did on "Dhor Plan" — no shrinking, no matter how long the list below
+   is.
+3. Shrink the browser window's height (or open DevTools docked to the
+   bottom, as in the screenshots that caught this) while "View All" is
+   showing → confirm the switch stays the same size; only the list
+   below should get shorter/need more scrolling.
+4. Confirm the content list itself still scrolls properly when it's
+   taller than the available space.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

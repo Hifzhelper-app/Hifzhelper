@@ -782,11 +782,25 @@
   display: flex;
   flex-direction: column;
 }
+/* 2026-08-04 (confirmed in chat, found via the user's own DevTools
+   experiment isolating viewport height as the real variable): every
+   child of a flex container can shrink by default unless told not to.
+   .plan-dhor-content (below) already has flex:1 + overflow-y:auto --
+   the clear intent was always for the list to be the one part that
+   scrolls internally when content exceeds the 85vh cap. But without
+   flex-shrink:0 here, the title row, switch, and Select All button
+   were ALSO shrinking to help make room, proportional to how much
+   content-list overflow there was -- which is exactly why "View All"
+   (30 rows) squeezed the switch far more than "Dhor Plan" (a handful
+   of rows) ever did, and why a shorter browser viewport made it worse:
+   85vh of a smaller viewport is a smaller number, tightening the same
+   squeeze further. */
 .plan-dhor-row1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-sm);
+  flex-shrink: 0;
 }
 .plan-dhor-title {
   font-size: 16px;
@@ -810,8 +824,10 @@
   cursor: pointer;
 }
 .plan-dhor-row1-icons button svg { width: 20px; height: 20px; }
+#planDhorTabSwitch { flex-shrink: 0; }
 .plan-dhor-select-all {
   align-self: center;
+  flex-shrink: 0;
   margin: var(--space-sm) 0;
   border: 1px solid var(--palette-evergreen);
   color: var(--palette-evergreen);

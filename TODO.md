@@ -4,6 +4,18 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.33.0 (2026-08-04)
+
+- [x] Vertical compression genuinely fixed this time -- root cause was a
+  flex-shrink gotcha, not text centering or label length. The modal's
+  title row, switch, and Select All button were all shrinking by
+  default to make room whenever the content list below overflowed the
+  85vh cap, worse the longer the list (View All's 30 rows vs Dhor
+  Plan's handful) and worse the shorter the viewport. flex-shrink:0
+  added to all 3; only the list (which already had its own scroll
+  behavior) absorbs overflow now. Found via the user's own DevTools
+  experiment isolating viewport height as the real variable.
+
 ## Done — V3.32.0 (2026-08-04)
 
 - [x] Rollup labels now match the actual batch granularity (H1/H2 for
