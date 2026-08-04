@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { id: 'sabaq', label: 'Sabaq', icon: 'sabaq' },
   { id: 'sabaqDhor', label: 'Sabaq Dhor', icon: 'sabaqDhor' },
   { id: 'dhor', label: 'Dhor', icon: 'dhor' },
-  { id: 'reflections', label: 'Reflections', icon: 'reflections' },
+  { id: 'reflections', label: 'Tadabbur', icon: 'reflections' },
   { id: 'progress', label: 'Progress', icon: 'progress' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
 ];

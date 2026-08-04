@@ -4,6 +4,25 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.5 (2026-08-04)
+
+- [x] Tadabbur moved out of the rail into its own standalone nav
+  destination (reused the existing but never-built 'reflections' nav
+  item, relabeled to "Tadabbur"). js/reflectionCard.js needed no logic
+  changes at all.
+- [x] Timer is now the rail's permanent 4th card, sharing its own dot
+  indicator, positioned the same way as Sabaq/Sabaq Dhor/Dhor rather
+  than an on-demand overlay. Stopwatch/Maximise now scroll the rail to
+  it instead of toggling visibility.
+- [x] Close no longer hides anything -- nothing left to hide now that
+  it's a permanent card.
+- [x] Minimise/maximise confirmed unchanged in spirit -- the mini pill
+  is still a genuine floating element independent of the rail.
+- [x] Found and fixed a real sizing risk: the component's own
+  min-height:640px could have overflowed its new 70-75vh rail-card
+  allotment on a shorter screen. Removed, added overflow:auto as a
+  safety net.
+
 ## Done — V3.34.4 (2026-08-04)
 
 - [x] Maximise icon moved into the pill's top row, rightmost of 4.

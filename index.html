@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.34.4"></script>
+<script src="js/pwaManifest.js?v=3.34.5"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.34.4">
-<link rel="stylesheet" href="css/base.css?v=3.34.4">
-<link rel="stylesheet" href="css/nav.css?v=3.34.4">
-<link rel="stylesheet" href="css/journal-table.css?v=3.34.4">
-<link rel="stylesheet" href="css/components.css?v=3.34.4">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.34.4">
-<link rel="stylesheet" href="css/settings.css?v=3.34.4">
-<link rel="stylesheet" href="css/admin.css?v=3.34.4">
+<link rel="stylesheet" href="css/tokens.css?v=3.34.5">
+<link rel="stylesheet" href="css/base.css?v=3.34.5">
+<link rel="stylesheet" href="css/nav.css?v=3.34.5">
+<link rel="stylesheet" href="css/journal-table.css?v=3.34.5">
+<link rel="stylesheet" href="css/components.css?v=3.34.5">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.34.5">
+<link rel="stylesheet" href="css/settings.css?v=3.34.5">
+<link rel="stylesheet" href="css/admin.css?v=3.34.5">
 </head>
 <body>
 
@@ -208,7 +208,7 @@
           <button type="button" class="dot" data-index="0">Sabaq</button>
           <button type="button" class="dot" data-index="1">SDhor</button>
           <button type="button" class="dot" data-index="2">Dhor</button>
-          <button type="button" class="dot" data-index="3">Tadabbur</button>
+          <button type="button" class="dot" data-index="3">Timer</button>
         </div>
         <button type="button" class="log-detail-close" id="logDetailClose" aria-label="Exit"></button>
       </div>
@@ -440,27 +440,41 @@
              and no Recent rail here. Date input still rendered for
              layout consistency across all 4 header rows, but hidden via
              CSS on this card specifically (no per-entry date concept). -->
-        <div class="log-detail-card detail-page" id="card-tadabbur">
-          <div class="card-scroll">
-            <div class="card-header-row">
-              <span class="card-header-icon" id="tadabburHeaderIcon"></span>
-              <h2>Tadabbur</h2>
-              <div class="card-header-save-wrap">
-                <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
-                <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span><span class="save-btn-text">Save</span></button>
-              </div>
-            </div>
-            <label>Reflection</label>
-            <textarea id="tadabbur_text" rows="8"></textarea>
-            <label class="cb-private-row">
-              <input type="checkbox" id="tadabbur_private">
-              Private
-            </label>
-            <div class="form-error" id="tadabburError"></div>
-          </div>
-        </div>
+        <!-- Timer card (2026-08-04, confirmed in chat): now a permanent
+             4th rail card, in the exact position Tadabbur used to
+             occupy -- session-timer.js's own "full" mode styling
+             applies directly, no wrapper needed. Its "mini" mode still
+             floats free of the rail entirely (css/detail-pages.css),
+             independent of which card is currently in view. -->
+        <session-timer id="dhorTimerHost" target="40" accent="#829672" mode="full"></session-timer>
 
       </div>
+    </section>
+
+    <!-- Tadabbur/Reflections screen (2026-08-04, confirmed in chat): its
+         own standalone nav destination now, not the rail's 4th card --
+         reuses the existing 'reflections' nav item (already defined in
+         js/auth.js's NAV_ITEMS, previously just a coming-soon
+         placeholder) rather than adding a second, duplicate entry for
+         the same underlying concept. js/reflectionCard.js's own logic
+         is completely unchanged -- it only ever read/wrote these same
+         element ids, never anything about the rail itself. -->
+    <section class="screen hidden" id="screen-reflections">
+      <div class="card-header-row">
+        <span class="card-header-icon" id="tadabburHeaderIcon"></span>
+        <h2>Tadabbur</h2>
+        <div class="card-header-save-wrap">
+          <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
+          <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span><span class="save-btn-text">Save</span></button>
+        </div>
+      </div>
+      <label>Reflection</label>
+      <textarea id="tadabbur_text" rows="8"></textarea>
+      <label class="cb-private-row">
+        <input type="checkbox" id="tadabbur_private">
+        Private
+      </label>
+      <div class="form-error" id="tadabburError"></div>
     </section>
 
     <!-- Admin screen -->
@@ -674,36 +688,27 @@
     </section>
 
   </main>
-  <!-- 2026-08-04: Dhor's timer, confirmed in chat -- a full-screen
-       overlay when active (session-timer's own "full" mode) that can
-       minimise to a floating pill ("mini" mode) without losing its
-       running state, rather than an inline panel inside the card the
-       way the old timer.js was. Lives here, outside any one card, so it
-       isn't torn down by that card's own re-renders. Hidden by default
-       via #dhorTimerHost's own CSS (detail-pages.css) until Dhor's
-       Stopwatch button opens it. -->
-  <session-timer id="dhorTimerHost" class="hidden" target="40" accent="#829672" mode="full"></session-timer>
 </div>
 
-<script src="shared/data.js?v=3.34.4"></script>
-<script src="js/icons.js?v=3.34.4"></script>
-<script src="js/customDate.js?v=3.34.4"></script>
-<script src="js/api.js?v=3.34.4"></script>
-<script src="js/uiSwitch.js?v=3.34.4"></script>
-<script src="js/position.js?v=3.34.4"></script>
-<script src="js/auth.js?v=3.34.4"></script>
-<script src="js/home.js?v=3.34.4"></script>
-<script src="js/tajweed.js?v=3.34.4"></script>
-<script src="js/commentPrivacy.js?v=3.34.4"></script>
-<script src="js/session-timer.js?v=3.34.4"></script>
-<script src="js/journal.js?v=3.34.4"></script>
-<script src="js/dhorPage.js?v=3.34.4"></script>
-<script src="js/sabaqPage.js?v=3.34.4"></script>
-<script src="js/sabaqDhorPage.js?v=3.34.4"></script>
-<script src="js/reflectionCard.js?v=3.34.4"></script>
-<script src="js/logDetailScreen.js?v=3.34.4"></script>
-<script src="js/settingsScreen.js?v=3.34.4"></script>
-<script src="js/adminPage.js?v=3.34.4"></script>
-<script src="js/app.js?v=3.34.4"></script>
+<script src="shared/data.js?v=3.34.5"></script>
+<script src="js/icons.js?v=3.34.5"></script>
+<script src="js/customDate.js?v=3.34.5"></script>
+<script src="js/api.js?v=3.34.5"></script>
+<script src="js/uiSwitch.js?v=3.34.5"></script>
+<script src="js/position.js?v=3.34.5"></script>
+<script src="js/auth.js?v=3.34.5"></script>
+<script src="js/home.js?v=3.34.5"></script>
+<script src="js/tajweed.js?v=3.34.5"></script>
+<script src="js/commentPrivacy.js?v=3.34.5"></script>
+<script src="js/session-timer.js?v=3.34.5"></script>
+<script src="js/journal.js?v=3.34.5"></script>
+<script src="js/dhorPage.js?v=3.34.5"></script>
+<script src="js/sabaqPage.js?v=3.34.5"></script>
+<script src="js/sabaqDhorPage.js?v=3.34.5"></script>
+<script src="js/reflectionCard.js?v=3.34.5"></script>
+<script src="js/logDetailScreen.js?v=3.34.5"></script>
+<script src="js/settingsScreen.js?v=3.34.5"></script>
+<script src="js/adminPage.js?v=3.34.5"></script>
+<script src="js/app.js?v=3.34.5"></script>
 </body>
 </html>

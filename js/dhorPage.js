@@ -372,6 +372,25 @@ function dhorTimerTargetMinutes(perJuzMinutes){
   if(unit === 'quarter') return perJuzMinutes / 4;
   return perJuzMinutes; // 'full'
 }
+// 2026-08-04, confirmed in chat: the Timer is now a permanent rail card
+// (js/logDetailScreen.js, index.html) rather than an on-demand overlay,
+// so "opening" it means scrolling the rail there, not un-hiding
+// anything -- there's no hidden state to remove any more. Navigates to
+// logDetail first only if not already there, rather than always calling
+// showScreen('logDetail', 'timer') unconditionally -- that would
+// re-render Sabaq/Sabaq Dhor/Dhor from scratch every time (renderLogDetailScreen's
+// own Promise.all), discarding any in-progress, unsaved work on them
+// just because the timer was opened from elsewhere.
+function scrollRailToTimer(){
+  const screen = document.getElementById('screen-logDetail');
+  if(screen.classList.contains('hidden')){
+    showScreen('logDetail', 'timer');
+    return;
+  }
+  const rail = document.getElementById('logDetailRail');
+  const timerCard = document.getElementById('dhorTimerHost');
+  rail.scrollTo({ left: timerCard.offsetLeft, behavior: 'smooth' });
+}
 document.getElementById('dhorStopwatchToggle').addEventListener('click', async () => {
   const host = document.getElementById('dhorTimerHost');
   let perJuzMinutes = 40;
@@ -380,40 +399,44 @@ document.getElementById('dhorStopwatchToggle').addEventListener('click', async (
     if(profile.target_minutes_per_juz != null) perJuzMinutes = profile.target_minutes_per_juz;
   } catch(e){ /* fall back to the same 40 the field itself defaults to */ }
   host.setAttribute('target', String(dhorTimerTargetMinutes(perJuzMinutes)));
-  host.classList.remove('hidden');
   host.mode = 'full';
+  scrollRailToTimer();
 });
 // Close (2026-08-04, REDEFINED, confirmed in chat): used to minimise;
 // now stops AND discards the session entirely -- a genuinely different
 // action from the new dedicated Minimise button. reset() (js/session-
 // timer.js) now also halts the clock, not just zeros it, so this is a
 // clean "throw the whole session away" -- nothing about it is saved.
+// No longer hides anything afterward -- the Timer is a permanent rail
+// card now, there's nothing to hide; it simply sits there freshly reset,
+// same as Sabaq/Sabaq Dhor/Dhor do after their own resets.
 document.getElementById('dhorTimerHost').addEventListener('timer-close', (e) => {
   e.target.reset();
-  e.target.classList.add('hidden');
 });
 // Maximise (still emits 'timer-expand', same event the old tap-to-expand
-// mini pill used) re-opens the full view -- the timer was never actually
-// hidden in between, just repositioned, so nothing about its running
-// state needs restoring here.
+// mini pill used) re-opens the full view and scrolls the rail to the
+// Timer card -- the timer's own running state was never actually
+// affected by being minimised, just its screen position, so nothing
+// about it needs restoring here.
 document.getElementById('dhorTimerHost').addEventListener('timer-expand', (e) => {
   e.target.mode = 'full';
+  scrollRailToTimer();
 });
 // "Note Time" (2026-08-04, renamed from "Save", confirmed in chat -- the
 // action is genuinely "record what the clock says," not a generic save):
 // asks for confirmation first, every time, full view or pill -- Cancel
 // leaves the timer exactly as it was (still running/paused, nothing
 // lost); OK transfers elapsed+laps into the card's own fields the same
-// way "Save" always did, populates the new lap-times rollup next to the
-// Stopwatch button (visible until the Dhor entry itself is actually
-// logged), and closes the timer.
+// way "Save" always did, and populates the new lap-times rollup next to
+// the Stopwatch button (visible until the Dhor entry itself is actually
+// logged). Resets the timer afterward -- no longer hides anything, the
+// Timer is a permanent rail card now.
 document.getElementById('dhorTimerHost').addEventListener('timer-save', (e) => {
   if(!confirm('Would you like to save this Dhor entry?\n\nCancel: no save, leave data in place.\nOK: save Dhor log.')) return;
   const { elapsed, laps } = e.detail;
   dhorLapTimes = laps && laps.length > 0 ? laps.map(ms => Math.round(ms / 1000)) : null;
   document.getElementById('dhor_duration_minutes').value = formatDhorDuration(Math.round(elapsed / 1000));
   renderDhorLapRollup();
-  e.target.classList.add('hidden');
   e.target.reset();
 });
 // Card-level lap-times rollup (2026-08-04, confirmed in chat): shows

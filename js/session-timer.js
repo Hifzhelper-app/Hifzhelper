@@ -71,7 +71,7 @@
   const CSS = `
 :host{display:block;background:#000;color:#fff;font-family:'Inter Tight',ui-sans-serif,-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 :host([mode="mini"]){background:transparent}
-.full{display:flex;flex-direction:column;height:100%;min-height:640px;box-sizing:border-box;padding:18px 20px 30px}
+.full{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:18px 20px 30px;overflow:auto}
 .top{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 4px 0}
 .ic{display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;padding:8px 0;color:#fff;cursor:pointer;font:inherit}
 .ic:hover{opacity:.6}

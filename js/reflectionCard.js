@@ -16,6 +16,13 @@
 
 let tadabburCurrentId = null;
 
+// 2026-08-04, confirmed in chat: icon injection moved here from
+// js/logDetailScreen.js, along with the rest of Tadabbur's own markup --
+// this file now owns the whole standalone screen, not just its save
+// logic.
+document.getElementById('tadabburHeaderIcon').innerHTML = iconHtml('reflections');
+document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
+
 async function renderTadabburScreen(){
   tadabburCurrentId = null;
   const textarea = document.getElementById('tadabbur_text');

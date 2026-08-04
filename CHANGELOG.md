@@ -7,6 +7,67 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.5 — Rail restructured: Timer is now a permanent card, Tadabbur has its own screen (2026-08-04)
+
+The largest single restructuring of this screen since the original
+unified day-log view (V3.6.1) — confirmed in chat.
+
+**Tadabbur moved out of the rail entirely, into its own standalone
+nav destination.** Reused the existing `'reflections'` nav item rather
+than adding a duplicate — it turned out to already be defined (`js/
+auth.js`'s `NAV_ITEMS`), just never built out, sitting behind the
+generic "coming soon" placeholder the whole time. Renamed its label
+from "Reflections" to "Tadabbur" to match the app's own consistent
+terminology everywhere else. `js/reflectionCard.js`'s own read/save
+logic needed no changes at all — it only ever operated on element ids,
+never anything about the rail itself.
+
+**The Timer takes Tadabbur's old slot as the rail's permanent 4th
+card.** No longer an on-demand overlay toggled by a hidden/visible
+class — it's simply always there, like Sabaq/Sabaq Dhor/Dhor,
+positioned via the same swipe/scroll-snap mechanism and sharing its
+own dot indicator (relabeled from "Tadabbur" to "Timer"). The Dhor
+card's Stopwatch button and the pill's Maximise action now scroll the
+rail to it (the same `scrollTo`/`offsetLeft` mechanism the dot
+indicators already used) instead of un-hiding an overlay. Built this
+to navigate to the logDetail screen first only when not already there
+— calling its full render unconditionally on every Maximise tap would
+have discarded any unsaved, in-progress work on Sabaq/Sabaq Dhor/Dhor
+just from opening the timer elsewhere in the app.
+
+**Close no longer hides anything** — confirmed, since there's nothing
+left to hide now that the timer is a permanent card; it simply resets
+and sits there, the same as any other card would after a save.
+
+**Minimise/Maximise are unchanged in spirit, confirmed explicitly**:
+the mini pill is still a genuine `position: fixed` floating element,
+independent of the rail entirely, so a running session still stays
+visible over whatever screen is showing — this was never actually
+tied to the overlay model that just got removed.
+
+**A real sizing risk found and fixed along the way**: the component's
+own `min-height: 640px` could have forced the card taller than its
+newly-allotted 70–75vh rail space on a shorter screen. Removed it,
+added `overflow: auto` as a safety net.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/app.js
+js/auth.js
+js/logDetailScreen.js
+js/dhorPage.js
+js/session-timer.js
+js/reflectionCard.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.4 — Timer pill layout finalised: Maximise repositioned, row order fixed, lap dots, mobile safe-area (2026-08-04)
 
 Confirmed in chat — the last of the pill's own layout details.
