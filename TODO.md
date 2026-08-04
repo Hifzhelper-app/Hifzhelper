@@ -4,6 +4,33 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.30.0 (2026-08-03)
+
+- [x] Row 3 (Amount switch) — root cause found and fixed: `#dhorAmountRow`
+  had a stray `class="card-date-row"` (belongs to a different, unrelated
+  layout) forcing it into an auto-sized grid column, which is why the
+  V3.28.0 width fix never actually took effect. Class removed.
+- [x] Row 2 (History button touching the edge on mobile) — grid columns
+  now have `min-width: 0`, so a child can't refuse to shrink below its
+  own content and push past its assigned column.
+- [x] Juz/Position height mismatch — both now share one explicit height
+  instead of the switch having one (42px) and the select having none.
+- [x] Timer/Duration alignment — an invisible label spacer above the
+  Timer button now mirrors Duration's real label, so both share an
+  explicit height and their bottom edges line up exactly. Icon enlarged
+  22px → 28px. Also found and consolidated a genuine duplicate
+  `#dhorStopwatchToggle` CSS rule from earlier rounds.
+- [x] Custom date display (all 3 date fields) — native `<input
+  type="date">` elements now show a consistent "DDD dd-MMM" format via
+  a new visible overlay (`js/customDate.js`), while the same native
+  picker still opens underneath and the input's own id/value/change
+  behavior is completely unchanged. Verified via a fake-DOM test:
+  wrap/hide/display sequence, exact formatted output, live re-render on
+  a simulated picker change, and idempotency (no double-wrap on a
+  second call).
+- [x] Plan Dhor's "View All Completed"/"View All" now default to
+  rolled-up Juz instead of quarters, in all 4 places that read this.
+
 ## Done — V3.29.0 (2026-08-03)
 
 - [x] Pool updates moved from Plan Dhor's Save to the Dhor card's own

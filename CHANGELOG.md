@@ -7,6 +7,81 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.30.0 — Dhor card UI: real root causes fixed, custom date display, rollup default flipped (2026-08-03)
+
+Everything from the last two rounds of UI feedback, including two root
+causes found this round that explain why earlier fixes hadn't fully
+taken effect.
+
+**Row 3 (Amount switch) — the actual bug, not a re-guess at the width.**
+`#dhorAmountRow` had `class="card-date-row"` on it by mistake — that
+class belongs to Sabaq/Sabaq Dhor's own 2-column date:history layout
+(`grid-template-columns: auto 1fr`), completely unrelated to this
+single-switch row. It was forcing the switch into an auto-sized grid
+column, so the `width: 78%` fix from last round never had a chance to
+apply. The stray class is removed; the switch's own width rule now
+actually takes effect.
+
+**Row 2 (History button touching the edge)** — grid items default to
+`min-width: auto`, which refuses to shrink a child below its own
+content's natural size even when its column is narrower; on a wide card
+this goes unnoticed, on a narrow mobile width it can push a button past
+its assigned column. `min-width: 0` added to all 3 of Row 2's columns.
+
+**Juz/Position height mismatch** — the Position switch has always had an
+explicit `height: 42px`; the Juz `<select>` had none at all, relying on
+padding + line-height, which commonly doesn't land on the same computed
+height and varies by platform. Both now share one explicit height (44px)
+instead of one side guessing at the other.
+
+**Timer/Duration alignment** — centering the whole Timer column isn't
+the same as lining up with the Duration *input* specifically, since
+Duration has its own label pushing the input down and the Timer column
+didn't. An invisible label spacer now sits above the Timer button,
+mirroring Duration's real label, and both the input and button share an
+explicit height — their bottom edges line up exactly now rather than
+approximately. The icon is also bigger (22px → 28px). Found and fixed a
+duplicate `#dhorStopwatchToggle` CSS rule along the way — two separate
+rules for the same selector had accumulated across earlier rounds; they're
+consolidated into one now.
+
+**Custom date display, all 3 date fields (Sabaq/Sabaq Dhor/Dhor)** — a
+native `<input type="date">`'s displayed text is entirely browser/OS-
+controlled; no CSS can reformat it, which is exactly why two different
+screenshots this round showed two different formats for the identical
+date. New `js/customDate.js`: wraps each date input (still fully
+functional underneath, same id/`.value`/change event, so every existing
+read against it is untouched) with a visible button showing a consistent
+"DDD dd-MMM" format everywhere; clicking it calls the input's own
+`.showPicker()` to open the same native picker as before, with a
+focus+click fallback for browsers without that method yet. Padding and
+font-size on the visible display are reduced too, per an earlier separate
+request folded in here.
+
+**Plan Dhor's "View All Completed"/"View All" now default to rolled-up
+Juz** instead of the most granular (quarters) view — all 4 places that
+read this default changed.
+
+**Verified, not just read over**: ran the real, extracted
+`wireCustomDateDisplay`/`formatCustomDate` code against a fake DOM —
+confirmed the wrap/hide/display sequence, the exact formatted output for
+2 different dates, live re-rendering on a simulated native picker change,
+and that calling it twice never double-wraps.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/customDate.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.29.0 — Pool updates moved to the Dhor card's actual Save; Dhor Plan's range-select fixed for queue wraparound (2026-08-03)
 
 Two related fixes, both confirmed in chat, both about when/how

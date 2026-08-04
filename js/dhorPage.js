@@ -425,7 +425,7 @@ function segmentToQuarterUnits(segment_from, segment_to, ref){
 // clean, fully-available group merges" rule Sabaq Dhor's own rollup
 // uses, just evaluated per-juz here instead of for one active juz'.
 function computePlanDhorRowsForJuz(juzNum, availableSet){
-  const level = planDhorRollup[juzNum] || 'quarters';
+  const level = planDhorRollup[juzNum] || 'full';
   const all4 = quarterUnitsForJuz(juzNum);
   const present = all4.filter(u => availableSet.has(u));
   if(present.length === 0) return [];
@@ -502,7 +502,7 @@ function renderPlanDhorQueueDayRow(dayGroup){
   return html;
 }
 function planDhorCanMergeUp(juzNum, availableSet){
-  const level = planDhorRollup[juzNum] || 'quarters';
+  const level = planDhorRollup[juzNum] || 'full';
   if(level === 'full') return false;
   const rowsNow = computePlanDhorRowsForJuz(juzNum, availableSet).map(r => r.units.join(','));
   const nextLevel = level === 'quarters' ? 'half' : 'full';
@@ -513,7 +513,7 @@ function planDhorCanMergeUp(juzNum, availableSet){
   return rowsNow.join('|') !== rowsNext.join('|');
 }
 function planDhorCanSplitDown(juzNum){
-  return (planDhorRollup[juzNum] || 'quarters') !== 'quarters';
+  return (planDhorRollup[juzNum] || 'full') !== 'quarters';
 }
 
 // V3.24.0: raw-range mode -- the main Dhor form's alternate state for a
@@ -838,7 +838,7 @@ function wirePlanDhorContent(){
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const juzNum = parseInt(btn.dataset.juz, 10);
-      const level = planDhorRollup[juzNum] || 'quarters';
+      const level = planDhorRollup[juzNum] || 'full';
       if(btn.dataset.action === 'up') planDhorRollup[juzNum] = level === 'quarters' ? 'half' : 'full';
       else planDhorRollup[juzNum] = level === 'full' ? 'half' : 'quarters';
       renderPlanDhorTabContent();
