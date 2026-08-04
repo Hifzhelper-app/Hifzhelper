@@ -4,6 +4,20 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.32.0 (2026-08-04)
+
+- [x] Rollup labels now match the actual batch granularity (H1/H2 for
+  halves, not always Q1/Q4) via describeDhorSegment, simplifying to
+  plain "Juz X to Juz Y" only for a genuine whole-juz span. Verified
+  against both cases plus a single-juz case.
+- [x] Pill-tracking bug fixed -- the switch's own visual state was only
+  computed once at modal-open time, never re-run on tab change.
+- [x] "View All Completed" removed entirely; the 2 now-single-branch
+  ternaries simplified, an unreachable dead branch removed.
+- [x] Vertical compression fixed at the root -- .switch-option (shared by
+  every switch in the app) now has proper flex centering, not resolved
+  incidentally by having fewer/shorter labels.
+
 ## Done — V3.31.0 (2026-08-04)
 
 - [x] Date display bug fixed at its root — every page sets its date
