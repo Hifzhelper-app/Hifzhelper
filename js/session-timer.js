@@ -1,10 +1,34 @@
 /* Session Timer — dependency-free <session-timer> custom element.
  *
- * Hifzhelper-adapted copy (2026-08-04, confirmed in chat) of the
- * originally-supplied session-timer.js: added "Start Dhor"/"Stop Dhor"
- * text labels beneath the two round control buttons (.ctrl-col wrapper +
- * .ctrl-label, in the CSS and the .ctrls markup below) -- everything
- * else is the file as supplied, untouched.
+ * Hifzhelper-adapted copy of the originally-supplied session-timer.js.
+ * Changes made across 2 rounds (2026-08-04, confirmed in chat each time):
+ *
+ * Round 1: added "Start Dhor"/"Stop Dhor" text labels beneath the two
+ * round control buttons (.ctrl-col/.ctrl-label).
+ *
+ * Round 2 (this one) -- icon semantics substantially redefined:
+ *   - Close now stops AND discards (host app resets+hides on 'timer-close'
+ *     rather than minimising) -- was minimise before, now a real "throw
+ *     this session away" action, distinct from the new Minimise button.
+ *   - Reset now also stops the clock, not just zeros it while continuing
+ *     to tick -- the supplied reset() left _running untouched; added
+ *     `this._running = false` so it always waits for a deliberate Start.
+ *   - "Save" renamed "Note Time" throughout (data-act, aria labels) and
+ *     re-iconed to a clipboard-clock (user-supplied notetime.svg) --
+ *     still emits the same 'timer-save' event name, only the surface
+ *     changed, not what the host app listens for.
+ *   - New dedicated Minimise icon (full view, 4th icon in .top) and
+ *     Maximise icon (on the pill itself) -- the pill's body is no longer
+ *     one big "tap anywhere to expand" button, since it now holds
+ *     several independently-tappable controls of its own (elapsed time,
+ *     Lap, Pause/Restart), so a single dedicated tap target for
+ *     re-expanding was needed. Minimise is a pure internal mode switch
+ *     (no event -- nothing outside the component needs to react to it);
+ *     Maximise still emits 'timer-expand', same as the old tap-to-expand
+ *     mini button did.
+ *   - Pill (.mini) markup rebuilt entirely: a top row of 3 small icons
+ *     (Close/Reset/Note Time, mirroring the full view's top row) above a
+ *     second row (elapsed time, Lap, Pause/Restart toggle, Maximise).
  *
  *   <script src="session-timer.js"></script>
  *   <session-timer target="25" accent="#0a84ff"></session-timer>
@@ -22,7 +46,8 @@
  * Events (all bubble + compose, detail { elapsed, laps, running })
  *   timer-start, timer-pause, timer-stop, timer-lap, timer-reset,
  *   timer-save, timer-close, timer-expand
- *   Stop halts the clock and KEEPS the time on screen; reset clears.
+ *   Stop halts the clock and KEEPS the time on screen; reset now also
+ *   halts it (see above) as well as clearing it.
  */
 (function () {
   const fmt = (ms) => {
@@ -32,18 +57,22 @@
   const ICON = {
     close: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
     reset: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><polyline points="20 3 20 8 15 8"/>',
-    save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+    // "Note Time" (was "Save") -- user-supplied notetime.svg, a
+    // clipboard-clock, verbatim path data.
+    notetime: '<path d="M16 14v2.2l1.6 1"/><path d="M16 4h2a2 2 0 0 1 2 2v.832"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2"/><circle cx="16" cy="16" r="6"/><rect x="8" y="2" width="8" height="4" rx="1"/>',
+    minimize: '<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10 21 3"/><path d="M3 21l7-7"/>',
+    maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   };
-  const iconBtn = (act, label) =>
-    '<button class="ic" data-act="' + act + '" type="button">' +
+  const iconBtn = (act, label, cls) =>
+    '<button class="' + (cls || 'ic') + '" data-act="' + act + '" type="button" aria-label="' + label + '">' +
     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-    ICON[act] + '</svg><span>' + label + '</span></button>';
+    ICON[act] + '</svg>' + (cls ? '' : '<span>' + label + '</span>') + '</button>';
 
   const CSS = `
 :host{display:block;background:#000;color:#fff;font-family:'Inter Tight',ui-sans-serif,-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 :host([mode="mini"]){background:transparent}
 .full{display:flex;flex-direction:column;height:100%;min-height:640px;box-sizing:border-box;padding:18px 20px 30px}
-.top{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px 4px 0}
+.top{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 4px 0}
 .ic{display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;padding:8px 0;color:#fff;cursor:pointer;font:inherit}
 .ic:hover{opacity:.6}
 .ic span{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8e8e93}
@@ -65,15 +94,19 @@
 .rnd{width:96px;height:96px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .rnd:hover{background:#e6e6e6}
 .sq{width:30px;height:30px;border-radius:4px;display:block}
-.mini{display:flex;align-items:center;gap:14px;width:100%;padding:12px 18px 12px 12px;border-radius:999px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;cursor:pointer;text-align:left;box-sizing:border-box}
-.mini:hover{border-color:#47474d}
-.mring{position:relative;width:44px;height:44px;flex:none}
-.mring svg{width:44px;height:44px;transform:rotate(-90deg)}
-.mnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
-.mtxt{display:flex;flex-direction:column;gap:3px;flex:1}
-.mtitle{font-size:15px;font-weight:600;letter-spacing:-.01em}
-.msub{font-size:12px;color:#8e8e93;letter-spacing:.02em}
-.mdot{width:12px;height:12px;border-radius:50%;flex:none}
+.mini{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box}
+.mini-top{display:flex;justify-content:center;gap:28px}
+.mini-ic{background:none;border:0;padding:2px;color:#8e8e93;cursor:pointer;display:flex}
+.mini-ic:hover{color:#fff}
+.mini-ic svg{width:16px;height:16px}
+.mini-row{display:flex;align-items:center;gap:12px}
+.mini-time{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;flex:1;min-width:0}
+.mini-lap{background:none;border:1px solid #47474d;border-radius:999px;padding:6px 13px;color:#fff;font:inherit;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;flex:none}
+.mini-lap:hover{border-color:#8e8e93}
+.mini-toggle{width:36px;height:36px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.mini-max{background:none;border:0;color:#8e8e93;cursor:pointer;display:flex;flex:none;padding:4px}
+.mini-max:hover{color:#fff}
+.mini-max svg{width:18px;height:18px}
 .hide{display:none}`;
 
   class SessionTimer extends HTMLElement {
@@ -110,7 +143,7 @@
     _build() {
       const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
       root.innerHTML = '<style>' + CSS + '</style>' +
-        '<div class="full"><div class="top">' + iconBtn('close', 'Close') + iconBtn('reset', 'Reset') + iconBtn('save', 'Save') + '</div>' +
+        '<div class="full"><div class="top">' + iconBtn('close', 'Close') + iconBtn('reset', 'Reset') + iconBtn('notetime', 'Note Time') + iconBtn('minimize', 'Minimise') + '</div>' +
         '<div class="dial"><div class="dial-in"><svg viewBox="0 0 300 300">' +
         '<circle cx="150" cy="150" r="140" fill="none" stroke="#2a2a2c" stroke-width="10"></circle>' +
         '<circle class="arc" cx="150" cy="150" r="140" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="butt" stroke-dasharray="879.65" stroke-dashoffset="879.65"></circle>' +
@@ -120,12 +153,15 @@
         '<div class="laps"></div>' +
         '<div class="ctrls"><div class="ctrl-col"><button class="rnd" data-act="toggle" type="button"></button><span class="ctrl-label">Start Dhor</span></div>' +
         '<div class="ctrl-col"><button class="rnd" data-act="stop" type="button"><span class="sq"></span></button><span class="ctrl-label">Stop Dhor</span></div></div></div>' +
-        '<button class="mini" data-act="expand" type="button"><span class="mring"><svg viewBox="0 0 44 44">' +
-        '<circle cx="22" cy="22" r="19" fill="none" stroke="#2a2a2c" stroke-width="4"></circle>' +
-        '<circle class="marc" cx="22" cy="22" r="19" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="119.4"></circle>' +
-        '</svg><span class="mnum">0m</span></span><span class="mtxt"><span class="mtitle"></span><span class="msub"></span></span>' +
-        '<span class="mdot"></span></button>';
+        '<div class="mini">' +
+        '<div class="mini-top">' + iconBtn('close', 'Close', 'mini-ic') + iconBtn('reset', 'Reset', 'mini-ic') + iconBtn('notetime', 'Note Time', 'mini-ic') + '</div>' +
+        '<div class="mini-row"><span class="mini-time">00:00</span>' +
+        '<button class="mini-lap" data-act="lap" type="button">Lap</button>' +
+        '<button class="mini-toggle" data-act="toggle" type="button"></button>' +
+        '<button class="mini-max" data-act="maximize" type="button" aria-label="Maximise"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON.maximize + '</svg></button>' +
+        '</div></div>';
       this.$ = (s) => root.querySelector(s);
+      this.$$ = (s) => root.querySelectorAll(s);
       root.addEventListener('click', (e) => {
         const b = e.target.closest('[data-act]');
         if (!b) return;
@@ -134,9 +170,18 @@
         else if (a === 'lap') this.lap();
         else if (a === 'stop') this.stop();
         else if (a === 'reset') this.reset();
-        else if (a === 'save') this._emit('timer-save');
+        else if (a === 'notetime') this._emit('timer-save');
+        // Close: stops the clock the same way it always has -- discarding
+        // the session entirely and hiding the overlay is the host app's
+        // job (js/dhorPage.js's own 'timer-close' listener), not this
+        // component's, since "hidden" isn't a concept this component
+        // tracks about itself at all.
         else if (a === 'close') { this.pause(); this._emit('timer-close'); }
-        else if (a === 'expand') { this.mode = 'full'; this._emit('timer-expand'); }
+        // Minimise: a pure internal mode switch, no event -- nothing
+        // outside this component needs to react to going small.
+        else if (a === 'minimize') { this.mode = 'mini'; }
+        // Maximise: same as the old tap-to-expand mini button used to be.
+        else if (a === 'maximize') { this.mode = 'full'; this._emit('timer-expand'); }
       });
       this._built = true;
       this._paint();
@@ -156,7 +201,12 @@
     toggle() { this._running ? this.pause() : this.start(); }
     stop() { this._running = false; this._paint(); this._save(); this._emit('timer-stop'); }
     lap() { this._laps.push(this._ms - this._lastLap); this._lastLap = this._ms; this._paint(); this._save(); this._emit('timer-lap'); }
-    reset() { this._ms = 0; this._laps = []; this._lastLap = 0; this._t0 = performance.now(); this._paint(); this._save(); this._emit('timer-reset'); }
+    // Reset now also stops the clock (this._running = false), not just
+    // zeros it while leaving it running -- confirmed in chat: "Reset
+    // stops and resets," waiting for a deliberate Start rather than
+    // continuing to tick from 0. The supplied version left _running
+    // untouched here.
+    reset() { this._ms = 0; this._laps = []; this._lastLap = 0; this._running = false; this._t0 = performance.now(); this._paint(); this._save(); this._emit('timer-reset'); }
 
     _paint() {
       if (!this._built) return;
@@ -171,19 +221,20 @@
       this.$('.dotg').setAttribute('transform', 'rotate(' + (90 + frac * 360).toFixed(2) + ' 150 150)');
       this.$('.dot').setAttribute('fill', acc);
       this.$('.sq').style.background = acc;
-      this.$('.mdot').style.background = acc;
-      this.$('[data-act="toggle"]').innerHTML = this._running
-        ? '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4.2" height="16" rx="1"/><rect x="13.8" y="4" width="4.2" height="16" rx="1"/></svg>'
-        : '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20"/></svg>';
+      // Both the big round toggle (full view) and the small pill toggle
+      // now share data-act="toggle" -- querySelectorAll+forEach updates
+      // both, where the old single this.$(...) would only ever have
+      // touched the first match.
+      const toggleOnHtml = '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4.2" height="16" rx="1"/><rect x="13.8" y="4" width="4.2" height="16" rx="1"/></svg>';
+      const toggleOffHtml = '<svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><polygon points="7,4 20,12 7,20"/></svg>';
+      this.$$('[data-act="toggle"]').forEach(el => { el.innerHTML = this._running ? toggleOnHtml : toggleOffHtml; });
       const showLaps = this.getAttribute('laps') !== 'off';
       this.$('.lapwrap').classList.toggle('hide', !showLaps);
+      this.$$('.mini-lap').forEach(el => el.classList.toggle('hide', !showLaps));
       this.$('.laps').innerHTML = !showLaps ? '' : this._laps.slice(-4).map((v, i, a) =>
         '<div class="laprow' + (i === a.length - 1 ? ' last' : '') + '"><span>Lap ' +
         (this._laps.length - a.length + i + 1) + '</span><span>' + fmt(v) + '</span></div>').join('');
-      this.$('.marc').setAttribute('stroke-dashoffset', (2 * Math.PI * 19 * (1 - frac)).toFixed(1));
-      this.$('.mnum').textContent = Math.floor(this._ms / 60000) + 'm';
-      this.$('.mtitle').textContent = this._running ? 'Session running' : (this._ms ? 'Session paused' : 'Session ready');
-      this.$('.msub').textContent = fmt(this._ms) + ' of ' + fmt(this.target);
+      this.$('.mini-time').textContent = fmt(this._ms);
     }
   }
 

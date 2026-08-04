@@ -284,6 +284,7 @@ async function renderDhorScreen(){
   exitEditScreenMode('card-dhor');
   dhorSelectedTags = [];
   dhorLapTimes = null;
+  renderDhorLapRollup();
   document.getElementById('dhor_duration_minutes').value = '';
   dhorActivePlanId = null;
   document.getElementById('dhor_date').value = todayISO();
@@ -382,37 +383,64 @@ document.getElementById('dhorStopwatchToggle').addEventListener('click', async (
   host.classList.remove('hidden');
   host.mode = 'full';
 });
-// "Close" (session-timer's own X icon) minimises to the floating pill
-// rather than dismissing the timer outright -- confirmed in chat: the
-// point of the mini pill is that the timer keeps running underneath
-// while the rest of the card is still usable, not that closing throws
-// the session away. The component's own close handler already pauses
-// before emitting this, matching Stop/Start's own general semantics.
+// Close (2026-08-04, REDEFINED, confirmed in chat): used to minimise;
+// now stops AND discards the session entirely -- a genuinely different
+// action from the new dedicated Minimise button. reset() (js/session-
+// timer.js) now also halts the clock, not just zeros it, so this is a
+// clean "throw the whole session away" -- nothing about it is saved.
 document.getElementById('dhorTimerHost').addEventListener('timer-close', (e) => {
-  e.target.mode = 'mini';
+  e.target.reset();
+  e.target.classList.add('hidden');
 });
-// Tapping the mini pill (session-timer's own "expand" action) re-opens
-// the full view -- the timer was never actually hidden in between, just
-// repositioned, so nothing about its running state needs restoring here.
+// Maximise (still emits 'timer-expand', same event the old tap-to-expand
+// mini pill used) re-opens the full view -- the timer was never actually
+// hidden in between, just repositioned, so nothing about its running
+// state needs restoring here.
 document.getElementById('dhorTimerHost').addEventListener('timer-expand', (e) => {
   e.target.mode = 'full';
 });
-// Save (2026-08-04, confirmed in chat): the elapsed total and lap times
-// both transfer into the card's own fields -- Duration stays the single
-// source of truth the save payload actually reads from (computeDhorDuration,
-// further below), same as it always has; this just changes where that
-// value comes from. Programmatic assignment deliberately doesn't fire
-// 'input', so it doesn't trip the manual-override handler that clears
-// laps when a person types into Duration directly. Hides the timer
-// entirely afterward -- the session's data has now been captured into
-// the form, so there's nothing left for the overlay/pill to keep doing.
+// "Note Time" (2026-08-04, renamed from "Save", confirmed in chat -- the
+// action is genuinely "record what the clock says," not a generic save):
+// asks for confirmation first, every time, full view or pill -- Cancel
+// leaves the timer exactly as it was (still running/paused, nothing
+// lost); OK transfers elapsed+laps into the card's own fields the same
+// way "Save" always did, populates the new lap-times rollup next to the
+// Stopwatch button (visible until the Dhor entry itself is actually
+// logged), and closes the timer.
 document.getElementById('dhorTimerHost').addEventListener('timer-save', (e) => {
+  if(!confirm('Would you like to save this Dhor entry?\n\nCancel: no save, leave data in place.\nOK: save Dhor log.')) return;
   const { elapsed, laps } = e.detail;
   dhorLapTimes = laps && laps.length > 0 ? laps.map(ms => Math.round(ms / 1000)) : null;
   document.getElementById('dhor_duration_minutes').value = formatDhorDuration(Math.round(elapsed / 1000));
+  renderDhorLapRollup();
   e.target.classList.add('hidden');
   e.target.reset();
 });
+// Card-level lap-times rollup (2026-08-04, confirmed in chat): shows
+// what Note Time captured, right next to the Stopwatch button, until the
+// Dhor entry itself is actually saved (at which point History takes
+// over as the record of it -- see the 3 dhorLapTimes = null reset points
+// elsewhere in this file, each now also calls this to hide/clear it).
+function renderDhorLapRollup(){
+  const wrap = document.getElementById('dhorLapRollup');
+  const list = document.getElementById('dhorLapRollupList');
+  if(!dhorLapTimes || dhorLapTimes.length === 0){
+    wrap.classList.add('hidden');
+    list.classList.add('hidden');
+    list.innerHTML = '';
+    document.getElementById('dhorLapRollupToggle').textContent = '▸ Lap times';
+    return;
+  }
+  wrap.classList.remove('hidden');
+  list.innerHTML = dhorLapTimes.map((s, i) => `<div>Lap ${i + 1}: ${formatDhorDuration(s)}</div>`).join('');
+}
+document.getElementById('dhorLapRollupToggle').addEventListener('click', () => {
+  const list = document.getElementById('dhorLapRollupList');
+  const expanded = !list.classList.contains('hidden');
+  list.classList.toggle('hidden', expanded);
+  document.getElementById('dhorLapRollupToggle').textContent = (expanded ? '▸' : '▾') + ' Lap times';
+});
+
 
 // V3.23.1: View Plan mirrors History's popup, but for what's still
 // UPCOMING (today onward, still 'planned') rather than what's already
@@ -972,6 +1000,7 @@ function planDhorHandleQueueRowTap(rowIndex){
 // time either way -- see parseDhorDuration above).
 document.getElementById('dhor_duration_minutes').addEventListener('input', () => {
   dhorLapTimes = null;
+  renderDhorLapRollup();
 });
 
 function loadDhorEntryForEdit(entry){
@@ -985,6 +1014,7 @@ function loadDhorEntryForEdit(entry){
   // V3.24.0: mm:ss is lossless, so this is just a direct format now --
   // no more "trust as exact until touched" bookkeeping needed.
   dhorLapTimes = entry.lap_times || null;
+  renderDhorLapRollup();
   document.getElementById('dhor_duration_minutes').value = formatDhorDuration(entry.duration_seconds);
   document.getElementById('dhorEditTopbarDate').textContent =
     `${entry.date} (${describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef)} — not editable here)`;
@@ -1008,6 +1038,7 @@ function resetDhorFormAfterEdit(){
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', null);
   dhorLapTimes = null;
+  renderDhorLapRollup();
   document.getElementById('dhor_duration_minutes').value = '';
 }
 document.getElementById('dhorEditCancelBtn2').addEventListener('click', () => {
@@ -1132,6 +1163,11 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     }
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
+    // 2026-08-04, confirmed in chat: the lap-times rollup is visible
+    // "until log is saved" -- now that it genuinely has been, History
+    // is the record of it going forward, not this card.
+    dhorLapTimes = null;
+    renderDhorLapRollup();
     if(dhorRawRange) exitDhorRawRangeMode();
     await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
   } catch(e){

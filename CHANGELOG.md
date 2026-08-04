@@ -7,6 +7,73 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.2 — Timer icon semantics redefined, card-level lap rollup, responsive width cap (2026-08-04)
+
+Confirmed in chat across several rounds — the largest single change to
+the timer since it was first integrated.
+
+**Close and Reset now do genuinely different things than they did
+before.** Close used to minimise; now it stops the clock and discards
+the session entirely (no save, nothing kept) — minimising is now its
+own dedicated icon, since the pill's body is no longer one big "tap
+anywhere to expand" surface (it holds its own controls now, see below),
+so a single explicit tap target for going small was needed either way.
+Reset used to zero the count while leaving a running timer still
+ticking from 0 — confirmed this should stop it too, waiting for a
+deliberate Start; the supplied component's own `reset()` left
+`_running` untouched, so this required a real (small) change to its
+internals, not just relabeling a button.
+
+**"Save" is now "Note Time"**, re-iconed with the user-supplied
+clipboard-clock SVG — same underlying action and same `timer-save`
+event name the host app listens for, just a different face on it,
+reflecting that this records a duration rather than saving a document.
+Tapping it now asks for confirmation every time, full view or pill —
+Cancel leaves everything exactly as it was; OK transfers elapsed/laps
+into the card the same way it always has.
+
+**Mini pill rebuilt entirely**, no longer a single button: a row of 3
+small icons (Close/Reset/Note Time) above a second row (elapsed time,
+Lap, Pause/Restart toggle, Maximise). Both the full view's big round
+toggle and the pill's own small one share `data-act="toggle"` now, so
+`_paint()` updates both together rather than just the first match a
+plain `querySelector` would have found.
+
+**New lap-times rollup on the Dhor card itself**, next to the Timer
+button — shows what Note Time captured, collapsible, staying visible
+until the Dhor entry is actually saved (at which point History becomes
+the record of it instead, and the rollup clears). Wired into every
+existing place `dhorLapTimes` already got reset, plus the actual save
+success path, which didn't clear it before.
+
+**Full-screen mode capped to the same width every other single-screen
+element in the app already respects** — `--width-tablet`/`--width-
+desktop`, same breakpoints, not new values invented for the timer.
+This was the real gap behind an earlier full-screen complaint: the
+immediate symptom that prompted it turned out to be a missing deployed
+file (a blank overlay with nothing rendered, not a design choice), but
+the underlying width issue was real and independent of that, and is
+fixed here.
+
+**Verified, not just read over**: confirmed `reset()`'s new
+`_running = false` is actually present in the rewritten source, and ran
+the new rollup function against both the empty and populated cases,
+confirming visibility toggling and exact formatted lap lines.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/session-timer.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.1 — Timer's target linked to the real Setup value (2026-08-04)
 
 Confirmed in chat: V3.34.0 briefly hardcoded the timer's per-session

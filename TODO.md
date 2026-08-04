@@ -4,6 +4,26 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.2 (2026-08-04)
+
+- [x] Close now stops and fully discards (was minimise); Reset now also
+  stops the clock, not just zeros it (a real change to the supplied
+  component's own reset(), verified the _running=false line is actually
+  present). Minimise is its own new dedicated icon since the pill's
+  body is no longer a single tap-to-expand surface.
+- [x] "Save" renamed "Note Time", re-iconed with the user-supplied
+  clipboard-clock SVG. Confirmation dialog added, every tap, both views.
+- [x] Mini pill rebuilt entirely: Close/Reset/Note Time icons above,
+  elapsed time + Lap + Pause/Restart + Maximise in one row below.
+- [x] New lap-times rollup on the Dhor card next to the Timer button --
+  visible until the entry is actually saved, then clears (History takes
+  over). Tested against both the empty and populated cases directly.
+- [x] Full-view timer now capped to --width-tablet/--width-desktop at
+  the same breakpoints every other single-screen element in the app
+  already uses -- the real fix for the earlier full-screen complaint
+  (separate from the missing-deployed-file bug that caused the blank
+  full-screen symptom reported at the time).
+
 ## Done — V3.34.1 (2026-08-04)
 
 - [x] Timer's target now reads the student's own configured

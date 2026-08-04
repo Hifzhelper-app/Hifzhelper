@@ -1602,6 +1602,38 @@ the fix for a bug that broke Save entirely.
    screens, not just while the Dhor card itself is showing — confirmed
    as the intended behavior this round.
 
+## 57. Timer icon semantics redefined, card-level lap rollup, responsive width cap (V3.34.2)
+
+1. Open the timer, let it run a few seconds, tap Close → confirm it
+   fully disappears (not minimises), and the Duration field on the card
+   is untouched (nothing was saved).
+2. Reopen, run it, tap Reset → confirm the display goes back to 00:00
+   AND stays stopped — tapping it again shouldn't show the clock still
+   ticking from 0; a genuine Start tap should be required.
+3. Confirm the top row (full view) now shows 4 icons: Close, Reset,
+   Note Time (clipboard-clock icon), Minimise.
+4. Tap Minimise → confirm it shrinks to the pill and keeps running.
+   Confirm the pill shows: a top row of 3 small icons (Close/Reset/Note
+   Time) and a second row (elapsed time, Lap, Pause/Restart, Maximise).
+5. From the pill, tap Lap → confirm a lap gets recorded (check via Note
+   Time afterward that it shows up). Tap Pause/Restart → confirm it
+   toggles correctly. Tap Maximise → confirm it returns to full view
+   with the same elapsed time and laps intact.
+6. Tap Note Time (either view) → confirm a confirmation dialog appears.
+   Tap Cancel → confirm nothing changes, timer keeps its current state.
+   Tap Note Time again, confirm OK this time → confirm Duration
+   populates, the timer closes, and a small "Lap times" rollup appears
+   next to the Timer button (if laps were recorded).
+7. Tap the "Lap times" rollup → confirm it expands to show each lap's
+   time, collapses again on a second tap.
+8. Save the actual Dhor entry (the card's own Save button) → confirm
+   the lap-times rollup disappears from the card, and the entry's laps
+   show up correctly in History instead.
+9. On a tablet-width and then desktop-width browser window, open the
+   full-view timer → confirm it's capped at 50%/30% width respectively,
+   centered, not spanning the full screen. Confirm mobile width still
+   shows it full-screen.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
