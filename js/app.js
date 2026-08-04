@@ -28,8 +28,8 @@ function showWelcome(name){
 // V3.9.0: 'settings' now also covers Dhor Schedule and Haidh — the old
 // 'plans' nav item/placeholder is gone entirely (no separate destination
 // for it anymore, confirmed in chat), so SCREEN_LABELS lost that entry.
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true };
-const SCREEN_LABELS = { reflections: 'Reflections', progress: 'Progress' };
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true };
+const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
@@ -47,6 +47,7 @@ async function showScreen(id, param){
   if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
   if(id === 'settings') await renderSettingsScreen();
+  if(id === 'reflections') await renderTadabburScreen();
   // V3.8.0: generalized from the old fixJournalTopPaint(), which only ever
   // corrected #screen-journal — every OTHER screen (including Setup) had
   // the exact same Safari "invisible until scroll" symptom, just never

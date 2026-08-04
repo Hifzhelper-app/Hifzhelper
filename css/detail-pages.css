@@ -644,57 +644,41 @@
   padding: 6px 4px !important;
 }
 
-/* Dhor's timer overlay (2026-08-04, confirmed in chat) -- full-screen
-   when its own "full" mode is active (session-timer.js), matching the
-   app's existing modal z-index convention (components.css's own
-   .modal-overlay). Repositioned to a floating pill, bottom-anchored,
-   when its "mini" mode is active instead -- session-timer's own CSS
-   only changes background for mini (:host([mode="mini"])), not
-   position, since it doesn't know where its host page wants it placed;
-   that's this app's own call to make. #dhorTimerHost starts with
-   class="hidden" (base.css's existing !important utility, which
-   reliably overrides the component's internal :host{display:block} --
-   light-DOM rules targeting a custom element's own host always win over
-   its shadow root's :host rules) until Dhor's Stopwatch button opens it. */
-#dhorTimerHost:not(.hidden) {
-  position: fixed;
-  top: env(safe-area-inset-top, 0px);
-  right: env(safe-area-inset-right, 0px);
-  bottom: env(safe-area-inset-bottom, 0px);
-  left: env(safe-area-inset-left, 0px);
-  z-index: 300;
+/* Dhor's timer (2026-08-04, confirmed in chat) -- now a permanent rail
+   card (index.html's #logDetailRail, in the exact position Tadabbur
+   used to occupy) rather than an on-demand full-screen overlay. Sized
+   to match .log-detail-card exactly (flex:0 0 100%/height:70vh/etc.)
+   since it can't literally use that class -- it's a custom element
+   (session-timer.js), not a <div>, so its own sizing has to be spelled
+   out here rather than inherited by sharing a class. Its "mini" mode is
+   the one part that's still a genuine position:fixed floating pill,
+   independent of the rail entirely -- confirmed in chat as unchanged by
+   this restructuring ("minimise/maximise works the same"), since a
+   running session should stay visible over whatever screen is showing,
+   not just while the rail happens to be in view. */
+#dhorTimerHost {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  height: 70vh;
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
-#dhorTimerHost:not(.hidden)[mode="mini"] {
+@media (min-width: 768px) and (max-width: 1179px) {
+  #dhorTimerHost { flex: 0 0 calc(50% - (var(--space-md) / 2)); }
+}
+@media (min-width: 1180px) {
+  #dhorTimerHost { height: 75vh; max-width: 30%; }
+}
+#dhorTimerHost[mode="mini"] {
+  position: fixed;
   inset: auto;
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 40px);
   max-width: 420px;
+  height: auto;
   z-index: 250;
-}
-/* 2026-08-04, confirmed in chat: the full-screen mode was genuinely
-   claiming the entire viewport on every screen size, ignoring the
-   app-wide "no single screen exceeds --width-tablet/--width-desktop on
-   larger viewports" rule every other screen already respects (Setup,
-   admin, the login card). Same tokens, same breakpoints, applied here
-   too -- not a new rule invented for the timer specifically. Mobile is
-   untouched (still genuinely full-width, same as everything else). */
-@media (min-width: 768px) and (max-width: 1179px) {
-  #dhorTimerHost:not(.hidden):not([mode="mini"]) {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: var(--width-tablet);
-  }
-}
-@media (min-width: 1180px) {
-  #dhorTimerHost:not(.hidden):not([mode="mini"]) {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: var(--width-desktop);
-  }
 }
 
 #dhorLapRollup {

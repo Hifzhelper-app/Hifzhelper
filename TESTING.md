@@ -1673,6 +1673,35 @@ the fix for a bug that broke Save entirely.
    its controls (top row icons, the round Start/Stop buttons) are
    hidden behind or overlapping the status bar or home indicator area.
 
+## 60. Rail restructured: Timer is now a permanent card, Tadabbur has its own screen (V3.34.5)
+
+1. Open the day-log view (any journal cell) → confirm the rail shows 4
+   dots: Sabaq, SDhor, Dhor, Timer (not Tadabbur).
+2. Swipe/scroll through the rail on mobile → confirm the 4th card is
+   the Timer (dark theme, ring, controls), not a Tadabbur form.
+3. On desktop width → confirm all 4 cards (Sabaq/Sabaq Dhor/Dhor/Timer)
+   show side by side in the grid, none clipped or overflowing its own
+   30%-width column.
+4. From the Dhor card, tap Stopwatch → confirm the rail scrolls/swipes
+   to the Timer card (not a full-screen overlay covering everything).
+5. Start the timer, tap Minimise → confirm it becomes the floating
+   pill, still visible over the rail.
+6. Tap Maximise → confirm it scrolls back to the Timer card with the
+   same elapsed time and laps intact.
+7. Minimise the timer, navigate to Settings, then tap Maximise on the
+   pill → confirm it navigates back to the day-log view AND scrolls to
+   the Timer card correctly.
+8. Start filling in the Dhor card (e.g. type some mistakes) without
+   saving, then tap Maximise from the pill (timer already minimised
+   from a different screen) → confirm the Dhor card's in-progress,
+   unsaved input is still there afterward, not wiped by a fresh render.
+9. Tap the nav menu → confirm "Tadabbur" is now its own destination,
+   separate from the day-log view.
+10. Open Tadabbur from the nav → confirm it loads/saves a reflection
+    correctly, same as it always did as the 4th rail card.
+11. Tap Close on the timer (full or pill) → confirm it resets (time
+    back to 00:00) but doesn't disappear or leave a gap in the rail.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
