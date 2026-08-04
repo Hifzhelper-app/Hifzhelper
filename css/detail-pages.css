@@ -508,6 +508,7 @@
 
 .rail-card-date { font-size: 11px; color: var(--color-ink-faint); margin-bottom: 4px; }
 .rail-card-body { font-size: 13px; }
+.rail-card-laps { font-size: 12px; color: var(--color-ink-faint); margin-top: 2px; }
 
 /* History button (V3.18.0) -- compact, dark green (Evergreen), type-
    specific text ("Sabaq History" etc. -- js/dhorPage.js). The last-2-
@@ -643,13 +644,40 @@
   padding: 6px 4px !important;
 }
 
+/* Dhor's timer overlay (2026-08-04, confirmed in chat) -- full-screen
+   when its own "full" mode is active (session-timer.js), matching the
+   app's existing modal z-index convention (components.css's own
+   .modal-overlay). Repositioned to a floating pill, bottom-anchored,
+   when its "mini" mode is active instead -- session-timer's own CSS
+   only changes background for mini (:host([mode="mini"])), not
+   position, since it doesn't know where its host page wants it placed;
+   that's this app's own call to make. #dhorTimerHost starts with
+   class="hidden" (base.css's existing !important utility, which
+   reliably overrides the component's internal :host{display:block} --
+   light-DOM rules targeting a custom element's own host always win over
+   its shadow root's :host rules) until Dhor's Stopwatch button opens it. */
+#dhorTimerHost:not(.hidden) {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+}
+#dhorTimerHost:not(.hidden)[mode="mini"] {
+  inset: auto;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  max-width: 420px;
+  z-index: 250;
+}
+
 /* V3.23.1: Stopwatch toggle sits beside Duration (its shared .picker-row
    parent already gives both a 50/50 split) -- reuses the same icon-on-
    top/no-border convention as Save and the edit-bottombar buttons,
    centered within its own column since it isn't paired with a label the
-   way Duration's input is. #dhorTimerPanel is what it shows/hides --
-   the timer widget used to always take up its own space below Duration;
-   now it's hidden by default. */
+   way Duration's input is. Opens #dhorTimerHost (see above) -- 2026-08-04:
+   replaced the old inline #dhorTimerPanel entirely, which used to always
+   reserve its own space below Duration until first hidden by default. */
 .dhor-stopwatch-col {
   display: flex;
   flex-direction: column;
