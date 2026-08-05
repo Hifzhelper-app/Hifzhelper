@@ -103,7 +103,8 @@
 .rnd{width:72px;height:72px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .rnd:hover{background:#e6e6e6}
 .sq{width:30px;height:30px;border-radius:4px;display:block}
-.mini{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box;pointer-events:auto}
+.mini{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box;pointer-events:auto;touch-action:none;user-select:none}
+.mini.dragging{box-shadow:0 8px 24px rgba(0,0,0,.5);border-color:#8e8e93}
 .mini-top{display:flex;justify-content:center;align-items:center;gap:24px}
 .mini-ic{background:none;border:0;padding:2px;color:#8e8e93;cursor:pointer;display:flex}
 .mini-ic:hover{color:#fff}
@@ -176,6 +177,10 @@
       this.$ = (s) => root.querySelector(s);
       this.$$ = (s) => root.querySelectorAll(s);
       root.addEventListener('click', (e) => {
+        // A drag that just ended still fires a trailing click on
+        // whatever's under the pointer -- suppressed here so a
+        // press-and-hold-drag never also triggers that button's action.
+        if (this._dragJustHappened) return;
         const b = e.target.closest('[data-act]');
         if (!b) return;
         const a = b.dataset.act;
@@ -196,8 +201,105 @@
         // Maximise: same as the old tap-to-expand mini button used to be.
         else if (a === 'maximize') { this.mode = 'full'; this._emit('timer-expand'); }
       });
+      this._wireDrag();
       this._built = true;
       this._paint();
+    }
+
+    // 2026-08-05, confirmed in chat: press-and-hold anywhere on the
+    // pill (not a dedicated handle -- deliberately chosen so no part of
+    // the pill's own layout needs to change to make room for one)
+    // starts a drag; a plain tap still reaches the buttons underneath
+    // it normally. Movement past a small threshold before the hold
+    // duration elapses cancels it (treated as an accidental brush /
+    // scroll attempt, not a deliberate press-and-hold). Position is
+    // remembered only as a plain instance field (this._dragLeft/Top) --
+    // resets to the default top-center position on a fresh page load,
+    // not persisted anywhere, matching "remembers for this session
+    // only." Constrained to stay fully on-screen throughout the drag,
+    // not just clamped once at the end.
+    _wireDrag() {
+      const HOLD_MS = 450, CANCEL_PX = 8;
+      const mini = this.$('.mini');
+      let holdTimer = null, startX = 0, startY = 0, dragging = false;
+
+      const clearHold = () => { clearTimeout(holdTimer); holdTimer = null; };
+
+      const onMoveBeforeHold = (e) => {
+        if (Math.abs(e.clientX - startX) > CANCEL_PX || Math.abs(e.clientY - startY) > CANCEL_PX) {
+          clearHold();
+          mini.removeEventListener('pointermove', onMoveBeforeHold);
+        }
+      };
+      const onUpBeforeHold = () => {
+        clearHold();
+        mini.removeEventListener('pointermove', onMoveBeforeHold);
+        mini.removeEventListener('pointerup', onUpBeforeHold);
+      };
+
+      const beginDrag = (e) => {
+        dragging = true;
+        this._dragJustHappened = false;
+        mini.classList.add('dragging');
+        const rect = mini.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left, offsetY = e.clientY - rect.top;
+        const onMove = (me) => {
+          const w = mini.offsetWidth, h = mini.offsetHeight;
+          let left = me.clientX - offsetX, top = me.clientY - offsetY;
+          left = Math.max(0, Math.min(left, window.innerWidth - w));
+          top = Math.max(0, Math.min(top, window.innerHeight - h));
+          this._dragLeft = left; this._dragTop = top;
+          mini.style.position = 'fixed';
+          mini.style.left = left + 'px';
+          mini.style.top = top + 'px';
+          mini.style.margin = '0';
+        };
+        const onUp = () => {
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          mini.classList.remove('dragging');
+          dragging = false;
+          this._dragJustHappened = true;
+          setTimeout(() => { this._dragJustHappened = false; }, 50);
+        };
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+      };
+
+      mini.addEventListener('pointerdown', (e) => {
+        if (dragging) return;
+        startX = e.clientX; startY = e.clientY;
+        mini.addEventListener('pointermove', onMoveBeforeHold);
+        mini.addEventListener('pointerup', onUpBeforeHold, { once: true });
+        holdTimer = setTimeout(() => {
+          mini.removeEventListener('pointermove', onMoveBeforeHold);
+          mini.removeEventListener('pointerup', onUpBeforeHold);
+          beginDrag(e);
+        }, HOLD_MS);
+      });
+
+      // Re-applies a previously-dragged-to position (this session only)
+      // whenever the pill becomes visible again -- otherwise every
+      // fresh minimise would revert to the default top-center spot
+      // rather than staying where it was last left.
+      this._reapplyDragPosition = () => {
+        if (this._dragLeft == null) return;
+        mini.style.position = 'fixed';
+        mini.style.left = this._dragLeft + 'px';
+        mini.style.top = this._dragTop + 'px';
+        mini.style.margin = '0';
+      };
+      // Re-clamps a previously-dragged position on resize/rotation --
+      // "keep it fully on-screen always" should hold even if the
+      // viewport itself changes size after the drag already happened,
+      // not just during the drag gesture itself.
+      window.addEventListener('resize', () => {
+        if (this._dragLeft == null) return;
+        const w = mini.offsetWidth, h = mini.offsetHeight;
+        this._dragLeft = Math.max(0, Math.min(this._dragLeft, window.innerWidth - w));
+        this._dragTop = Math.max(0, Math.min(this._dragTop, window.innerHeight - h));
+        if (this.mode === 'mini') this._reapplyDragPosition();
+      });
     }
 
     _emit(name) {
@@ -226,6 +328,7 @@
       const mini = this.mode === 'mini', frac = Math.min(1, this._ms / this.target), acc = this.accent;
       this.$('.full').classList.toggle('hide', mini);
       this.$('.mini').classList.toggle('hide', !mini);
+      if (mini) this._reapplyDragPosition();
       this.$('.time').textContent = fmt(this._ms);
       this.$('.of').textContent = 'of ' + fmt(this.target);
       const arc = this.$('.arc');
