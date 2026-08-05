@@ -57,21 +57,32 @@ function enterEditScreenMode(cardId){
   document.getElementById(cardId).classList.add('editing-active');
 }
 function exitEditScreenMode(cardId){
-  document.getElementById('screen-logDetail').classList.remove('log-detail-editing');
+  const screen = document.getElementById('screen-logDetail');
+  // Bug fix (2026-08-05, found by the user): this used to unconditionally
+  // restore rail.scrollLeft every time it ran -- but it's called both for
+  // a genuine edit-exit AND, separately, as part of each of the 3 cards'
+  // own "fresh open" reset (renderSabaqScreen/renderSabaqDhorScreen/
+  // renderDhorScreen each call this at the top of their own function,
+  // every single time the detail screen opens, whether or not anything
+  // was actually being edited). All 3 running back to back meant
+  // whichever finished last always won, silently overriding wherever a
+  // column-header tap was actually trying to scroll to -- explaining
+  // why every column appeared to land on Sabaq specifically (the tap's
+  // own intended scroll position was being stomped on immediately
+  // after). Checking BEFORE removing the class means this only restores
+  // scroll when a real edit was actually in progress -- a normal fresh
+  // open never had a corrupted scroll position to begin with, so it's
+  // left alone entirely, and renderLogDetailScreen's own scroll-to-card
+  // logic is what actually wins for every entry point (dot taps, column
+  // header taps, timer minimise/maximise) now.
+  const wasEditing = screen.classList.contains('log-detail-editing');
+  screen.classList.remove('log-detail-editing');
   document.getElementById(cardId).classList.remove('editing-active');
-  // Bug fix (2026-08-04, found by the user): while editing, every card
-  // except the one being edited is display:none'd (the CSS rule right
-  // above this file's own comment on enterEditScreenMode), which
-  // collapses the rail's scrollable width down to just that one card --
-  // so its scrollLeft is effectively 0 throughout editing. Once the
-  // other cards reappear here, that stale 0 now points at Sabaq (the
-  // first card), not wherever the student actually was, unless the card
-  // being edited happened to already be Sabaq itself. Restoring scrollLeft
-  // explicitly to the edited card's own position fixes this regardless
-  // of which of the 3 cards was being edited.
-  const rail = document.getElementById('logDetailRail');
-  const card = document.getElementById(cardId);
-  rail.scrollLeft = card.offsetLeft;
+  if(wasEditing){
+    const rail = document.getElementById('logDetailRail');
+    const card = document.getElementById(cardId);
+    rail.scrollLeft = card.offsetLeft;
+  }
   updateLogDetailDots();
 }
 

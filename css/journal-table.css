@@ -1,42 +1,29 @@
 /* ============================================================
    Hifzhelper — journal landing table
-   Matches the physical paper planner: Day/Date | Sabaq | Sabaq Dhor |
-   Dhor | Feedback, one row per day, Sage header for Date, Mauve header
-   for the log columns.
+   2026-08-05, confirmed in chat -- complete rebuild alongside js/
+   journal.js's own rewrite. Matches the physical paper planner:
+   Day/Date | Sabaq | Sabaq Dhor | Dhor, Sage header for Date, Mauve
+   header for the log columns. This is the default landing page --
+   deliberate attention here, not just functional correctness.
    ============================================================ */
 
-.journal-wrap {
-  background: var(--color-surface);
-  border-radius: 0 0 var(--radius-md) var(--radius-md);
-  overflow: hidden;
-  border: 1px solid var(--color-table-border);
-  border-top: none;
-}
-
-.journal-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-/* Header row now lives in its own container, sibling to .journal-wrap,
-   rather than inside the table (V3.4.3 follow-up) — this fixed a Safari
-   issue where the sticky header (previously position:sticky on <th>
-   inside the table) ended up visually covering the first data row.
-   Column widths are kept aligned with the table below via matching
-   nth-child percentages here and an explicit <colgroup> on the table —
-   the two are separate elements now, so nothing keeps them in sync
-   automatically the way a single <table>'s layout algorithm would. */
+/* Fixed header, scrollable rows -- a genuinely different model from the
+   old position:sticky-header-riding-along-a-scrolling-page approach
+   (still used elsewhere in the app, e.g. this exact file's own header
+   used to be sticky). Here the header sits outside the scrolling
+   region entirely, closer to a spreadsheet's frozen header row than a
+   sticky one -- confirmed in chat as the better fit once rows gained
+   their own bounded scroll area for the 10-days-then-rollups design. */
 .journal-header-row {
   display: flex;
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   overflow: hidden;
-  position: sticky;
-  top: var(--auth-band-height, 0px);
-  z-index: 10;
 }
 .journal-header-cell {
-  padding: var(--space-sm);
+  /* Confirmed in chat: ~20% taller than the previous 8px vertical
+     padding -- 11px lands at 36px total cell height (11+14+11) against
+     the old 30px (8+14+8), a precise 20% increase, not an eyeballed one. */
+  padding: 11px var(--space-sm);
   font-weight: 700;
   color: var(--color-table-header-text);
   font-size: 11px;
@@ -48,15 +35,15 @@
 }
 .journal-header-cell.col-date { background: var(--color-table-header-date); }
 .journal-header-cell.col-log  { background: var(--color-table-header-log); }
-/* Matches the <colgroup> widths in index.html exactly. */
-.journal-header-row > *:nth-child(1) { flex: 0 0 18%; }
-.journal-header-row > *:nth-child(2) { flex: 0 0 21%; }
-.journal-header-row > *:nth-child(3) { flex: 0 0 24%; }
-.journal-header-row > *:nth-child(4) { flex: 0 0 19%; }
-.journal-header-row > *:nth-child(5) { flex: 0 0 18%; }
+/* 4 columns now (Feedback removed) -- Sabaq Dhor gets the most room
+   since "Sabaq Dhor" is the longest label. */
+.journal-header-row > *:nth-child(1) { flex: 0 0 20%; }
+.journal-header-row > *:nth-child(2) { flex: 0 0 25%; }
+.journal-header-row > *:nth-child(3) { flex: 0 0 30%; }
+.journal-header-row > *:nth-child(4) { flex: 0 0 25%; }
 
-/* Column headers double as navigation into the dedicated per-log pages —
-   icon + label, matching the app-wide icon-nav pattern, no extra chrome. */
+/* Column headers double as navigation into the detail screen — icon +
+   label, matching the app-wide icon-nav pattern, no extra chrome. */
 .journal-header-cell.col-log button {
   display: flex;
   align-items: center;
@@ -68,9 +55,31 @@
 }
 .journal-header-cell.col-log svg { width: 14px; height: 14px; }
 
-/* Header row and the rows container bleed to the edges of the screen
-   (V3.4.3 follow-up) — cancels out #appContent's own left/right padding
-   rather than requiring #appContent itself to lose padding everywhere. */
+.journal-wrap {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  border: 1px solid var(--color-table-border);
+  border-top: none;
+  /* The actual scrolling region now -- confirmed in chat: rows scroll
+     vertically within their own bounded area, header stays fixed above
+     it rather than riding along. --auth-band-height accounts for the
+     app's own top band; the header row's own real height (set above)
+     accounts for the rest, so the scroll area fills exactly whatever
+     space is genuinely left in the viewport. */
+  max-height: calc(100vh - var(--auth-band-height, 60px) - 52px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.journal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* Header row and the rows container bleed to the edges of the screen —
+   cancels out #appContent's own left/right padding rather than
+   requiring #appContent itself to lose padding everywhere. */
 .journal-header-row, .journal-wrap {
   margin-left: calc(-1 * var(--space-md) + var(--space-xs));
   margin-right: calc(-1 * var(--space-md) + var(--space-xs));
@@ -89,6 +98,17 @@
 }
 .journal-table tr:last-child td { border-bottom: none; }
 
+/* Confirmed in chat: cells are plain text, not selectable/editable
+   directly -- a press-and-hold (touch) or click (mouse/trackpad,
+   js/journal.js's own JOURNAL_HAS_FINE_POINTER check) is what opens
+   editing, not the browser's own default text-selection/copy behavior,
+   which these 2 properties suppress. */
+.journal-table td {
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+}
+
 .journal-table .cell-date {
   font-weight: 600;
   white-space: nowrap;
@@ -103,46 +123,57 @@
 
 .journal-cell-empty {
   color: var(--color-ink-faint);
-  font-style: italic;
-  cursor: pointer;
-}
-.journal-cell-empty:hover { color: var(--color-ink-soft); }
-
-/* A cell pre-populated from a plan — shown greyed/placeholder until the
-   student overwrites it with what actually happened. */
-.journal-cell-planned {
-  color: var(--color-ink-faint);
-  cursor: pointer;
-}
-.journal-cell-planned::before {
-  content: '';
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--color-ink-faint);
-  margin-right: 5px;
-  vertical-align: middle;
 }
 
-.journal-cell-filled {
+.journal-cell-text {
   color: var(--color-ink);
-  cursor: pointer;
 }
-.journal-cell-filled .entry-count-badge {
+.entry-count-badge {
   font-size: 10px;
   color: var(--color-ink-faint);
   margin-left: 4px;
 }
 
-.journal-cell-feedback {
-  color: var(--color-ink-soft);
-  font-size: 12px;
+/* Weekly rollup rows (older than the 10 most recent days) — just the
+   date range, deliberately no attempt to summarize several different
+   entries across several days in one line (confirmed in chat: either
+   too crowded or too vague to be worth reading). */
+.journal-rollup-row td {
+  cursor: default;
 }
+.journal-rollup-cell {
+  text-align: center;
+  color: var(--color-ink-faint);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  padding: 10px var(--space-sm) !important;
+  background: var(--color-canvas);
+}
+
+.journal-load-more-cell {
+  text-align: center;
+  padding: var(--space-md) !important;
+  cursor: default !important;
+}
+#journalLoadMoreBtn {
+  background: none;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+#journalLoadMoreBtn:hover { background: var(--color-canvas); }
+#journalLoadMoreBtn:disabled { opacity: 0.5; cursor: default; }
 
 /* Wider screens: a bit more padding, slightly larger type — same table,
    not a different layout, per "consistent sizing for tablets/large screens" */
 @media (min-width: 720px) {
   .journal-table { font-size: 14px; }
   .journal-table td { padding: var(--space-md); }
-  .journal-header-cell { padding: var(--space-md); }
+  .journal-header-cell { padding: 13px var(--space-md); }
 }

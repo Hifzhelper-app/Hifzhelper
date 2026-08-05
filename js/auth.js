@@ -10,9 +10,12 @@ let currentUser = { name: '', role: 'student' };
 // left broken or absent — see showScreen() in app.js.
 const NAV_ITEMS = [
   { id: 'journal', label: 'Journal', icon: 'journal' },
-  { id: 'sabaq', label: 'Sabaq', icon: 'sabaq' },
-  { id: 'sabaqDhor', label: 'Sabaq Dhor', icon: 'sabaqDhor' },
-  { id: 'dhor', label: 'Dhor', icon: 'dhor' },
+  // 2026-08-05, confirmed in chat: 'sabaq'/'sabaqDhor'/'dhor' removed
+  // entirely -- all 3 already live together on the detail screen
+  // (logDetail), so 3 separate placeholder entries pointing at the same
+  // underlying screen were redundant. 'logDetail' below is the one real
+  // entry point for it now (uses the user-supplied 'detail' icon).
+  { id: 'logDetail', label: 'Detail', icon: 'detail' },
   { id: 'reflections', label: 'Tadabbur', icon: 'reflections' },
   { id: 'progress', label: 'Progress', icon: 'progress' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
