@@ -7,6 +7,99 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.35.0 — Journal landing page: complete rebuild (2026-08-05)
+
+Confirmed across many rounds of chat. The largest single change to
+this screen since it was first built — genuinely a rebuild, not a
+revision, once it became clear `js/journal.js` hadn't been touched
+since its very first version and was reading fields (`e.surah`,
+`e.ayah_from`, `e.ayah_to`) that haven't existed since the verse-ref
+rework — silently showing "—" for every real Sabaq entry the whole
+time this went unnoticed.
+
+**Table:**
+- Feedback column removed.
+- Shorthand per type, reusing the exact same data History's own
+  `describeEntryForRail` already reads, trimmed down: Sabaq (range
+  only, no lines/pages), Sabaq Dhor (range only, no mistakes), Dhor
+  (segment only, no mistakes/time).
+- Latest date at the top.
+- Most recent 10 days shown individually; older data rolled into
+  weekly (rolling 7-day, not calendar-week) rows showing just the date
+  range — deliberately no attempt to summarize several different
+  entries across several days in one line, confirmed as either too
+  crowded or too vague to be worth reading. ~3 months loads by
+  default; a "Load more" row extends the rollup range further back in
+  28-day increments.
+- The old "quick add" modal is gone entirely — it was a separate,
+  much simpler form that didn't match any card's real current fields
+  (no tajweed, no Notes, no Juz'/Amount picker). Editing now opens the
+  real card directly via the exact same `EDIT_HANDLERS` entry point
+  History's own edit button already uses — one edit mechanism, not two.
+
+**Interaction:**
+- Mouse/trackpad (`(hover: hover) and (pointer: fine)`, not inferred
+  from screen width, since a touchscreen laptop at desktop width is
+  still touch): a plain click opens an entry for editing.
+- Touch: press-and-hold (450ms, 8px cancel-on-movement), same target —
+  cells are plain text now, not selectable/editable directly
+  (`touch-action`/`user-select: none`), so there's no native
+  edit-field UI to compete with the way the timer pill's drag once did.
+- Date cell: same interaction, sets every card's own date field to the
+  tapped date and opens the detail screen — so a new entry logged from
+  there is dated correctly, not date-filtered browsing (History's own
+  rail already covers that).
+
+**Fixed a real bug found while diagnosing "every column goes to the
+Sabaq card"**: `exitEditScreenMode` was unconditionally restoring the
+rail's scroll position every time it ran — including the 3 non-edit
+"fresh open" calls each card's own render function makes on every
+single detail-screen open, whether or not anything was actually being
+edited. All 3 running back to back meant whichever finished last
+always won, silently overriding wherever a column-header tap (or any
+other entry point) was actually trying to scroll to. Now only restores
+scroll position when the screen was genuinely in edit mode — a normal
+fresh open never had a corrupted position to begin with, so it's left
+alone, and the intended destination actually sticks now. Confirmed:
+desktop's static grid needs no equivalent fix (nothing to scroll to
+begin with); mobile and tablet share the same rail mechanism, so one
+fix covers both.
+
+**Nav:** the 3 placeholder items (Sabaq/Sabaq Dhor/Dhor — all 3 already
+lived together on the detail screen, redundant as separate entries)
+removed. One new entry added for the detail screen itself, using the
+user-supplied icon.
+
+**Layout:** header no longer rides along via `position: sticky` as the
+whole page scrolls — sits fixed above a bounded, independently-
+scrolling rows region instead, closer to a spreadsheet's frozen header
+than a sticky one. Header made a precise 20% taller (36px vs. the
+previous 30px, not an eyeballed guess).
+
+**Verified, not just read over**: ran the actual weekly-rollup
+bucketing algorithm directly against a realistic set of scattered
+dates with gaps, confirming rolling 7-day windows group and split
+correctly. Swept the whole codebase for dangling references to the
+removed quick-add mechanism and confirmed every global the new code
+relies on (`EDIT_HANDLERS`, `describeDhorSegment`, `dhorCurrentRef`)
+genuinely exists and is accessible.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/journal-table.css
+js/journal.js
+js/icons.js
+js/auth.js
+js/logDetailScreen.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.13 — Confirmation checkboxes repositioned higher on both cards (2026-08-05)
 
 Confirmed in chat: both "Confirm selection" checkboxes (V3.34.12) moved

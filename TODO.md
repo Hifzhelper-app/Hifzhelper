@@ -4,6 +4,34 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.35.0 (2026-08-05)
+
+- [x] Journal page rebuilt entirely -- js/journal.js hadn't been touched
+  since its very first version and was reading fields that stopped
+  existing since the verse-ref rework (Sabaq column was silently always
+  blank). New version reads the same real data History already does,
+  drops the old quick-add modal (didn't match any card's real fields),
+  editing now opens the real card via the same EDIT_HANDLERS entry
+  point History's own edit button uses.
+- [x] Trimmed shorthand per type, latest-date-first, 10 days expanded
+  then weekly (rolling 7-day) rollups showing just the date range,
+  Load More extending further back. Tested the bucketing algorithm
+  directly against a realistic scattered-date set with gaps.
+- [x] Click (mouse/trackpad, via hover+pointer media query, not screen
+  width) or press-and-hold (touch) opens an entry for editing; same on
+  the date cell but opens the detail screen for that date instead.
+- [x] Fixed the real "all 3 columns go to Sabaq" bug found while
+  testing this -- exitEditScreenMode was unconditionally restoring
+  scroll position on every fresh screen-open (not just genuine edit
+  exits), so 3 cards' own reset calls were racing and overriding
+  whatever a column tap was actually trying to scroll to. Now only
+  restores when actually exiting edit mode.
+- [x] Nav: 3 placeholder items (Sabaq/Sabaq Dhor/Dhor) removed, one new
+  "Detail" entry added with the user-supplied icon.
+- [x] Header no longer position:sticky -- sits fixed above a bounded,
+  independently-scrolling rows region instead (closer to a frozen
+  spreadsheet header). Made a precise 20% taller (36px vs 30px).
+
 ## Done — V3.34.13 (2026-08-05)
 
 - [x] Both "Confirm selection" checkboxes repositioned higher on their

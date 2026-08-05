@@ -1862,6 +1862,43 @@ the fix for a bug that broke Save entirely.
    new spots — hard-block Save until checked, clear immediately after
    a successful save (repeat TESTING.md #67's steps 2-8).
 
+## 69. Journal landing page: complete rebuild (V3.35.0)
+
+1. Log in → confirm the Journal table shows real, correct data for
+   Sabaq (previously always blank/"—" due to the stale field names).
+2. Confirm no Feedback column appears.
+3. Confirm each cell shows the trimmed shorthand: Sabaq as a plain
+   range (no lines/pages), Sabaq Dhor as a plain range (no mistakes),
+   Dhor as a segment only (no mistakes/time).
+4. Confirm the most recent date is the very first row.
+5. Confirm the 10 most recent days show individually, and anything
+   older shows as a rolled-up date-range row instead.
+6. Tap "Load more" → confirm it extends the rollup rows further back
+   without reloading the whole page or losing the expanded 10 days.
+7. On desktop (mouse/trackpad) → click a cell with a real entry →
+   confirm it opens that entry for editing directly on the detail
+   screen, on the correct card.
+8. On mobile/touch → press and hold a cell with a real entry (don't
+   move your finger) → confirm the same edit behavior. Confirm a quick
+   tap does NOT open editing, and confirm no native text-selection
+   highlight or context menu appears during the hold.
+9. Tap/hold a date cell → confirm it opens the detail screen with
+   every card's own date field set to that date.
+10. Tap each of the 3 column headers (Sabaq/Sabaq Dhor/Dhor) → confirm
+    each one correctly lands on its own card (not always Sabaq) — test
+    this specifically on mobile AND tablet widths.
+11. On desktop width → confirm column header taps still work sensibly
+    (all 4 cards already visible, no scroll needed).
+12. Confirm the nav menu no longer shows separate Sabaq/Sabaq
+    Dhor/Dhor entries, and instead shows one "Detail" entry with the
+    new icon that opens the detail screen.
+13. Confirm the Journal header row stays visible and fixed in place
+    while the rows scroll underneath it, and looks visibly taller than
+    before.
+14. Minimise the timer, then navigate to Journal → confirm the pill
+    still floats correctly over the new layout, unaffected by the
+    rebuild.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
