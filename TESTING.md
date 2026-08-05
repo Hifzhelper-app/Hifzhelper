@@ -1850,6 +1850,18 @@ the fix for a bug that broke Save entirely.
 8. Open a fresh Dhor card (not editing) → confirm the checkbox starts
    unchecked, not carried over from a previous session on the card.
 
+## 68. Confirmation checkboxes repositioned higher on both cards (V3.34.13)
+
+1. Open Sabaq → confirm "Confirm selection" now appears directly under
+   the date/Sabaq History row, before "Sabaq from," left-aligned with
+   the rest of the card's labels (not centered or indented).
+2. Open Dhor → confirm "Confirm selection" now appears directly under
+   the Quarter/Half/Full switch, before the Juz row, same left
+   alignment.
+3. Confirm both checkboxes still function exactly as before in their
+   new spots — hard-block Save until checked, clear immediately after
+   a successful save (repeat TESTING.md #67's steps 2-8).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

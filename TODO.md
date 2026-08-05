@@ -4,6 +4,13 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.13 (2026-08-05)
+
+- [x] Both "Confirm selection" checkboxes repositioned higher on their
+  cards -- Sabaq's under Sabaq History (before "Sabaq from"), Dhor's
+  under the portion selector (before Juz), both left-aligned with the
+  rest of each card's content. Pure markup move, no logic changes.
+
 ## Done — V3.34.12 (2026-08-05)
 
 - [x] Fixed the pill-stretches-when-dragged bug the user found -- .mini's

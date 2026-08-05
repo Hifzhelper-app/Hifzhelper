@@ -7,6 +7,30 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.13 — Confirmation checkboxes repositioned higher on both cards (2026-08-05)
+
+Confirmed in chat: both "Confirm selection" checkboxes (V3.34.12) moved
+from the bottom of their cards (next to the error div they trigger) to
+higher up, left-aligned with the rest of each card's own content, no
+new indentation or centering. Sabaq's now sits directly under Sabaq
+History, right before the "Sabaq from" label. Dhor's now sits directly
+under the Quarter/Half/Full portion selector, right before the Juz row.
+Pure markup relocation — same element ids, same `js/sabaqPage.js`/
+`js/dhorPage.js` logic, same `.cb-private-row` styling (already
+left-aligned by default) — nothing else about how either checkbox
+behaves changed.
+
+**Files changed:**
+```
+index.html
+sw.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.12 — Pill-width drag fix, and a new confirmation checkbox on Sabaq/Dhor (2026-08-05)
 
 Three pieces, confirmed together in chat as one bundled delivery.

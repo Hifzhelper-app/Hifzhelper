@@ -1,17 +1,17 @@
-const CACHE_NAME = 'hifzhelper-v3.34.12'; // bumped for the V3.34.12 release
+const CACHE_NAME = 'hifzhelper-v3.34.13'; // bumped for the V3.34.13 release
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=3.34.12', 'shared/data.js?v=3.34.12', './appicons/logo.png',
-  './css/tokens.css?v=3.34.12', './css/base.css?v=3.34.12', './css/nav.css?v=3.34.12', './css/journal-table.css?v=3.34.12',
-  './css/components.css?v=3.34.12', './css/detail-pages.css?v=3.34.12', './css/settings.css?v=3.34.12', './css/admin.css?v=3.34.12',
-  './js/icons.js?v=3.34.12', './js/customDate.js?v=3.34.12', './js/api.js?v=3.34.12', './js/uiSwitch.js?v=3.34.12', './js/position.js?v=3.34.12',
-  './js/auth.js?v=3.34.12', './js/home.js?v=3.34.12', './js/tajweed.js?v=3.34.12',
-  './js/commentPrivacy.js?v=3.34.12', './js/session-timer.js?v=3.34.12', './js/journal.js?v=3.34.12', './js/dhorPage.js?v=3.34.12',
-  './js/sabaqPage.js?v=3.34.12', './js/sabaqDhorPage.js?v=3.34.12', './js/reflectionCard.js?v=3.34.12',
-  './js/logDetailScreen.js?v=3.34.12', './js/settingsScreen.js?v=3.34.12', './js/adminPage.js?v=3.34.12', './js/app.js?v=3.34.12'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=3.34.13', 'shared/data.js?v=3.34.13', './appicons/logo.png',
+  './css/tokens.css?v=3.34.13', './css/base.css?v=3.34.13', './css/nav.css?v=3.34.13', './css/journal-table.css?v=3.34.13',
+  './css/components.css?v=3.34.13', './css/detail-pages.css?v=3.34.13', './css/settings.css?v=3.34.13', './css/admin.css?v=3.34.13',
+  './js/icons.js?v=3.34.13', './js/customDate.js?v=3.34.13', './js/api.js?v=3.34.13', './js/uiSwitch.js?v=3.34.13', './js/position.js?v=3.34.13',
+  './js/auth.js?v=3.34.13', './js/home.js?v=3.34.13', './js/tajweed.js?v=3.34.13',
+  './js/commentPrivacy.js?v=3.34.13', './js/session-timer.js?v=3.34.13', './js/journal.js?v=3.34.13', './js/dhorPage.js?v=3.34.13',
+  './js/sabaqPage.js?v=3.34.13', './js/sabaqDhorPage.js?v=3.34.13', './js/reflectionCard.js?v=3.34.13',
+  './js/logDetailScreen.js?v=3.34.13', './js/settingsScreen.js?v=3.34.13', './js/adminPage.js?v=3.34.13', './js/app.js?v=3.34.13'
 ];
 
 self.addEventListener('install', (event) => {
