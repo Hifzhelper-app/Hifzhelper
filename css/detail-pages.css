@@ -669,6 +669,17 @@
 @media (min-width: 1180px) {
   #dhorTimerHost { height: 75vh; max-width: 30%; }
 }
+/* 2026-08-05, confirmed in chat: bottom-anchoring here is the CSS
+   fallback only. iOS Safari has a genuine, well-documented bug where
+   position:fixed elements anchored via bottom don't reliably track the
+   visible viewport when the browser's own toolbar is showing/hiding --
+   as of iOS 26 specifically, Apple's own bug tracker shows fixed
+   content can be clipped rather than just hidden behind the toolbar.
+   No CSS-only fix reliably solves this across iOS versions; the real
+   fix (js/dhorPage.js's repositionMiniPill, using window.visualViewport)
+   overrides this with an explicit inline top whenever that API is
+   available, which covers the devices actually affected. This rule
+   remains the fallback for anything without visualViewport support. */
 #dhorTimerHost[mode="mini"] {
   position: fixed;
   inset: auto;
