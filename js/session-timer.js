@@ -71,27 +71,36 @@
   const CSS = `
 :host{display:block;background:#000;color:#fff;font-family:'Inter Tight',ui-sans-serif,-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
 :host([mode="mini"]){background:transparent}
-.full{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:18px 20px 30px;overflow:auto}
-.top{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:6px 4px 0}
-.ic{display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;padding:8px 0;color:#fff;cursor:pointer;font:inherit}
+.full{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:14px 20px 20px;overflow:auto}
+.top{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:4px 4px 0}
+.ic{display:flex;flex-direction:column;align-items:center;gap:7px;background:none;border:0;padding:4px 0;color:#fff;cursor:pointer;font:inherit}
 .ic:hover{opacity:.6}
 .ic span{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8e8e93}
-.dial{display:flex;justify-content:center;padding:26px 0 4px}
-.dial-in{position:relative;width:300px;height:300px}
-.dial svg{width:300px;height:300px;display:block;transform:rotate(-90deg)}
-.read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
-.time{font-size:68px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
-.of{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e8e93}
-.lapwrap{display:flex;justify-content:center;padding:26px 0 18px}
-.lapbtn{min-width:190px;padding:17px 34px;border-radius:999px;border:0;background:#fff;color:#000;font:inherit;font-size:19px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+/* 2026-08-05, confirmed in chat: sized against a 390x844 (6.1") viewport
+   specifically -- 70vh of 844px leaves ~591px for the whole card, minus
+   .full's own padding leaves ~543px of real content space. The ring
+   was a fixed 300px regardless of available height, which is what
+   actually caused the clipping the user reported (not a padding
+   problem -- padding alone couldn't have closed a gap that size).
+   min(210px, 25vh) keeps 210px as the max on a screen at least this
+   tall, but shrinks further on anything shorter, rather than a single
+   hardcoded value that only happens to work for one specific device. */
+.dial{display:flex;justify-content:center;padding:12px 0 4px}
+.dial-in{position:relative;width:min(210px, 25vh);height:min(210px, 25vh)}
+.dial svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
+.read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.time{font-size:44px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+.of{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8e8e93}
+.lapwrap{display:flex;justify-content:center;padding:14px 0 10px}
+.lapbtn{min-width:160px;padding:12px 30px;border-radius:999px;border:0;background:#fff;color:#000;font:inherit;font-size:17px;font-weight:700;letter-spacing:.06em;cursor:pointer}
 .lapbtn:hover{background:#e6e6e6}
 .laps{flex:1;display:flex;flex-direction:column;gap:9px;align-items:center;overflow:hidden}
 .laprow{display:grid;grid-template-columns:78px 96px;gap:12px;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;color:#8e8e93}
 .laprow.last{color:#fff}
-.ctrls{display:flex;justify-content:center;gap:56px;padding-top:10px}
-.ctrl-col{display:flex;flex-direction:column;align-items:center;gap:10px}
+.ctrls{display:flex;justify-content:center;gap:44px;padding-top:6px}
+.ctrl-col{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ctrl-label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8e8e93}
-.rnd{width:96px;height:96px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rnd{width:72px;height:72px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .rnd:hover{background:#e6e6e6}
 .sq{width:30px;height:30px;border-radius:4px;display:block}
 .mini{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box}

@@ -1741,6 +1741,29 @@ the fix for a bug that broke Save entirely.
    confirm the full view (the actual rail card, not an overlay) is
    visible and shows the correct running state.
 
+## 63. Full view resized for mobile, mini pill repositioned around a genuine iOS Safari bug (V3.34.8)
+
+1. On an actual iPhone (or a simulated 390x844 viewport), open the full
+   Timer view → confirm the entire layout is visible with no clipping —
+   all 4 top icons, the ring, the Lap button, and both round controls
+   with their "Start Dhor"/"Stop Dhor" labels fully visible without
+   scrolling.
+2. On a genuinely shorter device (e.g. an SE-sized screen) → confirm
+   the ring shrinks further rather than staying the same size and
+   clipping again.
+3. On a taller/larger phone → confirm the ring doesn't exceed 210px
+   (shouldn't grow past its cap just because there's more room).
+4. Minimise the timer on an actual iPhone in Safari, with the toolbar
+   visible (not scrolled up) → confirm the pill is fully visible on
+   screen, not partially or fully hidden below the visible area.
+5. Scroll the page while the pill is minimised (toolbar shows/hides) →
+   confirm the pill stays visible and correctly positioned throughout,
+   not left behind at a stale position.
+6. Confirm the pill still displays and works correctly on Android /
+   desktop browsers (where the iOS-specific bug doesn't apply) — the
+   CSS fallback should still hold there without any visualViewport
+   involvement mattering.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

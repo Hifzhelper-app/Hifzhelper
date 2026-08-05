@@ -4,6 +4,25 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.8 (2026-08-04)
+
+- [x] Full view resized against a 390x844 (6.1") target -- ring was a
+  fixed 300px regardless of available height (the real clipping cause),
+  now min(210px, 25vh); round controls 96px -> 72px; padding trimmed
+  throughout. Worked the numbers out directly (543px available content
+  space, ~453px used, ~90px margin), not eyeballed.
+- [x] Mini pill repositioned around a real, currently-open iOS Safari
+  bug (Apple's own developer forums document position:fixed content
+  clipping near the bottom edge on iOS 26 specifically) -- researched
+  this rather than assuming a CSS tweak would hold. Real fix uses
+  window.visualViewport to track the actual visible area; CSS
+  bottom-anchoring remains the fallback for anything without that API.
+  Tested the repositioning math directly against a shrunk viewport
+  height and a scrolled offset, and confirmed it cleans up its own
+  inline styles when not minimised.
+- [x] Confirmed with user: "floating" means fixed-position overlay, not
+  draggable -- no change needed, matches what's already built.
+
 ## Done — V3.34.7 (2026-08-04)
 
 - [x] Fixed the actual root cause of the missing Timer card, reported

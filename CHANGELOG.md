@@ -7,6 +7,60 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.8 — Full view resized for mobile, mini pill repositioned around a genuine iOS Safari bug (2026-08-04)
+
+Confirmed in chat, sized specifically against a 390×844 (6.1") viewport.
+
+**Full view resized to actually fit its allotted space.** The ring was
+a fixed 300px regardless of available height — the real cause of the
+clipping reported, not a padding problem padding alone could have
+closed. Worked the numbers out directly: 70vh of an 844px screen leaves
+~591px for the whole card, minus the view's own padding leaves ~543px
+of real content space. Ring now `min(210px, 25vh)` (was a flat 300px —
+scales down further on anything shorter than the 6.1" target rather
+than staying fixed), the round Start/Stop controls 72px (was 96px), and
+padding trimmed throughout — lands at roughly 453px total, leaving
+~90px of genuine margin rather than a bare fit.
+
+**Mini pill repositioned around a real, currently-open Apple bug, not
+just a CSS tweak.** Researched this rather than assuming a quick CSS
+fix would hold: iOS Safari's own developer forums document `position:
+fixed` content getting clipped near the bottom edge (not just hidden
+behind the toolbar) as of iOS 26 specifically, when the toolbar is
+showing. No CSS-only approach reliably solves this across iOS versions.
+The actual fix uses `window.visualViewport` to read the real,
+currently-visible area directly and position the pill against that —
+covers the devices actually affected; `detail-pages.css`'s existing
+bottom-anchoring rule remains the fallback for anything without
+`visualViewport` support. Watched via a `MutationObserver` on the
+timer's own `mode` attribute rather than needing a matching call at
+every place `mode` might change to `'mini'` — catches the component's
+own internal Minimise action the same as anything triggered from here.
+
+**Floating means fixed-position overlay, not draggable** — confirmed
+directly with the user last round; no change needed, since that's
+already what's built.
+
+**Verified, not just read over**: ran the actual repositioning function
+against a shrunk visible-viewport height (simulating the toolbar being
+visible), a scrolled offset, and confirmed it correctly clears its own
+inline styles rather than leaving them behind when the timer isn't
+minimised or `visualViewport` isn't available.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/session-timer.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.7 — Fixed: Timer card was invisible on every screen load (2026-08-04)
 
 Root cause of the "Timer card missing" issue reported across several
