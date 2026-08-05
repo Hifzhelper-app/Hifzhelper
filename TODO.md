@@ -4,6 +4,19 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.11 (2026-08-05)
+
+- [x] Drag now triggered by a dedicated handle (small move icon,
+  leftmost in the pill's top row) instead of press-and-hold anywhere --
+  the hold approach was leaking through to the device's own native
+  long-press gesture (text selection/context menu) on whatever was
+  underneath the pill, since pointer-events doesn't block that
+  lower-level, OS-adjacent behavior. Touching the handle starts the
+  drag immediately, no hold duration, no gesture-competition window.
+  All hold-timing/cancel-threshold logic removed entirely. Underlying
+  drag mechanics (on-screen clamping, session-only position memory)
+  unchanged from V3.34.10 -- only the trigger changed.
+
 ## Done — V3.34.10 (2026-08-05)
 
 - [x] Mini pill is genuinely draggable now -- scope changed in chat
