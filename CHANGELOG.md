@@ -7,6 +7,54 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.10 — Mini pill is now genuinely draggable (2026-08-05)
+
+Scope changed in chat: from "fix the pill's fixed position" to "the
+pill moves wherever you put it." Confirmed 3 specific decisions before
+building, since each one changes how the interaction actually works:
+
+**Press-and-hold anywhere on the pill starts a drag** — not a
+dedicated handle. A plain tap still reaches the buttons underneath
+normally; only a genuine hold (450ms, cancelled if the pointer moves
+more than 8px before that elapses, so an accidental brush or scroll
+attempt doesn't accidentally start dragging) engages it. A drag that
+just ended suppresses its own trailing click, so releasing a hold never
+also fires whatever button happened to be under the pointer.
+
+**Default starting position moved to the top of the screen** (was the
+bottom, from the earlier fixed-position work) — the CSS host wrapper's
+`align-items` flipped from `flex-end` to `flex-start`, safe-area
+padding flipped to the top edge accordingly.
+
+**Position is remembered for the current session only** — a plain
+instance field on the component (`this._dragLeft`/`_dragTop`), not
+written anywhere persistent, so it resets to the default top-center
+spot on a fresh page load but correctly returns to wherever it was
+dragged to on every re-minimise within the same session (maximise,
+navigate elsewhere, come back — the dragged position holds).
+
+**Constrained to stay fully on-screen**, continuously during the drag
+itself and also re-clamped on window resize/rotation afterward — a
+drag that ended near an edge shouldn't be able to end up partially
+off-screen just because the viewport later changes shape.
+
+**Verified, not just read over**: ran the exact clamping formula used
+by both the live drag and the resize handler against normal,
+past-edge, negative, and viewport-shrink cases directly.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/session-timer.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.9 — Mini pill's positioning bug actually fixed at its root, not worked around (2026-08-05)
 
 Prompted by a genuinely good question in chat: why did History/Plan

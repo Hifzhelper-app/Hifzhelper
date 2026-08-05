@@ -693,6 +693,13 @@
    small area the pill itself actually occupies -- everything behind it
    stays fully interactive. No JS, no visualViewport, no
    MutationObserver -- removed entirely from js/dhorPage.js. */
+/* 2026-08-05, confirmed in chat: scope changed from "fix the bottom
+   position" to a genuinely draggable pill -- default starting position
+   moved to the top of the screen (align-items:flex-start, was flex-end),
+   safe-area padding flipped to the top edge accordingly. Once dragged,
+   session-timer.js switches .mini itself to explicit position:fixed
+   left/top (see its own comment) -- this host rule only governs where
+   the pill starts before any drag happens this session. */
 #dhorTimerHost[mode="mini"] {
   position: fixed;
   inset: 0;
@@ -701,9 +708,9 @@
   overflow: visible;
   border-radius: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 0;
   pointer-events: none;
   z-index: 250;
 }

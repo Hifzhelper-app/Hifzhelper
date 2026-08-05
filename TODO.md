@@ -4,6 +4,27 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.10 (2026-08-05)
+
+- [x] Mini pill is genuinely draggable now -- scope changed in chat
+  from "fix its fixed position" to "move it wherever you want."
+  Press-and-hold (450ms, 8px cancel threshold) anywhere on the pill
+  starts a drag; a plain tap still reaches the buttons underneath
+  normally, and the trailing click after a drag ends is suppressed so
+  releasing near a button never also triggers it.
+- [x] Default starting position moved from bottom to top of the screen.
+- [x] Position remembered for the current session only (plain instance
+  field, not persisted) -- resets to top-center on reload, but holds
+  across minimise/maximise cycles within the same session.
+- [x] Constrained to stay fully on-screen, both live during the drag
+  and re-clamped on resize/rotation afterward. Tested the exact
+  clamping formula directly against normal, past-edge, negative, and
+  viewport-shrink cases.
+- [ ] Genuinely real pointer-drag interaction (hold-timing, threshold-
+  cancel, live tracking) can't be fully exercised without a real
+  touchscreen/mouse session -- worth a careful pass on an actual device
+  rather than trusting the code read-through alone.
+
 ## Done — V3.34.9 (2026-08-05)
 
 - [x] Mini pill's positioning fixed at its actual root, replacing

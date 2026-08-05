@@ -1785,6 +1785,34 @@ the fix for a bug that broke Save entirely.
    Time/Maximise, Lap, Pause-Restart) — not accidentally blocked by its
    own new wrapper.
 
+## 65. Mini pill is now genuinely draggable (V3.34.10)
+
+1. Minimise the timer → confirm it appears at the top of the screen
+   (not the bottom).
+2. Tap a button on the pill quickly (e.g. Lap) → confirm it registers
+   normally, no delay, no accidental drag.
+3. Press and hold anywhere on the pill (roughly half a second) without
+   moving, then drag it to a different part of the screen → confirm it
+   follows your finger/pointer smoothly.
+4. Release the drag → confirm nothing on the pill was accidentally
+   triggered (e.g. it didn't accidentally toggle Pause/Restart just
+   because the release happened over that button).
+5. Start a press-and-hold, then move your finger away before half a
+   second has passed → confirm this does NOT start a drag (should
+   cancel cleanly, e.g. treated as if nothing happened).
+6. Drag the pill near the very edge of the screen (try all 4 edges) →
+   confirm it never goes fully or partially off-screen, always fully
+   visible.
+7. Drag the pill to a new spot, tap Maximise, then Minimise again →
+   confirm it reappears exactly where you last dragged it, not back at
+   the default top position.
+8. Drag the pill somewhere, then reload the page and minimise again →
+   confirm it starts back at the default top position (not remembered
+   across a reload).
+9. On mobile, drag the pill somewhere near an edge, then rotate the
+   device → confirm it's still fully on-screen after rotation, not
+   partially cut off by the now-different screen dimensions.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
