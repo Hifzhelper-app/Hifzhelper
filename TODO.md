@@ -4,6 +4,21 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.12 (2026-08-05)
+
+- [x] Fixed the pill-stretches-when-dragged bug the user found -- .mini's
+  own width:100% resolves against the full viewport once switched to
+  position:fixed (was resolving against its constrained flex space
+  before), and on a phone narrower than the 420px cap, that cap never
+  gets a chance to catch it. Fixed by locking in the pill's own already-
+  correct width before the drag switches its positioning mode.
+- [x] New "Confirm selection" checkbox on both Sabaq and Dhor --
+  hard-blocks Save until checked (same pattern as Sabaq Dhor's own
+  checkboxes), clears immediately after every successful save, replaces
+  the earlier "nothing entered" confirm() entirely on both cards.
+  Applies to edits as well as new entries on both cards now (the
+  earlier check on Dhor specifically only applied to new entries).
+
 ## Done — V3.34.11 (2026-08-05)
 
 - [x] Drag now triggered by a dedicated handle (small move icon,

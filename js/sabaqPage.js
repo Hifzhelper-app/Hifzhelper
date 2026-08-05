@@ -272,17 +272,17 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     errEl.textContent = "This range crosses more than one juz' boundary — please split it into separate entries.";
     return;
   }
-  // Item 3 (2026-08-04, confirmed in chat): same "nothing entered" check
-  // as Dhor's, only for new entries (an edit is always modifying real,
-  // already-logged data). From/To can't be part of this signal since
-  // they're always prepopulated regardless of whether the form was
-  // actually touched.
-  if(!sabaqEditingId){
-    const sabaqNothingEntered = !document.getElementById('sabaq_line_count').value
-      && !document.getElementById('sabaq_page_count').value
-      && sabaqSelectedTags.length === 0
-      && !readCommentBlock('sabaqCommentBlock').student_comment;
-    if(sabaqNothingEntered && !confirm('It looks like nothing was entered for this session (no lines, pages, tajweed, or notes).\n\nOK to save anyway, Cancel to go back.')) return;
+  // 2026-08-05, confirmed in chat: replaces the earlier "nothing
+  // entered" confirm() entirely -- a real, dedicated confirmation
+  // checkbox now, operating exactly like Sabaq Dhor's own hard-block
+  // ("please check at least one section" there; the equivalent message
+  // here below). Applies to every save, new or edit -- unlike the
+  // check it replaces, which only applied to new entries, this is about
+  // confirming whatever the current selection actually is, which
+  // matters just as much when editing.
+  if(!document.getElementById('sabaq_confirm').checked){
+    errEl.textContent = 'Please confirm the selection before saving.';
+    return;
   }
   const payload = {
     date: document.getElementById('sabaq_date').value || todayISO(),
@@ -301,6 +301,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     }
     document.getElementById('sabaqSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqSaveStatus').classList.remove('show'), 1800);
+    document.getElementById('sabaq_confirm').checked = false;
 
     // Position only ever advances here for a genuinely new entry, or an
     // edit to the entry that's confirmed to be the current frontier
