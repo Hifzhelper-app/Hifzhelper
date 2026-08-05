@@ -1813,6 +1813,23 @@ the fix for a bug that broke Save entirely.
    device → confirm it's still fully on-screen after rotation, not
    partially cut off by the now-different screen dimensions.
 
+## 66. Drag now starts from a dedicated handle, not press-and-hold (V3.34.11)
+
+1. Minimise the timer → confirm a small move/grip icon appears as the
+   leftmost icon in the pill's top row, before Close.
+2. Touch down on the handle and drag → confirm the pill follows
+   immediately, no delay, and confirm no native browser gesture (text
+   selection highlight, a context menu, a "save image" style popup)
+   appears on whatever's underneath the pill during the drag.
+3. Tap any of the other buttons (Close, Reset, Note Time, Maximise,
+   Lap, Pause/Restart) → confirm they still work normally, unaffected
+   by the handle's presence.
+4. Drag using the handle, release → confirm nothing was accidentally
+   triggered by the release.
+5. Confirm the on-screen constraint and session-only memory still work
+   exactly as before (repeat TESTING.md #65's steps 6-9 with the new
+   handle-based trigger instead of press-and-hold).
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

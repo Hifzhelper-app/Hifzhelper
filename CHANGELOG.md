@@ -7,6 +7,45 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.11 — Drag now starts from a dedicated handle, not press-and-hold (2026-08-05)
+
+Confirmed in chat: V3.34.10's press-and-hold-anywhere approach leaked
+its gesture through to whatever was visually underneath the pill — the
+device's own native long-press (text selection, a context menu) had
+enough of a window during the 450ms hold to fire alongside the custom
+timer, and reach through to the screen behind it. `pointer-events` on
+the pill doesn't block a lower-level, OS-adjacent gesture like that.
+
+**Replaced entirely with a dedicated drag handle** — a small move icon,
+leftmost in the pill's top row (Close/Reset/Note Time/Maximise keep
+their existing order after it). Touching down on just that one small
+area starts the drag immediately, with no hold duration at all — there
+was never a native-gesture window for the timer to compete with in the
+first place, since the interaction is resolved the instant it begins
+rather than after a delay. Everywhere else on the pill goes back to
+plain, ordinary tap behavior.
+
+All the hold-timing and movement-cancel-threshold logic from V3.34.10
+is gone — there's no longer any ambiguity between "this is a tap" and
+"this is a drag" to resolve, so nothing needs to wait and watch for it.
+`touch-action: none` moved from the whole pill down to just the handle
+itself, since the rest of the pill no longer needs it. The actual drag
+mechanics underneath (live tracking, on-screen clamping, session-only
+memory of where it was left) are unchanged from V3.34.10 — only how the
+drag is triggered changed.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/session-timer.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.10 — Mini pill is now genuinely draggable (2026-08-05)
 
 Scope changed in chat: from "fix the pill's fixed position" to "the

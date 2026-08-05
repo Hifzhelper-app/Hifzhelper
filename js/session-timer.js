@@ -62,6 +62,16 @@
     notetime: '<path d="M16 14v2.2l1.6 1"/><path d="M16 4h2a2 2 0 0 1 2 2v.832"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h2"/><circle cx="16" cy="16" r="6"/><rect x="8" y="2" width="8" height="4" rx="1"/>',
     minimize: '<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10 21 3"/><path d="M3 21l7-7"/>',
     maximize: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
+    // 2026-08-05, confirmed in chat: dedicated drag-handle icon,
+    // replacing the earlier press-and-hold-anywhere approach entirely --
+    // that approach's timed hold left enough of a window for the
+    // device's own native long-press gesture (text selection, a context
+    // menu) to fire at the same time and reach through to whatever was
+    // visually underneath the pill. A handle sidesteps that at the
+    // mechanism level: touching down on it starts the drag immediately,
+    // with no hold duration for a native gesture to have time to engage
+    // in the first place.
+    move: '<polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/>',
   };
   const iconBtn = (act, label, cls) =>
     '<button class="' + (cls || 'ic') + '" data-act="' + act + '" type="button" aria-label="' + label + '">' +
@@ -103,10 +113,12 @@
 .rnd{width:72px;height:72px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .rnd:hover{background:#e6e6e6}
 .sq{width:30px;height:30px;border-radius:4px;display:block}
-.mini{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box;pointer-events:auto;touch-action:none;user-select:none}
+.mini{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px;padding:12px 16px;border-radius:22px;border:1px solid #2c2c30;background:rgba(20,20,22,.94);backdrop-filter:blur(12px);color:#fff;font:inherit;box-sizing:border-box;pointer-events:auto}
 .mini.dragging{box-shadow:0 8px 24px rgba(0,0,0,.5);border-color:#8e8e93}
 .mini-top{display:flex;justify-content:center;align-items:center;gap:24px}
 .mini-ic{background:none;border:0;padding:2px;color:#8e8e93;cursor:pointer;display:flex}
+.mini-drag-handle{background:none;border:0;padding:2px;color:#8e8e93;cursor:grab;display:flex;touch-action:none;user-select:none}
+.mini-drag-handle:active{cursor:grabbing}
 .mini-ic:hover{color:#fff}
 .mini-ic svg{width:16px;height:16px}
 .mini-max{background:none;border:0;color:#8e8e93;cursor:pointer;display:flex;padding:2px}
@@ -167,7 +179,7 @@
         '<div class="ctrls"><div class="ctrl-col"><button class="rnd" data-act="toggle" type="button"></button><span class="ctrl-label">Start Dhor</span></div>' +
         '<div class="ctrl-col"><button class="rnd" data-act="stop" type="button"><span class="sq"></span></button><span class="ctrl-label">Stop Dhor</span></div></div></div>' +
         '<div class="mini">' +
-        '<div class="mini-top">' + iconBtn('close', 'Close', 'mini-ic') + iconBtn('reset', 'Reset', 'mini-ic') + iconBtn('notetime', 'Note Time', 'mini-ic') +
+        '<div class="mini-top"><button class="mini-drag-handle" data-act="drag-handle" type="button" aria-label="Drag to move"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON.move + '</svg></button>' + iconBtn('close', 'Close', 'mini-ic') + iconBtn('reset', 'Reset', 'mini-ic') + iconBtn('notetime', 'Note Time', 'mini-ic') +
         '<button class="mini-max" data-act="maximize" type="button" aria-label="Maximise"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + ICON.maximize + '</svg></button></div>' +
         '<div class="mini-row">' +
         '<button class="mini-toggle" data-act="toggle" type="button"></button>' +
@@ -206,39 +218,23 @@
       this._paint();
     }
 
-    // 2026-08-05, confirmed in chat: press-and-hold anywhere on the
-    // pill (not a dedicated handle -- deliberately chosen so no part of
-    // the pill's own layout needs to change to make room for one)
-    // starts a drag; a plain tap still reaches the buttons underneath
-    // it normally. Movement past a small threshold before the hold
-    // duration elapses cancels it (treated as an accidental brush /
-    // scroll attempt, not a deliberate press-and-hold). Position is
-    // remembered only as a plain instance field (this._dragLeft/Top) --
-    // resets to the default top-center position on a fresh page load,
-    // not persisted anywhere, matching "remembers for this session
-    // only." Constrained to stay fully on-screen throughout the drag,
-    // not just clamped once at the end.
+    // 2026-08-05, confirmed in chat: dedicated drag handle (see ICON.move
+    // above for the full reasoning) -- touching down on it starts a drag
+    // immediately, no hold duration, no cancel-on-movement threshold to
+    // resolve, since there's no ambiguity left to resolve: this one
+    // small area only ever means "drag," everywhere else on the pill
+    // only ever means "tap the button." Position is remembered only as
+    // a plain instance field (this._dragLeft/Top) -- resets to the
+    // default top-center position on a fresh page load, not persisted
+    // anywhere, matching "remembers for this session only." Constrained
+    // to stay fully on-screen throughout the drag, not just clamped
+    // once at the end.
     _wireDrag() {
-      const HOLD_MS = 450, CANCEL_PX = 8;
       const mini = this.$('.mini');
-      let holdTimer = null, startX = 0, startY = 0, dragging = false;
-
-      const clearHold = () => { clearTimeout(holdTimer); holdTimer = null; };
-
-      const onMoveBeforeHold = (e) => {
-        if (Math.abs(e.clientX - startX) > CANCEL_PX || Math.abs(e.clientY - startY) > CANCEL_PX) {
-          clearHold();
-          mini.removeEventListener('pointermove', onMoveBeforeHold);
-        }
-      };
-      const onUpBeforeHold = () => {
-        clearHold();
-        mini.removeEventListener('pointermove', onMoveBeforeHold);
-        mini.removeEventListener('pointerup', onUpBeforeHold);
-      };
+      const handle = this.$('.mini-drag-handle');
 
       const beginDrag = (e) => {
-        dragging = true;
+        e.preventDefault();
         this._dragJustHappened = false;
         mini.classList.add('dragging');
         const rect = mini.getBoundingClientRect();
@@ -258,7 +254,6 @@
           document.removeEventListener('pointermove', onMove);
           document.removeEventListener('pointerup', onUp);
           mini.classList.remove('dragging');
-          dragging = false;
           this._dragJustHappened = true;
           setTimeout(() => { this._dragJustHappened = false; }, 50);
         };
@@ -266,17 +261,7 @@
         document.addEventListener('pointerup', onUp);
       };
 
-      mini.addEventListener('pointerdown', (e) => {
-        if (dragging) return;
-        startX = e.clientX; startY = e.clientY;
-        mini.addEventListener('pointermove', onMoveBeforeHold);
-        mini.addEventListener('pointerup', onUpBeforeHold, { once: true });
-        holdTimer = setTimeout(() => {
-          mini.removeEventListener('pointermove', onMoveBeforeHold);
-          mini.removeEventListener('pointerup', onUpBeforeHold);
-          beginDrag(e);
-        }, HOLD_MS);
-      });
+      handle.addEventListener('pointerdown', beginDrag);
 
       // Re-applies a previously-dragged-to position (this session only)
       // whenever the pill becomes visible again -- otherwise every
