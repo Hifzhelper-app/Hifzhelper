@@ -1830,6 +1830,26 @@ the fix for a bug that broke Save entirely.
    exactly as before (repeat TESTING.md #65's steps 6-9 with the new
    handle-based trigger instead of press-and-hold).
 
+## 67. Pill-width drag fix, and a new confirmation checkbox on Sabaq/Dhor (V3.34.12)
+
+1. Minimise the timer, drag it using the handle → confirm it keeps its
+   proper rounded pill shape throughout the drag, not stretching into a
+   full-width band, especially on a phone-width screen.
+2. On the Sabaq card, without checking "Confirm selection," tap Save →
+   confirm it's blocked with an error message, nothing saves.
+3. Check "Confirm selection," tap Save → confirm it saves normally, and
+   the checkbox is unchecked again immediately afterward.
+4. Repeat steps 2-3 for the Dhor card.
+5. Edit an existing Sabaq entry from History, tap Update without
+   checking the box → confirm it's blocked the same way new entries
+   are. Check it, Update → confirm it saves and the box clears.
+6. Repeat step 5 for a Dhor entry (both the edit path and a fresh
+   entry should both require and clear the checkbox).
+7. Confirm the old "nothing was entered" popup no longer appears
+   anywhere on Sabaq or Dhor — the checkbox is the only gate now.
+8. Open a fresh Dhor card (not editing) → confirm the checkbox starts
+   unchecked, not carried over from a previous session on the card.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

@@ -238,6 +238,21 @@
         this._dragJustHappened = false;
         mini.classList.add('dragging');
         const rect = mini.getBoundingClientRect();
+        // Bug fix (2026-08-05, found by the user): .mini's own CSS is
+        // width:100% (capped at max-width:420px) -- correct while it's
+        // a normal flex child, where 100% means "100% of the space the
+        // flexbox gives it." The instant this switches to position:fixed
+        // below, 100% means something different: 100% of the actual
+        // viewport, since a fixed element measures against that, not
+        // its old flex container. On a phone narrower than 420px, the
+        // screen itself is already smaller than that cap, so the cap
+        // never even gets a chance to catch it -- which is exactly why
+        // this showed up as a full-width "band" on mobile specifically.
+        // Locking in the width it already, correctly had -- captured
+        // here before anything changes -- carries the real pill shape
+        // into the drag instead of letting it recalculate against the
+        // wrong reference.
+        mini.style.width = rect.width + 'px';
         const offsetX = e.clientX - rect.left, offsetY = e.clientY - rect.top;
         const onMove = (me) => {
           const w = mini.offsetWidth, h = mini.offsetHeight;

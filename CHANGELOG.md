@@ -7,6 +7,52 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.12 — Pill-width drag fix, and a new confirmation checkbox on Sabaq/Dhor (2026-08-05)
+
+Three pieces, confirmed together in chat as one bundled delivery.
+
+**Fixed: the mini pill stretched into a full-width band once dragged**,
+reported specifically on mobile. Root cause: `.mini`'s own `width: 100%`
+means "100% of the space the flexbox gives it" while it's a normal flex
+child — correct, and capped sensibly by its `max-width: 420px`. The
+instant a drag switches it to `position: fixed`, `100%` means something
+different: 100% of the actual viewport, since a fixed element measures
+against that instead. On a phone narrower than 420px, the screen is
+already smaller than that cap, so the cap never gets a chance to catch
+it — exactly why this only showed up as a band on mobile specifically.
+Fixed by capturing and locking in the pill's own already-correct width
+the moment before switching it to `position: fixed`, so it carries its
+real shape into the drag instead of recalculating against the wrong
+reference.
+
+**New confirmation checkbox on both Sabaq and Dhor** — "Confirm
+selection," hard-blocking Save exactly the way Sabaq Dhor's own "mark
+sections revised" checkboxes already do (an error message, no save
+going through, until checked), rather than the softer yes/no prompt
+the earlier "nothing entered" check used. Confirmed in chat: replaces
+that "nothing entered" `confirm()` on both cards entirely, not layered
+alongside it — and applies to every save, new entries and edits alike
+(the earlier check on Dhor specifically only applied to new entries;
+this one is a genuine, deliberate confirmation of whatever the current
+selection is, which matters just as much when editing). Clears itself
+immediately after every successful save on both cards, matching Sabaq
+Dhor's own already-fixed behavior (V3.34.3) — a fresh confirmation is
+required each time, not one that lingers checked from a previous save.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/session-timer.js
+js/sabaqPage.js
+js/dhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.11 — Drag now starts from a dedicated handle, not press-and-hold (2026-08-05)
 
 Confirmed in chat: V3.34.10's press-and-hold-anywhere approach leaked

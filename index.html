@@ -21,16 +21,16 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.34.11"></script>
+<script src="js/pwaManifest.js?v=3.34.12"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.34.11">
-<link rel="stylesheet" href="css/base.css?v=3.34.11">
-<link rel="stylesheet" href="css/nav.css?v=3.34.11">
-<link rel="stylesheet" href="css/journal-table.css?v=3.34.11">
-<link rel="stylesheet" href="css/components.css?v=3.34.11">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.34.11">
-<link rel="stylesheet" href="css/settings.css?v=3.34.11">
-<link rel="stylesheet" href="css/admin.css?v=3.34.11">
+<link rel="stylesheet" href="css/tokens.css?v=3.34.12">
+<link rel="stylesheet" href="css/base.css?v=3.34.12">
+<link rel="stylesheet" href="css/nav.css?v=3.34.12">
+<link rel="stylesheet" href="css/journal-table.css?v=3.34.12">
+<link rel="stylesheet" href="css/components.css?v=3.34.12">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.34.12">
+<link rel="stylesheet" href="css/settings.css?v=3.34.12">
+<link rel="stylesheet" href="css/admin.css?v=3.34.12">
 </head>
 <body>
 
@@ -270,6 +270,19 @@
             <label>Tajweed</label>
             <div id="sabaqTajweedPicker"></div>
             <div id="sabaqCommentBlock"></div>
+            <!-- 2026-08-05, confirmed in chat: hard-blocks Save until
+                 checked, exactly like Sabaq Dhor's own "mark sections
+                 revised" checkboxes -- js/sabaqPage.js's save handler
+                 checks this before anything else. Clears itself
+                 immediately after a successful save (both here and in
+                 js/sabaqPage.js), so each save requires its own fresh
+                 confirmation rather than staying checked from a
+                 previous one. Replaces the earlier "nothing entered"
+                 confirm() entirely, not layered alongside it. -->
+            <label class="cb-private-row">
+              <input type="checkbox" id="sabaq_confirm">
+              Confirm selection
+            </label>
             <div class="form-error" id="sabaqError"></div>
             <div class="edit-bottombar hidden" id="sabaqEditBottombar">
               <button type="button" id="sabaqEditCancelBtn2"><span class="btn-icon" id="sabaqEditCancelIcon"></span><span>Cancel</span></button>
@@ -435,6 +448,15 @@
               <div id="dhorLapRollupList" class="hidden"></div>
             </div>
             <div id="dhorCommentBlock"></div>
+            <!-- 2026-08-05, confirmed in chat: same as Sabaq's own
+                 confirmation checkbox above -- hard-blocks Save until
+                 checked, clears itself immediately after a successful
+                 save (both new entries and edits), replaces the
+                 earlier "nothing entered" confirm() entirely. -->
+            <label class="cb-private-row">
+              <input type="checkbox" id="dhor_confirm">
+              Confirm selection
+            </label>
             <div class="form-error" id="dhorError"></div>
             <div class="edit-bottombar hidden" id="dhorEditBottombar">
               <button type="button" id="dhorEditCancelBtn2"><span class="btn-icon" id="dhorEditCancelIcon"></span><span>Cancel</span></button>
@@ -699,25 +721,25 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.34.11"></script>
-<script src="js/icons.js?v=3.34.11"></script>
-<script src="js/customDate.js?v=3.34.11"></script>
-<script src="js/api.js?v=3.34.11"></script>
-<script src="js/uiSwitch.js?v=3.34.11"></script>
-<script src="js/position.js?v=3.34.11"></script>
-<script src="js/auth.js?v=3.34.11"></script>
-<script src="js/home.js?v=3.34.11"></script>
-<script src="js/tajweed.js?v=3.34.11"></script>
-<script src="js/commentPrivacy.js?v=3.34.11"></script>
-<script src="js/session-timer.js?v=3.34.11"></script>
-<script src="js/journal.js?v=3.34.11"></script>
-<script src="js/dhorPage.js?v=3.34.11"></script>
-<script src="js/sabaqPage.js?v=3.34.11"></script>
-<script src="js/sabaqDhorPage.js?v=3.34.11"></script>
-<script src="js/reflectionCard.js?v=3.34.11"></script>
-<script src="js/logDetailScreen.js?v=3.34.11"></script>
-<script src="js/settingsScreen.js?v=3.34.11"></script>
-<script src="js/adminPage.js?v=3.34.11"></script>
-<script src="js/app.js?v=3.34.11"></script>
+<script src="shared/data.js?v=3.34.12"></script>
+<script src="js/icons.js?v=3.34.12"></script>
+<script src="js/customDate.js?v=3.34.12"></script>
+<script src="js/api.js?v=3.34.12"></script>
+<script src="js/uiSwitch.js?v=3.34.12"></script>
+<script src="js/position.js?v=3.34.12"></script>
+<script src="js/auth.js?v=3.34.12"></script>
+<script src="js/home.js?v=3.34.12"></script>
+<script src="js/tajweed.js?v=3.34.12"></script>
+<script src="js/commentPrivacy.js?v=3.34.12"></script>
+<script src="js/session-timer.js?v=3.34.12"></script>
+<script src="js/journal.js?v=3.34.12"></script>
+<script src="js/dhorPage.js?v=3.34.12"></script>
+<script src="js/sabaqPage.js?v=3.34.12"></script>
+<script src="js/sabaqDhorPage.js?v=3.34.12"></script>
+<script src="js/reflectionCard.js?v=3.34.12"></script>
+<script src="js/logDetailScreen.js?v=3.34.12"></script>
+<script src="js/settingsScreen.js?v=3.34.12"></script>
+<script src="js/adminPage.js?v=3.34.12"></script>
+<script src="js/app.js?v=3.34.12"></script>
 </body>
 </html>
