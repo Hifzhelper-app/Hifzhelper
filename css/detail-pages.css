@@ -669,26 +669,42 @@
 @media (min-width: 1180px) {
   #dhorTimerHost { height: 75vh; max-width: 30%; }
 }
-/* 2026-08-05, confirmed in chat: bottom-anchoring here is the CSS
-   fallback only. iOS Safari has a genuine, well-documented bug where
-   position:fixed elements anchored via bottom don't reliably track the
-   visible viewport when the browser's own toolbar is showing/hiding --
-   as of iOS 26 specifically, Apple's own bug tracker shows fixed
-   content can be clipped rather than just hidden behind the toolbar.
-   No CSS-only fix reliably solves this across iOS versions; the real
-   fix (js/dhorPage.js's repositionMiniPill, using window.visualViewport)
-   overrides this with an explicit inline top whenever that API is
-   available, which covers the devices actually affected. This rule
-   remains the fallback for anything without visualViewport support. */
+/* 2026-08-05, confirmed in chat: same technique .modal-overlay
+   (css/components.css) already uses for History/Plan Dhor's own
+   bottom-anchored sheets, applied here for the same underlying reason.
+   V3.34.8 anchored only the pill's bottom edge directly
+   (position:fixed;bottom:...), which is exactly the single-edge
+   calculation iOS Safari's bottom-toolbar bug affects -- worked around
+   it with a window.visualViewport recalculation in JS, which also
+   applied unconditionally on desktop where the bug doesn't exist,
+   visibly regressing a position that was already correct there.
+   This version sidesteps the bug's mechanism entirely instead of
+   working around it: the host becomes a full-viewport (inset:0),
+   invisible (:host([mode="mini"]) is already background:transparent)
+   positioning wrapper -- all 4 edges anchored simultaneously, the same
+   way .modal-overlay's own inset:0 is, rather than asking the browser
+   to calculate one edge (bottom) independently, which is specifically
+   the calculation iOS gets wrong. Flexbox (align-items:flex-end) then
+   pushes the actual visible pill -- session-timer.js's own .mini div,
+   inside the shadow DOM -- to the bottom of that wrapper, the same way
+   .modal-card sits at the bottom of .modal-overlay. pointer-events:none
+   here (re-enabled on .mini itself, session-timer.js) so this
+   full-viewport wrapper doesn't intercept taps anywhere except the
+   small area the pill itself actually occupies -- everything behind it
+   stays fully interactive. No JS, no visualViewport, no
+   MutationObserver -- removed entirely from js/dhorPage.js. */
 #dhorTimerHost[mode="mini"] {
   position: fixed;
-  inset: auto;
-  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 40px);
-  max-width: 420px;
+  inset: 0;
+  flex: none;
   height: auto;
+  overflow: visible;
+  border-radius: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
   z-index: 250;
 }
 

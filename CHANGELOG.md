@@ -7,6 +7,59 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.34.9 — Mini pill's positioning bug actually fixed at its root, not worked around (2026-08-05)
+
+Prompted by a genuinely good question in chat: why did History/Plan
+Dhor's own bottom-anchored sheets never hit this bug at all?
+
+**Answer, and it changed the fix entirely**: `.modal-overlay`
+(`css/components.css`) has never anchored via `bottom:` at all. It's
+`position: fixed; inset: 0` (all 4 edges simultaneously) with
+`align-items: flex-end` pushing its sheet to the bottom via flexbox —
+letting the browser's own layout engine determine where "the bottom"
+actually is, rather than calculating that one edge independently. iOS
+Safari's toolbar bug specifically affects single-edge `bottom:`
+calculations; a fully-`inset: 0` container was never touching that
+code path in the first place.
+
+V3.34.8's `bottom: 20px` anchoring on the pill directly was exactly the
+pattern the bug affects, and the `window.visualViewport` fix built on
+top of it was a workaround for that mechanism, not a fix of it — and it
+applied unconditionally, including on desktop where the bug doesn't
+exist, which is why the previous position regressed there.
+
+**This version applies the same `inset: 0` + flexbox technique the
+modals already use successfully**, instead: the timer host becomes a
+full-viewport, invisible (`:host([mode="mini"])` was already
+`background: transparent`) positioning wrapper when minimised — the
+same shape `.modal-overlay` already is — with `pointer-events: none` so
+it doesn't intercept taps anywhere except where the pill itself
+actually sits (re-enabled via `pointer-events: auto` on the pill's own
+`.mini` div). No JavaScript, no `visualViewport`, no `MutationObserver`
+— all removed entirely, not adjusted.
+
+**Confirmed in chat**: when History or Plan Dhor opens while the timer
+is minimised, both are now the same underlying shape (`inset: 0` +
+flexbox), so `.modal-overlay`'s existing `z-index: 300` against the
+pill's `250` means the modal's sheet covers the pill for as long as
+it's open — the timer keeps running underneath, completely unaffected,
+and the pill reappears exactly where it was once the modal closes.
+Confirmed as the wanted behavior over giving the pill priority instead.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+js/dhorPage.js
+js/session-timer.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.34.8 — Full view resized for mobile, mini pill repositioned around a genuine iOS Safari bug (2026-08-04)
 
 Confirmed in chat, sized specifically against a 390×844 (6.1") viewport.

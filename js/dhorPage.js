@@ -404,42 +404,18 @@ function dhorTimerTargetMinutes(perJuzMinutes){
   if(unit === 'quarter') return perJuzMinutes / 4;
   return perJuzMinutes; // 'full'
 }
-// 2026-08-05, confirmed in chat: iOS Safari's own bottom toolbar can
-// clip or hide the mini pill entirely, since position:fixed;bottom:...
-// doesn't reliably track the actual visible area while the toolbar is
-// showing/hiding/animating -- a genuine, currently-open Apple bug (their
-// own developer forums document iOS 26 clipping position:fixed content
-// near the bottom edge rather than just hiding it behind the toolbar),
-// not something CSS alone can fully solve. window.visualViewport
-// reports the real, currently-visible viewport directly, so this
-// positions the pill against that whenever the API is available --
-// css/detail-pages.css's own bottom-anchoring rule is the fallback for
-// anything without visualViewport support (very rare at this point).
-function repositionMiniPill(){
-  const host = document.getElementById('dhorTimerHost');
-  if(host.mode !== 'mini' || !window.visualViewport){
-    host.style.top = '';
-    host.style.bottom = '';
-    host.style.transform = '';
-    return;
-  }
-  const vv = window.visualViewport;
-  const bottomMargin = 20;
-  host.style.top = `${vv.height + vv.offsetTop - bottomMargin}px`;
-  host.style.bottom = 'auto';
-  host.style.transform = 'translate(-50%, -100%)';
-}
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize', repositionMiniPill);
-  window.visualViewport.addEventListener('scroll', repositionMiniPill);
-}
-// Watches the mode attribute directly (session-timer.js's mode setter
-// just reflects it: setAttribute('mode', v)) rather than relying on
-// catching every individual place mode might switch to 'mini' -- covers
-// the component's own internal Minimise action the same as any change
-// made from here, without needing a matching call at each one.
-new MutationObserver(() => { repositionMiniPill(); })
-  .observe(document.getElementById('dhorTimerHost'), { attributes: true, attributeFilter: ['mode'] });
+// 2026-08-05, confirmed in chat: the mini pill's positioning is now
+// pure CSS (css/detail-pages.css), the same inset:0 + flexbox pattern
+// the app's own modals (.modal-overlay) already use successfully --
+// see that file's comment for the full reasoning. This replaces a
+// window.visualViewport-based JS approach from V3.34.8 that worked
+// around the underlying iOS bug with a live-recalculated position
+// instead of sidestepping the bug's actual mechanism (single-edge
+// bottom: anchoring) the way the modals always have. That version
+// visibly regressed desktop's position (the override applied
+// unconditionally, replacing already-correct CSS with an unnecessary
+// JS calculation) and the whole visualViewport/MutationObserver
+// approach has been removed entirely, not just adjusted.
 // 2026-08-04, confirmed in chat: the Timer is now a permanent rail card
 // (js/logDetailScreen.js, index.html) rather than an on-demand overlay,
 // so "opening" it means scrolling the rail there, not un-hiding
