@@ -1,17 +1,17 @@
-const CACHE_NAME = 'hifzhelper-v3.34.8'; // bumped for the V3.34.8 release
+const CACHE_NAME = 'hifzhelper-v3.34.9'; // bumped for the V3.34.9 release
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=3.34.8', 'shared/data.js?v=3.34.8', './appicons/logo.png',
-  './css/tokens.css?v=3.34.8', './css/base.css?v=3.34.8', './css/nav.css?v=3.34.8', './css/journal-table.css?v=3.34.8',
-  './css/components.css?v=3.34.8', './css/detail-pages.css?v=3.34.8', './css/settings.css?v=3.34.8', './css/admin.css?v=3.34.8',
-  './js/icons.js?v=3.34.8', './js/customDate.js?v=3.34.8', './js/api.js?v=3.34.8', './js/uiSwitch.js?v=3.34.8', './js/position.js?v=3.34.8',
-  './js/auth.js?v=3.34.8', './js/home.js?v=3.34.8', './js/tajweed.js?v=3.34.8',
-  './js/commentPrivacy.js?v=3.34.8', './js/session-timer.js?v=3.34.8', './js/journal.js?v=3.34.8', './js/dhorPage.js?v=3.34.8',
-  './js/sabaqPage.js?v=3.34.8', './js/sabaqDhorPage.js?v=3.34.8', './js/reflectionCard.js?v=3.34.8',
-  './js/logDetailScreen.js?v=3.34.8', './js/settingsScreen.js?v=3.34.8', './js/adminPage.js?v=3.34.8', './js/app.js?v=3.34.8'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=3.34.9', 'shared/data.js?v=3.34.9', './appicons/logo.png',
+  './css/tokens.css?v=3.34.9', './css/base.css?v=3.34.9', './css/nav.css?v=3.34.9', './css/journal-table.css?v=3.34.9',
+  './css/components.css?v=3.34.9', './css/detail-pages.css?v=3.34.9', './css/settings.css?v=3.34.9', './css/admin.css?v=3.34.9',
+  './js/icons.js?v=3.34.9', './js/customDate.js?v=3.34.9', './js/api.js?v=3.34.9', './js/uiSwitch.js?v=3.34.9', './js/position.js?v=3.34.9',
+  './js/auth.js?v=3.34.9', './js/home.js?v=3.34.9', './js/tajweed.js?v=3.34.9',
+  './js/commentPrivacy.js?v=3.34.9', './js/session-timer.js?v=3.34.9', './js/journal.js?v=3.34.9', './js/dhorPage.js?v=3.34.9',
+  './js/sabaqPage.js?v=3.34.9', './js/sabaqDhorPage.js?v=3.34.9', './js/reflectionCard.js?v=3.34.9',
+  './js/logDetailScreen.js?v=3.34.9', './js/settingsScreen.js?v=3.34.9', './js/adminPage.js?v=3.34.9', './js/app.js?v=3.34.9'
 ];
 
 self.addEventListener('install', (event) => {

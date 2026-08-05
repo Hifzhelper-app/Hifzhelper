@@ -4,6 +4,22 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.34.9 (2026-08-05)
+
+- [x] Mini pill's positioning fixed at its actual root, replacing
+  V3.34.8's window.visualViewport workaround entirely. Prompted by the
+  user asking why History/Plan Dhor's own modals never hit this bug --
+  answer: .modal-overlay never anchors via bottom: at all, it's
+  inset:0 + flexbox (align-items:flex-end), sidestepping the single-
+  edge bottom: calculation iOS Safari's bug actually affects. Applied
+  the same technique to the pill: full-viewport, invisible positioning
+  wrapper + pointer-events:none (re-enabled on the pill's own .mini
+  div), flexbox pushing it to the bottom. No JS, no visualViewport, no
+  MutationObserver -- all removed. Confirmed: modals (z-index:300) now
+  cover the pill (z-index:250) while open, same underlying shape as
+  each other -- timer keeps running underneath, unaffected, pill
+  reappears correctly once the modal closes.
+
 ## Done — V3.34.8 (2026-08-04)
 
 - [x] Full view resized against a 390x844 (6.1") target -- ring was a

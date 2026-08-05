@@ -1764,6 +1764,27 @@ the fix for a bug that broke Save entirely.
    CSS fallback should still hold there without any visualViewport
    involvement mattering.
 
+## 64. Mini pill's positioning bug actually fixed at its root, not worked around (V3.34.9)
+
+1. On desktop, minimise the timer → confirm the pill's position looks
+   correct (back to how it looked before V3.34.8's regression), bottom-
+   centered, not sitting oddly low.
+2. On an actual iPhone in Safari, minimise the timer with the toolbar
+   visible → confirm the pill is fully visible on screen.
+3. Scroll the page while minimised (toolbar shows/hides) → confirm the
+   pill stays correctly positioned throughout.
+4. With the timer minimised, tap anywhere on the screen NOT over the
+   pill itself → confirm normal page interaction still works (the
+   full-viewport wrapper isn't blocking taps elsewhere).
+5. With the timer minimised, open History or Plan Dhor from the Dhor
+   card → confirm the modal's sheet covers the pill while open.
+6. Close that modal → confirm the pill reappears exactly where it was,
+   still showing the correct running/elapsed state (confirming the
+   timer itself was never affected, only visually covered).
+7. Confirm the pill is still fully tappable itself (Close/Reset/Note
+   Time/Maximise, Lap, Pause-Restart) — not accidentally blocked by its
+   own new wrapper.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break
