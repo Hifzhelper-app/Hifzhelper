@@ -591,6 +591,18 @@
    chat specifically so it can't be confused with the normal screen. */
 #screen-logDetail.log-detail-editing .log-detail-dots { display: none; }
 #screen-logDetail.log-detail-editing .log-detail-card:not(.editing-active) { display: none; }
+/* Bug fix (2026-08-05, found by the user): #dhorTimerHost was never a
+   .log-detail-card -- it's a separate custom element, targeted
+   everywhere else in this file by its own id, not this class -- so the
+   rule above genuinely could never reach it. That meant the Timer
+   stayed visible throughout editing on every one of the other 3 cards,
+   despite the actual intent above being "every card except the one
+   being edited hides." The rail then had 2 visible elements instead of
+   1 (the card being edited, plus the still-visible Timer still holding
+   its own spot in the layout), and could land on the wrong one --
+   explaining "editing an entry lands on the Timer" regardless of which
+   path opened editing, since this same gap sat underneath all of them. */
+#screen-logDetail.log-detail-editing #dhorTimerHost { display: none; }
 .log-detail-card.editing-active .card-header-row,
 .log-detail-card.editing-active .history-container { display: none; }
 .edit-topbar {

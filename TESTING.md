@@ -1935,6 +1935,21 @@ the fix for a bug that broke Save entirely.
 13. Confirm the Timer card specifically also grew to match — check
     both mobile/tablet and desktop widths.
 
+## 71. Fixed: editing landed on the Timer instead of the card being edited (V3.35.2)
+
+1. From Journal, tap a Sabaq entry to edit it → confirm you land
+   directly on the Sabaq card in edit mode, not the Timer.
+2. Repeat for Sabaq Dhor and Dhor entries → confirm each lands
+   correctly on its own card.
+3. From within the detail screen itself, use History's own edit button
+   on any of the 3 cards → confirm the same correct behaviour.
+4. While in edit mode (any of the 3 cards) → confirm the Timer card is
+   not visible at all — swiping/scrolling the rail during editing
+   should show nothing but the card actually being edited.
+5. Confirm exiting edit mode (Cancel or a successful Update) still
+   correctly returns to the right card in the normal rail view,
+   Timer included as the 4th card again.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

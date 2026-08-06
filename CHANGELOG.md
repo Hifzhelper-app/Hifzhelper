@@ -7,6 +7,46 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.35.2 — Fixed: editing landed on the Timer instead of the card being edited (2026-08-05)
+
+A real, long-standing bug, not related to V3.35.1's own changes — the
+user had first noticed it during the Journal hold-to-edit work and
+reasonably attributed it to that at the time, but it turned out to
+predate it and sit underneath every edit path equally, regardless of
+how editing was actually triggered.
+
+**Root cause**: the CSS rule meant to hide every card except the one
+being edited (`.log-detail-card:not(.editing-active) { display: none;
+}`) only ever matched `.log-detail-card` — and `#dhorTimerHost` was
+never a `.log-detail-card` at all. It's a separate custom element,
+targeted everywhere else in this file by its own id, not that class —
+so the rule genuinely could never reach it. That meant the Timer
+stayed fully visible throughout editing on every one of the other 3
+cards, still holding its own spot in the rail's layout, while the
+actual intent had always been "every other card hides." With 2
+elements visible instead of the intended 1 (the card being edited,
+plus the still-present Timer), the rail could land on the wrong one —
+matching exactly "click edit, land on the Timer, swipe back to reach
+the actual edit."
+
+**Fixed** by extending that same rule to also cover `#dhorTimerHost`
+explicitly, so it's now genuinely hidden during editing the same way
+the other 2 non-edited cards already were — nothing left visible in
+the rail except the card actually being edited, regardless of which
+of the 3 cards that is or which path opened editing.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.35.1 — Sabaq Lines/Pages recompute-on-confirm, Journal popup + plain click, card height genuinely fills the screen (2026-08-05)
 
 **Sabaq's Lines/Pages now recalculate when "Confirm selection" is
