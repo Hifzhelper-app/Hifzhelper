@@ -1950,6 +1950,31 @@ the fix for a bug that broke Save entirely.
    correctly returns to the right card in the normal rail view,
    Timer included as the 4th card again.
 
+## 72. Hybrid removed, 15-line IndoPak mushaf built (V3.36.0)
+
+1. Open Settings → Hifz Setup → confirm the Mushaf switch shows
+   13 line / 15 line Madani / 15 line IndoPak — no Hybrid anywhere.
+2. Select 15 line IndoPak → confirm a new "IndoPak Dhor/Sabaq Dhor
+   terminology" row appears, defaulting to Quarter/Half.
+3. Select 13 line or 15 line Madani → confirm that new row disappears.
+4. With 15 line IndoPak + Quarter/Half selected, log a Sabaq entry
+   spanning a known multi-page range → confirm Lines/Pages matches
+   IndoPak's own data (not Madani's) for that range.
+5. Switch to 15 line Madani, log the same range → confirm Lines/Pages
+   now differs from step 4 (the two 15-line prints genuinely
+   distribute lines differently within a page).
+6. With 15 line IndoPak + Maqra/Rub'/Hizb selected, check a Dhor
+   entry's Juz' position → confirm it matches what 15 line Madani
+   itself would show for the same ayah (same underlying boundaries).
+7. Switch back to 15 line IndoPak + Quarter/Half → confirm that same
+   Dhor entry's Juz' position now matches what plain 13 line would
+   show instead.
+8. Save the terminology choice, reload Settings → confirm it's
+   remembered correctly (not reset to Quarter/Half every time).
+9. Confirm nothing elsewhere in the app (History, Journal, existing
+   entries) broke for students on 13 line or 15 line Madani — this
+   should be a purely additive change for them.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

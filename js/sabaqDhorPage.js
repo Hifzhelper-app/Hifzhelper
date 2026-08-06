@@ -36,7 +36,15 @@ let sabaqDhorEditingId = null;
 let sabaqDhorRollupLevel = 'quarters';
 let sabaqDhorBaselineSelection = [];
 
-function refForMushafSabaqDhor(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
+// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
+// case, matching js/dhorPage.js's and js/sabaqPage.js's own copies of
+// this same function. Second param defaults to null so every existing
+// caller (never passing it) keeps its current behaviour unchanged.
+function refForMushafSabaqDhor(mushaf, indopakTerminology){
+  if(mushaf === '15line_madani') return 'uthmani';
+  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
+  return 'waterval';
+}
 
 function renderSabaqDhorRows(){
   const el = document.getElementById('sabaqDhor_sections');
@@ -146,7 +154,7 @@ async function renderSabaqDhorScreen(){
 
   let profile = null;
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
-  sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
+  sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf, profile && profile.indopak_terminology);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
   sabaqDhorPosition = await loadPosition();
   sabaqDhorRollupLevel = sabaqDhorPosition.sabaqDhorRollup || 'quarters';

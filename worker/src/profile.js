@@ -3,6 +3,7 @@
 export async function handleGetProfile(request, env, auth) {
   const row = await env.DB.prepare(
     'SELECT id, name, role, gender, track_haidh, setup_complete, journal_name, mushaf, ' +
+    'indopak_terminology, ' +
     'baseline_mode, baseline_selection, target_mistakes_per_juz, target_minutes_per_juz, target_frequency_days, ' +
     'dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week, ' +
     'haidh_cycle_length, haidh_period_length, haidh_next_expected ' +
@@ -23,12 +24,18 @@ export async function handleGetProfile(request, env, auth) {
   return { data: row };
 }
 
-// Only these two are real, active choices right now — Hybrid is shown in
-// the Setup screen UI but disabled/unselectable, so the server never needs
-// to accept it as a value until that actually gets built (V3.7.0).
-// V3.10.0: Hybrid enabled — was shown-but-disabled in the UI and
-// explicitly rejected here since V3.7.0; now a real third choice.
-const VALID_MUSHAF = ['13line', '15line_madani', 'hybrid'];
+// V3.36, confirmed in chat: Hybrid removed entirely -- traced and
+// confirmed it never actually did anything distinct from 13line (its ref
+// logic fell through to the same 'waterval' branch 13line uses).
+// Replaced with 15line_indopak, using its own verified page/line dataset,
+// not Madina's.
+const VALID_MUSHAF = ['13line', '15line_madani', '15line_indopak'];
+// Only meaningful when mushaf is 15line_indopak -- which Dhor/Sabaq Dhor
+// terminology the student picked. quarter_half is the 13line convention;
+// maqra_rub_hizb is the Madani convention (V3.37 builds the real
+// Maqra/Rub'/Hizb display system this points at -- confirmed selectable
+// now, ahead of that landing).
+const VALID_INDOPAK_TERMINOLOGY = ['quarter_half', 'maqra_rub_hizb'];
 const VALID_BASELINE_MODE = ['surah', 'juz'];
 const VALID_DHOR_GRANULARITY = ['juz', 'half', 'quarter'];
 const VALID_DHOR_FREQUENCY = ['daily', 'twice'];
@@ -57,6 +64,9 @@ export async function handleSaveProfile(request, env, auth) {
   }
   if (body.mushaf != null && !VALID_MUSHAF.includes(body.mushaf)) {
     return { error: `mushaf must be one of: ${VALID_MUSHAF.join(', ')}`, status: 400 };
+  }
+  if (body.indopak_terminology != null && !VALID_INDOPAK_TERMINOLOGY.includes(body.indopak_terminology)) {
+    return { error: `indopak_terminology must be one of: ${VALID_INDOPAK_TERMINOLOGY.join(', ')}`, status: 400 };
   }
   if (body.baseline_mode != null && !VALID_BASELINE_MODE.includes(body.baseline_mode)) {
     return { error: `baseline_mode must be one of: ${VALID_BASELINE_MODE.join(', ')}`, status: 400 };
@@ -96,7 +106,8 @@ export async function handleSaveProfile(request, env, auth) {
   }
 
   const current = await env.DB.prepare(
-    'SELECT name, gender, track_haidh, journal_name, mushaf, baseline_mode, baseline_selection, ' +
+    'SELECT name, gender, track_haidh, journal_name, mushaf, indopak_terminology, ' +
+    'baseline_mode, baseline_selection, ' +
     'target_mistakes_per_juz, target_minutes_per_juz, target_frequency_days, ' +
     'dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week, ' +
     'haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students WHERE id = ?'
@@ -108,6 +119,7 @@ export async function handleSaveProfile(request, env, auth) {
   const trackHaidh = body.track_haidh != null ? (body.track_haidh ? 1 : 0) : current.track_haidh;
   const journalName = body.journal_name != null ? body.journal_name : current.journal_name;
   const mushaf = body.mushaf != null ? body.mushaf : current.mushaf;
+  const indopakTerminology = body.indopak_terminology != null ? body.indopak_terminology : current.indopak_terminology;
   const baselineMode = body.baseline_mode != null ? body.baseline_mode : current.baseline_mode;
   const baselineSelection = body.baseline_selection != null
     ? JSON.stringify(body.baseline_selection)
@@ -128,12 +140,13 @@ export async function handleSaveProfile(request, env, auth) {
 
   await env.DB.prepare(
     'UPDATE students SET name = ?, gender = ?, track_haidh = ?, journal_name = ?, mushaf = ?, ' +
+    'indopak_terminology = ?, ' +
     'baseline_mode = ?, baseline_selection = ?, target_mistakes_per_juz = ?, target_minutes_per_juz = ?, ' +
     'target_frequency_days = ?, dhor_granularity = ?, dhor_quantity = ?, dhor_frequency = ?, ' +
     'dhor_days_of_week = ?, haidh_cycle_length = ?, haidh_period_length = ?, haidh_next_expected = ?, ' +
     'setup_complete = CASE WHEN ? = 1 THEN 1 ELSE setup_complete END WHERE id = ?'
   ).bind(
-    name, gender, trackHaidh, journalName, mushaf,
+    name, gender, trackHaidh, journalName, mushaf, indopakTerminology,
     baselineMode, baselineSelection, targetMistakes, targetMinutes, targetFrequency,
     dhorGranularity, dhorQuantity, dhorFrequency, dhorDaysOfWeek,
     haidhCycleLength, haidhPeriodLength, haidhNextExpected,
