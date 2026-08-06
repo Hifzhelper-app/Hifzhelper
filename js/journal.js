@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper — Journal landing page
+// Current as of V3.37
 //
 // 2026-08-05, confirmed in chat over several rounds -- complete rebuild.
 // The V3.1 version this replaces hadn't been touched since its very
@@ -133,20 +134,46 @@ function openEntriesPopup(type, entries, date){
     const btn = e.target.closest('[data-index]');
     if(btn){
       overlay.remove();
-      openEntryForEdit(type, entries[parseInt(btn.dataset.index)]);
+      const idx = parseInt(btn.dataset.index);
+      openEntryForEdit(type, entries[idx], isLatestEntry(type, date, idx));
     }
   });
   document.body.appendChild(overlay);
+}
+
+// 2026-08-07: fixes a real, confirmed bug -- found while diagnosing
+// V3.36.1, but separate from that fix (user edited through the card's
+// own History there, which already determines this correctly). The
+// card's own History passes `row === rows[0]` (that row IS the most
+// recent entry of this type, full stop) to EDIT_HANDLERS; Journal never
+// made that determination, so sabaqEditingIsFrontier was always false
+// for anything edited through Journal, regardless of whether the entry
+// genuinely was the frontier -- editing the actual most-recent Sabaq
+// entry through Journal skipped the position-advance it should get.
+// journalData is grouped by day (most-recent-day-first, each day's own
+// list already most-recent-first per the API) rather than one flat
+// list, so "is this THE most recent entry of this type" means: its date
+// is the latest date that has any entry of this type at all, AND it's
+// index 0 within that day's list.
+function isLatestEntry(type, date, index){
+  if(index !== 0) return false;
+  let latestDate = null;
+  for(const d in journalData){
+    if(journalData[d][type] && journalData[d][type].length > 0){
+      if(latestDate === null || d > latestDate) latestDate = d;
+    }
+  }
+  return date === latestDate;
 }
 
 // Opens the real card directly in edit mode -- the same EDIT_HANDLERS
 // entry point History's own edit button already calls (js/logDetailScreen.js
 // registers EDIT_HANDLERS.sabaq/sabaqDhor/dhor from each page's own
 // file) -- not a separate, second edit mechanism.
-async function openEntryForEdit(type, entry){
+async function openEntryForEdit(type, entry, isLatest){
   await showScreen('logDetail', type);
   const handler = EDIT_HANDLERS[type];
-  if(handler) handler(entry);
+  if(handler) handler(entry, isLatest);
 }
 
 // Sets every card's own date field to the tapped date and opens the
@@ -175,7 +202,7 @@ function renderJournalRow(date, day){
     td.className = 'journal-cell';
     td.innerHTML = journalCellShorthand(type, day[type]);
     if(day[type] && day[type].length){
-      wireClick(td, () => openEntryForEdit(type, day[type][0]));
+      wireClick(td, () => openEntryForEdit(type, day[type][0], isLatestEntry(type, date, 0)));
       const badge = td.querySelector('[data-count-badge]');
       if(badge){
         badge.addEventListener('click', (e) => {

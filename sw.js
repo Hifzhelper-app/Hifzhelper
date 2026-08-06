@@ -4,14 +4,14 @@ const CACHE_NAME = 'hifzhelper-v3.36.3'; // bumped for the V3.36.3 release
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=3.36.3', 'shared/data.js?v=3.36.3', './appicons/logo.png',
-  './css/tokens.css?v=3.36.3', './css/base.css?v=3.36.3', './css/nav.css?v=3.36.3', './css/journal-table.css?v=3.36.3',
-  './css/components.css?v=3.36.3', './css/detail-pages.css?v=3.36.3', './css/settings.css?v=3.36.3', './css/admin.css?v=3.36.3',
-  './js/icons.js?v=3.36.3', './js/customDate.js?v=3.36.3', './js/api.js?v=3.36.3', './js/uiSwitch.js?v=3.36.3', './js/position.js?v=3.36.3',
-  './js/auth.js?v=3.36.3', './js/home.js?v=3.36.3', './js/tajweed.js?v=3.36.3',
-  './js/commentPrivacy.js?v=3.36.3', './js/session-timer.js?v=3.36.3', './js/journal.js?v=3.36.3', './js/dhorPage.js?v=3.36.3',
-  './js/sabaqPage.js?v=3.36.3', './js/sabaqDhorPage.js?v=3.36.3', './js/reflectionCard.js?v=3.36.3',
-  './js/logDetailScreen.js?v=3.36.3', './js/settingsScreen.js?v=3.36.3', './js/adminPage.js?v=3.36.3', './js/app.js?v=3.36.3'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=3.37', 'shared/data.js?v=3.37', './appicons/logo.png',
+  './css/tokens.css?v=3.37', './css/base.css?v=3.37', './css/nav.css?v=3.37', './css/journal-table.css?v=3.37',
+  './css/components.css?v=3.37', './css/detail-pages.css?v=3.37', './css/settings.css?v=3.37', './css/admin.css?v=3.37',
+  './js/icons.js?v=3.37', './js/customDate.js?v=3.37', './js/api.js?v=3.37', './js/uiSwitch.js?v=3.37', './js/position.js?v=3.37',
+  './js/auth.js?v=3.37', './js/home.js?v=3.37', './js/tajweed.js?v=3.37',
+  './js/commentPrivacy.js?v=3.37', './js/session-timer.js?v=3.37', './js/journal.js?v=3.37', './js/dhorPage.js?v=3.37',
+  './js/sabaqPage.js?v=3.37', './js/sabaqDhorPage.js?v=3.37', './js/reflectionCard.js?v=3.37',
+  './js/logDetailScreen.js?v=3.37', './js/settingsScreen.js?v=3.37', './js/adminPage.js?v=3.37', './js/app.js?v=3.37'
 ];
 
 self.addEventListener('install', (event) => {

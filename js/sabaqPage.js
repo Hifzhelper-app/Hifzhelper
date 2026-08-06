@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper — Sabaq card (one of 4 in the unified day-log view, V3.6.1)
+// Current as of V3.37
 // V3.14.0 rebuild: sabaq_from/sabaq_to (migration 0015) replace the old
 // surah/ayah_from/ayah_to trio — each is a combined "surah:ayah" string,
 // letting one entry span multiple surahs and cross at most one juz'
@@ -50,6 +51,9 @@ let sabaqEditingIsFrontier = false;
 // see pageRefForMushaf, shared/data.js). Second param defaults to null
 // so every existing caller (never passing it) keeps its current behaviour
 // unchanged.
+// 2026-08-07: the final `return 'waterval'` covers 13-line AND 15-line
+// IndoPak-on-Quarter/Half both, natively -- see shared/data.js's
+// RUB_BOUNDARIES comment.
 function refForMushafSabaq(mushaf, indopakTerminology){
   if(mushaf === '15line_madani') return 'uthmani';
   if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';

@@ -4,6 +4,33 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.37 (2026-08-07)
+
+- [x] Sabaq Dhor row ordering: most-recent-first everywhere (base
+  Quarter/Rub' sort, Maqra branch, Half/Full merge, lingering rows,
+  leftover-unmerged fallback). See CHANGELOG for the real ordering bug
+  found and fixed while testing this directly.
+- [x] Sabaq Dhor's Maqra/Rub' behavior: Maqra only ever describes the
+  current, in-progress Rub' -- a completed Rub' renders through the
+  exact same, unchanged Quarter-level row logic every completed Quarter
+  always used, not a parallel implementation. Verified against both of
+  the user's own worked examples via direct testing.
+- [x] Ru'b/Hizb terminology: Madani's Dhor switch, Sabaq Dhor's labels,
+  describeDhorSegment, quarterUnitLabel, and Plan Dhor's per-Juz' rows
+  all say Ru'b/Hizb for the Rub'/Hizb model. Hizb is a standalone global
+  1-60 number, no Juz' prefix. Flagged: the "R" abbreviation for Rub' in
+  condensed labels wasn't separately confirmed in chat -- easy to change.
+  Finishes IndoPak's own Maqra/Rub'/Hizb picker option (V3.36) actually
+  working as intended.
+- [x] journal.js's edit popup now correctly determines isLatest (new
+  isLatestEntry helper) -- fixes the bug flagged below since V3.36.1.
+- [x] Documentation: shared/data.js's RUB_BOUNDARIES comment and all 4
+  refForMushaf copies now state explicitly that IndoPak genuinely shares
+  Waterval's data natively, not as a fallback.
+- [x] File header versioning: every touched file now carries a "Current
+  as of V3.37" line (new standing convention, not yet applied
+  retroactively to untouched files).
+
 ## Done — V3.36.3 (2026-08-06)
 
 - [x] Maqra added to Sabaq Dhor for the 15-line Madani model -- new
@@ -468,43 +495,7 @@ section.
   fix).
 - [x] Expand/collapse `Set` string/number mismatch — fixed.
 
-## V3.37 — Madani's own real terminology (confirmed spec, not yet built)
-
-- Sabaq Dhor's Maqra level itself is DONE (V3.36.3) -- the row-
-  computation/rollup mechanics, defaulting to Maqra for the Rub'/Hizb
-  model. What remains below is specifically the terminology/label
-  layer on top of it, not the underlying data or mechanics.
-- Madani's Dhor switch relabeled Rub'/Hizb/Juz' (was Quarter/Half/Full)
-  -- a real relabel, not cosmetic, since Rub' and quarter are genuinely
-  different boundaries (quarter is 4 per Juz'; Rub' al-Hizb/Maqra, the
-  data already in the file mislabeled as RUB_BOUNDARIES, is 8 per Juz').
-- Full hierarchy, all derivable from that one existing 240-entry
-  dataset (verified consistent with the existing Hizb data already in
-  the file, zero mismatches): Maqra (1/8, 8 per Juz') -> Rub' (1/4,
-  every 2nd Maqra) -> Hizb (1/2, every 4th Maqra) -> Juz' (1).
-- Display: Hizb shown as a standalone global number (1-60), no Juz'
-  prefix. Rub' shown per-Juz', matching the existing quarter
-  convention exactly (e.g. "Juz 4 R2"). Written "Ru'b" in the UI
-  specifically (apostrophe after the U), not the more standard "Rub'".
-- This same terminology becomes IndoPak's Maqra/Rub'/Hizb picker
-  option (V3.36) actually working as intended, not the placeholder-
-  via-borrowed-Uthmani-boundaries state V3.36 shipped it in.
-
 ## Flagged, not yet resolved
-
-- Found while diagnosing V3.36.1, confirmed real but separate from that
-  fix and not yet built: Journal's edit popup (js/journal.js,
-  openEntryForEdit) calls EDIT_HANDLERS[type](entry) with only the
-  entry itself. The Sabaq card's own History list correctly determines
-  whether an entry is the current frontier before opening it for
-  editing (EDIT_HANDLERS[type](row, row === rows[0]), js/dhorPage.js)
-  -- Journal never makes that determination, so sabaqEditingIsFrontier
-  is always false for anything edited through Journal specifically,
-  regardless of whether that entry genuinely is the frontier. Confirmed
-  NOT what caused V3.36.1's bug (user edited through the card's own
-  History), but still a real inconsistency worth fixing on its own --
-  editing the actual most-recent Sabaq entry through Journal currently
-  skips the position-advance it should get.
 
 - [ ] Phase C's "has Setup configured, but no dhor_log yet" case
   (`computeUpcomingDhorQueue`, `worker/src/dhorSchedule.js`) reuses the
