@@ -114,30 +114,44 @@ function rebuildRowsFromPosition(){
 // level's. If a direction produces the identical set of rows, there's
 // nothing for it to do, so it's hidden entirely rather than left as a
 // no-op tap.
-const ROLLUP_LEVEL_ORDER = ['quarters', 'halves', 'full'];
+// 2026-08-06, confirmed in chat: Maqra only ever appears as a new,
+// finest 4th level when the Rub'/Hizb model is active (ref='uthmani') --
+// Waterval's own chain is completely unchanged, still exactly the 3
+// levels it always was. A function of ref rather than a fixed constant,
+// since the array's own length and contents now genuinely differ by ref.
+function rollupLevelOrder(ref){
+  return ref === 'uthmani' ? ['maqras', 'quarters', 'halves', 'full'] : ['quarters', 'halves', 'full'];
+}
 function updateRollupStepperVisibility(){
-  const idx = ROLLUP_LEVEL_ORDER.indexOf(sabaqDhorRollupLevel);
+  const order = rollupLevelOrder(sabaqDhorRef);
+  const idx = order.indexOf(sabaqDhorRollupLevel);
   const currentIds = sabaqDhorRows.map(r => r.id).join(',');
   const rowIdsAtLevel = (level) => computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, level, sabaqDhorBaselineSelection).map(r => r.id).join(',');
-  const canMergeUp = idx < ROLLUP_LEVEL_ORDER.length - 1 && rowIdsAtLevel(ROLLUP_LEVEL_ORDER[idx + 1]) !== currentIds;
-  const canSplitDown = idx > 0 && rowIdsAtLevel(ROLLUP_LEVEL_ORDER[idx - 1]) !== currentIds;
+  const canMergeUp = idx < order.length - 1 && rowIdsAtLevel(order[idx + 1]) !== currentIds;
+  const canSplitDown = idx > 0 && rowIdsAtLevel(order[idx - 1]) !== currentIds;
   document.getElementById('sabaqDhor_rollup_up').style.display = canMergeUp ? '' : 'none';
   document.getElementById('sabaqDhor_rollup_down').style.display = canSplitDown ? '' : 'none';
 }
 
-// Chevron cycles the rollup level quarters -> halves -> full -> quarters.
-// Each button is hidden by updateRollupStepperVisibility() above whenever
-// its direction wouldn't actually change anything, so a click here only
-// ever happens when it's a real, eligible action.
+// Chevron steps one position up/down through rollupLevelOrder(sabaqDhorRef)
+// -- generalized to navigate the array by index rather than hardcoded
+// specific transitions, since the array's own length now varies by ref
+// (3 levels for Waterval, 4 for Rub'/Hizb). Each button is hidden by
+// updateRollupStepperVisibility() above whenever its direction wouldn't
+// actually change anything, so a click here only ever happens when it's
+// a real, eligible action -- idx+1/idx-1 are always in bounds by the
+// time either handler can actually fire.
 document.getElementById('sabaqDhor_rollup_up').innerHTML = iconHtml('rollupMerge');
 document.getElementById('sabaqDhor_rollup_down').innerHTML = iconHtml('rollupSplit');
 document.getElementById('sabaqDhor_rollup_up').addEventListener('click', () => {
-  sabaqDhorRollupLevel = sabaqDhorRollupLevel === 'quarters' ? 'halves' : 'full';
+  const order = rollupLevelOrder(sabaqDhorRef);
+  sabaqDhorRollupLevel = order[order.indexOf(sabaqDhorRollupLevel) + 1];
   rebuildRowsFromPosition();
   savePosition(Object.assign({}, sabaqDhorPosition, { sabaqDhorRollup: sabaqDhorRollupLevel })).catch(() => {});
 });
 document.getElementById('sabaqDhor_rollup_down').addEventListener('click', () => {
-  sabaqDhorRollupLevel = sabaqDhorRollupLevel === 'full' ? 'halves' : 'quarters';
+  const order = rollupLevelOrder(sabaqDhorRef);
+  sabaqDhorRollupLevel = order[order.indexOf(sabaqDhorRollupLevel) - 1];
   rebuildRowsFromPosition();
   savePosition(Object.assign({}, sabaqDhorPosition, { sabaqDhorRollup: sabaqDhorRollupLevel })).catch(() => {});
 });
@@ -157,7 +171,20 @@ async function renderSabaqDhorScreen(){
   sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf, profile && profile.indopak_terminology);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
   sabaqDhorPosition = await loadPosition();
-  sabaqDhorRollupLevel = sabaqDhorPosition.sabaqDhorRollup || 'quarters';
+  // 2026-08-06, confirmed in chat: Maqra is the new base/default level
+  // when the Rub'/Hizb model is active -- Waterval's own default
+  // (quarters) is completely unchanged.
+  // 2026-08-06, confirmed in chat: Maqra is the new base/default level
+  // when the Rub'/Hizb model is active -- Waterval's own default
+  // (quarters) is completely unchanged. Guards against a stored
+  // 'maqras' value left over from a previous Rub'/Hizb session no
+  // longer being valid if the student's mushaf/terminology later
+  // changed to Waterval -- Maqra has no Waterval equivalent, so a
+  // stale stored value there would otherwise call Maqra-only functions
+  // for the wrong ref.
+  const storedRollup = sabaqDhorPosition.sabaqDhorRollup;
+  const storedIsValid = storedRollup && rollupLevelOrder(sabaqDhorRef).includes(storedRollup);
+  sabaqDhorRollupLevel = storedIsValid ? storedRollup : (sabaqDhorRef === 'uthmani' ? 'maqras' : 'quarters');
   rebuildRowsFromPosition();
 
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);

@@ -4,6 +4,25 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.36.3 (2026-08-06)
+
+- [x] Maqra added to Sabaq Dhor for the 15-line Madani model -- new
+  finest level in the rollup chain, only when Rub'/Hizb model active
+  (Waterval's Quarter/Half/Full completely unchanged). New structural
+  helpers (studyMaqraIndex/structuralMaqraOf/structuralMaqraBounds,
+  shared/data.js) and section-computation (computeSabaqDhorSectionsMaqra,
+  js/position.js) mirror the existing quarter equivalents exactly,
+  built on the confirmed Maqra dataset. Existing Quarter/Half/Full
+  merge logic needed zero changes -- Maqra sits underneath it as a new
+  level, not a rebuild of the existing chain. Rollup stepper
+  generalized to navigate a variable-length level list by index.
+  Stored rollup preference validated against the current model before
+  use, so a stale "Maqra" preference can't leak into a Waterval
+  session. Verified end to end: Maqra 1+2 combined matches Quarter 1's
+  own span exactly (through the full pipeline, not just isolated
+  helpers), Juz' 30 reverse order correct, Waterval behavior
+  re-confirmed unaffected.
+
 ## Done — V3.36.2 (2026-08-06)
 
 - [x] Corrected JUZ_BOUNDARIES (13-line/IndoPak's own Juz' start
@@ -451,6 +470,10 @@ section.
 
 ## V3.37 — Madani's own real terminology (confirmed spec, not yet built)
 
+- Sabaq Dhor's Maqra level itself is DONE (V3.36.3) -- the row-
+  computation/rollup mechanics, defaulting to Maqra for the Rub'/Hizb
+  model. What remains below is specifically the terminology/label
+  layer on top of it, not the underlying data or mechanics.
 - Madani's Dhor switch relabeled Rub'/Hizb/Juz' (was Quarter/Half/Full)
   -- a real relabel, not cosmetic, since Rub' and quarter are genuinely
   different boundaries (quarter is 4 per Juz'; Rub' al-Hizb/Maqra, the
@@ -459,11 +482,10 @@ section.
   dataset (verified consistent with the existing Hizb data already in
   the file, zero mismatches): Maqra (1/8, 8 per Juz') -> Rub' (1/4,
   every 2nd Maqra) -> Hizb (1/2, every 4th Maqra) -> Juz' (1).
-- Sabaq Dhor gains the Maqra level underneath Rub'/Hizb -- Maqra is
-  Sabaq Dhor-only, Dhor itself stays at Rub'/Hizb/Juz'.
 - Display: Hizb shown as a standalone global number (1-60), no Juz'
   prefix. Rub' shown per-Juz', matching the existing quarter
-  convention exactly (e.g. "Juz 4 R2").
+  convention exactly (e.g. "Juz 4 R2"). Written "Ru'b" in the UI
+  specifically (apostrophe after the U), not the more standard "Rub'".
 - This same terminology becomes IndoPak's Maqra/Rub'/Hizb picker
   option (V3.36) actually working as intended, not the placeholder-
   via-borrowed-Uthmani-boundaries state V3.36 shipped it in.

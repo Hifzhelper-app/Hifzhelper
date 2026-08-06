@@ -2009,6 +2009,31 @@ the fix for a bug that broke Save entirely.
 4. Confirm 15-line Madani is completely unaffected — this only touches
    the Waterval-sourced boundary data.
 
+## 75. Maqra added to Sabaq Dhor for the 15-line Madani model (V3.36.3)
+
+1. On 15-line Madani, open Sabaq Dhor → confirm it defaults to showing
+   Maqra-level rows (up to 8, "Maqra 1" through the current one), not
+   Quarter-level.
+2. Tap the rollup chevron to merge up → confirm it moves to Quarter
+   level (2 Maqras become 1 Quarter row), matching what Quarter already
+   showed before this change.
+3. Continue merging up → confirm Half, then Full, still work exactly
+   as before.
+4. Split back down from Full → confirm it steps back down through
+   Half → Quarter → Maqra correctly, one level at a time.
+5. On 13-line or IndoPak with Quarter/Half selected → confirm the
+   rollup chevron only ever shows Quarter/Half/Full — no Maqra option
+   appears, and default behavior is completely unchanged from before
+   this version.
+6. If a student is on Juz' 30 → confirm Maqra's own reverse study
+   order (Maqra 1 is the furthest-along one, not the first) matches
+   how Quarter already behaves there.
+7. Save a Maqra-level Sabaq Dhor entry → confirm it saves and clears
+   correctly, same as any other level.
+8. Switch a student from Rub'/Hizb to Quarter/Half (or vice versa) →
+   confirm the rollup level doesn't carry over incorrectly — no stale
+   "Maqra" preference should ever appear while on Quarter/Half.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

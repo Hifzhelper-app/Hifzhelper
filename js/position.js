@@ -145,6 +145,36 @@ function computeSabaqDhorRows(position, ref, rollupLevel, baselineSelection){
 }
 
 function computeCurrentJuzRows(position, ref, rollupLevel){
+  // 2026-08-06, confirmed in chat: Maqra is a new, separate finest level
+  // -- only reachable when ref='uthmani' (js/sabaqDhorPage.js's own
+  // ROLLUP_LEVEL_ORDER only offers it there). Kept as its own early
+  // branch, not woven into the quarter-merge logic below, since it draws
+  // from a completely different sections source (computeSabaqDhorSectionsMaqra,
+  // 8 per Juz') rather than being another merge level built on top of the
+  // quarter data the rest of this function already works with.
+  if(rollupLevel === 'maqras'){
+    const maqraSections = computeSabaqDhorSectionsMaqra(position);
+    if(maqraSections.length === 0) return [];
+    const currentM = maqraSections[0];
+    const completedM = maqraSections.slice(1).sort((a, b) => a.studyMaqra - b.studyMaqra);
+    const maqraRows = [{
+      id: `m${currentM.studyMaqra}`,
+      label: `Maqra ${currentM.studyMaqra} (current)`,
+      fromSurah: currentM.fromSurah, fromAyah: currentM.fromAyah,
+      toSurah: currentM.toSurah, toAyah: currentM.toAyah,
+      complete: false,
+      canMoveToDhor: false
+    }];
+    completedM.forEach(s => maqraRows.push({
+      id: `m${s.studyMaqra}`,
+      label: `Maqra ${s.studyMaqra}`,
+      fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
+      complete: true,
+      canMoveToDhor: false // a lone Maqra never has its own Dhor option, same rule as a lone quarter
+    }));
+    return maqraRows;
+  }
+
   const sections = computeSabaqDhorSections(position, ref); // current partial first, then completed ones descending
   if(sections.length === 0) return [];
   const current = sections[0]; // studyQuarter === highest, i.e. the in-progress one
@@ -240,6 +270,33 @@ function advancePositionAfterSabaq(position, fromSurah, fromAyah, toSurah, toAya
   const fromIsFrontier = juz === 30 ? cmp <= 0 : cmp >= 0;
   const frontier = fromIsFrontier ? { surah: fromSurah, ayah: fromAyah } : { surah: toSurah, ayah: toAyah };
   const newActiveJuz = getJuzForPosition(frontier.surah, frontier.ayah, ref);
+  // Bug fix (2026-08-06, found by the user): this used to overwrite
+  // sabaqTo unconditionally with whatever this one entry's own frontier
+  // was -- correct for the normal case, where each new entry naturally
+  // continues from the last, but wrong for a genuinely new entry
+  // covering an already-passed range (a backfill, or splitting a
+  // previously-logged range into two separate entries) -- confirmed
+  // in chat as what actually happened. That entry's own save still
+  // goes through this same unconditional path (it IS a new entry, not
+  // an edit), silently dragging the real frontier backward to match
+  // it even though nothing about genuine progress moved. Now compares
+  // the newly-computed frontier against the position already stored,
+  // using SABAQ_STUDY_ORDER for a different Juz' (later in study order
+  // = genuinely further along) and the same study-direction-aware
+  // compareVerseKey already used above for the same Juz' -- only
+  // updates when the new frontier is genuinely further along than what
+  // was already there. position.activeJuz == null (no prior position
+  // at all yet) always accepts the new frontier, same as before.
+  let isGenuineAdvance = true;
+  if(position.activeJuz != null && newActiveJuz !== position.activeJuz){
+    const oldStudyIndex = SABAQ_STUDY_ORDER.indexOf(position.activeJuz);
+    const newStudyIndex = SABAQ_STUDY_ORDER.indexOf(newActiveJuz);
+    isGenuineAdvance = oldStudyIndex === -1 || newStudyIndex === -1 || newStudyIndex > oldStudyIndex;
+  } else if(position.activeJuz != null && position.sabaqTo){
+    const withinJuzCmp = compareVerseKey(frontier.surah, frontier.ayah, position.sabaqTo.surah, position.sabaqTo.ayah);
+    isGenuineAdvance = newActiveJuz === 30 ? withinJuzCmp <= 0 : withinJuzCmp >= 0;
+  }
+  if(!isGenuineAdvance) return position;
   const crossedIntoNewJuz = position.activeJuz != null && newActiveJuz !== position.activeJuz;
   return Object.assign({}, position, {
     sabaqTo: frontier,
@@ -306,6 +363,32 @@ function maybeAutoMoveToDhor(position, ref, baselineSelection){
 // progressive Dhor-eligibility) is a separate, later phase; this function
 // is untouched here so that still-live card keeps working against the
 // same position shape in the meantime.
+// 2026-08-06, confirmed in chat: exact structural mirror of
+// computeSabaqDhorSections above, using structuralMaqraOf/
+// structuralMaqraBounds/studyMaqraIndex (8 per Juz') instead of the
+// quarter equivalents (4 per Juz'). Only meaningful when the Rub'/Hizb
+// model is active (ref='uthmani') -- Maqra has no Waterval equivalent.
+function computeSabaqDhorSectionsMaqra(position){
+  if(!position.sabaqTo) return [];
+  const juz = position.activeJuz;
+  const { maqraIndex: frontierStructuralM } = structuralMaqraOf(position.sabaqTo.surah, position.sabaqTo.ayah);
+  const currentStudyM = studyMaqraIndex(juz, frontierStructuralM);
+  const sections = [];
+  for(let studyM = currentStudyM; studyM >= 1; studyM--){
+    const structuralM = studyMaqraIndex(juz, studyM); // self-inverse, converts either direction
+    const bounds = structuralMaqraBounds(juz, structuralM);
+    const isCurrent = studyM === currentStudyM;
+    sections.push({
+      studyMaqra: studyM,
+      complete: !isCurrent,
+      fromSurah: bounds.startSurah, fromAyah: bounds.startAyah,
+      toSurah: isCurrent ? position.sabaqTo.surah : bounds.endSurah,
+      toAyah: isCurrent ? position.sabaqTo.ayah : bounds.endAyah
+    });
+  }
+  return sections;
+}
+
 function computeSabaqDhorSections(position, ref){
   if(!position.sabaqTo) return [];
   const juz = position.activeJuz;
