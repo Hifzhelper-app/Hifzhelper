@@ -7,6 +7,32 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.36.3 — Maqra added to Sabaq Dhor for the 15-line Madani model (2026-08-06)
+
+Confirmed across several rounds of design discussion before any of this was built. Maqra becomes a new, finer level in Sabaq Dhor's "mark sections revised" rollup chain — but only when the Rub'/Hizb model is active (`ref='uthmani'`); the 13-line/IndoPak Quarter/Half/Full chain is completely untouched, still exactly the 3 levels it always was.
+
+**Architecture**: Maqra isn't one more merge level layered on top of the existing quarter data — it's genuinely finer than the app's existing 4-per-Juz' quarter base unit (8 per Juz'), so it needed its own structural layer underneath, not a modification of the existing one. 3 new functions in `shared/data.js` (`studyMaqraIndex`, `structuralMaqraOf`, `structuralMaqraBounds`) mirror the existing quarter equivalents exactly, built on `RUB_BOUNDARIES.uthmani` (the 240-entry dataset, confirmed in V3.36.0 to actually be Maqra data) instead of the 4-per-Juz' quarter data. A new `computeSabaqDhorSectionsMaqra` in `js/position.js` mirrors `computeSabaqDhorSections` the same way. Sabaq Dhor's existing Quarter/Half/Full merge logic needed zero changes — it was already correctly built on true Rub' data (confirmed in the terminology-sourcing work), so Maqra simply became a new, separate finest level sitting underneath it, not something the existing chain needed to be rebuilt around.
+
+**Behavior**: Maqra becomes the new default/base level whenever the Rub'/Hizb model is active — all 8 of the current Juz's Maqras shown (completed + current), the same pattern the existing quarter level already uses. The rollup stepper (chevron) now navigates a 4-level chain for Madani (Maqra → Quarter → Half → Full) instead of 3, generalized to step through the level list by index rather than hardcoded specific transitions, since the list's own length now genuinely differs by model. A stored rollup preference from a previous Rub'/Hizb session is validated against the current model before being trusted, rather than assumed still valid — Maqra has no Waterval equivalent, so a stale "Maqra" preference read while on 13-line would otherwise call Maqra-only functions for the wrong model entirely.
+
+**Labels**: still "Maqra 1", "Maqra 2 (current)", etc. — plain English, not yet "Ru'b"/"Hizb" terminology. That relabeling is explicitly V3.37's own, separate work.
+
+**Verified before considering this done**: Maqra 1+2 combined confirmed to exactly match Quarter 1's own span (both structurally and through the full row-computation pipeline, not just the isolated helper functions), Juz' 30's reverse study order confirmed correct for Maqra the same way it already was for Quarter, and Waterval's existing behavior re-confirmed completely unaffected by any of this.
+
+**Files changed:**
+```
+index.html
+sw.js
+shared/data.js
+js/position.js
+js/sabaqDhorPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.36.2 — 13-line/IndoPak Juz' boundaries corrected, genuinely derived from the same source as the quarters (2026-08-06)
 
 Confirmed by the user before this went anywhere near live code — `JUZ_BOUNDARIES` (the 13-line/IndoPak print's own Juz' start points) was previously a separately-sourced file, agreeing with the Waterval quarter data at 25 of 30 points, differing by a few ayahs each at Juz' 7, 14, 20, 21, 23. Worth being precise about the framing here, since it matters: this isn't fixing an error. Juz' divisions are a human convenience layered onto the Quran's own revealed surah/ayah boundaries, not something with one universally correct answer the way the text itself is — two independently-sourced files were never guaranteed to agree everywhere, and neither reading was "wrong."

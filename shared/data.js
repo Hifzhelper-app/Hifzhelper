@@ -531,6 +531,26 @@ function nextSabaqPosition(surah, ayah, ref){
 // inverse (juz'30: 5-q both ways; everything else: unchanged), so the
 // same function converts either direction.
 function studyQuarterIndex(juz, quarterIndex){ return juz === 30 ? (5 - quarterIndex) : quarterIndex; }
+// 2026-08-06, confirmed in chat: Maqra is the new base unit for Sabaq
+// Dhor, but ONLY when the Rub'/Hizb model is active -- these 3 functions
+// are exact structural mirrors of studyQuarterIndex/structuralQuarterOf/
+// structuralQuarterBounds below, built on RUB_BOUNDARIES.uthmani (240
+// entries, 8 per Juz') instead of the 4-per-Juz' quarter data. Only ever
+// called with ref='uthmani' -- Maqra has no Waterval equivalent, so
+// there's no second branch to support the way the quarter functions
+// need one.
+function studyMaqraIndex(juz, maqraIndex){ return juz === 30 ? (9 - maqraIndex) : maqraIndex; }
+function structuralMaqraOf(surah, ayah){
+  const list = RUB_BOUNDARIES.uthmani;
+  let globalIdx = list.length;
+  for(let i = 0; i < list.length; i++){
+    const [s, a] = list[i].split(':').map(Number);
+    if(compareVerseKey(surah, ayah, s, a) <= 0){ globalIdx = i + 1; break; }
+  }
+  const juz = Math.ceil(globalIdx / 8);
+  const maqraIndex = ((globalIdx - 1) % 8) + 1;
+  return { juz, maqraIndex };
+}
 
 // Which juz' and STRUCTURAL quarter (1-4) a position falls in, using the
 // true quarter-of-a-juz' boundaries for each print (RUB_BOUNDARIES.waterval
@@ -556,6 +576,22 @@ function ayahAfter(surah, ayah){
 }
 // The structural {start, end} of a specific juz'/quarter, in ascending
 // surah:ayah terms regardless of study direction.
+function structuralMaqraBounds(juz, maqraIndex){
+  const juzBoundaries = JUZ_BOUNDARIES_UTHMANI;
+  const list = RUB_BOUNDARIES.uthmani;
+  const idx = (juz - 1) * 8 + maqraIndex - 1;
+  const [endS, endA] = list[idx].split(':').map(Number);
+  let startS, startA;
+  if(maqraIndex === 1){
+    const jb = juzBoundaries.find(x => x[0] === juz);
+    startS = jb[1]; startA = jb[2];
+  } else {
+    const [prevS, prevA] = list[idx - 1].split(':').map(Number);
+    const r = ayahAfter(prevS, prevA);
+    startS = r.surah; startA = r.ayah;
+  }
+  return { startSurah: startS, startAyah: startA, endSurah: endS, endAyah: endA };
+}
 function structuralQuarterBounds(juz, quarterIndex, ref){
   const juzBoundaries = getJuzBoundariesForRef(ref);
   const list = ref === 'uthmani' ? QUARTER_BOUNDARIES_UTHMANI : RUB_BOUNDARIES.waterval;
@@ -589,6 +625,7 @@ if(typeof module !== 'undefined' && module.exports){
     SABAQ_STUDY_ORDER, nextJuzInStudyOrder, firstSabaqPositionForJuz,
     maxAyahForSurah, nextSabaqPosition,
     studyQuarterIndex, structuralQuarterOf, ayahAfter, structuralQuarterBounds,
+    studyMaqraIndex, structuralMaqraOf, structuralMaqraBounds,
     parseVerseRef, formatVerseRef, crossesAtMostOneJuzBoundary, getLinesForSpan,
     quarterUnitId, quarterUnitToJuzQuarter, quarterUnitsForJuz, quarterUnitsForHalf
   };
