@@ -7,6 +7,78 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.36.2 — 13-line/IndoPak Juz' boundaries corrected, genuinely derived from the same source as the quarters (2026-08-06)
+
+Confirmed by the user before this went anywhere near live code — `JUZ_BOUNDARIES` (the 13-line/IndoPak print's own Juz' start points) was previously a separately-sourced file, agreeing with the Waterval quarter data at 25 of 30 points, differing by a few ayahs each at Juz' 7, 14, 20, 21, 23. Worth being precise about the framing here, since it matters: this isn't fixing an error. Juz' divisions are a human convenience layered onto the Quran's own revealed surah/ayah boundaries, not something with one universally correct answer the way the text itself is — two independently-sourced files were never guaranteed to agree everywhere, and neither reading was "wrong."
+
+What changed: `JUZ_BOUNDARIES` is now genuinely derived directly from `RUB_BOUNDARIES.waterval` itself — each Juz's own last quarter marker, one ayah past it — rather than a separate file that only happened to mostly agree with it. This keeps the 13-line/IndoPak model internally consistent with its own quarter data, the same way `QUARTER_BOUNDARIES_UTHMANI` was already correctly derived from the Uthmani Rub' data for Madani.
+
+**Scope, traced before building**: `JUZ_BOUNDARIES` feeds 4 functions in `shared/data.js` — `getJuzForPosition`, `juzStartSurah`, `getJuzSurahSpan`, and `structuralQuarterBounds` (which in turn drives Sabaq Dhor's entire section/row computation). All 4 inherit the correction automatically through the same constant; no other code needed to change. Verified directly, not just assumed: `getJuzForPosition` and `structuralQuarterBounds` both confirmed to reflect the new boundary correctly at Juz' 7 specifically, before considering this done.
+
+**Files changed:**
+```
+index.html
+sw.js
+shared/data.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
+## V3.36.1 — Fixed: editing/splitting an older Sabaq entry could rewind real progress (2026-08-06)
+
+A real, confirmed bug — not related to V3.36.0's own changes. Traced
+through 2 rounds: an initial hypothesis (Journal's edit popup not
+correctly determining whether an entry is the current frontier) turned
+out to be a real, separate inconsistency worth fixing on its own, but
+not the actual cause here — the user confirmed editing happened
+through the card's own History, which already handles that correctly.
+The real root cause was 3 layers down, in `advancePositionAfterSabaq`
+itself (`js/position.js`).
+
+**Root cause**: that function computes where the "frontier" (the
+furthest point actually reached) now sits from a saved entry's own
+From/To, then overwrote the stored position with it unconditionally —
+correct for the normal case, where each new entry naturally continues
+from the last, but wrong for a genuinely new entry covering an
+already-passed range. Splitting a previously-logged range into 2
+separate entries produces exactly that: at least one new entry for an
+older piece of it. That entry's own save still goes through the same
+unconditional path (it IS a new entry, not an edit to an existing
+one), silently dragging the real frontier backward to match it even
+though nothing about genuine progress moved.
+
+**Fixed** by comparing the newly-computed frontier against the
+position already stored before overwriting it — using the study
+order (Juz' 30 first, backwards, then 29, then 1-28 ascending) for a
+genuinely different Juz', and the same study-direction-aware
+comparison already used elsewhere in this function for the same Juz'.
+Only updates when the new frontier is genuinely further along than
+what was already there; a backfill/split entry for an already-passed
+range now correctly leaves the real frontier alone.
+
+Verified directly against 6 scenarios before considering this done:
+normal sequential progress still advances correctly, the exact bug
+scenario (a backfill entry for an older range) no longer rewinds
+anything, a genuine cross-Juz' advance still works, a student with no
+prior position at all still gets their first entry accepted, and both
+directions of Juz' 30's own reverse study order (a genuine advance,
+and a backfill that shouldn't rewind) both resolve correctly.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/position.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.36.0 — Hybrid removed, 15-line IndoPak mushaf built (2026-08-06)
 
 Confirmed across many rounds of chat, alongside a full data-integrity
