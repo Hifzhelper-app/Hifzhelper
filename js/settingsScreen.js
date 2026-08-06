@@ -24,7 +24,14 @@ function addDaysISO(iso, n){
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
-function refForMushaf(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
+// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
+// case, matching the same function's 3 other copies (js/dhorPage.js,
+// js/sabaqDhorPage.js, js/sabaqPage.js).
+function refForMushaf(mushaf, indopakTerminology){
+  if(mushaf === '15line_madani') return 'uthmani';
+  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
+  return 'waterval';
+}
 
 // renderSwitch()/wireSwitch() moved to js/uiSwitch.js (V3.12.0) — now
 // shared with commentPrivacy.js's private/public switch, loads earlier
@@ -45,16 +52,35 @@ function updateHaidhVisibility(){
 // ---------- Hifz Setup: mushaf switch ----------
 // V3.11.0: every option now has an explanatory hint (Hybrid already had
 // one; 13-line/15-line didn't).
+// V3.36, confirmed in chat: Hybrid removed entirely -- traced and
+// confirmed it never actually behaved differently from 13line. Replaced
+// with 15line_indopak, using its own verified page/line dataset.
 const MUSHAF_HINTS = {
   '13line': '13-line IndoPak/Waterval.',
   '15line_madani': '15 Line Uthmani script.',
-  hybrid: '15 line pages with 13 line quarter markings.'
+  '15line_indopak': '15 line IndoPak script.'
 };
+// 2026-08-06, confirmed in chat: only meaningful when 15line_indopak is
+// selected -- which Dhor/Sabaq Dhor terminology to use, since IndoPak's
+// own Rub'/Hizb boundary data hasn't been sourced yet and the app already
+// has both of these ready to use. Confirmed selectable now, ahead of
+// V3.37 actually building the real Maqra/Rub'/Hizb display system this
+// second option points at -- so its terminology stays incomplete
+// (V3.37's own Q/H-style labels, not yet the real thing) until that lands.
+let setupSelectedIndopakTerminology = null;
+wireSwitch('indopak_terminology_switch', (value) => {
+  setupSelectedIndopakTerminology = value;
+  renderSwitch('indopak_terminology_switch', setupSelectedIndopakTerminology);
+});
+function updateIndopakTerminologyVisibility(){
+  document.getElementById('indopakTerminologyRow').classList.toggle('hidden', setupSelectedMushaf !== '15line_indopak');
+}
 let setupSelectedMushaf = null;
 wireSwitch('mushaf_switch', (value) => {
   setupSelectedMushaf = value;
   renderSwitch('mushaf_switch', setupSelectedMushaf);
   document.getElementById('mushafHint').textContent = MUSHAF_HINTS[value] || '';
+  updateIndopakTerminologyVisibility();
 });
 
 // ---------- Hifz Setup: completed-sections slide-in grids ----------
@@ -184,6 +210,9 @@ async function renderSettingsScreen(){
   setupSelectedMushaf = profile.mushaf || null;
   renderSwitch('mushaf_switch', setupSelectedMushaf);
   document.getElementById('mushafHint').textContent = MUSHAF_HINTS[setupSelectedMushaf] || '';
+  setupSelectedIndopakTerminology = profile.indopak_terminology || 'quarter_half';
+  renderSwitch('indopak_terminology_switch', setupSelectedIndopakTerminology);
+  updateIndopakTerminologyVisibility();
   baselineMode = profile.baseline_mode || null;
   baselineSelection = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
   renderBaselineSummary();
@@ -235,6 +264,7 @@ document.getElementById('hifzSetupSaveBtn').addEventListener('click', async () =
   errEl.textContent = '';
   const payload = { setup_complete: true };
   if(setupSelectedMushaf) payload.mushaf = setupSelectedMushaf;
+  if(setupSelectedMushaf === '15line_indopak') payload.indopak_terminology = setupSelectedIndopakTerminology;
   if(baselineMode){
     payload.baseline_mode = baselineMode;
     payload.baseline_selection = baselineSelection;

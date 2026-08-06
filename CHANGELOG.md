@@ -7,6 +7,80 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.36.0 — Hybrid removed, 15-line IndoPak mushaf built (2026-08-06)
+
+Confirmed across many rounds of chat, alongside a full data-integrity
+review of the user-supplied IndoPak page/line dataset before any of
+this was built.
+
+**Hybrid removed entirely.** Traced its actual behaviour rather than
+trusting its UI label — its `ref` logic (`mushaf === '15line_madani'
+? 'uthmani' : 'waterval'`) only ever recognized one specific value as
+"use 15-line data"; Hybrid fell through to the same `waterval` branch
+13-line uses. It never behaved differently from plain 13-line for
+anything `ref` drove — same Juz' boundaries, same Lines/Pages numbers
+— despite its own Settings description ("15 line pages with 13 line
+quarter markings") describing a distinction that was never actually
+wired in. Nothing real was lost removing it.
+
+**New 15-line IndoPak mushaf**, replacing it as the third option.
+Uses its own verified page/line dataset (`AYAH_LINE_INDOPAK`,
+`shared/data.js`) for Sabaq's Lines/Pages — not Madina's, always,
+regardless of any other choice made for this mushaf. The dataset
+itself was independently verified before building anything on top of
+it: exactly 6,236 rows (the Quran's real ayah count), zero duplicates,
+every surah's ayah sequence contiguous and matching known counts, all
+604 pages present with no gaps, and — the real test, given the two
+15-line prints share page boundaries but differ in how ayahs
+distribute across a page's lines — all 604 page boundaries cross-
+checked against the already-verified Madina data and found to match
+exactly.
+
+**New picker, shown only when IndoPak is selected**: Quarter/Half (the
+13-line convention) or Maqra/Rub'/Hizb (the Madani convention),
+defaulting to Quarter/Half. Confirmed selectable now, even though the
+real Maqra/Rub'/Hizb *display* system (relabeled terminology, derived
+boundaries, Hizb's own global numbering) is V3.37's work — this
+picker's second option borrows Madani's own existing Uthmani boundary
+data in the meantime, so it's functionally real (correct underlying
+Juz' boundaries) even though its labels stay in the older Quarter/Half
+form until V3.37 lands.
+
+**Architecture**: two genuinely separate concerns, kept deliberately
+distinct rather than collapsed into one. Sabaq's Lines/Pages routing
+(`pageRefForMushaf`) is a direct, unconditional mushaf → dataset
+mapping — IndoPak always reads its own data here, full stop. Dhor/
+Sabaq Dhor's own terminology routing (`refForMushaf` and its 3
+duplicated copies, extended with a second parameter) is separate,
+respecting the picker's choice — verified end to end that the two
+resolve independently for every mushaf/terminology combination.
+
+**Database**: new `indopak_terminology` column (migration 0016,
+`quarter_half` / `maqra_rub_hizb` / NULL, only meaningful when mushaf
+is IndoPak). No stored student currently has `mushaf = 'hybrid'`
+(confirmed inactive beforehand), but the migration defensively
+reassigns any that exist to `13line` rather than leaving a newly-
+invalid value in place.
+
+**Files changed:**
+```
+index.html
+sw.js
+shared/data.js
+worker/src/profile.js
+worker/migrations/0016_indopak_terminology.sql
+js/sabaqPage.js
+js/dhorPage.js
+js/sabaqDhorPage.js
+js/settingsScreen.js
+SCHEMA.md
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.35.2 — Fixed: editing landed on the Timer instead of the card being edited (2026-08-05)
 
 A real, long-standing bug, not related to V3.35.1's own changes — the

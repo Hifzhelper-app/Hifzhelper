@@ -79,7 +79,16 @@
 const EDIT_HANDLERS = {}; // populated by each card's own file: EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit, etc.
 
 let dhorCurrentRef = 'waterval'; // derived from profile.mushaf on every open, see renderDhorScreen()
-function refForMushaf(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
+// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
+// case -- when the student picked Maqra/Rub'/Hizb for IndoPak, Dhor's own
+// terminology/boundaries use the same Uthmani data Madani itself uses.
+// Second param defaults to null so every existing caller (never passing
+// it) keeps its current behaviour unchanged.
+function refForMushaf(mushaf, indopakTerminology){
+  if(mushaf === '15line_madani') return 'uthmani';
+  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
+  return 'waterval';
+}
 
 function computeSegmentRange(juz, positionInJuz, ref, unit){
   const perJuz = segmentsPerJuz(ref);
@@ -325,7 +334,7 @@ async function renderDhorScreen(){
 
   try{
     const profile = await apiGetProfile();
-    dhorCurrentRef = refForMushaf(profile.mushaf);
+    dhorCurrentRef = refForMushaf(profile.mushaf, profile.indopak_terminology);
   } catch(e){
     dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
   }

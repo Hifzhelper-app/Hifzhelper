@@ -43,7 +43,18 @@ let sabaqValue = { from: null, to: null };
 let sabaqEditingId = null;
 let sabaqEditingIsFrontier = false;
 
-function refForMushafSabaq(mushaf){ return mushaf === '15line_madani' ? 'uthmani' : 'waterval'; }
+// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
+// case -- when the student picked Maqra/Rub'/Hizb for IndoPak, Juz'-
+// position tracking should use the same Uthmani boundaries Madani itself
+// uses, not IndoPak's own page/line dataset (a separate concern --
+// see pageRefForMushaf, shared/data.js). Second param defaults to null
+// so every existing caller (never passing it) keeps its current behaviour
+// unchanged.
+function refForMushafSabaq(mushaf, indopakTerminology){
+  if(mushaf === '15line_madani') return 'uthmani';
+  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
+  return 'waterval';
+}
 
 function renderVerseRefField(side){
   const v = sabaqValue[side];
@@ -161,7 +172,7 @@ async function renderSabaqScreen(){
 
   let profile = null;
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
-  sabaqRef = refForMushafSabaq(profile && profile.mushaf);
+  sabaqRef = refForMushafSabaq(profile && profile.mushaf, profile && profile.indopak_terminology);
   sabaqPosition = await loadPosition();
   const dhorExists = await hasDhorHistory();
 
@@ -184,7 +195,12 @@ async function renderSabaqScreen(){
 function recomputeSabaqLineCount(){
   const from = sabaqValue.from, to = sabaqValue.to;
   if(!from || !to) return;
-  const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
+  // 2026-08-06, confirmed in chat: Lines/Pages reads the mushaf's own
+  // real dataset directly (pageRefForMushaf) -- deliberately NOT sabaqRef,
+  // which is a different concern (Juz'-position tracking elsewhere in
+  // this file) that only ever distinguishes uthmani vs waterval, not the
+  // IndoPak dataset this needs to reach.
+  const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, pageRefForMushaf(profile && profile.mushaf));
   if(!result) return;
   document.getElementById('sabaq_line_count').value = result.lineCount;
   document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / 13) * 4) / 4;
