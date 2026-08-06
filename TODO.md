@@ -4,6 +4,18 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.35.2 (2026-08-05)
+
+- [x] Fixed a real, long-standing bug found by the user: editing any of
+  the 3 cards could land on the Timer instead, regardless of how
+  editing was triggered. Root cause: #dhorTimerHost was never a
+  .log-detail-card (a separate custom element, targeted by its own id
+  everywhere else), so the "hide every card except the one being
+  edited" rule genuinely never reached it -- the Timer stayed visible
+  throughout editing, leaving 2 elements visible in the rail instead of
+  the intended 1. Fixed by extending that same rule to explicitly cover
+  #dhorTimerHost too.
+
 ## Done — V3.35.1 (2026-08-05)
 
 - [x] Sabaq's Lines/Pages recompute when "Confirm selection" is
