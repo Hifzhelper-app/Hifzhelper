@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hifzhelper</title>
+
+<!-- Favicon (browser tab) -->
+<link rel="icon" href="appicons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="appicons/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="appicons/favicon-32x32.png">
+
+<!-- Apple Home Screen conventions (Safari doesn't read all of this from
+     the manifest, so these are kept alongside it) -->
+<link rel="apple-touch-icon" href="appicons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hifzhelper">
+
+<!-- Apple mobile must install the CURRENT /<uniqueID> page, not the shared
+     manifest's generic start_url. Other platforms still receive the full
+     installable manifest. Runs in <head> before Add to Home Screen can read
+     the page's installation metadata. -->
+<script src="js/pwaManifest.js?v=3.36.3"></script>
+
+<link rel="stylesheet" href="css/tokens.css?v=3.36.3">
+<link rel="stylesheet" href="css/base.css?v=3.36.3">
+<link rel="stylesheet" href="css/nav.css?v=3.36.3">
+<link rel="stylesheet" href="css/journal-table.css?v=3.36.3">
+<link rel="stylesheet" href="css/components.css?v=3.36.3">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.36.3">
+<link rel="stylesheet" href="css/settings.css?v=3.36.3">
+<link rel="stylesheet" href="css/admin.css?v=3.36.3">
+</head>
+<body>
+
+<div id="errorBanner"></div>
+
+<!-- ================= LOGIN (fallback: no unique ID in the URL, an ID
+     that doesn't exist, or an ID that exists but isn't active) ================= -->
+<div class="login-screen hidden" id="loginScreenFallback">
+  <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1>Sign in</h1>
+    <label>Your ID</label>
+    <input type="text" id="fallback_login_id" placeholder="e.g. K7M2QX" autocapitalize="characters">
+    <label>PIN</label>
+    <div class="pin-box-row">
+      <input type="password" class="pin-digit" id="fb_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="fb_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <div class="form-error" id="fallbackLoginError"></div>
+    <div class="form-hint">Forgot your pin or ID? Send us an email <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Forgot%20PIN%20or%20ID">hifzhelper.app@gmail.com</a> with your name and whatsapp number.</div>
+    <div style="margin-top:var(--space-md);"><button type="button" class="primary" id="showRegisterBtn">New Registration</button></div>
+  </div>
+</div>
+
+<!-- ================= LOGIN (personalized: unique ID known from the URL
+     or remembered on this device, PIN already set) ================= -->
+<div class="login-screen hidden" id="loginScreenPersonal">
+  <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1 id="personalGreeting">Ahlan wa Sahlan</h1>
+    <div class="form-hint" style="margin-top:0;">Enter your pin to sign in</div>
+    <div class="pin-box-row" style="margin-top:var(--space-md);">
+      <input type="password" class="pin-digit" id="p_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="p_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="p_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="p_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <div class="form-error" id="personalLoginError"></div>
+    <div class="form-hint">Lost pin: Send us an email <a class="link-btn" href="mailto:hifzhelper.app@gmail.com?subject=Lost%20PIN">hifzhelper.app@gmail.com</a> with your name and whatsapp number to reset your pin.</div>
+    <div class="login-links"><button type="button" class="link-btn" id="personalSwitchAccountBtn">Use another ID</button></div>
+  </div>
+</div>
+
+<!-- ================= CREATE PIN (first login via a personal URL or a
+     remembered account that has no PIN yet) ================= -->
+<div class="login-screen hidden" id="createPinScreen">
+  <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1 id="createPinGreeting">Ahlan wa Sahlan</h1>
+    <div class="form-hint" style="margin-top:0;">Create a PIN to secure your journal</div>
+    <label>New PIN</label>
+    <div class="pin-box-row">
+      <input type="password" class="pin-digit" id="cr_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cr_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cr_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      <input type="password" class="pin-digit" id="cr_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+    </div>
+    <div id="confirmPinWrap" class="hidden">
+      <label>Confirm PIN</label>
+      <div class="pin-box-row">
+        <input type="password" class="pin-digit" id="cf_pin_1" inputmode="numeric" maxlength="1" pattern="[0-9]">
+        <input type="password" class="pin-digit" id="cf_pin_2" inputmode="numeric" maxlength="1" pattern="[0-9]">
+        <input type="password" class="pin-digit" id="cf_pin_3" inputmode="numeric" maxlength="1" pattern="[0-9]">
+        <input type="password" class="pin-digit" id="cf_pin_4" inputmode="numeric" maxlength="1" pattern="[0-9]">
+      </div>
+    </div>
+    <div class="form-error" id="createPinError"></div>
+    <p class="form-hint" id="createPinReminderMessage" style="white-space:pre-line;"></p>
+    <label>Your personal URL</label>
+    <div class="url-copy-row">
+      <input type="text" id="createPinUrl" readonly>
+      <button type="button" class="icon-btn" id="copyCreatePinUrlBtn" aria-label="Copy URL"></button>
+    </div>
+    <div class="login-links"><button type="button" class="link-btn" id="createPinSwitchAccountBtn">Use another ID</button></div>
+  </div>
+</div>
+
+<!-- ================= REGISTER ================= -->
+<div class="login-screen hidden" id="registerScreen">
+  <div class="login-card">
+    <img src="appicons/logo.png" alt="Hifzhelper" class="login-logo">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1>Register</h1>
+    <label>Your name</label>
+    <input type="text" id="register_name">
+    <label>WhatsApp number</label>
+    <input type="text" id="register_whatsapp" placeholder="+CODE 123456789">
+    <div class="form-hint hidden" id="registerMatchHint" style="margin-top:var(--space-md);">We found an existing student with this name and WhatsApp number. What would you like to do?</div>
+    <div style="margin-top:16px;" id="registerNormalActions"><button class="primary" id="registerBtn">Register</button></div>
+    <div class="modal-actions hidden" id="registerMatchActions">
+      <button type="button" class="secondary" id="registerCancelBtn">Cancel</button>
+      <button type="button" class="secondary" id="registerContinueBtn">Continue</button>
+      <button type="button" class="secondary" id="registerResetPinBtn">Reset PIN</button>
+    </div>
+    <div class="form-error" id="registerError"></div>
+    <div class="login-links">
+      <button type="button" class="link-btn" id="showLoginBtn">Back to sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= REGISTERED (confirmation shown right after
+     successful registration) ================= -->
+<div class="login-screen hidden" id="registeredScreen">
+  <div class="login-card">
+    <div class="eyebrow">Hifzhelper</div>
+    <h1>Registered!</h1>
+    <p class="form-hint" id="registeredMessage" style="white-space:pre-line;"></p>
+    <label>Your personal URL</label>
+    <div class="url-copy-row">
+      <input type="text" id="registeredUrl" readonly>
+      <button type="button" class="icon-btn" id="copyRegisteredUrlBtn" aria-label="Copy URL"></button>
+    </div>
+    <div style="margin-top:16px;"><button class="primary" id="registeredContinueBtn">Copy and Continue</button></div>
+  </div>
+</div>
+
+<!-- ================= APP SHELL ================= -->
+<div id="appShell" style="display:none;">
+
+  <header id="authBand">
+    <span class="user-name"></span>
+    <button id="authBandToggle"></button>
+  </header>
+  <div id="welcomeBanner"></div>
+  <nav id="authDropdown"><div class="dropdown-inner" id="authDropdownNav"></div></nav>
+
+  <main id="appContent">
+
+    <!-- Home -->
+    <section class="screen" id="screen-home">
+      <h2>Home</h2>
+      <div id="homeGrid"></div>
+    </section>
+
+    <!-- Journal (landing) -->
+    <section class="screen hidden" id="screen-journal">
+      <div class="journal-header-row">
+        <div class="journal-header-cell col-date">Date</div>
+        <div class="journal-header-cell col-log"><button data-nav="sabaq" id="th_sabaq"><span>Sabaq</span></button></div>
+        <div class="journal-header-cell col-log"><button data-nav="sabaqDhor" id="th_sabaqDhor"><span>Sabaq Dhor</span></button></div>
+        <div class="journal-header-cell col-log"><button data-nav="dhor" id="th_dhor"><span>Dhor</span></button></div>
+      </div>
+      <div class="journal-wrap">
+        <table class="journal-table">
+          <tbody id="journalTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Unified day-log view (V3.6.1) — replaces the old separate
+         Sabaq / Sabaq Dhor / Dhor screens. All 3 journal column headers
+         open this same screen now; 4 cards: Sabaq, Sabaq Dhor, Dhor,
+         Tadabbur. Large screens show all 4 as a static grid; tablet/
+         mobile show a swipeable rail (2-in-view / 1-in-view) with dot
+         indicators — see log-detail rules in css/detail-pages.css. -->
+    <section class="screen hidden" id="screen-logDetail">
+      <!-- V3.12.0: dots moved above the rail (were below), now show text
+           labels instead of plain circles -- see detail-pages.css.
+           V3.19.0: dots wrapped in their own inner group so the xclose
+           button can sit to the right while the dots stay centered
+           independently -- xclose stays visible at every screen size
+           even though the dots themselves hide on desktop. -->
+      <div class="log-detail-dots" id="logDetailDots">
+        <div class="log-detail-dots-inner">
+          <button type="button" class="dot" data-index="0">Sabaq</button>
+          <button type="button" class="dot" data-index="1">SDhor</button>
+          <button type="button" class="dot" data-index="2">Dhor</button>
+          <button type="button" class="dot" data-index="3">Timer</button>
+        </div>
+        <button type="button" class="log-detail-close" id="logDetailClose" aria-label="Exit"></button>
+      </div>
+      <div class="log-detail-rail" id="logDetailRail">
+
+        <!-- Sabaq card -->
+        <div class="log-detail-card detail-page" id="card-sabaq">
+          <div class="card-scroll">
+            <div class="card-header-row">
+              <span class="card-header-icon" id="sabaqHeaderIcon"></span>
+              <h2>Sabaq</h2>
+              <div class="card-header-save-wrap">
+                <span class="save-status" id="sabaqSaveStatus">saved ✓</span>
+                <button type="button" class="card-header-save-btn" id="sabaqSaveBtn"><span class="btn-icon" id="sabaqSaveIcon"></span><span class="save-btn-text">Save</span></button>
+              </div>
+            </div>
+            <div class="edit-topbar hidden" id="sabaqEditTopbar">
+              <span>Editing Sabaq from <span id="sabaqEditTopbarDate"></span></span>
+            </div>
+            <div class="card-date-row"><input type="date" id="sabaq_date" class="card-header-date"><div class="history-container" id="sabaqRecentRail"></div></div>
+            <!-- 2026-08-05, confirmed in chat: moved here from the
+                 bottom of the card (originally next to the error div it
+                 triggers) -- hard-blocks Save until checked, exactly
+                 like Sabaq Dhor's own "mark sections revised"
+                 checkboxes -- js/sabaqPage.js's save handler checks
+                 this before anything else. Clears itself immediately
+                 after a successful save (both here and in
+                 js/sabaqPage.js), so each save requires its own fresh
+                 confirmation rather than staying checked from a
+                 previous one. Replaces the earlier "nothing entered"
+                 confirm() entirely, not layered alongside it. -->
+            <label class="cb-private-row">
+              <input type="checkbox" id="sabaq_confirm">
+              Confirm selection
+            </label>
+
+            <!-- V3.18.0: verse-ref grid is chevron:surah:ayah:chevron at
+                 10:50:30:10 (confirmed in chat) -- left chevron still
+                 opens the full surah picker, right chevron is a new
+                 up/down stepper for the ayah value (js/sabaqPage.js),
+                 replacing reliance on the native number input's own
+                 spinner. line_count/page_count auto-compute once both
+                 fields are set, shown editable. -->
+            <label>Sabaq from</label>
+            <div class="verse-ref-field">
+              <button type="button" class="verse-ref-chevron" id="sabaq_from_chevron">&#x25B2;&#x25BC;</button>
+              <span class="verse-ref-surah-label" id="sabaq_from_surah_label">—</span>
+              <span class="verse-ref-ayah-cell">
+                <span class="verse-ref-sep">:</span>
+                <input type="number" inputmode="numeric" class="verse-ref-ayah" id="sabaq_from_ayah">
+              </span>
+              <span class="verse-ref-ayah-stepper">
+                <button type="button" class="verse-ref-ayah-up" data-target="sabaq_from_ayah">&#x25B2;</button>
+                <button type="button" class="verse-ref-ayah-down" data-target="sabaq_from_ayah">&#x25BC;</button>
+              </span>
+            </div>
+            <label>Sabaq to</label>
+            <div class="verse-ref-field">
+              <button type="button" class="verse-ref-chevron" id="sabaq_to_chevron">&#x25B2;&#x25BC;</button>
+              <span class="verse-ref-surah-label" id="sabaq_to_surah_label">—</span>
+              <span class="verse-ref-ayah-cell">
+                <span class="verse-ref-sep">:</span>
+                <input type="number" inputmode="numeric" class="verse-ref-ayah" id="sabaq_to_ayah">
+              </span>
+              <span class="verse-ref-ayah-stepper">
+                <button type="button" class="verse-ref-ayah-up" data-target="sabaq_to_ayah">&#x25B2;</button>
+                <button type="button" class="verse-ref-ayah-down" data-target="sabaq_to_ayah">&#x25BC;</button>
+              </span>
+            </div>
+            <div class="picker-row">
+              <div><label>Lines</label><input type="number" inputmode="numeric" id="sabaq_line_count"></div>
+              <div><label>Pages</label><input type="number" inputmode="numeric" id="sabaq_page_count"></div>
+            </div>
+            <label>Tajweed</label>
+            <div id="sabaqTajweedPicker"></div>
+            <div id="sabaqCommentBlock"></div>
+            <div class="form-error" id="sabaqError"></div>
+            <div class="edit-bottombar hidden" id="sabaqEditBottombar">
+              <button type="button" id="sabaqEditCancelBtn2"><span class="btn-icon" id="sabaqEditCancelIcon"></span><span>Cancel</span></button>
+              <button type="button" class="edit-bottombar-delete" id="sabaqEditDeleteBtn"><span class="btn-icon" id="sabaqEditDeleteIcon"></span><span>Delete</span></button>
+              <button type="button" id="sabaqEditUpdateBtn"><span class="btn-icon" id="sabaqEditUpdateIcon"></span><span>Update</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sabaq Dhor card -->
+        <div class="log-detail-card detail-page" id="card-sabaqDhor">
+          <div class="card-scroll">
+            <div class="card-header-row">
+              <span class="card-header-icon" id="sabaqDhorHeaderIcon"></span>
+              <h2>Sabaq Dhor</h2>
+              <div class="card-header-save-wrap">
+                <span class="save-status" id="sabaqDhorSaveStatus">saved ✓</span>
+                <button type="button" class="card-header-save-btn" id="sabaqDhorSaveBtn"><span class="btn-icon" id="sabaqDhorSaveIcon"></span><span class="save-btn-text">Save</span></button>
+              </div>
+            </div>
+            <div class="edit-topbar hidden" id="sabaqDhorEditTopbar">
+              <span>Editing Sabaq Dhor from <span id="sabaqDhorEditTopbarDate"></span></span>
+            </div>
+            <div class="card-date-row"><input type="date" id="sabaqDhor_date" class="card-header-date"><div class="history-container" id="sabaqDhorRecentRail"></div></div>
+
+            <!-- V3.19.0: "Sections to revise" removed; "Mark sections
+                 revised" now labels the checkbox list specifically. The
+                 rollup control is a single stepper (2 stacked icon
+                 buttons, not a full row above the list) sitting to the
+                 left of the list itself -- each button's visibility is
+                 set in JS based on real eligibility (js/sabaqDhorPage.js),
+                 not just cosmetically hidden. -->
+            <label>Mark sections revised</label>
+            <div class="sabaq-dhor-sections-row">
+              <div class="sabaq-dhor-rollup-stepper">
+                <button type="button" class="sabaq-dhor-rollup-btn" id="sabaqDhor_rollup_up" title="Roll up (merge)"></button>
+                <button type="button" class="sabaq-dhor-rollup-btn" id="sabaqDhor_rollup_down" title="Split down"></button>
+              </div>
+              <div id="sabaqDhor_sections" class="sabaq-dhor-sections-list"></div>
+            </div>
+            <div class="picker-row">
+              <div><label style="margin-top:16px;">Mistakes</label><input type="number" inputmode="numeric" id="sabaqDhor_mistakes"></div>
+              <div><label>Tajweed</label><div id="sabaqDhorTajweedPicker"></div></div>
+            </div>
+            <div id="sabaqDhorCommentBlock"></div>
+            <div class="form-error" id="sabaqDhorError"></div>
+            <div class="edit-bottombar hidden" id="sabaqDhorEditBottombar">
+              <button type="button" id="sabaqDhorEditCancelBtn2"><span class="btn-icon" id="sabaqDhorEditCancelIcon"></span><span>Cancel</span></button>
+              <button type="button" class="edit-bottombar-delete" id="sabaqDhorEditDeleteBtn"><span class="btn-icon" id="sabaqDhorEditDeleteIcon"></span><span>Delete</span></button>
+              <button type="button" id="sabaqDhorEditUpdateBtn"><span class="btn-icon" id="sabaqDhorEditUpdateIcon"></span><span>Update</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dhor card -->
+        <div class="log-detail-card detail-page" id="card-dhor">
+          <div class="card-scroll">
+            <div class="card-header-row">
+              <span class="card-header-icon" id="dhorHeaderIcon"></span>
+              <h2>Dhor</h2>
+              <div class="card-header-save-wrap">
+                <span class="save-status" id="dhorSaveStatus">saved ✓</span>
+                <button type="button" class="card-header-save-btn" id="dhorSaveBtn"><span class="btn-icon" id="dhorSaveIcon"></span><span class="save-btn-text">Save</span></button>
+              </div>
+            </div>
+            <div class="edit-topbar hidden" id="dhorEditTopbar">
+              <span>Editing Dhor from <span id="dhorEditTopbarDate"></span></span>
+            </div>
+            <!-- V3.24.0: Row 2 combines Date/Plan Dhor/History into one
+                 40:30:30 grid (was Date+History on one row, Amount+View
+                 Plan on a second row below it). Both buttons get a fixed
+                 size with wrapping (not truncating) labels via the
+                 scoped .dhor-row2-btn/.dhor-row2 .history-btn rules
+                 below, rather than reusing the general .history-btn
+                 sizing used elsewhere (Sabaq/Sabaq Dhor keep that). -->
+            <div class="dhor-row2" id="dhorRow2">
+              <input type="date" id="dhor_date" class="card-header-date">
+              <button type="button" class="dhor-row2-btn" id="dhorViewPlanBtn">Plan</button>
+              <div id="dhorRecentRail"></div>
+            </div>
+            <!-- Row 3: Amount as a 3-way switch (was a dropdown), reusing
+                 the same .switch-track/.switch-option pattern already
+                 used elsewhere (e.g. Dhor Schedule's own granularity
+                 switch in Setup) rather than inventing a new control. -->
+            <div id="dhorAmountRow">
+              <!-- 2026-08-03: this used to carry class="card-date-row" by
+                   mistake -- that class belongs to Sabaq/Sabaq Dhor's own
+                   2-column date:history layout (grid-template-columns:
+                   auto 1fr), unrelated to this single-switch row. It was
+                   forcing the switch into an auto-sized grid column,
+                   which is why the switch's own width:78% (css/
+                   detail-pages.css) never actually took effect. -->
+              <input type="hidden" id="dhor_unit" value="quarter">
+              <div class="switch-track dhor-amount-switch" id="dhor_unit_switch">
+                <div class="switch-thumb"></div>
+                <button type="button" class="switch-option" data-value="quarter">Quarter</button>
+                <button type="button" class="switch-option" data-value="half">Half</button>
+                <button type="button" class="switch-option" data-value="full">Full</button>
+              </div>
+            </div>
+            <!-- 2026-08-05, confirmed in chat: moved here from the
+                 bottom of the card (originally next to the error div it
+                 triggers) -- same as Sabaq's own confirmation checkbox
+                 -- hard-blocks Save until checked, clears itself
+                 immediately after a successful save (both new entries
+                 and edits), replaces the earlier "nothing entered"
+                 confirm() entirely. -->
+            <label class="cb-private-row">
+              <input type="checkbox" id="dhor_confirm">
+              Confirm selection
+            </label>
+            <div id="dhorSegmentPicker">
+              <!-- V3.10.0: the standalone reference dropdown is gone -- ref
+                   is now derived from the student's own mushaf choice
+                   (Setup), same rule for everyone (13-line/15-line/Hybrid
+                   all resolve consistently), not a separate per-device pick
+                   living only on this one page. -->
+              <div class="picker-row" id="dhorJuzPositionRow">
+                <div><label>Juz</label><select id="dhor_juz"></select></div>
+                <div id="dhorPositionField">
+                  <label>&nbsp;</label>
+                  <input type="hidden" id="dhor_position" value="1">
+                  <div class="switch-track" id="dhor_position_switch">
+                    <div class="switch-thumb"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- V3.24.0: shown INSTEAD of dhorSegmentPicker/dhorAmountRow
+                 when Plan Dhor's selection doesn't reduce to one clean
+                 quarter/half/juz -- tapping either button reopens Plan
+                 Dhor with the current selection already ticked, rather
+                 than being editable inline here. -->
+            <div class="picker-row hidden" id="dhorRawRangeRow">
+              <div><label>From</label><button type="button" class="dhor-raw-range-btn" id="dhorRawFromBtn"></button></div>
+              <div><label>To</label><button type="button" class="dhor-raw-range-btn" id="dhorRawToBtn"></button></div>
+            </div>
+            <div class="picker-row">
+              <div><label>Mistakes</label><input type="number" inputmode="numeric" id="dhor_mistakes"></div>
+              <div><label>Tajweed</label><div id="dhorTajweedPicker"></div></div>
+            </div>
+            <!-- V3.21.1: duration is a real user input now, not something
+                 only the timer can set (confirmed in chat) -- the timer
+                 auto-fills this field (and separately captures lap times,
+                 which manual entry can't provide) but stays fully
+                 editable on its own.
+                 V3.24.0: format changed from decimal minutes to mm:ss.
+                 2026-08-04, confirmed in chat: split into 2 plain number
+                 fields (Minutes/Seconds) instead of 1 text field holding
+                 "mm:ss" -- a colon doesn't play well with the native
+                 numeric keypad. js/dhorPage.js's getDhorDurationSeconds/
+                 formatDhorDuration/setDhorDurationFields handle the
+                 conversion. Stopwatch label -> TIMER, scrolls to the
+                 permanent Timer rail card rather than an overlay. -->
+            <div class="picker-row">
+              <div>
+                <label>Duration</label>
+                <div class="dhor-duration-split">
+                  <input type="text" inputmode="numeric" id="dhor_duration_min" placeholder="mm" maxlength="2">
+                  <span class="dhor-duration-colon">:</span>
+                  <input type="text" inputmode="numeric" id="dhor_duration_sec" placeholder="ss" maxlength="2">
+                </div>
+              </div>
+              <div class="dhor-stopwatch-col">
+                <label>&nbsp;</label>
+                <button type="button" id="dhorStopwatchToggle"><span class="btn-icon" id="dhorStopwatchIcon"></span><span>Timer</span></button>
+              </div>
+            </div>
+            <!-- 2026-08-04, confirmed in chat: shows what Note Time
+                 captured, until the Dhor entry itself is actually saved
+                 (js/dhorPage.js's renderDhorLapRollup). -->
+            <div id="dhorLapRollup" class="hidden">
+              <button type="button" id="dhorLapRollupToggle">▸ Lap times</button>
+              <div id="dhorLapRollupList" class="hidden"></div>
+            </div>
+            <div id="dhorCommentBlock"></div>
+            <div class="form-error" id="dhorError"></div>
+            <div class="edit-bottombar hidden" id="dhorEditBottombar">
+              <button type="button" id="dhorEditCancelBtn2"><span class="btn-icon" id="dhorEditCancelIcon"></span><span>Cancel</span></button>
+              <button type="button" class="edit-bottombar-delete" id="dhorEditDeleteBtn"><span class="btn-icon" id="dhorEditDeleteIcon"></span><span>Delete</span></button>
+              <button type="button" id="dhorEditUpdateBtn"><span class="btn-icon" id="dhorEditUpdateIcon"></span><span>Update</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tadabbur/reflection card -- new in V3.6.1. One per day by
+             design (unlike the 3 log cards above), so no date selector
+             and no Recent rail here. Date input still rendered for
+             layout consistency across all 4 header rows, but hidden via
+             CSS on this card specifically (no per-entry date concept). -->
+        <!-- Timer card (2026-08-04, confirmed in chat): now a permanent
+             4th rail card, in the exact position Tadabbur used to
+             occupy -- session-timer.js's own "full" mode styling
+             applies directly, no wrapper needed. Its "mini" mode still
+             floats free of the rail entirely (css/detail-pages.css),
+             independent of which card is currently in view. -->
+        <session-timer id="dhorTimerHost" target="40" accent="#829672" mode="full"></session-timer>
+
+      </div>
+    </section>
+
+    <!-- Tadabbur/Reflections screen (2026-08-04, confirmed in chat): its
+         own standalone nav destination now, not the rail's 4th card --
+         reuses the existing 'reflections' nav item (already defined in
+         js/auth.js's NAV_ITEMS, previously just a coming-soon
+         placeholder) rather than adding a second, duplicate entry for
+         the same underlying concept. js/reflectionCard.js's own logic
+         is completely unchanged -- it only ever read/wrote these same
+         element ids, never anything about the rail itself. -->
+    <section class="screen hidden" id="screen-reflections">
+      <div class="card-header-row">
+        <span class="card-header-icon" id="tadabburHeaderIcon"></span>
+        <h2>Tadabbur</h2>
+        <div class="card-header-save-wrap">
+          <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
+          <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span><span class="save-btn-text">Save</span></button>
+        </div>
+      </div>
+      <label>Reflection</label>
+      <textarea id="tadabbur_text" rows="8"></textarea>
+      <label class="cb-private-row">
+        <input type="checkbox" id="tadabbur_private">
+        Private
+      </label>
+      <div class="form-error" id="tadabburError"></div>
+    </section>
+
+    <!-- Admin screen -->
+    <section class="screen hidden" id="screen-admin">
+      <h2>Admin</h2>
+
+      <div class="admin-register-box">
+        <label>Register a new student</label>
+        <input type="text" id="admin_new_name" placeholder="Student's name">
+        <input type="text" id="admin_new_whatsapp" placeholder="WhatsApp" style="margin-top:var(--space-sm);">
+        <div class="form-hint hidden" id="adminRegisterMatchHint" style="margin-top:var(--space-sm);">Student: [name], WhatsApp number: [number] has the same details and is currently [active/inactive]. How do you want to proceed?</div>
+        <div style="margin-top:var(--space-sm);" id="adminRegisterNormalActions"><button class="primary" id="adminRegisterBtn">Register</button></div>
+        <div class="modal-actions hidden" id="adminRegisterMatchActions">
+          <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
+          <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
+          <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset PIN</button>
+        </div>
+        <div class="form-error" id="adminRegisterError"></div>
+        <div id="adminRegisterResult"></div>
+      </div>
+
+      <input type="text" id="admin_search" placeholder="Search by ID or name…">
+      <div class="admin-list-wrap" id="adminUsersList"></div>
+    </section>
+
+    <!-- Placeholder for screens not yet built -->
+    <section class="screen hidden" id="screen-placeholder">
+      <h2 id="placeholderLabel"></h2>
+      <p class="form-hint">This page isn't built yet — coming in a follow-up.</p>
+    </section>
+
+    <!-- Setup screen (V3.9.0) — reached both from the "Settings" nav item
+         and automatically on a new user's first login (see bootApp() in
+         app.js). REVISED from V3.7.x/V3.8.0's 2-card swipeable rail to
+         ONE continuous page — Dhor Schedule and Haidh now live here
+         permanently too (confirmed in chat: no separate nav destinations
+         for either; this is the only place to reach them, before and
+         after onboarding). 4 sections, each still independently saved
+         (saving any one is enough to mark setup_complete): Profile,
+         Hifz Setup, Dhor Schedule, Haidh (shown only when gender is F).
+         The Juz'/Surah "mark completed sections" grids (Hifz Setup) open
+         as full slide-in overlays, built dynamically in JS the same way
+         journal.js's quick-add modal is — see settingsScreen.js. -->
+    <section class="screen hidden" id="screen-settings">
+
+      <!-- Profile section -->
+      <div class="settings-section detail-page" id="section-profile">
+        <div class="settings-header-row">
+          <h2>Profile</h2>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="save-status" id="profileSaveStatus">saved ✓</span>
+            <button type="button" class="icon-btn" id="profileSaveBtn" aria-label="Save"></button>
+          </div>
+        </div>
+
+        <div class="profile-readonly-row">
+          <span class="profile-readonly-label">Name</span>
+          <span class="profile-readonly-value" id="setup_name_display"></span>
+          <!-- V3.11.0: moved here as a small inline switch (was its own
+               full-size row further down the page). -->
+          <div class="switch-track switch-track-small" id="gender_switch">
+            <div class="switch-thumb"></div>
+            <button type="button" class="switch-option" data-value="M">M</button>
+            <button type="button" class="switch-option" data-value="F">F</button>
+          </div>
+        </div>
+        <div class="profile-readonly-row">
+          <span class="profile-readonly-label">Unique ID</span>
+          <span class="profile-readonly-value" id="setup_id_display"></span>
+        </div>
+        <div class="profile-readonly-row">
+          <span class="profile-readonly-label">URL</span>
+          <div class="url-copy-row profile-readonly-value">
+            <input type="text" id="setup_url_display" readonly>
+            <button type="button" class="icon-btn" id="setupCopyUrlBtn" aria-label="Copy URL"></button>
+          </div>
+        </div>
+
+        <label>Journal name</label>
+        <input type="text" id="setup_journal_name" placeholder="e.g. Ahmad's Hifz Journal">
+
+        <div class="form-error" id="profileError"></div>
+      </div>
+
+      <!-- Hifz Setup section -->
+      <div class="settings-section detail-page" id="section-hifzSetup">
+        <div class="settings-header-row">
+          <h2>Hifz Setup</h2>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="save-status" id="hifzSetupSaveStatus">saved ✓</span>
+            <button type="button" class="icon-btn" id="hifzSetupSaveBtn" aria-label="Save"></button>
+          </div>
+        </div>
+
+        <!-- V3.36, confirmed in chat: Hybrid removed entirely -- traced
+             and confirmed it never actually behaved differently from
+             13line (its ref logic fell through to the same 'waterval'
+             branch 13line uses). Replaced with 15line_indopak, using
+             its own verified page/line dataset, not Madina's. -->
+        <label>Mushaf</label>
+        <div class="switch-track" id="mushaf_switch">
+          <div class="switch-thumb"></div>
+          <button type="button" class="switch-option" data-value="13line">13 line</button>
+          <button type="button" class="switch-option" data-value="15line_madani">15 line Madani</button>
+          <button type="button" class="switch-option" data-value="15line_indopak">15 line IndoPak</button>
+        </div>
+        <div class="switch-hint" id="mushafHint"></div>
+
+        <!-- 2026-08-06, confirmed in chat: only shown when 15line_indopak
+             is selected (js/settingsScreen.js's updateIndopakTerminologyVisibility)
+             -- IndoPak's own Rub'/Hizb boundary data hasn't been sourced
+             yet, so it borrows whichever of the app's 2 existing datasets
+             the student prefers for Dhor/Sabaq Dhor. Defaults to Quarter/
+             Half. Confirmed selectable now, ahead of V3.37 actually
+             building the real Maqra/Rub'/Hizb display system the second
+             option points at. -->
+        <div id="indopakTerminologyRow" class="hidden">
+          <label>IndoPak Dhor/Sabaq Dhor terminology</label>
+          <div class="switch-track" id="indopak_terminology_switch">
+            <div class="switch-thumb"></div>
+            <button type="button" class="switch-option" data-value="quarter_half">Quarter/Half</button>
+            <button type="button" class="switch-option" data-value="maqra_rub_hizb">Maqra/Rub'/Hizb</button>
+          </div>
+        </div>
+
+        <!-- V3.9.0: replaces the old inline Surahs/Juz' mode-toggle +
+             grid — two buttons that each open a full slide-in grid
+             overlay instead (still mutually exclusive: confirming a
+             selection in one clears the other, same as before). -->
+        <!-- V3.10.0: neutral-center switch — tapping either side opens its
+             popout grid regardless of the thumb's current position; the
+             thumb only reflects which mode is ACTUALLY set (baselineMode),
+             resting in the middle if nothing's been marked yet, since this
+             isn't a real persistent on/off state the way other switches
+             on this screen are. -->
+        <label style="margin-top:20px;">Mark completed sections using</label>
+        <div class="switch-track" id="section_grid_switch">
+          <div class="switch-thumb neutral"></div>
+          <button type="button" class="switch-option" id="openJuzGridBtn" data-value="juz">Juz</button>
+          <div class="switch-neutral-zone"></div>
+          <button type="button" class="switch-option" id="openSurahGridBtn" data-value="surah">Surah</button>
+        </div>
+        <div class="baseline-summary" id="baselineSummary"></div>
+
+        <label class="settings-subheader">Target for Dhor</label>
+        <div class="settings-row"><label>Mistakes / juz'</label><input type="number" inputmode="numeric" id="target_mistakes" min="0"></div>
+        <div class="settings-row"><label>Minutes / juz'</label><input type="number" inputmode="numeric" id="target_minutes" min="0"></div>
+        <div class="settings-row"><label>Revision cycle time (days)</label><input type="number" inputmode="numeric" id="target_frequency" min="0"></div>
+
+        <div class="form-error" id="hifzSetupError"></div>
+      </div>
+
+      <!-- Dhor Plan section (V3.9.0 as "Dhor Schedule", renamed V3.11.0) —
+           settings-form only, no visible table (confirmed in chat): saving
+           this drives a rolling 7-day plan generated behind the scenes
+           (worker/src/dhorSchedule.js), consumed by the Dhor log page's
+           plan-as-default and the journal's quick-add prefill. -->
+      <div class="settings-section detail-page" id="section-dhorSchedule">
+        <div class="settings-header-row">
+          <h2>Dhor Plan</h2>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="save-status" id="dhorScheduleSaveStatus">saved ✓</span>
+            <button type="button" class="icon-btn" id="dhorScheduleSaveBtn" aria-label="Save"></button>
+          </div>
+        </div>
+        <p class="form-hint" style="margin-top:0;">Plans are not fixed and can be adjusted anytime.</p>
+
+        <label>Portion per session</label>
+        <div class="granularity-quantity-row">
+          <div class="quantity-input-wrap"><input type="number" inputmode="numeric" id="dhor_quantity" min="1" value="1"></div>
+          <div class="switch-track" id="dhor_granularity_switch">
+            <div class="switch-thumb"></div>
+            <button type="button" class="switch-option" data-value="juz">Juz</button>
+            <button type="button" class="switch-option" data-value="half">Half</button>
+            <button type="button" class="switch-option" data-value="quarter">Quarter</button>
+          </div>
+        </div>
+
+        <label style="margin-top:20px;">Frequency</label>
+        <div class="switch-track" id="dhor_frequency_switch">
+          <div class="switch-thumb"></div>
+          <button type="button" class="switch-option" data-value="daily">Daily</button>
+          <button type="button" class="switch-option" data-value="twice">Twice a day</button>
+        </div>
+
+        <label style="margin-top:20px;">Days of week</label>
+        <div id="dhor_days_picker">
+          <button type="button" class="tajweed-tag" data-day="mon">Mon</button>
+          <button type="button" class="tajweed-tag" data-day="tue">Tue</button>
+          <button type="button" class="tajweed-tag" data-day="wed">Wed</button>
+          <button type="button" class="tajweed-tag" data-day="thu">Thu</button>
+          <button type="button" class="tajweed-tag" data-day="fri">Fri</button>
+          <button type="button" class="tajweed-tag" data-day="sat">Sat</button>
+          <button type="button" class="tajweed-tag" data-day="sun">Sun</button>
+        </div>
+
+        <!-- Tomorrow's Portion removed entirely 2026-08-03 (confirmed in
+             chat): served no purpose once the pure-queue model shipped --
+             a student can already redirect the queue by simply saving a
+             different portion via Plan Dhor, which becomes the new
+             anchor. Removing this also eliminated ensureDhorSchedule's
+             last remaining caller anywhere in the app -- see
+             worker/src/dhorSchedule.js and js/api.js, both fully
+             removed alongside this. -->
+
+        <div class="form-error" id="dhorScheduleError"></div>
+      </div>
+
+      <!-- Haidh section (new, V3.9.0) — shown only when gender is F
+           (toggled live off the gender picker above, not just on reload).
+           Reuses the existing /attendance/predict backend (live since
+           migration 0001) as-is — see settingsScreen.js. -->
+      <div class="settings-section detail-page hidden" id="section-haidh">
+        <div class="settings-header-row">
+          <h2>Haidh</h2>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="save-status" id="haidhSaveStatus">saved ✓</span>
+            <button type="button" class="icon-btn" id="haidhSaveBtn" aria-label="Save"></button>
+          </div>
+        </div>
+        <p class="form-hint" style="margin-top:0;">Plans will be adjusted for haidh days. Can be adjusted for actual haidh at any time.</p>
+
+        <div class="settings-row"><label>Cycle length (days)</label><input type="number" inputmode="numeric" id="haidh_cycle_length" min="1"></div>
+        <div class="settings-row"><label>Duration (days)</label><input type="number" inputmode="numeric" id="haidh_period_length" min="1"></div>
+        <div class="settings-row"><label>Next expected haidh day</label><input type="date" id="haidh_next_expected"></div>
+
+        <div class="form-error" id="haidhError"></div>
+      </div>
+
+    </section>
+
+  </main>
+</div>
+
+<script src="shared/data.js?v=3.36.3"></script>
+<script src="js/icons.js?v=3.36.3"></script>
+<script src="js/customDate.js?v=3.36.3"></script>
+<script src="js/api.js?v=3.36.3"></script>
+<script src="js/uiSwitch.js?v=3.36.3"></script>
+<script src="js/position.js?v=3.36.3"></script>
+<script src="js/auth.js?v=3.36.3"></script>
+<script src="js/home.js?v=3.36.3"></script>
+<script src="js/tajweed.js?v=3.36.3"></script>
+<script src="js/commentPrivacy.js?v=3.36.3"></script>
+<script src="js/session-timer.js?v=3.36.3"></script>
+<script src="js/journal.js?v=3.36.3"></script>
+<script src="js/dhorPage.js?v=3.36.3"></script>
+<script src="js/sabaqPage.js?v=3.36.3"></script>
+<script src="js/sabaqDhorPage.js?v=3.36.3"></script>
+<script src="js/reflectionCard.js?v=3.36.3"></script>
+<script src="js/logDetailScreen.js?v=3.36.3"></script>
+<script src="js/settingsScreen.js?v=3.36.3"></script>
+<script src="js/adminPage.js?v=3.36.3"></script>
+<script src="js/app.js?v=3.36.3"></script>
+</body>
+</html>
