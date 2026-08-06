@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper — client-side position tracking (V3.12.0, rebuilt V3.14.0)
+// Current as of V3.37
 // The Worker's position.js only stores whatever JSON blob it's given (see
 // that file's own comment) — all the actual progress logic lives here,
 // same "computed client-side" design already documented in SCHEMA.md.
@@ -122,17 +123,23 @@ function computeLingeringRows(previousJuz, ref, rollupLevel, baselineSelection){
     const end = structuralQuarterBounds(previousJuz, h === 1 ? 2 : 4, ref);
     return { fromSurah: start.startSurah, fromAyah: start.startAyah, toSurah: end.endSurah, toAyah: end.endAyah };
   };
+  // 2026-08-07, confirmed in chat ("4321 for all"): most-recent-first --
+  // Second Half pushed before First Half. Ru'b/Hizb labeling (V3.37):
+  // Hizb is a standalone global 1-60 number here, same as everywhere else
+  // this unit is described -- see shared/data.js's globalHizbNumber.
   // Both un-moved halves stay visible/revisable in Sabaq Dhor regardless
   // of order -- the sequential rule only governs canMoveToDhor (Second
   // Half's Dhor option isn't available until First Half has actually
   // moved), not whether the row is shown at all.
-  if(!firstHalfMoved){
-    const b = halfBounds(1);
-    rows.push(Object.assign({ id: 'lingering-h1', label: `Juz ${previousJuz}, First Half` }, b, { complete: true, canMoveToDhor: true, isHalf: true, halfIndex: 1, lingeringJuz: previousJuz }));
-  }
   if(!secondHalfMoved){
     const b = halfBounds(2);
-    rows.push(Object.assign({ id: 'lingering-h2', label: `Juz ${previousJuz}, Second Half` }, b, { complete: true, canMoveToDhor: firstHalfMoved, isHalf: true, halfIndex: 2, lingeringJuz: previousJuz }));
+    const label = ref === 'uthmani' ? `Hizb ${globalHizbNumber(previousJuz, 2)}` : `Juz ${previousJuz}, Second Half`;
+    rows.push(Object.assign({ id: 'lingering-h2', label }, b, { complete: true, canMoveToDhor: firstHalfMoved, isHalf: true, halfIndex: 2, lingeringJuz: previousJuz }));
+  }
+  if(!firstHalfMoved){
+    const b = halfBounds(1);
+    const label = ref === 'uthmani' ? `Hizb ${globalHizbNumber(previousJuz, 1)}` : `Juz ${previousJuz}, First Half`;
+    rows.push(Object.assign({ id: 'lingering-h1', label }, b, { complete: true, canMoveToDhor: true, isHalf: true, halfIndex: 1, lingeringJuz: previousJuz }));
   }
   return rows;
 }
@@ -144,19 +151,54 @@ function computeSabaqDhorRows(position, ref, rollupLevel, baselineSelection){
   return lingering.concat(currentRows);
 }
 
+// 2026-08-07 (V3.37): plain "Quarter N"/"Ru'b N" rows for a list of
+// ALREADY-COMPLETE sections, each its own row, unmerged, most-recent-
+// first. Shared by the 'quarters'/'rubs' rollup level directly AND by
+// 'maqras' for any Rub' beyond the current one -- confirmed in chat:
+// Maqra has no bearing on an already-complete Rub', which is not "2
+// merged Maqras", it's just an ordinary completed Rub' row, rendered
+// through this exact same logic every completed Quarter already used --
+// not a parallel implementation (see CONVENTIONS.md principle 2).
+function buildIndividualCompletedRows(completed, ref){
+  return completed
+    .slice()
+    .sort((a, b) => b.studyQuarter - a.studyQuarter) // 2026-08-07: most-recent-first (was ascending)
+    .map(s => ({
+      id: `q${s.studyQuarter}`,
+      label: `${quarterUnitWord(ref)} ${s.studyQuarter}`,
+      fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
+      complete: true,
+      canMoveToDhor: false // a lone quarter/rub' never has its own Dhor option -- only halves and full juz' do
+    }));
+}
+
 function computeCurrentJuzRows(position, ref, rollupLevel){
-  // 2026-08-06, confirmed in chat: Maqra is a new, separate finest level
-  // -- only reachable when ref='uthmani' (js/sabaqDhorPage.js's own
-  // ROLLUP_LEVEL_ORDER only offers it there). Kept as its own early
-  // branch, not woven into the quarter-merge logic below, since it draws
-  // from a completely different sections source (computeSabaqDhorSectionsMaqra,
-  // 8 per Juz') rather than being another merge level built on top of the
-  // quarter data the rest of this function already works with.
+  // 2026-08-07, confirmed in chat: Maqra only ever describes the ONE
+  // Rub' currently in progress -- it's a Sabaq-Dhor-only lens, has no
+  // bearing on Dhor at all, and isn't a new merge concept. So: get the
+  // normal Quarter/Rub-level sections first (ref='uthmani' whenever this
+  // branch runs), render every OTHER (already-complete) Rub' through the
+  // exact same buildIndividualCompletedRows every completed Quarter
+  // already uses, and ONLY break the current Rub' into its Maqra
+  // sub-rows.
   if(rollupLevel === 'maqras'){
+    const sections = computeSabaqDhorSections(position, ref);
+    if(sections.length === 0) return [];
+    const completedRubRows = buildIndividualCompletedRows(sections.slice(1), ref);
+
     const maqraSections = computeSabaqDhorSectionsMaqra(position);
-    if(maqraSections.length === 0) return [];
+    if(maqraSections.length === 0) return completedRubRows;
     const currentM = maqraSections[0];
-    const completedM = maqraSections.slice(1).sort((a, b) => a.studyMaqra - b.studyMaqra);
+    // Only the current Rub's own pair-partner can still show as a lone
+    // Maqra (done, but the Rub' isn't complete since the other Maqra is
+    // still current) -- Math.ceil(studyMaqra/2) === studyQuarter holds
+    // both forward and reversed (Juz' 30), since the 9-x/5-x reversal
+    // formulas preserve pairing symmetrically either way.
+    const currentRubStudyIndex = sections[0].studyQuarter;
+    const completedM = maqraSections.slice(1)
+      .filter(s => Math.ceil(s.studyMaqra / 2) === currentRubStudyIndex)
+      .sort((a, b) => b.studyMaqra - a.studyMaqra); // most-recent-first
+
     const maqraRows = [{
       id: `m${currentM.studyMaqra}`,
       label: `Maqra ${currentM.studyMaqra} (current)`,
@@ -170,19 +212,20 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
       label: `Maqra ${s.studyMaqra}`,
       fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
       complete: true,
-      canMoveToDhor: false // a lone Maqra never has its own Dhor option, same rule as a lone quarter
+      canMoveToDhor: false // a lone Maqra never has its own Dhor option, same rule as a lone quarter/rub'
     }));
-    return maqraRows;
+    return maqraRows.concat(completedRubRows);
   }
 
-  const sections = computeSabaqDhorSections(position, ref); // current partial first, then completed ones descending
+  const sections = computeSabaqDhorSections(position, ref);
   if(sections.length === 0) return [];
   const current = sections[0]; // studyQuarter === highest, i.e. the in-progress one
-  const completed = sections.slice(1).sort((a, b) => a.studyQuarter - b.studyQuarter); // ascending 1,2,3...
+  const completed = sections.slice(1);
+  const juz = position.activeJuz;
 
   const rows = [{
     id: `q${current.studyQuarter}`,
-    label: `Quarter ${current.studyQuarter} (current)`,
+    label: `${quarterUnitWord(ref)} ${current.studyQuarter} (current)`,
     fromSurah: current.fromSurah, fromAyah: current.fromAyah,
     toSurah: current.toSurah, toAyah: current.toAyah,
     complete: false,
@@ -190,53 +233,64 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
   }];
 
   if(rollupLevel === 'quarters' || completed.length === 0){
-    completed.forEach(s => rows.push({
-      id: `q${s.studyQuarter}`,
-      label: `Quarter ${s.studyQuarter}`,
-      fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
-      complete: true,
-      canMoveToDhor: false // a lone quarter never has its own Dhor option -- only halves and full juz' do
-    }));
+    rows.push(...buildIndividualCompletedRows(completed, ref));
   } else {
     // Merge into halves (1+2, 3+4) wherever BOTH members of the pair are
     // actually present in `completed` -- a lone quarter (e.g. only Q1
     // done, Q2 still the current one) stays on its own, unmerged.
     const byQuarter = {};
     completed.forEach(s => { byQuarter[s.studyQuarter] = s; });
-    const pairs = [[1,2,'First Half'], [3,4,'Second Half']];
-    for(const [a, b, label] of pairs){
-      if(byQuarter[a] && byQuarter[b]){
-        const mergeFull = rollupLevel === 'full' && byQuarter[1] && byQuarter[2] && byQuarter[3] && byQuarter[4];
-        if(!mergeFull){
-          rows.push({
-            id: `h${a}`, label,
-            fromSurah: byQuarter[a].fromSurah, fromAyah: byQuarter[a].fromAyah,
-            toSurah: byQuarter[b].toSurah, toAyah: byQuarter[b].toAyah,
-            complete: true, canMoveToDhor: true, isHalf: true, halfIndex: a === 1 ? 1 : 2
-          });
-        }
-        delete byQuarter[a]; delete byQuarter[b];
-      }
-    }
-    if(rollupLevel === 'full' && byQuarter[1] === undefined && byQuarter[2] === undefined && byQuarter[3] === undefined && byQuarter[4] === undefined && completed.length === 4){
-      // all 4 already consumed by the two half-merges above and rollupLevel
-      // asked for full -- replace both half rows with one full-juz' row.
+    // completed can have at most 3 members here (current is always one
+    // of 1-4, and completed = everything below it) -- a genuinely fully-
+    // completed juz' is no longer "the current juz'" at all by the time
+    // Sabaq has moved on, it's the PREVIOUS juz', handled separately by
+    // computeLingeringRows (which has its own real 'full' case). Kept
+    // here unreachable-but-harmless rather than removed, to avoid
+    // changing behavior beyond what was actually asked for this delivery.
+    if(rollupLevel === 'full' && byQuarter[1] && byQuarter[2] && byQuarter[3] && byQuarter[4]){
       rows.length = 1; // keep just the current row
       rows.push({
-        id: 'full',
-        label: 'Full Juz\'',
-        fromSurah: completed[0].fromSurah, fromAyah: completed[0].fromAyah,
-        toSurah: completed[completed.length-1].toSurah, toAyah: completed[completed.length-1].toAyah,
+        id: 'full', label: 'Full Juz\'',
+        fromSurah: completed[completed.length-1].fromSurah, fromAyah: completed[completed.length-1].fromAyah,
+        toSurah: completed[0].toSurah, toAyah: completed[0].toAyah,
         complete: true, canMoveToDhor: true, isFull: true
       });
     } else {
-      // any leftover unmerged single quarters (rare -- only if the pairing
-      // didn't complete both halves) still need their own row.
-      Object.values(byQuarter).forEach(s => rows.push({
-        id: `q${s.studyQuarter}`, label: `Quarter ${s.studyQuarter}`,
-        fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
-        complete: true, canMoveToDhor: false
-      }));
+      // 2026-08-07: a single descending walk (4->1) rather than "process
+      // pairs, then push any leftover standalone quarters separately" --
+      // that 2-pass shape is what the earlier version of this delivery
+      // had, and testing it directly caught a real ordering bug: a
+      // standalone quarter (e.g. Q3, pair partner Q4 still current) was
+      // always pushed AFTER every merged half regardless of which was
+      // actually more recent -- e.g. Q1+Q2 merged + Q3 standalone showed
+      // "First Half, then Q3" even though Q3 is the more recent one.
+      // Walking positions once, most-recent-first, and consuming both
+      // members of a pair together when it merges, fixes this for every
+      // mix of merged/standalone quarters, not just the common cases.
+      const consumed = new Set();
+      for(let q = 4; q >= 1; q--){
+        if(consumed.has(q) || !byQuarter[q]) continue;
+        const isTopOfPair = (q === 4 && byQuarter[3]) || (q === 2 && byQuarter[1]);
+        if(isTopOfPair){
+          const a = q === 4 ? 3 : 1, halfIndex = q === 4 ? 2 : 1;
+          const label = ref === 'uthmani' ? `Hizb ${globalHizbNumber(juz, halfIndex)}` : (halfIndex === 1 ? 'First Half' : 'Second Half');
+          rows.push({
+            id: `h${a}`, label,
+            fromSurah: byQuarter[a].fromSurah, fromAyah: byQuarter[a].fromAyah,
+            toSurah: byQuarter[q].toSurah, toAyah: byQuarter[q].toAyah,
+            complete: true, canMoveToDhor: true, isHalf: true, halfIndex
+          });
+          consumed.add(a); consumed.add(q);
+        } else {
+          const s = byQuarter[q];
+          rows.push({
+            id: `q${q}`, label: `${quarterUnitWord(ref)} ${q}`,
+            fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
+            complete: true, canMoveToDhor: false
+          });
+          consumed.add(q);
+        }
+      }
     }
   }
   return rows;

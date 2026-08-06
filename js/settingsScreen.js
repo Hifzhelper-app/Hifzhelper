@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0, V2 refinements V3.11.0)
+// Current as of V3.37
 // REVISED from V3.7.x/V3.8.0's 2 independently-saved swipeable cards to
 // ONE continuous page with 4 independently-saved sections: Profile,
 // Hifz Setup, Dhor Plan (renamed from "Dhor Schedule" in V3.11.0), Haidh.
@@ -27,6 +28,9 @@ function addDaysISO(iso, n){
 // 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
 // case, matching the same function's 3 other copies (js/dhorPage.js,
 // js/sabaqDhorPage.js, js/sabaqPage.js).
+// 2026-08-07: the final `return 'waterval'` covers 13-line AND 15-line
+// IndoPak-on-Quarter/Half both, natively -- see shared/data.js's
+// RUB_BOUNDARIES comment.
 function refForMushaf(mushaf, indopakTerminology){
   if(mushaf === '15line_madani') return 'uthmani';
   if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';

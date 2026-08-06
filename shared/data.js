@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper — Quran structural data
+// Current as of V3.37
 // ============================================================
 // This is the ONE place this data lives (see CONVENTIONS.md, principle 2).
 // It is static — the Quran's structure doesn't change — so hardcoding it is
@@ -115,6 +116,16 @@ function getJuzSurahSpan(juz, ref){
 const SURAH_TRACKED_JUZ = { 29:true, 30:true };
 
 // Rub' boundaries (last ayah of each rub'/quarter), same surah:ayah structure for both references.
+// 2026-08-07: documented explicitly (was easy to misread as 13-line-only) --
+//   `waterval` here is NOT 13-line-specific. It's 15-line IndoPak's own
+//   native quarter/half/juz' data too, not a fallback/default IndoPak
+//   happens to land on. Waterval quarters are ayah-position landmarks, not
+//   tied to a print's page layout, so the exact same markers genuinely
+//   apply to both the 13-line and 15-line IndoPak prints -- confirmed in
+//   chat: "the juz boundaries that the 13 line uses can be shared with
+//   the 15 line indopak." IndoPak's only genuinely print-specific data is
+//   its own ayah-to-line mapping (AYAH_LINE_INDOPAK, below), used for
+//   Sabaq's Lines/Pages, not for any of this quarter/half/juz' data.
 // waterval: 120 markers (4 per juz'). SOURCE: extracted and verified from the maktab's own
 //   "Rub' quarters" file (Waterval 13-line print) — only the even rows of that source are real
 //   Waterval quarters; odd rows were an artifact of the source template and were discarded.
@@ -592,6 +603,20 @@ function structuralMaqraBounds(juz, maqraIndex){
   }
   return { startSurah: startS, startAyah: startA, endSurah: endS, endAyah: endA };
 }
+// ---------- V3.37: Rub'/Hizb display terminology ----------
+// Centralized here (not duplicated in js/position.js AND js/dhorPage.js)
+// since both Sabaq Dhor and Dhor need the exact same word/number for the
+// exact same underlying unit -- see CONVENTIONS.md principle 2.
+//
+// The confirmed UI spelling is "Ru'b" (apostrophe after the U), not the
+// more standard "Rub'" -- confirmed in chat, 2026-08-06.
+function quarterUnitWord(ref){ return ref === 'uthmani' ? "Ru'b" : 'Quarter'; }
+// Hizb has no per-Juz' prefix in the UI, unlike Rub'/Maqra which stay
+// per-Juz' -- confirmed in chat: "Hizb shown as a standalone global
+// number (1-60)". Hizb N is simply the Nth half-juz' of the whole Quran:
+// Juz' 1's First/Second Half = Hizb 1/2, Juz' 2's = Hizb 3/4, etc.
+function globalHizbNumber(juz, halfIndex){ return (juz - 1) * 2 + halfIndex; }
+
 function structuralQuarterBounds(juz, quarterIndex, ref){
   const juzBoundaries = getJuzBoundariesForRef(ref);
   const list = ref === 'uthmani' ? QUARTER_BOUNDARIES_UTHMANI : RUB_BOUNDARIES.waterval;
@@ -626,6 +651,7 @@ if(typeof module !== 'undefined' && module.exports){
     maxAyahForSurah, nextSabaqPosition,
     studyQuarterIndex, structuralQuarterOf, ayahAfter, structuralQuarterBounds,
     studyMaqraIndex, structuralMaqraOf, structuralMaqraBounds,
+    quarterUnitWord, globalHizbNumber,
     parseVerseRef, formatVerseRef, crossesAtMostOneJuzBoundary, getLinesForSpan,
     quarterUnitId, quarterUnitToJuzQuarter, quarterUnitsForJuz, quarterUnitsForHalf
   };

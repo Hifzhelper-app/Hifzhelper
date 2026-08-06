@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
+// Current as of V3.37
 // V3.16.0 (Phase 2a): rebuilt around position -- recites the CURRENT
 // juz' from its start to wherever Sabaq has reached, excluding today's
 // brand-new portion. Builds quarter by quarter as Sabaq progresses; the
@@ -40,6 +41,10 @@ let sabaqDhorBaselineSelection = [];
 // case, matching js/dhorPage.js's and js/sabaqPage.js's own copies of
 // this same function. Second param defaults to null so every existing
 // caller (never passing it) keeps its current behaviour unchanged.
+// 2026-08-07: the final `return 'waterval'` covers 13-line AND 15-line
+// IndoPak-on-Quarter/Half both, natively -- see shared/data.js's
+// RUB_BOUNDARIES comment for why this isn't IndoPak defaulting/falling
+// through for lack of its own data.
 function refForMushafSabaqDhor(mushaf, indopakTerminology){
   if(mushaf === '15line_madani') return 'uthmani';
   if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';

@@ -1,5 +1,6 @@
 // ============================================================
 // Hifzhelper — Dhor card (one of 4 in the unified day-log view, V3.6.1)
+// Current as of V3.37
 // Segment picker (quarter/half/full-juz', in whichever reference is
 // active), the real timer/lap feature, tajweed tags, mistakes, comment.
 //
@@ -84,6 +85,10 @@ let dhorCurrentRef = 'waterval'; // derived from profile.mushaf on every open, s
 // terminology/boundaries use the same Uthmani data Madani itself uses.
 // Second param defaults to null so every existing caller (never passing
 // it) keeps its current behaviour unchanged.
+// 2026-08-07: the final `return 'waterval'` below covers 13-line AND
+// 15-line IndoPak-on-Quarter/Half both -- not IndoPak defaulting to
+// 13-line's data for lack of its own, but IndoPak genuinely sharing this
+// data natively (see shared/data.js's RUB_BOUNDARIES comment for why).
 function refForMushaf(mushaf, indopakTerminology){
   if(mushaf === '15line_madani') return 'uthmani';
   if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
@@ -104,17 +109,26 @@ function computeSegmentRange(juz, positionInJuz, ref, unit){
 // segmentRangeToPicker below rather than re-deriving juz'/unit a second
 // way; an unrecognized (non-clean) span falls back through the same
 // 'quarter' approximation that function already uses for its own picker.
+// 2026-08-07 (V3.37): Ru'b/Hizb terminology for the Rub'/Hizb model --
+// Hizb specifically drops the "Juz X" prefix entirely and uses its own
+// global 1-60 number instead (shared/data.js's globalHizbNumber),
+// confirmed in chat as a real structural difference from how Half is
+// shown for Quarter/Half, not just a word-swap. Rub' stays per-Juz',
+// same convention Quarter always used (short form "R", matching the
+// existing "Q"/"H" single-letter style -- flagged here since the exact
+// abbreviation wasn't separately confirmed in chat; easy one-line change
+// if a different letter is wanted).
 function describeDhorSegment(segment_from, segment_to, ref){
   const { juz, positionInJuz, unit } = segmentRangeToPicker(segment_from, segment_to, ref);
   if(unit === 'full') return `Juz ${juz}`;
   const perJuz = segmentsPerJuz(ref);
   if(unit === 'half'){
     const halfIndex = positionInJuz <= perJuz / 2 ? 1 : 2;
-    return `Juz ${juz} H${halfIndex}`;
+    return ref === 'uthmani' ? `Hizb ${globalHizbNumber(juz, halfIndex)}` : `Juz ${juz} H${halfIndex}`;
   }
   const quarterSize = perJuz / 4;
   const quarterIndex = Math.ceil(positionInJuz / quarterSize);
-  return `Juz ${juz} Q${quarterIndex}`;
+  return ref === 'uthmani' ? `Juz ${juz} R${quarterIndex}` : `Juz ${juz} Q${quarterIndex}`;
 }
 
 // Reverse of the above: given a stored segment range, figure out which
@@ -274,6 +288,21 @@ function renderDhorPositionOptions(unit){
 // planned. The "jump to slot 1 on a manual change" behavior confirmed in
 // chat lives in the click handler just below instead, specifically
 // because that's the one caller where resetting is actually wanted.
+// 2026-08-07 (V3.37): index.html's dhor_unit_switch buttons are static
+// markup ("Quarter"/"Half"/"Full") -- data-value stays quarter/half/full
+// either way (that's the actual stored dhor_unit value, unrelated to
+// display text), only the visible button TEXT changes here. "Full" is
+// left as "Full" for both models -- not flagged as needing Juz'
+// terminology, since it's descriptive UI text rather than a real term
+// the way Maqra/Rub'/Hizb/Juz' are.
+function updateDhorUnitSwitchLabels(ref){
+  const track = document.getElementById('dhor_unit_switch');
+  if(!track) return;
+  const quarterBtn = track.querySelector('[data-value="quarter"]');
+  const halfBtn = track.querySelector('[data-value="half"]');
+  if(quarterBtn) quarterBtn.textContent = quarterUnitWord(ref);
+  if(halfBtn) halfBtn.textContent = ref === 'uthmani' ? 'Hizb' : 'Half';
+}
 function setDhorUnit(unit){
   document.getElementById('dhor_unit').value = unit;
   renderSwitch('dhor_unit_switch', unit);
@@ -338,6 +367,7 @@ async function renderDhorScreen(){
   } catch(e){
     dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
   }
+  updateDhorUnitSwitchLabels(dhorCurrentRef); // V3.37: before setDhorUnit below renders the switch
   // Explicit reset (2026-08-02): dhor_position is now a hidden input, not
   // a <select> -- rebuilding a select's innerHTML used to reset its own
   // displayed selection to the first option automatically every time
@@ -580,6 +610,11 @@ function segmentToQuarterUnits(segment_from, segment_to, ref){
 // -- falls back to individual quarters otherwise, the same "only a
 // clean, fully-available group merges" rule Sabaq Dhor's own rollup
 // uses, just evaluated per-juz here instead of for one active juz'.
+// 2026-08-07 (V3.37): reads dhorCurrentRef (module-level, set in
+// renderDhorScreen) rather than taking ref as a parameter -- this always
+// renders the CURRENTLY-loaded student's own pool, same pattern already
+// used elsewhere in this file (e.g. planDhorDaySummaryLabel's `first.ref
+// || dhorCurrentRef`).
 function computePlanDhorRowsForJuz(juzNum, availableSet){
   const level = planDhorRollup[juzNum] || 'full';
   const all4 = quarterUnitsForJuz(juzNum);
@@ -590,10 +625,12 @@ function computePlanDhorRowsForJuz(juzNum, availableSet){
   }
   if(level === 'half' || level === 'full'){
     const h1 = quarterUnitsForHalf(juzNum, 1), h2 = quarterUnitsForHalf(juzNum, 2);
+    const h1Label = dhorCurrentRef === 'uthmani' ? `Hizb ${globalHizbNumber(juzNum, 1)}` : `Juz ${juzNum} H1`;
+    const h2Label = dhorCurrentRef === 'uthmani' ? `Hizb ${globalHizbNumber(juzNum, 2)}` : `Juz ${juzNum} H2`;
     const rows = [];
-    if(h1.every(u => availableSet.has(u))) rows.push({ units: h1, label: `Juz ${juzNum} H1` });
+    if(h1.every(u => availableSet.has(u))) rows.push({ units: h1, label: h1Label });
     else h1.filter(u => availableSet.has(u)).forEach(u => rows.push({ units: [u], label: quarterUnitLabel(u) }));
-    if(h2.every(u => availableSet.has(u))) rows.push({ units: h2, label: `Juz ${juzNum} H2` });
+    if(h2.every(u => availableSet.has(u))) rows.push({ units: h2, label: h2Label });
     else h2.filter(u => availableSet.has(u)).forEach(u => rows.push({ units: [u], label: quarterUnitLabel(u) }));
     return rows;
   }
@@ -605,9 +642,11 @@ function computePlanDhorRowsForJuz(juzNum, availableSet){
 // quarterUnitToJuzQuarter (shared/data.js) returns { juz, quarterIndex },
 // not { juz, quarter } -- this was destructuring a property name that
 // was never actually there.
+// 2026-08-07 (V3.37): "R" for Ru'b, matching describeDhorSegment's own
+// choice -- same flagged, easy-to-change-later abbreviation.
 function quarterUnitLabel(unitId){
   const { juz, quarterIndex } = quarterUnitToJuzQuarter(unitId);
-  return `Juz ${juz} Q${quarterIndex}`;
+  return dhorCurrentRef === 'uthmani' ? `Juz ${juz} R${quarterIndex}` : `Juz ${juz} Q${quarterIndex}`;
 }
 
 // V3.24.1: "Portion A to Portion B" for a rolled-up day -- the earliest
