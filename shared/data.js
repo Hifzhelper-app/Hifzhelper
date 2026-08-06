@@ -60,13 +60,23 @@ const SURAHS = [
 ];
 function surahName(n){ const s = SURAHS.find(x=>x[0]===n); return s ? s[1] : ''; }
 
-// [juz number, surah at start, ayah at start] — standard, print-independent boundaries.
-// Juz' start points, [juz, surah, ayah] — CONFIRMED (2026-07-29) to be the
-// 13-line print's boundaries specifically, not a print-agnostic average.
+// [juz number, surah at start, ayah at start] — the Waterval (13-line
+// and IndoPak) print's own Juz' boundaries specifically, genuinely
+// derived (2026-08-06, confirmed correct by the user) from
+// RUB_BOUNDARIES.waterval itself -- each Juz's own last quarter marker,
+// one ayah past it. Previously a separately-sourced file that agreed
+// with the quarter data at 25 of 30 points (Juz' 7, 14, 20, 21, 23
+// differed by a few ayahs each) -- not corrected here as an error, since
+// Juz' divisions are a human convenience layered onto the Quran's own
+// revealed surah/ayah boundaries, not something with one universally
+// correct answer the way the text itself is. Deriving directly from the
+// same source the quarters themselves come from keeps this internally
+// consistent with them, rather than two separately-sourced files that
+// happen to mostly, but not always, agree.
 const JUZ_BOUNDARIES = [
-  [1,1,1],[2,2,142],[3,2,253],[4,3,92],[5,4,24],[6,4,148],[7,5,82],[8,6,111],
-  [9,7,88],[10,8,41],[11,9,93],[12,11,6],[13,12,53],[14,15,1],[15,17,1],[16,18,75],
-  [17,21,1],[18,23,1],[19,25,21],[20,27,56],[21,29,46],[22,33,31],[23,36,28],[24,39,32],
+  [1,1,1],[2,2,142],[3,2,253],[4,3,92],[5,4,24],[6,4,148],[7,5,83],[8,6,111],
+  [9,7,88],[10,8,41],[11,9,93],[12,11,6],[13,12,53],[14,15,2],[15,17,1],[16,18,75],
+  [17,21,1],[18,23,1],[19,25,21],[20,27,60],[21,29,45],[22,33,31],[23,36,22],[24,39,32],
   [25,41,47],[26,46,1],[27,51,31],[28,58,1],[29,67,1],[30,78,1]
 ];
 // Juz' start points for the 15-line Madani print — derived (2026-07-29) from
