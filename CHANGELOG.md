@@ -7,6 +7,70 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.35.1 — Sabaq Lines/Pages recompute-on-confirm, Journal popup + plain click, card height genuinely fills the screen (2026-08-05)
+
+**Sabaq's Lines/Pages now recalculate when "Confirm selection" is
+checked.** The existing auto-calculation only ever fired from one
+narrow trigger — the "To" ayah field's own change event — silently
+missing the stepper buttons, the surah picker, and the "From" field
+entirely. Checking Confirm selection is the one moment guaranteed to
+happen right before every save, so it's now the reliable point Lines/
+Pages is recalculated from, regardless of which of those actually
+built the range.
+
+**Journal's "+N" badge is now a popup, not a dead end.** It's a real
+button now, opening a small list of every entry for that date/type —
+each individually tappable into its own edit, using the same
+`.modal-overlay`/`.modal-card` pattern already used elsewhere (Plan
+Dhor, History) rather than a new modal mechanism. Previously only the
+most recent entry in a column was ever reachable; a day with 3 Sabaq
+Dhor entries now makes all 3 reachable, not just 1.
+
+**Journal's hold-to-edit is gone, replaced with a plain click** — both
+touch and mouse, cells and the date cell alike. The `(hover: hover)
+and (pointer: fine)` distinction is gone too, since there's nothing
+left for touch and mouse to disagree on. Root cause this fixes:
+`touch-action: none` (needed so a hold wasn't fought by the browser's
+own scroll gesture) also blocked the browser's own ability to tell a
+still-scrolling finger apart from a genuine tap — so an ordinary slow
+scroll through the table could cross the hold's timing threshold and
+trigger an unwanted navigation. A click has no timing window for a
+scroll to fall into, so this is gone at the mechanism level, not
+tuned around.
+
+**`.log-detail-card` and `#dhorTimerHost` genuinely fill the screen**,
+replacing a flat, hardcoded `70vh`/`75vh` that left real, substantial
+empty space below every card and stranded edit-mode's own bottom
+controls partway down the screen. Two calculated standards, confirmed
+in chat as a pattern to reuse for anything built going forward:
+- **Normal** (dots row visible): `100vh` minus the auth band minus the
+  dots row (~36px, worked out directly from the `.dot` button's own
+  padding/font/border plus its row's margin).
+- **No dots row present** (`.editing-active`, and desktop's grid layout
+  at 1180px+, where the dots row is hidden entirely either way — all 4
+  cards already visible, nothing to indicate a position within):
+  `100vh` minus just the auth band.
+
+`#dhorTimerHost` needed its own matching rule, not something the
+`.log-detail-card` fix reached automatically — it's a separate custom
+element with its own previously-duplicated `70vh`/`75vh` values, not
+something that shares the class at all.
+
+**Files changed:**
+```
+index.html
+sw.js
+css/detail-pages.css
+css/journal-table.css
+js/journal.js
+js/sabaqPage.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.35.0 — Journal landing page: complete rebuild (2026-08-05)
 
 Confirmed across many rounds of chat. The largest single change to

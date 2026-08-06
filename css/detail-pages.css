@@ -647,7 +647,7 @@
 /* Dhor's timer (2026-08-04, confirmed in chat) -- now a permanent rail
    card (index.html's #logDetailRail, in the exact position Tadabbur
    used to occupy) rather than an on-demand full-screen overlay. Sized
-   to match .log-detail-card exactly (flex:0 0 100%/height:70vh/etc.)
+   to match .log-detail-card exactly (flex:0 0 100%/height calc/etc.)
    since it can't literally use that class -- it's a custom element
    (session-timer.js), not a <div>, so its own sizing has to be spelled
    out here rather than inherited by sharing a class. Its "mini" mode is
@@ -656,10 +656,17 @@
    this restructuring ("minimise/maximise works the same"), since a
    running session should stay visible over whatever screen is showing,
    not just while the rail happens to be in view. */
+/* 2026-08-05, confirmed in chat: same "normal" calculation as
+   .log-detail-card above -- this is a separate custom element (not a
+   .log-detail-card, so the fix above doesn't reach it automatically),
+   previously its own separate, duplicated 70vh value. Only ever needs
+   the "normal" standard, never the editing one -- the Timer has no
+   edit state the way the other 3 cards do, so the dots row is always
+   present alongside it whenever it's genuinely visible in full mode. */
 #dhorTimerHost {
   flex: 0 0 100%;
   scroll-snap-align: start;
-  height: 70vh;
+  height: calc(100vh - var(--auth-band-height, 60px) - 36px);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -667,7 +674,11 @@
   #dhorTimerHost { flex: 0 0 calc(50% - (var(--space-md) / 2)); }
 }
 @media (min-width: 1180px) {
-  #dhorTimerHost { height: 75vh; max-width: 30%; }
+  /* Dots row is hidden entirely at this breakpoint too (.log-detail-
+     dots-inner{display:none}, below) -- same auth-band-only calculation
+     as .editing-active, not the "normal" one, since there's genuinely
+     nothing to subtract for it here either. */
+  #dhorTimerHost { height: calc(100vh - var(--auth-band-height, 60px)); max-width: 30%; }
 }
 /* 2026-08-05, confirmed in chat: same technique .modal-overlay
    (css/components.css) already uses for History/Plan Dhor's own
@@ -803,16 +814,35 @@
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
 }
+/* 2026-08-05, confirmed in chat: height was a flat 70vh regardless of
+   how much space was actually available above it (the auth band, the
+   dots row) -- leaving a real, substantial gap of unused space below
+   the card on most phones, and stranding edit-mode's own bottom
+   controls partway down the screen instead of near the bottom where a
+   thumb naturally reaches. Two calculated standards now, confirmed as
+   a pattern to reuse for anything built going forward, not a one-off:
+   normal view subtracts both the auth band and the dots row (~36px --
+   the .dot button's own padding+font+border, worked out directly,
+   plus its row's 8px margin-bottom); .editing-active subtracts only
+   the auth band, since the dots row is genuinely hidden then (see
+   js/logDetailScreen.js's own enterEditScreenMode), not just visually
+   similar to hidden. #dhorTimerHost (below) uses the same "normal"
+   calculation -- it's a separate custom element, not a .log-detail-card,
+   so it needed its own matching rule, not something this one covers
+   automatically. */
 .log-detail-card {
   flex: 0 0 100%;
   scroll-snap-align: start;
   background: var(--color-surface);
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-md);
-  height: 70vh;
+  height: calc(100vh - var(--auth-band-height, 60px) - 36px);
   display: flex;
   flex-direction: column;
   overflow: hidden; /* .card-scroll below does the actual scrolling */
+}
+.log-detail-card.editing-active {
+  height: calc(100vh - var(--auth-band-height, 60px));
 }
 .log-detail-card .card-scroll {
   overflow-y: auto;
@@ -833,7 +863,11 @@
     overflow: visible;
     scroll-snap-type: none;
   }
-  .log-detail-card { height: 75vh; max-width: 30%; }
+  /* Dots row is hidden entirely at this breakpoint (all 4 cards already
+     visible in the grid, nothing to indicate a position within) -- same
+     auth-band-only calculation as .editing-active uses everywhere,
+     since there's genuinely nothing to subtract for it here either. */
+  .log-detail-card { height: calc(100vh - var(--auth-band-height, 60px)); max-width: 30%; }
 }
 
 /* Dot indicators -- only meaningful while the rail actually swipes;

@@ -1899,6 +1899,42 @@ the fix for a bug that broke Save entirely.
     still floats correctly over the new layout, unaffected by the
     rebuild.
 
+## 70. Sabaq Lines/Pages recompute-on-confirm, Journal popup + plain click, card height genuinely fills the screen (V3.35.1)
+
+1. On Sabaq, change the "From" or "To" ayah using the stepper buttons
+   (not typing directly) → confirm Lines/Pages does NOT update yet
+   (matches the pre-existing behaviour, not a new bug).
+2. Check "Confirm selection" → confirm Lines/Pages recalculates
+   correctly to match the actual current range.
+3. Repeat using the surah picker (chevron) to change either field →
+   confirm the same recalculation happens on checking Confirm selection.
+4. On Journal, find a date with 2+ entries in one column → confirm the
+   "+N" badge is a real, tappable button, separate from the main cell.
+5. Tap the badge → confirm a small popup opens listing every entry for
+   that date/type. Tap one → confirm it opens that specific entry for
+   editing (not just always the most recent one).
+6. Tap a normal journal cell (not the badge) → confirm it still opens
+   the most recent entry directly for editing, no popup.
+7. Tap a date cell → confirm it still opens the detail screen with
+   every card's date field set correctly.
+8. Confirm none of the above require holding — a normal, quick tap is
+   enough everywhere, on both touch and mouse/trackpad.
+9. Scroll through the Journal table slowly on a touch device → confirm
+   scrolling works smoothly and never accidentally triggers a
+   navigation partway through.
+10. On mobile, open any of the 4 detail cards → confirm the card fills
+    noticeably more of the screen than before, with no large empty gap
+    below it.
+11. Edit an existing entry (any of the 3 editable cards) → confirm the
+    Cancel/Delete/Update controls at the bottom are now near the actual
+    bottom of the screen, not stranded partway down with empty space
+    beneath them.
+12. On desktop width → confirm all 4 cards (Sabaq/Sabaq Dhor/Dhor/
+    Timer) are visibly taller than before, filling the available
+    height properly.
+13. Confirm the Timer card specifically also grew to match — check
+    both mobile/tablet and desktop widths.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

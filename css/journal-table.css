@@ -99,12 +99,16 @@
 .journal-table tr:last-child td { border-bottom: none; }
 
 /* Confirmed in chat: cells are plain text, not selectable/editable
-   directly -- a press-and-hold (touch) or click (mouse/trackpad,
-   js/journal.js's own JOURNAL_HAS_FINE_POINTER check) is what opens
-   editing, not the browser's own default text-selection/copy behavior,
-   which these 2 properties suppress. */
+   directly -- a plain click (js/journal.js's wireClick, same for touch
+   and mouse) is what opens editing, not the browser's own default
+   text-selection/copy behaviour, which user-select suppresses.
+   touch-action:none used to sit here too, for an earlier press-and-hold
+   mechanism -- removed along with it (2026-08-05, confirmed in chat):
+   it also blocked the browser's own scroll-vs-tap disambiguation, so an
+   ordinary slow scroll through the table could cross the hold's timing
+   threshold and trigger an unwanted navigation. A plain click has no
+   timing window for a scroll to fall into, so this is no longer needed. */
 .journal-table td {
-  touch-action: none;
   user-select: none;
   cursor: pointer;
 }
@@ -128,11 +132,52 @@
 .journal-cell-text {
   color: var(--color-ink);
 }
+/* 2026-08-05, confirmed in chat: was a plain, non-interactive span --
+   now a real button, the popup's own trigger (js/journal.js's
+   openEntriesPopup), listing every entry for that date/type instead of
+   only ever making the most recent one reachable. */
 .entry-count-badge {
+  font: inherit;
   font-size: 10px;
   color: var(--color-ink-faint);
+  background: var(--color-canvas);
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  padding: 1px 6px;
   margin-left: 4px;
+  cursor: pointer;
 }
+.entry-count-badge:hover { color: var(--color-ink-soft); }
+
+/* Small popup listing every entry for one date/type (reuses
+   .modal-overlay/.modal-card, css/components.css) -- confirmed in chat
+   as the scalable alternative to a "+N" badge that only ever led to the
+   most recent entry. */
+.journal-popup-card {
+  max-width: 340px;
+  width: 100%;
+}
+.journal-popup-header {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-ink);
+  margin-bottom: var(--space-sm);
+}
+.journal-popup-entry {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px var(--space-sm);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--color-table-border);
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+.journal-popup-entry:first-of-type { border-top: none; }
+.journal-popup-entry:hover { background: var(--color-canvas); }
 
 /* Weekly rollup rows (older than the 10 most recent days) — just the
    date range, deliberately no attempt to summarize several different
