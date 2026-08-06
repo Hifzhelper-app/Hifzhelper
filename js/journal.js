@@ -36,13 +36,6 @@ function isoDateNDaysAgo(n){
   return d.toISOString().slice(0,10);
 }
 
-// (hover: hover) and (pointer: fine) means a real mouse/trackpad is
-// present -- true regardless of screen width, false for touch-only,
-// which is the actual thing that matters here (a touchscreen laptop at
-// desktop width is still touch). Confirmed in chat as the deliberate
-// choice over inferring this from a breakpoint.
-const JOURNAL_HAS_FINE_POINTER = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-
 async function loadJournalData(totalDays){
   const since = isoDateNDaysAgo(totalDays);
   const [sabaq, sabaqDhor, dhor] = await Promise.all([
@@ -92,38 +85,58 @@ function journalCellShorthand(type, entries){
   if(type === 'sabaq') text = `${e.sabaq_from}–${e.sabaq_to}`;
   else if(type === 'sabaqDhor') text = `${e.from_surah}:${e.from_ayah}–${e.to_surah}:${e.to_ayah}`;
   else if(type === 'dhor') text = describeDhorSegment(e.segment_from, e.segment_to, e.ref || dhorCurrentRef);
-  const badge = entries.length > 1 ? `<span class="entry-count-badge">+${entries.length - 1}</span>` : '';
+  // 2026-08-05, confirmed in chat: the count badge is now its own
+  // popup trigger (data-count-badge, wired separately below with its
+  // own click that stops propagation) rather than just a passive "+N"
+  // label -- opens every entry for that date/type, each individually
+  // reachable, instead of only ever the most recent one.
+  const badge = entries.length > 1 ? `<button type="button" class="entry-count-badge" data-count-badge>+${entries.length - 1}</button>` : '';
   return `<span class="journal-cell-text">${text}</span>${badge}`;
 }
 
-// Press-and-hold (touch) or a plain click (mouse/trackpad, confirmed in
-// chat) triggers onActivate -- 450ms hold, 8px cancel-on-movement
-// threshold, same pattern already used for the timer's own drag
-// handling, applied here to a static table cell instead of a floating
-// element. touch-action/user-select:none (css/journal-table.css) is the
-// actual mitigation against the device's own native long-press gesture
-// (text selection, a context menu) competing with this -- not something
-// this function can control on its own.
-function wireHoldOrClick(el, onActivate){
-  if(JOURNAL_HAS_FINE_POINTER){
-    el.addEventListener('click', onActivate);
-    return;
-  }
-  let holdTimer = null, moved = false, startX = 0, startY = 0;
-  el.addEventListener('pointerdown', (e) => {
-    moved = false;
-    startX = e.clientX; startY = e.clientY;
-    clearTimeout(holdTimer);
-    holdTimer = setTimeout(() => { if(!moved) onActivate(); }, 450);
-  });
-  el.addEventListener('pointermove', (e) => {
-    if(Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8){
-      moved = true;
-      clearTimeout(holdTimer);
+// 2026-08-05, confirmed in chat: replaces the earlier press-and-hold
+// mechanism entirely -- touch-action:none (css/journal-table.css,
+// needed so a hold isn't fought by the browser's own scroll gesture)
+// also meant the browser lost its own ability to tell a hold-still
+// scroll-attempt apart from a real tap, so an ordinary slow scroll
+// through the table could cross the hold threshold and trigger an
+// unwanted navigation. A plain click has no timing window for a scroll
+// to fall into, so the touch-vs-mouse distinction that hold needed is
+// gone entirely too -- one behaviour, both input types.
+function wireClick(el, onActivate){
+  el.addEventListener('click', onActivate);
+}
+
+// Small popup listing every entry for one date/type, confirmed in chat
+// as the scalable alternative to either a "+N" badge with no way to
+// reach the rest, or extra table rows (which would consume "10 days at
+// a glance" on busy days with several entries in one column). Reuses
+// the same .modal-overlay/.modal-card pattern already used elsewhere
+// (Plan Dhor, History) rather than a new modal mechanism.
+function openEntriesPopup(type, entries, date){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  const label = type === 'sabaq' ? 'Sabaq' : type === 'sabaqDhor' ? 'Sabaq Dhor' : 'Dhor';
+  const rowsHtml = entries.map((e, i) => {
+    let text = '—';
+    if(type === 'sabaq') text = `${e.sabaq_from}–${e.sabaq_to}`;
+    else if(type === 'sabaqDhor') text = `${e.from_surah}:${e.from_ayah}–${e.to_surah}:${e.to_ayah}`;
+    else if(type === 'dhor') text = describeDhorSegment(e.segment_from, e.segment_to, e.ref || dhorCurrentRef);
+    return `<button type="button" class="journal-popup-entry" data-index="${i}">${text}</button>`;
+  }).join('');
+  overlay.innerHTML = `<div class="modal-card journal-popup-card">
+    <div class="journal-popup-header">${label} — ${formatDateShort(date)}</div>
+    ${rowsHtml}
+  </div>`;
+  overlay.addEventListener('click', (e) => {
+    if(e.target === overlay) overlay.remove();
+    const btn = e.target.closest('[data-index]');
+    if(btn){
+      overlay.remove();
+      openEntryForEdit(type, entries[parseInt(btn.dataset.index)]);
     }
   });
-  el.addEventListener('pointerup', () => clearTimeout(holdTimer));
-  el.addEventListener('pointerleave', () => clearTimeout(holdTimer));
+  document.body.appendChild(overlay);
 }
 
 // Opens the real card directly in edit mode -- the same EDIT_HANDLERS
@@ -152,7 +165,7 @@ function renderJournalRow(date, day){
   const dateCell = document.createElement('td');
   dateCell.className = 'cell-date';
   dateCell.innerHTML = formatDateCell(date);
-  wireHoldOrClick(dateCell, () => openDetailForDate(date));
+  wireClick(dateCell, () => openDetailForDate(date));
 
   const tr = document.createElement('tr');
   tr.appendChild(dateCell);
@@ -162,7 +175,14 @@ function renderJournalRow(date, day){
     td.className = 'journal-cell';
     td.innerHTML = journalCellShorthand(type, day[type]);
     if(day[type] && day[type].length){
-      wireHoldOrClick(td, () => openEntryForEdit(type, day[type][0]));
+      wireClick(td, () => openEntryForEdit(type, day[type][0]));
+      const badge = td.querySelector('[data-count-badge]');
+      if(badge){
+        badge.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openEntriesPopup(type, day[type], date);
+        });
+      }
     }
     tr.appendChild(td);
   });

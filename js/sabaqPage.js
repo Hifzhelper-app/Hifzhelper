@@ -133,6 +133,16 @@ document.getElementById('sabaq_to_ayah').addEventListener('change', () => {
   if(v){ sabaqValue.to = v; renderVerseRefField('to'); }
   recomputeSabaqLineCount();
 });
+// 2026-08-05, confirmed in chat: the auto-calc above only ever fires
+// from the "To" ayah field's own change event -- it silently misses the
+// stepper buttons, the surah picker (either field), and the "From"
+// field entirely, so Lines/Pages could easily go stale relative to
+// whatever the range actually is. Checking Confirm selection -- the one
+// moment guaranteed to happen right before every save -- recomputes it
+// fresh regardless of which of those paths actually built the range.
+document.getElementById('sabaq_confirm').addEventListener('change', (e) => {
+  if(e.target.checked) recomputeSabaqLineCount();
+});
 
 async function renderSabaqScreen(){
   // V3.21.0/V3.22.0: reset any stale editing state from a previous visit

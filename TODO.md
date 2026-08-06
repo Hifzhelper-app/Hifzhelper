@@ -4,6 +4,29 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.35.1 (2026-08-05)
+
+- [x] Sabaq's Lines/Pages recompute when "Confirm selection" is
+  checked -- the existing auto-calc only ever fired from the "To" ayah
+  field's own change event, missing the stepper/surah-picker/"From"
+  field entirely.
+- [x] Journal's "+N" badge is now a real popup trigger (button, not a
+  passive span), listing every entry for that date/type, each
+  individually editable -- previously only the most recent was
+  reachable.
+- [x] Journal's hold-to-edit removed entirely, replaced with a plain
+  click everywhere (touch and mouse alike) -- fixes touch-action:none
+  blocking the browser's own scroll-vs-tap disambiguation, which could
+  make an ordinary slow scroll accidentally trigger a navigation.
+- [x] .log-detail-card and #dhorTimerHost height fixed at its actual
+  root -- replaced a flat, hardcoded 70vh/75vh (which left substantial
+  empty space below every card and stranded edit-mode's bottom
+  controls) with 2 calculated standards, confirmed as a pattern to
+  reuse going forward: "normal" (auth band + dots row subtracted) and
+  "no dots row present" (auth band only) -- applies to .editing-active,
+  desktop's grid layout, AND #dhorTimerHost, all 3 of which genuinely
+  have no dots row to subtract for.
+
 ## Done — V3.35.0 (2026-08-05)
 
 - [x] Journal page rebuilt entirely -- js/journal.js hadn't been touched
