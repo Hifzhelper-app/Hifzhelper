@@ -1975,6 +1975,26 @@ the fix for a bug that broke Save entirely.
    entries) broke for students on 13 line or 15 line Madani — this
    should be a purely additive change for them.
 
+## 73. Fixed: editing/splitting an older Sabaq entry could rewind real progress (V3.36.1)
+
+1. Log a Sabaq entry normally, then another continuing from it → confirm
+   the card still prepopulates correctly from the latest one (normal
+   progress still advances as expected).
+2. Note the current prepopulated From/To values (the real frontier).
+3. Open History, edit an OLDER entry (not the most recent one) → change
+   its range slightly and save → confirm the card's prepopulated From/To
+   are unchanged from step 2.
+4. Create a genuinely new entry for an already-passed, older range
+   (simulating a split/backfill) → save it → confirm the card's
+   prepopulated From/To are STILL unchanged from step 2 — this is the
+   actual bug scenario.
+5. Now log a real, new entry that genuinely continues past the frontier
+   from step 2 → confirm it correctly advances this time.
+6. If a student is on Juz' 30 → repeat steps 3-5 in that context, since
+   its backward study order is handled by separate logic — confirm
+   both a genuine advance and a non-advancing backfill entry behave
+   correctly there too.
+
 ## Smoke test (quick re-check after a production merge)
 
 Not the full suite above — just enough to confirm the merge didn't break

@@ -7,6 +7,58 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.36.1 — Fixed: editing/splitting an older Sabaq entry could rewind real progress (2026-08-06)
+
+A real, confirmed bug — not related to V3.36.0's own changes. Traced
+through 2 rounds: an initial hypothesis (Journal's edit popup not
+correctly determining whether an entry is the current frontier) turned
+out to be a real, separate inconsistency worth fixing on its own, but
+not the actual cause here — the user confirmed editing happened
+through the card's own History, which already handles that correctly.
+The real root cause was 3 layers down, in `advancePositionAfterSabaq`
+itself (`js/position.js`).
+
+**Root cause**: that function computes where the "frontier" (the
+furthest point actually reached) now sits from a saved entry's own
+From/To, then overwrote the stored position with it unconditionally —
+correct for the normal case, where each new entry naturally continues
+from the last, but wrong for a genuinely new entry covering an
+already-passed range. Splitting a previously-logged range into 2
+separate entries produces exactly that: at least one new entry for an
+older piece of it. That entry's own save still goes through the same
+unconditional path (it IS a new entry, not an edit to an existing
+one), silently dragging the real frontier backward to match it even
+though nothing about genuine progress moved.
+
+**Fixed** by comparing the newly-computed frontier against the
+position already stored before overwriting it — using the study
+order (Juz' 30 first, backwards, then 29, then 1-28 ascending) for a
+genuinely different Juz', and the same study-direction-aware
+comparison already used elsewhere in this function for the same Juz'.
+Only updates when the new frontier is genuinely further along than
+what was already there; a backfill/split entry for an already-passed
+range now correctly leaves the real frontier alone.
+
+Verified directly against 6 scenarios before considering this done:
+normal sequential progress still advances correctly, the exact bug
+scenario (a backfill entry for an older range) no longer rewinds
+anything, a genuine cross-Juz' advance still works, a student with no
+prior position at all still gets their first entry accepted, and both
+directions of Juz' 30's own reverse study order (a genuine advance,
+and a backfill that shouldn't rewind) both resolve correctly.
+
+**Files changed:**
+```
+index.html
+sw.js
+js/position.js
+CHANGELOG.md
+TESTING.md
+TODO.md
+```
+
+---
+
 ## V3.36.0 — Hybrid removed, 15-line IndoPak mushaf built (2026-08-06)
 
 Confirmed across many rounds of chat, alongside a full data-integrity
