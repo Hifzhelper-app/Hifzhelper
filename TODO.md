@@ -4,6 +4,20 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.36.1 (2026-08-06)
+
+- [x] Fixed a real, confirmed bug: splitting a previously-logged Sabaq
+  range into 2 separate entries (or any backfill entry for an
+  already-passed range) could silently rewind the stored frontier
+  backward, since advancePositionAfterSabaq (js/position.js)
+  overwrote position unconditionally with whatever the just-saved
+  entry's own frontier was, never comparing against what was already
+  there. Now compares before overwriting -- only advances when the
+  new frontier is genuinely further along (using SABAQ_STUDY_ORDER for
+  a different Juz', the same study-direction comparison already used
+  for the same Juz'). Verified against 6 scenarios directly, including
+  Juz' 30's own reverse study order in both directions.
+
 ## Done — V3.36.0 (2026-08-06)
 
 - [x] Hybrid removed entirely -- traced and confirmed it never actually
@@ -436,6 +450,20 @@ section.
   via-borrowed-Uthmani-boundaries state V3.36 shipped it in.
 
 ## Flagged, not yet resolved
+
+- Found while diagnosing V3.36.1, confirmed real but separate from that
+  fix and not yet built: Journal's edit popup (js/journal.js,
+  openEntryForEdit) calls EDIT_HANDLERS[type](entry) with only the
+  entry itself. The Sabaq card's own History list correctly determines
+  whether an entry is the current frontier before opening it for
+  editing (EDIT_HANDLERS[type](row, row === rows[0]), js/dhorPage.js)
+  -- Journal never makes that determination, so sabaqEditingIsFrontier
+  is always false for anything edited through Journal specifically,
+  regardless of whether that entry genuinely is the frontier. Confirmed
+  NOT what caused V3.36.1's bug (user edited through the card's own
+  History), but still a real inconsistency worth fixing on its own --
+  editing the actual most-recent Sabaq entry through Journal currently
+  skips the position-advance it should get.
 
 - [ ] Phase C's "has Setup configured, but no dhor_log yet" case
   (`computeUpcomingDhorQueue`, `worker/src/dhorSchedule.js`) reuses the

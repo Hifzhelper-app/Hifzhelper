@@ -240,6 +240,33 @@ function advancePositionAfterSabaq(position, fromSurah, fromAyah, toSurah, toAya
   const fromIsFrontier = juz === 30 ? cmp <= 0 : cmp >= 0;
   const frontier = fromIsFrontier ? { surah: fromSurah, ayah: fromAyah } : { surah: toSurah, ayah: toAyah };
   const newActiveJuz = getJuzForPosition(frontier.surah, frontier.ayah, ref);
+  // Bug fix (2026-08-06, found by the user): this used to overwrite
+  // sabaqTo unconditionally with whatever this one entry's own frontier
+  // was -- correct for the normal case, where each new entry naturally
+  // continues from the last, but wrong for a genuinely new entry
+  // covering an already-passed range (a backfill, or splitting a
+  // previously-logged range into two separate entries) -- confirmed
+  // in chat as what actually happened. That entry's own save still
+  // goes through this same unconditional path (it IS a new entry, not
+  // an edit), silently dragging the real frontier backward to match
+  // it even though nothing about genuine progress moved. Now compares
+  // the newly-computed frontier against the position already stored,
+  // using SABAQ_STUDY_ORDER for a different Juz' (later in study order
+  // = genuinely further along) and the same study-direction-aware
+  // compareVerseKey already used above for the same Juz' -- only
+  // updates when the new frontier is genuinely further along than what
+  // was already there. position.activeJuz == null (no prior position
+  // at all yet) always accepts the new frontier, same as before.
+  let isGenuineAdvance = true;
+  if(position.activeJuz != null && newActiveJuz !== position.activeJuz){
+    const oldStudyIndex = SABAQ_STUDY_ORDER.indexOf(position.activeJuz);
+    const newStudyIndex = SABAQ_STUDY_ORDER.indexOf(newActiveJuz);
+    isGenuineAdvance = oldStudyIndex === -1 || newStudyIndex === -1 || newStudyIndex > oldStudyIndex;
+  } else if(position.activeJuz != null && position.sabaqTo){
+    const withinJuzCmp = compareVerseKey(frontier.surah, frontier.ayah, position.sabaqTo.surah, position.sabaqTo.ayah);
+    isGenuineAdvance = newActiveJuz === 30 ? withinJuzCmp <= 0 : withinJuzCmp >= 0;
+  }
+  if(!isGenuineAdvance) return position;
   const crossedIntoNewJuz = position.activeJuz != null && newActiveJuz !== position.activeJuz;
   return Object.assign({}, position, {
     sabaqTo: frontier,
