@@ -4,6 +4,24 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.38 (2026-08-07)
+
+- [x] IndoPak's Maqra/Rub'/Hizb terminology picker removed entirely, on
+  hold ("putting the hybrid build on hold") -- UI, all 4 refForMushaf
+  copies, and the indopak_terminology column (migration 0017) all gone,
+  not just unused. Madani's own Ru'b/Hizb terminology (V3.37) unaffected.
+- [x] Surah-based Hifz Setup history removed entirely ("History will
+  only be collected as juz") -- the Juz'/Surah switch, baselineMode, and
+  the baseline_mode column (migration 0017) all gone. Genuinely useful
+  finding while tracing this: Surah mode was never actually wired into
+  Dhor Schedule generation to begin with.
+- [x] Both dropped columns confirmed safe under SQLite 3.35.0+ direct
+  DROP COLUMN -- no table rebuild needed. Deploy-order note: this
+  delivery's code must go live before migration 0017 runs.
+- [x] 3 dangling apiSaveProfile payloads (still sending baseline_mode:
+  'juz') and a dangling CSS selector found via a whole-repo sweep, not
+  just the touched files -- cleaned up.
+
 ## Done — V3.37 (2026-08-07)
 
 - [x] Sabaq Dhor row ordering: most-recent-first everywhere (base
