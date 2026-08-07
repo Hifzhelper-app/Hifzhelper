@@ -1,6 +1,7 @@
 import { segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex, quarterUnitToJuzQuarter } from '../../shared/data.js';
 
 // Dhor scheduling (V3.9.0 -> pure queue model, confirmed in chat 2026-08-02).
+// Current as of V3.38.
 //
 // The original model here was wrong: `plans` is not a calendar of dated
 // commitments -- it's a single ordered QUEUE. No dates are baked into any
@@ -40,11 +41,10 @@ import { segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex, quarterUnitT
 // elsewhere for initial memorisation; that branching order depends on a
 // per-student choice this project doesn't store anywhere yet, so this
 // generator uses the simpler deterministic order rather than guess.
-// baseline_mode='surah' isn't supported yet either — mapping arbitrary
-// surah selections onto this quarter pool is separate work (Phase 3, the
-// Sabaq/Setup rebuild's own phase numbering — unrelated to the A-D phases
-// above), not a silent/wrong approximation. Both are flagged via
-// computeDefaultDhorEntry's own `reason` rather than failing quietly.
+// 2026-08-07 (V3.38): Surah-based Hifz Setup history removed entirely --
+// baseline_mode/the surah option are gone (confirmed in chat), Hifz
+// Setup is Juz'-only now, so baseline_selection is unconditionally
+// quarter-unit-ID data with nothing left to branch on.
 
 function todayISO() { return new Date().toISOString().slice(0, 10); }
 
@@ -137,12 +137,9 @@ export async function computeDefaultDhorEntry(env, studentId) {
   if (todaysPlans.length > 0) return { source: 'today_plan', date: today, plans: todaysPlans };
 
   const student = await env.DB.prepare(
-    'SELECT mushaf, baseline_mode, baseline_selection FROM students WHERE id = ?'
+    'SELECT mushaf, baseline_selection FROM students WHERE id = ?'
   ).bind(studentId).first();
   if (!student) return { source: 'none', reason: 'Student not found' };
-  if (student.baseline_mode !== 'juz') {
-    return { source: 'none', reason: "No plan found, and surah-based Hifz Setup history isn't mapped to a Dhor pool yet — enter this session manually" };
-  }
   let pool;
   try { pool = JSON.parse(student.baseline_selection || '[]'); } catch (e) { pool = []; }
   pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b);
@@ -221,10 +218,9 @@ export async function handleGetDhorDefaultEntry(request, env, auth) {
 // this was the natural generalisation of what WAS said.
 export async function computeUpcomingDhorQueue(env, studentId, fallbackUnit) {
   const student = await env.DB.prepare(
-    'SELECT mushaf, baseline_mode, baseline_selection, dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week FROM students WHERE id = ?'
+    'SELECT mushaf, baseline_selection, dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week FROM students WHERE id = ?'
   ).bind(studentId).first();
   if (!student) return { hasPool: false, days: [] };
-  if (student.baseline_mode !== 'juz') return { hasPool: false, days: [] };
   let pool;
   try { pool = JSON.parse(student.baseline_selection || '[]'); } catch (e) { pool = []; }
   pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b);
