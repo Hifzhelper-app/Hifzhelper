@@ -604,7 +604,10 @@
              and confirmed it never actually behaved differently from
              13line (its ref logic fell through to the same 'waterval'
              branch 13line uses). Replaced with 15line_indopak, using
-             its own verified page/line dataset, not Madina's. -->
+             its own verified page/line dataset, not Madina's.
+             2026-08-07 (V3.38): IndoPak's own Maqra/Rub'/Hizb terminology
+             picker is on hold, removed entirely -- confirmed in chat.
+             IndoPak is Quarter/Half only now. -->
         <label>Mushaf</label>
         <div class="switch-track" id="mushaf_switch">
           <div class="switch-thumb"></div>
@@ -614,41 +617,20 @@
         </div>
         <div class="switch-hint" id="mushafHint"></div>
 
-        <!-- 2026-08-06, confirmed in chat: only shown when 15line_indopak
-             is selected (js/settingsScreen.js's updateIndopakTerminologyVisibility)
-             -- IndoPak's own Rub'/Hizb boundary data hasn't been sourced
-             yet, so it borrows whichever of the app's 2 existing datasets
-             the student prefers for Dhor/Sabaq Dhor. Defaults to Quarter/
-             Half. Confirmed selectable now, ahead of V3.37 actually
-             building the real Maqra/Rub'/Hizb display system the second
-             option points at. -->
-        <div id="indopakTerminologyRow" class="hidden">
-          <label>IndoPak Dhor/Sabaq Dhor terminology</label>
-          <div class="switch-track" id="indopak_terminology_switch">
-            <div class="switch-thumb"></div>
-            <button type="button" class="switch-option" data-value="quarter_half">Quarter/Half</button>
-            <button type="button" class="switch-option" data-value="maqra_rub_hizb">Maqra/Rub'/Hizb</button>
-          </div>
-        </div>
-
         <!-- V3.9.0: replaces the old inline Surahs/Juz' mode-toggle +
              grid — two buttons that each open a full slide-in grid
              overlay instead (still mutually exclusive: confirming a
-             selection in one clears the other, same as before). -->
-        <!-- V3.10.0: neutral-center switch — tapping either side opens its
-             popout grid regardless of the thumb's current position; the
-             thumb only reflects which mode is ACTUALLY set (baselineMode),
-             resting in the middle if nothing's been marked yet, since this
-             isn't a real persistent on/off state the way other switches
-             on this screen are. -->
-        <label style="margin-top:20px;">Mark completed sections using</label>
-        <div class="switch-track" id="section_grid_switch">
-          <div class="switch-thumb neutral"></div>
-          <button type="button" class="switch-option" id="openJuzGridBtn" data-value="juz">Juz</button>
-          <div class="switch-neutral-zone"></div>
-          <button type="button" class="switch-option" id="openSurahGridBtn" data-value="surah">Surah</button>
-        </div>
+             selection in one clears the other, same as before).
+             2026-08-07 (V3.38): Surah-based history is on hold, removed
+             entirely -- confirmed in chat, "History will only be
+             collected as juz." Nothing left to switch between, so this
+             collapses to a single button -- the V3.10.0 neutral-center
+             switch (and js/settingsScreen.js's baselineMode) are gone
+             along with it. -->
+        <label style="margin-top:20px;">Mark completed sections</label>
+        <button type="button" class="settings-action-btn" id="openJuzGridBtn">Mark completed Juz</button>
         <div class="baseline-summary" id="baselineSummary"></div>
+
 
         <label class="settings-subheader">Target for Dhor</label>
         <div class="settings-row"><label>Mistakes / juz'</label><input type="number" inputmode="numeric" id="target_mistakes" min="0"></div>

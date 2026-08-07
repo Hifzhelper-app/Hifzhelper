@@ -7,7 +7,23 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
-## V3.37 — Ru'b/Hizb terminology, Sabaq Dhor's Maqra/Rub' behavior, ordering, journal fix (2026-08-07)
+## V3.38 — IndoPak terminology picker and Surah baseline mode removed (2026-08-07)
+
+**Files touched:** `index.html`, `css/settings.css`, `js/dhorPage.js`, `js/sabaqDhorPage.js`, `js/sabaqPage.js`, `js/settingsScreen.js`, `worker/src/profile.js`, `worker/src/dhorSchedule.js`, `worker/migrations/0017_drop_indopak_terminology_and_baseline_mode.sql` (new), `SCHEMA.md`.
+
+Two features removed entirely, on hold, per the standing process rule (delete unused code promptly rather than leave it parked — no dependent users yet, so no back-compat risk):
+
+**IndoPak's Maqra/Rub'/Hizb terminology picker** (confirmed in chat: "putting the hybrid build on hold"). Removed from the UI (`indopakTerminologyRow`, `index.html`), and from all 4 copies of `refForMushaf`/`refForMushafSabaqDhor`/`refForMushafSabaq` (`js/dhorPage.js`, `js/sabaqDhorPage.js`, `js/sabaqPage.js`, `js/settingsScreen.js`) — each drops its now-unused `indopakTerminology` parameter and the `mushaf==='15line_indopak' && indopakTerminology==='maqra_rub_hizb'` branch, back to the simple `mushaf==='15line_madani' ? 'uthmani' : 'waterval'`. IndoPak is Quarter/Half only now, same as 13-line, natively (unaffected by this: Madani's own Ru'b/Hizb terminology from V3.37, which never depended on this picker).
+
+**Surah-based Hifz Setup history** (confirmed in chat: "History will only be collected as juz"). The Juz'/Surah switch (`section_grid_switch`) collapses to a single "Mark completed Juz" button (`css/settings.css`'s new `.settings-action-btn`, since `.switch-option` assumes a `.switch-track` parent and sliding thumb that no longer exist here) — `openSectionGridModal` drops its `mode` parameter entirely, `renderBaselineSummary` drops the Surah branch, `baselineMode` is gone as a concept. `worker/src/dhorSchedule.js`'s two `baseline_mode !== 'juz'` guards are removed as redundant — the `pool.length === 0` check right after each already covers "nothing set up," and Surah mode was never actually wired into Dhor Schedule generation to begin with (it always returned "no pool").
+
+**Both DB columns dropped**, not just left unused (confirmed in chat: "let's do it properly and remove the columns") — `indopak_terminology` and `baseline_mode`, migration 0017. Both are safe to drop directly under SQLite 3.35.0+ (no table-rebuild needed): `indopak_terminology` has no constraint at all, and `baseline_mode`'s CHECK is inline/column-own, which SQLite drops along with the column. No real users yet, so this is a mechanical change, not a data migration — but deploy order still matters, since deploys here aren't atomic: **the code in this delivery must go live before migration 0017 runs**, not after, or the still-live old code will start erroring on every profile read/save the moment the columns are gone.
+
+**Found and fixed while sweeping for dangling references** (not spotted until grepping the whole repo, not just the touched files): 3 call sites (`js/sabaqDhorPage.js`'s `moveRowToDhor`, `js/dhorPage.js`'s Dhor-save pool update, `js/sabaqPage.js`'s auto-move-to-Dhor) were still sending `baseline_mode: 'juz'` in their `apiSaveProfile` payloads — harmless once the backend stopped reading that field, but genuinely dead code, cleaned up. Also a dangling `#section_grid_switch` CSS selector (updated to `#openJuzGridBtn`) and the now-dead `.grid-surah` CSS rule (removed).
+
+`SCHEMA.md` updated to match — both column rows removed/updated.
+
+---
 
 **Files touched:** `shared/data.js`, `js/position.js`, `js/dhorPage.js`, `js/sabaqDhorPage.js`, `js/sabaqPage.js`, `js/settingsScreen.js`, `js/journal.js`, `index.html`, `sw.js`.
 
