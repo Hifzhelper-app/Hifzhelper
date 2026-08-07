@@ -1,0 +1,29 @@
+-- Migration 0017: V3.38, confirmed in chat -- both columns dropped
+-- entirely, not just unused, since the features backing them are gone
+-- for good (not a "maybe later" park):
+--
+-- indopak_terminology: the IndoPak Maqra/Rub'/Hizb picker (V3.36) is on
+-- hold. IndoPak's Dhor/Sabaq Dhor terminology is Quarter/Half only now,
+-- same as 13-line -- refForMushaf's 2nd parameter and every caller of it
+-- are removed in this same delivery.
+--
+-- baseline_mode: Hifz Setup history is Juz'-only going forward -- the
+-- Surah option (and the 2-way switch offering a choice at all) is
+-- removed. baseline_selection is now unconditionally quarter-unit-ID
+-- data (juz' mode's own format) with nothing left to distinguish it
+-- from, so the mode flag itself is redundant, not just unused.
+--
+-- Both columns are safe to drop directly (SQLite 3.35.0+, no table
+-- rebuild needed): indopak_terminology has no constraint at all;
+-- baseline_mode's CHECK is inline/column-own, which SQLite drops along
+-- with the column (only a CHECK referencing the column from ELSEWHERE
+-- would block this). No real users yet, so no data at risk either way --
+-- this is a mechanical change, not a data migration.
+--
+-- Deploy order matters here since deploys aren't atomic: the CODE
+-- deploy (which stops reading/writing these columns) must go out
+-- BEFORE this migration runs, not after -- otherwise the old code,
+-- still live, will start erroring on every profile save/read the
+-- moment these columns are gone.
+ALTER TABLE students DROP COLUMN indopak_terminology;
+ALTER TABLE students DROP COLUMN baseline_mode;
