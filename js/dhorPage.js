@@ -1,6 +1,6 @@
 // ============================================================
 // Hifzhelper — Dhor card (one of 4 in the unified day-log view, V3.6.1)
-// Current as of V3.37
+// Current as of V3.38
 // Segment picker (quarter/half/full-juz', in whichever reference is
 // active), the real timer/lap feature, tajweed tags, mistakes, comment.
 //
@@ -80,18 +80,15 @@
 const EDIT_HANDLERS = {}; // populated by each card's own file: EDIT_HANDLERS.sabaq = loadSabaqEntryForEdit, etc.
 
 let dhorCurrentRef = 'waterval'; // derived from profile.mushaf on every open, see renderDhorScreen()
-// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
-// case -- when the student picked Maqra/Rub'/Hizb for IndoPak, Dhor's own
-// terminology/boundaries use the same Uthmani data Madani itself uses.
-// Second param defaults to null so every existing caller (never passing
-// it) keeps its current behaviour unchanged.
-// 2026-08-07: the final `return 'waterval'` below covers 13-line AND
-// 15-line IndoPak-on-Quarter/Half both -- not IndoPak defaulting to
-// 13-line's data for lack of its own, but IndoPak genuinely sharing this
-// data natively (see shared/data.js's RUB_BOUNDARIES comment for why).
-function refForMushaf(mushaf, indopakTerminology){
+// 2026-08-07 (V3.38): IndoPak's Maqra/Rub'/Hizb picker is on hold --
+// this used to take a 2nd (indopakTerminology) parameter and branch on
+// it for IndoPak specifically; removed along with that picker (and the
+// indopak_terminology column, migration 0017). IndoPak is Quarter/Half
+// only now, same as 13-line -- both fall to the final `return
+// 'waterval'`, natively (see shared/data.js's RUB_BOUNDARIES comment),
+// not as a fallback.
+function refForMushaf(mushaf){
   if(mushaf === '15line_madani') return 'uthmani';
-  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
   return 'waterval';
 }
 
@@ -363,7 +360,7 @@ async function renderDhorScreen(){
 
   try{
     const profile = await apiGetProfile();
-    dhorCurrentRef = refForMushaf(profile.mushaf, profile.indopak_terminology);
+    dhorCurrentRef = refForMushaf(profile.mushaf);
   } catch(e){
     dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
   }
@@ -1295,7 +1292,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     const newUnits = loggedUnits.filter(u => !currentPool.includes(u));
     if(newUnits.length > 0){
       const merged = [...new Set([...currentPool, ...newUnits])].sort((a,b) => a-b);
-      apiSaveProfile({ baseline_mode: 'juz', baseline_selection: merged }).catch(() => { /* best-effort, matches the original behaviour this moved from */ });
+      apiSaveProfile({ baseline_selection: merged }).catch(() => { /* best-effort, matches the original behaviour this moved from */ });
     }
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);

@@ -1,6 +1,6 @@
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
-// Current as of V3.37
+// Current as of V3.38
 // V3.16.0 (Phase 2a): rebuilt around position -- recites the CURRENT
 // juz' from its start to wherever Sabaq has reached, excluding today's
 // brand-new portion. Builds quarter by quarter as Sabaq progresses; the
@@ -37,17 +37,15 @@ let sabaqDhorEditingId = null;
 let sabaqDhorRollupLevel = 'quarters';
 let sabaqDhorBaselineSelection = [];
 
-// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
-// case, matching js/dhorPage.js's and js/sabaqPage.js's own copies of
-// this same function. Second param defaults to null so every existing
-// caller (never passing it) keeps its current behaviour unchanged.
-// 2026-08-07: the final `return 'waterval'` covers 13-line AND 15-line
-// IndoPak-on-Quarter/Half both, natively -- see shared/data.js's
-// RUB_BOUNDARIES comment for why this isn't IndoPak defaulting/falling
-// through for lack of its own data.
-function refForMushafSabaqDhor(mushaf, indopakTerminology){
+// 2026-08-07 (V3.38): IndoPak's Maqra/Rub'/Hizb picker is on hold --
+// this used to take a 2nd (indopakTerminology) parameter and branch on
+// it for IndoPak specifically; removed along with that picker (and the
+// indopak_terminology column, migration 0017). IndoPak is Quarter/Half
+// only now, same as 13-line -- both fall to the final `return
+// 'waterval'`, natively (see shared/data.js's RUB_BOUNDARIES comment),
+// not as a fallback.
+function refForMushafSabaqDhor(mushaf){
   if(mushaf === '15line_madani') return 'uthmani';
-  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
   return 'waterval';
 }
 
@@ -89,7 +87,7 @@ async function moveRowToDhor(rowId){
     const profile = await apiGetProfile();
     const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
     const updated = addRowToBaselinePool(row, juz, current);
-    await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: updated });
+    await apiSaveProfile({ baseline_selection: updated });
     // If this was the last lingering piece of a previous juz', clear it
     // from position so it stops being tracked as "lingering" going forward.
     if(row.lingeringJuz){
@@ -173,7 +171,7 @@ async function renderSabaqDhorScreen(){
 
   let profile = null;
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
-  sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf, profile && profile.indopak_terminology);
+  sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
   sabaqDhorPosition = await loadPosition();
   // 2026-08-06, confirmed in chat: Maqra is the new base/default level

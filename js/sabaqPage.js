@@ -1,6 +1,6 @@
 // ============================================================
 // Hifzhelper — Sabaq card (one of 4 in the unified day-log view, V3.6.1)
-// Current as of V3.37
+// Current as of V3.38
 // V3.14.0 rebuild: sabaq_from/sabaq_to (migration 0015) replace the old
 // surah/ayah_from/ayah_to trio — each is a combined "surah:ayah" string,
 // letting one entry span multiple surahs and cross at most one juz'
@@ -44,19 +44,15 @@ let sabaqValue = { from: null, to: null };
 let sabaqEditingId = null;
 let sabaqEditingIsFrontier = false;
 
-// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
-// case -- when the student picked Maqra/Rub'/Hizb for IndoPak, Juz'-
-// position tracking should use the same Uthmani boundaries Madani itself
-// uses, not IndoPak's own page/line dataset (a separate concern --
-// see pageRefForMushaf, shared/data.js). Second param defaults to null
-// so every existing caller (never passing it) keeps its current behaviour
-// unchanged.
-// 2026-08-07: the final `return 'waterval'` covers 13-line AND 15-line
-// IndoPak-on-Quarter/Half both, natively -- see shared/data.js's
-// RUB_BOUNDARIES comment.
-function refForMushafSabaq(mushaf, indopakTerminology){
+// 2026-08-07 (V3.38): IndoPak's Maqra/Rub'/Hizb picker is on hold --
+// this used to take a 2nd (indopakTerminology) parameter and branch on
+// it for IndoPak specifically; removed along with that picker (and the
+// indopak_terminology column, migration 0017). IndoPak is Quarter/Half
+// only now, same as 13-line -- both fall to the final `return
+// 'waterval'`, natively (see shared/data.js's RUB_BOUNDARIES comment),
+// not as a fallback.
+function refForMushafSabaq(mushaf){
   if(mushaf === '15line_madani') return 'uthmani';
-  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
   return 'waterval';
 }
 
@@ -176,7 +172,7 @@ async function renderSabaqScreen(){
 
   let profile = null;
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
-  sabaqRef = refForMushafSabaq(profile && profile.mushaf, profile && profile.indopak_terminology);
+  sabaqRef = refForMushafSabaq(profile && profile.mushaf);
   sabaqPosition = await loadPosition();
   const dhorExists = await hasDhorHistory();
 
@@ -353,7 +349,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
         if(autoMove.moved){
           sabaqPosition = autoMove.position;
           await savePosition(sabaqPosition);
-          await apiSaveProfile({ baseline_mode: 'juz', baseline_selection: autoMove.baselineSelection });
+          await apiSaveProfile({ baseline_selection: autoMove.baselineSelection });
         }
       } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
     }

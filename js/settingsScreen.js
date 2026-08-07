@@ -1,6 +1,6 @@
 // ============================================================
 // Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0, V2 refinements V3.11.0)
-// Current as of V3.37
+// Current as of V3.38
 // REVISED from V3.7.x/V3.8.0's 2 independently-saved swipeable cards to
 // ONE continuous page with 4 independently-saved sections: Profile,
 // Hifz Setup, Dhor Plan (renamed from "Dhor Schedule" in V3.11.0), Haidh.
@@ -25,15 +25,15 @@ function addDaysISO(iso, n){
   const [y, m, d] = iso.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
-// 2026-08-06, confirmed in chat: extended for the new IndoPak+terminology
-// case, matching the same function's 3 other copies (js/dhorPage.js,
-// js/sabaqDhorPage.js, js/sabaqPage.js).
-// 2026-08-07: the final `return 'waterval'` covers 13-line AND 15-line
-// IndoPak-on-Quarter/Half both, natively -- see shared/data.js's
-// RUB_BOUNDARIES comment.
-function refForMushaf(mushaf, indopakTerminology){
+// 2026-08-07 (V3.38): IndoPak's Maqra/Rub'/Hizb picker is on hold --
+// this used to take a 2nd (indopakTerminology) parameter and branch on
+// it for IndoPak specifically; removed along with that picker (and the
+// indopak_terminology column, migration 0017). IndoPak is Quarter/Half
+// only now, same as 13-line -- both fall to the final `return
+// 'waterval'`, natively (see shared/data.js's RUB_BOUNDARIES comment),
+// not as a fallback.
+function refForMushaf(mushaf){
   if(mushaf === '15line_madani') return 'uthmani';
-  if(mushaf === '15line_indopak' && indopakTerminology === 'maqra_rub_hizb') return 'uthmani';
   return 'waterval';
 }
 
@@ -64,76 +64,55 @@ const MUSHAF_HINTS = {
   '15line_madani': '15 Line Uthmani script.',
   '15line_indopak': '15 line IndoPak script.'
 };
-// 2026-08-06, confirmed in chat: only meaningful when 15line_indopak is
-// selected -- which Dhor/Sabaq Dhor terminology to use, since IndoPak's
-// own Rub'/Hizb boundary data hasn't been sourced yet and the app already
-// has both of these ready to use. Confirmed selectable now, ahead of
-// V3.37 actually building the real Maqra/Rub'/Hizb display system this
-// second option points at -- so its terminology stays incomplete
-// (V3.37's own Q/H-style labels, not yet the real thing) until that lands.
-let setupSelectedIndopakTerminology = null;
-wireSwitch('indopak_terminology_switch', (value) => {
-  setupSelectedIndopakTerminology = value;
-  renderSwitch('indopak_terminology_switch', setupSelectedIndopakTerminology);
-});
-function updateIndopakTerminologyVisibility(){
-  document.getElementById('indopakTerminologyRow').classList.toggle('hidden', setupSelectedMushaf !== '15line_indopak');
-}
+// 2026-08-07 (V3.38): IndoPak's own Maqra/Rub'/Hizb terminology picker
+// (indopak_terminology_switch/indopakTerminologyRow) is removed entirely,
+// on hold -- confirmed in chat. IndoPak is Quarter/Half only now.
 let setupSelectedMushaf = null;
 wireSwitch('mushaf_switch', (value) => {
   setupSelectedMushaf = value;
   renderSwitch('mushaf_switch', setupSelectedMushaf);
   document.getElementById('mushafHint').textContent = MUSHAF_HINTS[value] || '';
-  updateIndopakTerminologyVisibility();
 });
 
-// ---------- Hifz Setup: completed-sections slide-in grids ----------
-// V3.11.0 correction: the neutral center is the PERMANENT resting state,
-// not just a pre-selection placeholder — the switch always springs back
-// to neutral once a popup closes, regardless of what was picked inside.
-// (V3.10.0 had it slide to reflect baselineMode instead; that's what's
-// being corrected here.) Tapping either side still always opens its
-// popout no matter where the thumb currently sits.
-let baselineMode = null;
+// ---------- Hifz Setup: completed-sections grid ----------
+// 2026-08-07 (V3.38): this used to be a Juz'/Surah switch (V3.11.0's
+// "always rest neutral" design) -- with Surah mode removed entirely,
+// there's nothing left to switch between, so it's just a single button
+// now. baselineMode itself is also gone -- juz' is the only mode, so
+// there's nothing left to distinguish it from.
 let baselineSelection = [];
 
 function renderBaselineSummary(){
   const el = document.getElementById('baselineSummary');
-  if(!baselineMode || !baselineSelection.length){ el.textContent = 'Nothing marked yet.'; return; }
-  if(baselineMode === 'juz'){
-    // V3.15.0: baselineSelection now holds quarter-unit IDs — count whole
-    // juz' as however many have all 4 of their quarter-units present.
-    const juzCount = Array.from({length: 30}, (_, i) => i + 1)
-      .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u))).length;
-    el.textContent = `${juzCount} juz' marked complete.`;
-    return;
-  }
-  el.textContent = `${baselineSelection.length} surah(s) marked complete.`;
+  if(!baselineSelection.length){ el.textContent = 'Nothing marked yet.'; return; }
+  // V3.15.0: baselineSelection holds quarter-unit IDs — count whole
+  // juz' as however many have all 4 of their quarter-units present.
+  const juzCount = Array.from({length: 30}, (_, i) => i + 1)
+    .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u))).length;
+  el.textContent = `${juzCount} juz' marked complete.`;
 }
 
-function openSectionGridModal(mode){
-  // V3.15.0: baseline_selection stores quarter-unit IDs now (1-120), not
-  // whole juz' numbers — but the Juz' grid still shows/toggles WHOLE juz'
-  // for a natural picker. A juz' displays as "marked" only if all 4 of its
-  // quarter-units are already in the stored pool; committing expands each
-  // marked juz' back out to its 4 quarter-unit IDs. Surah mode is
-  // unchanged for now (still stores surah numbers directly) — its own
-  // integration with this same quarter pool is a separate, later phase.
-  const draft = baselineMode === mode
-    ? (mode === 'juz'
-        ? Array.from({length: 30}, (_, i) => i + 1).filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u)))
-        : baselineSelection.slice())
-    : [];
-  const items = mode === 'juz'
-    ? Array.from({length: 30}, (_, i) => [i + 1, `Juz ${i + 1}`])
-    : SURAHS.map(([num, name]) => [num, `${num}. ${name}`]);
+// 2026-08-07 (V3.38): Surah-based history removed entirely, on hold --
+// confirmed in chat, "History will only be collected as juz." This used
+// to take a mode ('juz'/'surah') parameter; Juz' is the only mode now,
+// so the parameter, the whole Surah branch, and the Juz'/Surah switch
+// itself (index.html's section_grid_switch) are gone, not just hidden.
+function openSectionGridModal(){
+  // V3.15.0: baseline_selection stores quarter-unit IDs (1-120), not
+  // whole juz' numbers -- the grid still shows/toggles WHOLE juz' for a
+  // natural picker. A juz' displays as "marked" only if all 4 of its
+  // quarter-units are already in the stored pool; committing expands
+  // each marked juz' back out to its 4 quarter-unit IDs.
+  const draft = Array.from({length: 30}, (_, i) => i + 1)
+    .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u)));
+  const items = Array.from({length: 30}, (_, i) => [i + 1, `Juz ${i + 1}`]);
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay section-grid-modal';
   overlay.innerHTML = `<div class="modal-card">
     <button type="button" class="close-btn" id="sectionGridCloseBtn">&times;</button>
-    <h2>${mode === 'juz' ? "Mark completed Juz" : 'Mark completed Surahs'}</h2>
-    <div class="section-grid ${mode === 'juz' ? 'grid-juz' : 'grid-surah'}" id="sectionGridCells"></div>
+    <h2>Mark completed Juz</h2>
+    <div class="section-grid grid-juz" id="sectionGridCells"></div>
   </div>`;
   document.body.appendChild(overlay);
 
@@ -151,19 +130,14 @@ function openSectionGridModal(mode){
   });
 
   const commitAndClose = () => {
-    baselineMode = mode;
-    baselineSelection = mode === 'juz'
-      ? draft.flatMap(juz => quarterUnitsForJuz(juz))
-      : draft;
+    baselineSelection = draft.flatMap(juz => quarterUnitsForJuz(juz));
     renderBaselineSummary();
-    renderSwitch('section_grid_switch', null); // V3.11.0: always back to neutral, never reflects baselineMode
     overlay.remove();
   };
   overlay.addEventListener('click', e => { if(e.target === overlay) commitAndClose(); });
   document.getElementById('sectionGridCloseBtn').addEventListener('click', commitAndClose);
 }
-document.getElementById('openJuzGridBtn').addEventListener('click', () => openSectionGridModal('juz'));
-document.getElementById('openSurahGridBtn').addEventListener('click', () => openSectionGridModal('surah'));
+document.getElementById('openJuzGridBtn').addEventListener('click', openSectionGridModal);
 
 // ---------- Dhor Plan (renamed from "Dhor Schedule" in V3.11.0) ----------
 let setupSelectedGranularity = null;
@@ -214,13 +188,8 @@ async function renderSettingsScreen(){
   setupSelectedMushaf = profile.mushaf || null;
   renderSwitch('mushaf_switch', setupSelectedMushaf);
   document.getElementById('mushafHint').textContent = MUSHAF_HINTS[setupSelectedMushaf] || '';
-  setupSelectedIndopakTerminology = profile.indopak_terminology || 'quarter_half';
-  renderSwitch('indopak_terminology_switch', setupSelectedIndopakTerminology);
-  updateIndopakTerminologyVisibility();
-  baselineMode = profile.baseline_mode || null;
   baselineSelection = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
   renderBaselineSummary();
-  renderSwitch('section_grid_switch', null); // V3.11.0: always neutral on load too
   document.getElementById('target_mistakes').value = profile.target_mistakes_per_juz != null ? profile.target_mistakes_per_juz : 2;
   document.getElementById('target_minutes').value = profile.target_minutes_per_juz != null ? profile.target_minutes_per_juz : 40;
   document.getElementById('target_frequency').value = profile.target_frequency_days != null ? profile.target_frequency_days : 30;
@@ -268,11 +237,7 @@ document.getElementById('hifzSetupSaveBtn').addEventListener('click', async () =
   errEl.textContent = '';
   const payload = { setup_complete: true };
   if(setupSelectedMushaf) payload.mushaf = setupSelectedMushaf;
-  if(setupSelectedMushaf === '15line_indopak') payload.indopak_terminology = setupSelectedIndopakTerminology;
-  if(baselineMode){
-    payload.baseline_mode = baselineMode;
-    payload.baseline_selection = baselineSelection;
-  }
+  if(baselineSelection.length) payload.baseline_selection = baselineSelection;
   const mistakes = parseInt(document.getElementById('target_mistakes').value, 10);
   const minutes = parseInt(document.getElementById('target_minutes').value, 10);
   const frequency = parseInt(document.getElementById('target_frequency').value, 10);
