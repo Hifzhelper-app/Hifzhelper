@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.41.2 — Home tile, fixed sizing, 30/50 cap, darker border (2026-08-08)
+
+**Files touched:** `js/home.js`, `css/nav.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Four refinements to V3.41.1's Home screen, confirmed against a reference image showing the exact intended look.
+
+**A real "Home" tile**, prepended as the first item inside `#homeGrid` itself — distinct from V3.41.1's header icon, which stays. Deliberately not added to `NAV_ITEMS`, since that would also put it in the dropdown on every other screen, redundant with the X-to-Home buttons already there — hardcoded directly in `renderHomeScreen()` instead, Home-page-only. It's always shown active: a lavender-filled box with a visibly darker lavender-toned border (derived from `--palette-lavender` itself via `color-mix()`, not a new hardcoded color), while the icon and label stay dark ink rather than turning lavender the way the generic cross-screen highlight does elsewhere — a distinct, more specific treatment scoped so it only affects this one tile. No `data-nav` attribute and no click handler, since there's nothing meaningful for a tap to do when you're already on Home, and `showScreen`'s active-highlight loop only ever touches `[data-nav]` elements, so this tile's permanent active state can't be toggled off by it.
+
+**Fixed tile sizing** — `#homeGrid` moves from a stretching CSS grid (`1fr` columns, tiles grew or shrank with the viewport) to `flex-wrap`, with each tile now a constant 76px wide and its icon box a constant 64px square — tiles simply wrap onto a new row if there isn't room, rather than stretching to fill whatever space is available.
+
+**30/50 width cap** — `#screen-home` gets the same tablet/desktop width cap every other capped screen already has; it had simply never been given one.
+
+**Darker tile border** — was `--color-table-border` (which resolves to `--palette-lavender`, `#E3DADE`), barely visible against a white tile. Now `--color-ink-faint` (`#9A9A90`), matching the clearly visible medium-gray outline in the reference image.
+
+---
+
 ## V3.41.1 — Home screen redesign: olive/white/lavender, landing page, Progress removed (2026-08-08)
 
 **Files touched:** `index.html`, `js/auth.js`, `js/app.js`, `js/icons.js`, `css/nav.css`, `css/base.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

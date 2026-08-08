@@ -4,6 +4,33 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.41.2 (2026-08-08)
+
+- [x] Real "Home" tile added inside `#homeGrid` itself, as the first
+  tile — hardcoded in `js/home.js`'s `renderHomeScreen()`, deliberately
+  NOT part of `NAV_ITEMS` (would also add it to the dropdown on every
+  other screen, redundant with the X-to-Home buttons already there).
+  Always shown active: lavender-filled box + a visibly darker
+  lavender-toned border (`color-mix()` off the same `--palette-lavender`
+  token, not a new hardcoded color), icon and label stay dark ink — a
+  distinct, more specific treatment from the generic cross-screen
+  `.active` highlight elsewhere, scoped so it only applies to this one
+  tile. No `data-nav`, no click listener — nothing meaningful for a tap
+  to do since you're already on Home, and `showScreen`'s own
+  active-highlight loop only ever touches `[data-nav]` elements, so
+  this tile's hardcoded active state is safe from being toggled off.
+- [x] `#screen-home` given the standard 30%/50% width cap on larger
+  screens, matching every other capped screen — it had never had one.
+- [x] Tiles switched from a stretching grid (`1fr` columns) to
+  `flex-wrap` with fixed pixel sizing (64px icon box, 76px tile) — they
+  now stay a constant size regardless of viewport and wrap onto a new
+  row rather than growing/shrinking to fill the container.
+- [x] Tile border darkened from `--color-table-border`
+  (`--palette-lavender`, barely visible) to `--color-ink-faint`
+  (`#9A9A90`), matching the reference image's clearly visible
+  medium-gray outline.
+- [x] Syntax-checked, CSS brace-balanced before delivery.
+
 ## Done — V3.41.1 (2026-08-08)
 
 - [x] Home screen restructured: olive background (`#screen-home`,

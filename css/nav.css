@@ -95,24 +95,38 @@
    .card-header-icon stays the default ink-soft (css/detail-pages.css). */
 #homeHeaderIcon { color: var(--palette-lavender); }
 #screen-home .card-header-row h2 { color: #fff; }
+/* V3.41.2: standard 30%/50% width cap on larger screens, confirmed in
+   chat -- same pattern as #screen-settings/#screen-admin/
+   #screen-haidhDetail. Home had never been given this. */
+@media (min-width: 768px) and (max-width: 1179px) {
+  #screen-home { width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  #screen-home { width: var(--width-desktop); margin: 0 auto; }
+}
 
 /* The tile grid is now its own white container sitting on the olive
-   background, confirmed in chat -- tiles arranged inside it. */
+   background, confirmed in chat -- tiles arranged inside it.
+   V3.41.2: switched from a stretching grid (equal 1fr columns, tiles
+   grew/shrank with viewport width) to flex-wrap with a fixed tile
+   size, confirmed in chat, per a reference image -- tiles stay a
+   constant size regardless of screen size and simply wrap onto a new
+   row if there isn't room, rather than stretching to fill the
+   container. */
 #homeGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-md);
   background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
   margin-top: var(--space-md);
 }
-@media (min-width: 720px) {
-  #homeGrid { grid-template-columns: repeat(5, 1fr); }
-}
 #homeGrid .nav-icon-item {
   font-size: 13px;
   gap: 6px;
+  width: 76px;
+  flex: 0 0 auto;
 }
 #homeGrid .nav-icon-item:active .nav-icon-item-icon { transform: scale(0.96); }
 /* V3.41.1: the square/border/shadow/background chip wraps the ICON
@@ -121,16 +135,37 @@
    (icon in its own box, label below it, outside that box, not sharing
    backgrounds). Tiles keep their own white background even though the
    container is already white (confirmed) -- the thin border is what
-   visually separates them either way. */
+   visually separates them either way.
+   V3.41.2: icon box is now a FIXED size (was width:100% of its
+   flex-item parent, which itself no longer stretches either) -- and
+   the border darkened from --color-table-border (--palette-lavender,
+   #E3DADE, barely visible) to --color-ink-faint (#9A9A90), confirmed
+   in chat against a reference image showing a clearly visible
+   medium-gray outline. */
 #homeGrid .nav-icon-item-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1;
-  width: 100%;
+  width: 64px;
+  height: 64px;
   background: var(--color-surface);
-  border: 1px solid var(--color-table-border);
+  border: 1px solid var(--color-ink-faint);
   border-radius: var(--radius-md);
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 #homeGrid .nav-icon-item-icon svg { width: 36px; height: 36px; }
+/* V3.41.2: the permanent "Home" tile (js/home.js) gets its own
+   distinct treatment, matching the reference image precisely -- the
+   BOX goes lavender (fill + a visibly darker lavender-toned border),
+   but the icon and label stay dark ink, NOT lavender text like the
+   generic cross-screen .active highlight elsewhere (css/base.css)
+   would otherwise give it. These more-specific #homeGrid selectors
+   override that generic rule for this one tile. border-color is
+   derived directly from the same --palette-lavender token via
+   color-mix() rather than a new hardcoded hex, so it stays a real
+   "darker lavender", not an arbitrary color. */
+#homeGrid .nav-icon-item.active { color: var(--color-ink); }
+#homeGrid .nav-icon-item.active .nav-icon-item-icon {
+  background: var(--palette-lavender);
+  border-color: color-mix(in srgb, var(--palette-lavender) 55%, black);
+}
