@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.40.3 — Haidh calendar: 3 real bugs, all fixed and verified (2026-08-08)
+
+**Files touched:** `index.html`, `js/haidhDetailScreen.js`, `shared/haidhRules.js`, `worker/src/attendance.js`, `js/sw.js`, `js/juzTrackerScreen.js` (re-included, was missing from the live deploy), `TODO.md`, `CHANGELOG.md`.
+
+Three separate, independently-diagnosed bugs, found over an extended live debugging session (Network tab, DOM inspector, and direct console evaluation on the actual production site) rather than from code review alone — each verified against the real, edited files before this delivery, not just reasoned through.
+
+**The actual reason nothing showed on the calendar:** `loadHaidhCalAttendance` did `const { data } = await apiGetAttendance();` — but `apiGetAttendance()` already resolves directly to the array, since `worker/src/index.js`'s `respond()` always unwraps handler results to `result.data` before sending the HTTP response. There's no extra `.data` wrapper on the client side to destructure. `data` was therefore always `undefined`, and `haidhCalAttendance` was *always* an empty object, regardless of any date computation — confirmed live: `apiGetAttendance()` called directly in the browser console returned the real 17-row array with no wrapper, while `loadHaidhCalAttendance()` called the exact same way still left the object empty. Fixed with a one-line change; grepped the whole frontend for the same destructuring mistake and it's the only occurrence anywhere.
+
+**A second, separate, genuinely real bug this one had been masking:** `renderHaidhCalGrid`'s 3 cell-building loops computed each square's date via `new Date(year, month, day).toISOString().slice(0,10)`. `new Date(y,m,d)` constructs *local* midnight, but `.toISOString()` always converts to UTC — so for any timezone ahead of UTC (the device here is set to South African Standard Time, UTC+2), the computed date silently shifts backward by a day, even though the number printed on the square looks unaffected. Verified directly: `new Date(2026,7,8)` in `Africa/Johannesburg` becomes `"2026-08-07"` after `.toISOString()`, not `"2026-08-08"`. A new `haidhLocalISO()` helper reads the constructed date's own local year/month/day back out directly instead, avoiding the UTC round-trip entirely — correct for any timezone or offset direction. `haidhTodayISO()` (built from `new Date()`, the actual current instant, not a locally-constructed date) and `shared/haidhRules.js`'s `haidhAddDaysISO` (uses `Date.UTC()` explicitly) were never affected by this — it was isolated to this one screen's grid rendering.
+
+**Third, unrelated bug from the "15 days have not passed" report:** `evaluateHaidhRange` validated a proposed range by simulating each date in chronological order, checking the gap rule against only what had been added to a working set so far — so a range directly adjacent to (or overlapping) an already-marked block got wrongly rejected, since the first date checked hadn't "seen" the rest of its own range yet. Rewritten to evaluate the whole proposed range as one unit instead: extend the run outward from the range's own edges using only the true external existing dates, and only gap-check if neither edge touches an existing day. Re-verified against the original 9 scenarios plus 3 covering this exact bug, 12/12 correct, run again directly against the final edited files before delivery. This also resolves the earlier "marking should override predicted" note on its own — the write side (`ON CONFLICT ... DO UPDATE`) already did the right thing; the validation bug was the only thing blocking it. `handleMarkHaidhRange` updated for the function's new single-verdict return shape; `evaluateHaidhMark`/`handleSetAttendance`'s single-day path is untouched and unaffected.
+
+`js/juzTrackerScreen.js` (found missing from the live deploy in the previous session, unrelated to any of the above) is included again here so one upload covers everything currently outstanding.
+
+---
+
 ## V3.40.2 — Haidh calendar range-select (2026-08-08)
 
 **Files touched:** `index.html`, `css/haidh.css`, `js/haidhDetailScreen.js`, `js/api.js`, `shared/haidhRules.js`, `worker/src/attendance.js`, `worker/src/index.js`, `TODO.md`, `CHANGELOG.md`.

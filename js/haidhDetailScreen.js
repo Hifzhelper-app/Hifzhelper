@@ -42,12 +42,37 @@ let haidhRangeEnd = null;
 
 function haidhTodayISO(){ return new Date().toISOString().slice(0,10); }
 
+// V3.40.3 bug fix: build a YYYY-MM-DD string from a LOCAL calendar date
+// directly, never via .toISOString() -- new Date(y,m,d) is local
+// midnight, but .toISOString() always converts to UTC, silently
+// shifting the date backward a day for anyone in a timezone ahead of
+// UTC (confirmed live: South African Standard Time, UTC+2). Reading the
+// constructed Date's own local getters back out avoids the UTC
+// round-trip entirely, so this is correct regardless of the device's
+// timezone or offset direction. Date's constructor already normalizes
+// out-of-range month/day values (e.g. day 32, month -1), so this stays
+// correct for the prev/next-month trailing cells below too.
+function haidhLocalISO(year, month, day){
+  const dt = new Date(year, month, day);
+  const y = dt.getFullYear();
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + d;
+}
+
 function haidhFormatMonthLabel(year, month){
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
 async function loadHaidhCalAttendance(){
-  const { data } = await apiGetAttendance();
+  // V3.40.3 bug fix: apiGetAttendance() already resolves directly to the
+  // array -- worker/src/index.js's respond() always sends result.data as
+  // the top-level response body, so there's no extra .data wrapper to
+  // destructure here. `const { data } = ...` was silently pulling
+  // undefined out of an array every time, which is the real reason
+  // nothing ever showed on the calendar (confirmed live in console:
+  // apiGetAttendance() itself returns the real rows correctly).
+  const data = await apiGetAttendance();
   haidhCalAttendance = {};
   (data || []).forEach(row => {
     if(row.status === 'haidh' || row.status === 'predicted-haidh') haidhCalAttendance[row.date] = row.status;
@@ -185,17 +210,14 @@ function renderHaidhCalGrid(){
   const cells = [];
   for(let i = startOffset - 1; i >= 0; i--){
     const d = daysInPrevMonth - i;
-    const dt = new Date(haidhCalViewYear, haidhCalViewMonth - 1, d);
-    cells.push({ iso: dt.toISOString().slice(0,10), inMonth: false });
+    cells.push({ iso: haidhLocalISO(haidhCalViewYear, haidhCalViewMonth - 1, d), inMonth: false });
   }
   for(let d = 1; d <= daysInMonth; d++){
-    const dt = new Date(haidhCalViewYear, haidhCalViewMonth, d);
-    cells.push({ iso: dt.toISOString().slice(0,10), inMonth: true });
+    cells.push({ iso: haidhLocalISO(haidhCalViewYear, haidhCalViewMonth, d), inMonth: true });
   }
   let extra = 1;
   while(cells.length % 7 !== 0){
-    const dt = new Date(haidhCalViewYear, haidhCalViewMonth + 1, extra);
-    cells.push({ iso: dt.toISOString().slice(0,10), inMonth: false });
+    cells.push({ iso: haidhLocalISO(haidhCalViewYear, haidhCalViewMonth + 1, extra), inMonth: false });
     extra++;
   }
 

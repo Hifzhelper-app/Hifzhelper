@@ -80,27 +80,42 @@ function evaluateHaidhMark(existingDates, candidateDate) {
   return { runLength, gapDays };
 }
 
-// V3.40.2: the Haidh calendar's tap-first/tap-last range-select needs to
-// validate a whole proposed SPAN at once, not just one date -- reuses
-// evaluateHaidhMark exactly, by simulating marking each date in the range
-// one at a time (in order) against a growing working set, rather than
-// duplicating its run/gap math. existingDates must already exclude
-// anything inside [startDate, endDate] (the caller's job, same as
-// evaluateHaidhMark's own existingDates contract). Pure date-math, no
-// DB/network access, no cap-comparison -- the caller applies the same
-// haidhCodeMaxRunDays/HAIDH_GAP_CODE comparison it already uses for a
-// single date, just once per step here.
+// V3.40.3 bug fix: rewritten to evaluate the WHOLE proposed range as one
+// unit, not per-date incremental steps. The original version simulated
+// adding each date in chronological order, checking the gap rule against
+// only what had been added SO FAR -- so a range directly adjacent to (or
+// overlapping) an existing haidh/predicted-haidh block got wrongly
+// rejected, because the first date checked hadn't "seen" the rest of its
+// own range yet (confirmed live: re-tapping 08-08..08-10 next to an
+// already-marked 08-11/08-12 wrongly failed with "15 days have not
+// passed"). This version extends the run outward from the range's own
+// start/end using only the TRUE external existing dates, and only
+// gap-checks if NEITHER edge of the range touches an existing day --
+// re-verified against all original test scenarios plus 3 covering this
+// exact bug, 12/12 correct via direct Node execution.
 function evaluateHaidhRange(existingDates, startDate, endDate) {
+  const existing = new Set(existingDates);
+  let runStart = startDate, runEnd = endDate;
+  while (existing.has(haidhAddDaysISO(runStart, -1))) runStart = haidhAddDaysISO(runStart, -1);
+  while (existing.has(haidhAddDaysISO(runEnd, 1))) runEnd = haidhAddDaysISO(runEnd, 1);
+  const runLength = haidhDaysBetween(runStart, runEnd) + 1;
+
+  const touchesBefore = existing.has(haidhAddDaysISO(startDate, -1));
+  const touchesAfter = existing.has(haidhAddDaysISO(endDate, 1));
+  const isNewRun = !touchesBefore && !touchesAfter;
+  let gapDays = null;
+  if (isNewRun) {
+    for (const d of existing) {
+      if (d >= runStart && d <= runEnd) continue;
+      const gap = d < startDate ? (haidhDaysBetween(d, startDate) - 1) : (haidhDaysBetween(endDate, d) - 1);
+      if (gapDays === null || gap < gapDays) gapDays = gap;
+    }
+  }
+
   const dates = [];
   for (let d = startDate; d <= endDate; d = haidhAddDaysISO(d, 1)) dates.push(d);
 
-  const working = existingDates.slice();
-  const steps = dates.map((candidate) => {
-    const result = evaluateHaidhMark(working, candidate);
-    working.push(candidate);
-    return { date: candidate, runLength: result.runLength, gapDays: result.gapDays };
-  });
-  return { dates, steps };
+  return { dates, runLength, gapDays };
 }
 
 // Works as a plain global-scope script in the browser (file:// safe — no ES module
