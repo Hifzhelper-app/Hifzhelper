@@ -86,6 +86,12 @@ input, select, textarea {
 }
 .nav-icon-item svg { width: 28px; height: 28px; }
 .nav-icon-item:active { opacity: 0.6; }
+/* V3.41: whichever screen is currently open gets its nav icon (both the
+   dropdown and Home) highlighted, confirmed in chat -- reuses the same
+   accent-color language .log-detail-dots .dot.active already
+   established, rather than a new visual pattern. currentColor on the
+   icon means one color rule recolors both the svg and the label. */
+.nav-icon-item.active { color: var(--color-accent); }
 
 /* A visible, simple way to surface errors — never a silent failure
    (CONVENTIONS.md principle 3). */

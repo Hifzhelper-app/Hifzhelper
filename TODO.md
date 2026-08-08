@@ -4,6 +4,40 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.41 (2026-08-08)
+
+- [x] X-to-Home button on every screen except Home itself (Journal,
+  Log Detail, Admin, Settings, Tadabbur, Haidh, Juz Tracker) — reuses
+  the existing `close` icon throughout, `showScreen('home')` on click.
+  `screen-logDetail`'s pre-existing close button repointed from Journal
+  to Home (was the one open question, resolved by the user). Every
+  other new button wired centrally in `js/app.js`'s own `init()` (all
+  identical: same icon, same action), rather than 6 files each
+  repeating the same 2 lines.
+  - `card-header-row` screens (Tadabbur/Haidh/Juz Tracker): button
+    joins the existing icon+h2 row's 3rd column. Tadabbur's own save
+    controls already lived there, so a small `.card-header-right`
+    wrapper holds both together rather than fighting for the slot.
+  - `screen-admin`: given a real `card-header-row` for the first time
+    (previously just a bare `<h2>`), reusing the existing `admin` icon.
+  - `screen-settings`/`screen-journal`: no single screen-level header
+    to attach to (4 independent sections; a data-table header,
+    respectively) — a small dedicated `.screen-top-close-row` at the
+    very top of each instead.
+- [x] Home screen tiles restyled to read as distinct app icons —
+  background chip, rounded corners, subtle shadow (`#homeGrid
+  .nav-icon-item`, `css/nav.css`) — scoped so the dropdown menu's own
+  tiles (same underlying class) stay exactly as they were. CSS only;
+  same tiles, same destinations, same `renderNavItemsInto` markup.
+- [x] Whichever screen is currently open gets its nav icon highlighted
+  in accent color, in both the dropdown and Home grid — reuses the
+  same visual language `.log-detail-dots .dot.active` already
+  established rather than inventing a new one. `showScreen`
+  (`js/app.js`) updates it on every navigation, placed after any
+  screen-specific render so it survives Home's own grid rebuild
+  (`renderHomeScreen` regenerates `#homeGrid`'s markup from scratch
+  every time it's called).
+
 ## Done — V3.40.5 (2026-08-08)
 
 - [x] Haidh calendar screen (`#screen-haidhDetail`) now capped at the

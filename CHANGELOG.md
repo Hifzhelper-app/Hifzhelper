@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.41 — X-to-Home everywhere, Home tile restyle, active-nav highlight (2026-08-08)
+
+**Files touched:** `index.html`, `js/app.js`, `js/logDetailScreen.js`, `css/detail-pages.css`, `css/nav.css`, `css/base.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Three related, app-wide navigation additions, confirmed in chat after noticing the app had no dedicated way to leave a screen anywhere — every screen relied on the top dropdown menu alone.
+
+**X-to-Home** — every screen except Home itself (Journal, Log Detail, Admin, Settings, Tadabbur, Haidh, Juz Tracker) now has a close button that always returns to Home, reusing the existing `close` icon throughout rather than introducing a new one. `screen-logDetail` already had a close button (`logDetailClose`) — it went to Journal specifically, by deliberate earlier design (there's no navigation history stack anywhere in the app, so a fixed target was the only option, and Journal was that screen's own "reached-from" page). Confirmed in chat to repoint that one to Home too, for full consistency. Every other close button is wired centrally in `js/app.js`'s own `init()` — they're all identical (same icon, same `showScreen('home')` action), so one loop covers all six rather than repeating the same two lines across six separate files.
+
+Placement varied a lot by screen, since header structure isn't uniform across the app: the three screens with an existing `card-header-row` (Tadabbur, Haidh, Juz Tracker) get the button in that row's right-hand column — Tadabbur already had save controls living there, so a small new `.card-header-right` wrapper holds both side by side rather than the two fighting for the same grid slot. Admin had no header row at all before this (just a bare `<h2>`), so it gets a real one now, reusing the existing `admin` icon. Settings (four independent sections, no single screen-level header) and Journal (its own data-table header, not a card header) both get a small dedicated row at the very top of the screen instead.
+
+**Home tile restyle** — `#homeGrid`'s tiles now read as distinct app icons: a background chip, rounded corners, and a subtle shadow, considerably more visual weight than the plain icon+label style. Scoped specifically to `#homeGrid .nav-icon-item` so the dropdown menu's own tiles — same underlying class — are completely unaffected. CSS only; same tiles, same destinations, same `renderNavItemsInto` markup underneath.
+
+**Active-screen highlight** — whichever screen is currently open gets its own nav icon shown in accent color, in both the dropdown and the Home grid at once, reusing the exact visual language `.log-detail-dots .dot.active` already established rather than inventing a new one (`currentColor` on the icon means a single `color` rule recolors both the icon and its label together). `showScreen` (`js/app.js`) updates this on every navigation call — placed deliberately *after* any screen-specific render, since `renderHomeScreen` rebuilds `#homeGrid`'s entire markup from scratch every time it runs, which would silently wipe an earlier-set highlight.
+
+---
+
 ## V3.40.5 — Haidh calendar: width cap, confirm-bar icons, cross-month ranges (2026-08-08)
 
 **Files touched:** `index.html`, `js/haidhDetailScreen.js`, `css/haidh.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
