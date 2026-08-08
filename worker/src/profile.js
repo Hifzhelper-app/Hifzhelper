@@ -1,12 +1,14 @@
+import { haidhOfficialMaxDuration, haidhMinCycleFrequency } from '../../shared/haidhRules.js';
+
 // GET /profile — the logged-in student's own profile. No student_id override
 // for teachers here (yet) — this is a Phase 1, self-service endpoint.
-// Current as of V3.38.
+// Current as of V3.39.
 export async function handleGetProfile(request, env, auth) {
   const row = await env.DB.prepare(
     'SELECT id, name, role, gender, track_haidh, setup_complete, journal_name, mushaf, ' +
     'baseline_selection, target_mistakes_per_juz, target_minutes_per_juz, target_frequency_days, ' +
     'dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week, ' +
-    'haidh_cycle_length, haidh_period_length, haidh_next_expected ' +
+    'haidh_cycle_length, haidh_period_length, haidh_next_expected, haidh_ruling ' +
     'FROM students WHERE id = ?'
   ).bind(auth.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
@@ -33,6 +35,7 @@ const VALID_MUSHAF = ['13line', '15line_madani', '15line_indopak'];
 const VALID_DHOR_GRANULARITY = ['juz', 'half', 'quarter'];
 const VALID_DHOR_FREQUENCY = ['daily', 'twice'];
 const VALID_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const VALID_HAIDH_RULING = ['hanafi', 'shafii'];
 
 // POST /profile — a student sets up (or later edits) their own name/gender/
 // haidh preference/journal name/mushaf choice/history baseline/default
@@ -54,6 +57,9 @@ export async function handleSaveProfile(request, env, auth) {
   }
   if (body.track_haidh != null && ![0, 1, true, false].includes(body.track_haidh)) {
     return { error: 'track_haidh must be boolean', status: 400 };
+  }
+  if (body.haidh_ruling != null && !VALID_HAIDH_RULING.includes(body.haidh_ruling)) {
+    return { error: `haidh_ruling must be one of: ${VALID_HAIDH_RULING.join(', ')}`, status: 400 };
   }
   if (body.mushaf != null && !VALID_MUSHAF.includes(body.mushaf)) {
     return { error: `mushaf must be one of: ${VALID_MUSHAF.join(', ')}`, status: 400 };
@@ -97,7 +103,7 @@ export async function handleSaveProfile(request, env, auth) {
     'baseline_selection, ' +
     'target_mistakes_per_juz, target_minutes_per_juz, target_frequency_days, ' +
     'dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week, ' +
-    'haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students WHERE id = ?'
+    'haidh_cycle_length, haidh_period_length, haidh_next_expected, haidh_ruling FROM students WHERE id = ?'
   ).bind(auth.id).first();
   if (!current) return { error: 'Student not found', status: 404 };
 
@@ -121,19 +127,37 @@ export async function handleSaveProfile(request, env, auth) {
   const haidhCycleLength = body.haidh_cycle_length != null ? body.haidh_cycle_length : current.haidh_cycle_length;
   const haidhPeriodLength = body.haidh_period_length != null ? body.haidh_period_length : current.haidh_period_length;
   const haidhNextExpected = body.haidh_next_expected != null ? body.haidh_next_expected : current.haidh_next_expected;
+  const haidhRuling = body.haidh_ruling != null ? body.haidh_ruling : (current.haidh_ruling || 'hanafi');
   const setupComplete = body.setup_complete ? 1 : 0;
+
+  // V3.39: cross-field sense check — a duration and a frequency can each
+  // pass their own standalone "positive integer" check above and still
+  // be an invalid COMBINATION (e.g. a 10-day duration with a 23-day
+  // frequency leaves only a 13-day gap, short of the required 15).
+  // Checked against the EFFECTIVE values (this request's new value, or
+  // else whatever's already stored) since Setup sections save
+  // independently and either field alone might be the one changing.
+  if (haidhPeriodLength != null && haidhPeriodLength > haidhOfficialMaxDuration(haidhRuling)) {
+    return { error: `Duration cannot exceed ${haidhOfficialMaxDuration(haidhRuling)} days for the selected ruling`, status: 400 };
+  }
+  if (haidhCycleLength != null && haidhPeriodLength != null) {
+    const minFrequency = haidhMinCycleFrequency(haidhPeriodLength);
+    if (haidhCycleLength < minFrequency) {
+      return { error: `Haidh cycle frequency must be at least ${minFrequency} days for a ${haidhPeriodLength}-day duration`, status: 400 };
+    }
+  }
 
   await env.DB.prepare(
     'UPDATE students SET name = ?, gender = ?, track_haidh = ?, journal_name = ?, mushaf = ?, ' +
     'baseline_selection = ?, target_mistakes_per_juz = ?, target_minutes_per_juz = ?, ' +
     'target_frequency_days = ?, dhor_granularity = ?, dhor_quantity = ?, dhor_frequency = ?, ' +
-    'dhor_days_of_week = ?, haidh_cycle_length = ?, haidh_period_length = ?, haidh_next_expected = ?, ' +
+    'dhor_days_of_week = ?, haidh_cycle_length = ?, haidh_period_length = ?, haidh_next_expected = ?, haidh_ruling = ?, ' +
     'setup_complete = CASE WHEN ? = 1 THEN 1 ELSE setup_complete END WHERE id = ?'
   ).bind(
     name, gender, trackHaidh, journalName, mushaf,
     baselineSelection, targetMistakes, targetMinutes, targetFrequency,
     dhorGranularity, dhorQuantity, dhorFrequency, dhorDaysOfWeek,
-    haidhCycleLength, haidhPeriodLength, haidhNextExpected,
+    haidhCycleLength, haidhPeriodLength, haidhNextExpected, haidhRuling,
     setupComplete, auth.id
   ).run();
 

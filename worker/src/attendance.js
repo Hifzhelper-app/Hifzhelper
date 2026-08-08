@@ -1,4 +1,5 @@
 import { validateAttendanceBody, isValidDate } from './utils.js';
+import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark } from '../../shared/haidhRules.js';
 
 // GET /attendance?month=YYYY-MM (or student_id for a teacher)
 export async function handleGetAttendance(request, env, auth) {
@@ -34,6 +35,28 @@ export async function handleSetAttendance(request, env, auth) {
 
   const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
 
+  // V3.39: marking a day haidh/predicted-haidh is capped two ways — a
+  // continuous run can't exceed the student's ruling's max duration, and
+  // a new run can't start until the gap since the last one has passed.
+  // "present"/"absent" are never subject to either check.
+  if (body.status === 'haidh' || body.status === 'predicted-haidh') {
+    const student = await env.DB.prepare('SELECT haidh_ruling FROM students WHERE id = ?').bind(studentId).first();
+    const ruling = (student && student.haidh_ruling) || 'hanafi';
+
+    const { results } = await env.DB.prepare(
+      `SELECT date FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND date != ?`
+    ).bind(studentId, body.date).all();
+    const existingDates = results.map(r => r.date);
+
+    const { runLength, gapDays } = evaluateHaidhMark(existingDates, body.date);
+    if (runLength > haidhCodeMaxRunDays(ruling)) {
+      return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}`, status: 400 };
+    }
+    if (gapDays !== null && gapDays < HAIDH_GAP_CODE) {
+      return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh`, status: 400 };
+    }
+  }
+
   await env.DB.prepare(
     `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?)
      ON CONFLICT(student_id, date) DO UPDATE SET status = excluded.status`
@@ -55,6 +78,12 @@ export async function handleDeleteAttendance(request, env, auth) {
 
 // POST /attendance/predict — bulk-insert "predicted-haidh" rows, never overwriting
 // anything already set (a real recorded day always wins over a prediction).
+// V3.39: no separate cap-checking needed here — cycleLength/periodLength
+// are already validated against the student's ruling and the dynamic
+// minCycleFrequency floor at Setup-save time (worker/src/profile.js), and
+// cycle length stays the clinically-standard start-to-start definition
+// (confirmed in chat), so this loop's existing math is unchanged and the
+// caps hold by construction.
 export async function handlePredictHaidh(request, env, auth) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
