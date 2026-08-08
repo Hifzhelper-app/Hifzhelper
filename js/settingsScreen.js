@@ -53,6 +53,36 @@ function updateHaidhVisibility(){
   document.getElementById('section-haidh').classList.toggle('hidden', setupSelectedGender !== 'F');
 }
 
+// ---------- Haidh: ruling switch + haaidha opt-in checkbox (V3.39) ----------
+const HAIDH_RULING_HINTS = {
+  hanafi: "Hanafi: haidh cannot exceed 10 days.",
+  shafii: "Shafi'i: haidh cannot exceed 15 days."
+};
+let setupSelectedRuling = 'hanafi';
+wireSwitch('haidh_ruling_switch', (value) => {
+  setupSelectedRuling = value;
+  renderSwitch('haidh_ruling_switch', setupSelectedRuling);
+  document.getElementById('haidhRulingHint').textContent = HAIDH_RULING_HINTS[setupSelectedRuling] || '';
+});
+
+// Deliberately outside every section's own Save button (confirmed in
+// chat: "will not require a separate save") — saves the instant it's
+// toggled, then refreshes both nav surfaces (home grid + dropdown) so
+// the Haidh nav item appears/disappears immediately, not just after a
+// reload.
+document.getElementById('haaidha_checkbox').addEventListener('change', async (e) => {
+  const checked = e.target.checked;
+  try{
+    await apiSaveProfile({ track_haidh: checked });
+    currentUser.trackHaidh = checked;
+    setupAuthBandAndDropdown();
+    if(!document.getElementById('screen-home').classList.contains('hidden')) renderHomeScreen();
+  } catch(err){
+    e.target.checked = !checked; // revert on failure -- never show a state that didn't actually save
+    document.getElementById('haidhError').textContent = "Couldn't save: " + err.message;
+  }
+});
+
 // ---------- Hifz Setup: mushaf switch ----------
 // V3.11.0: every option now has an explanatory hint (Hybrid already had
 // one; 13-line/15-line didn't).
@@ -204,6 +234,10 @@ async function renderSettingsScreen(){
   renderDaysPicker();
 
   // Haidh section
+  document.getElementById('haaidha_checkbox').checked = !!profile.track_haidh;
+  setupSelectedRuling = profile.haidh_ruling || 'hanafi';
+  renderSwitch('haidh_ruling_switch', setupSelectedRuling);
+  document.getElementById('haidhRulingHint').textContent = HAIDH_RULING_HINTS[setupSelectedRuling] || '';
   document.getElementById('haidh_cycle_length').value = profile.haidh_cycle_length || '';
   document.getElementById('haidh_period_length').value = profile.haidh_period_length || '';
   document.getElementById('haidh_next_expected').value = profile.haidh_next_expected || '';
@@ -294,6 +328,11 @@ document.getElementById('dhorScheduleSaveBtn').addEventListener('click', async (
 // endpoint. The student enters the more intuitive "next expected day";
 // lastStart (what /attendance/predict actually takes) is computed from
 // it here, so that endpoint needed no changes at all.
+// V3.39: client-side mirror of the backend's cap checks (shared/
+// haidhRules.js, same numbers, never duplicated by value) — catches an
+// invalid combination before a round trip, backend still re-checks
+// regardless (never trust the frontend's shape blindly, CONVENTIONS.md
+// principle 4).
 document.getElementById('haidhSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('haidhError');
   errEl.textContent = '';
@@ -304,11 +343,22 @@ document.getElementById('haidhSaveBtn').addEventListener('click', async () => {
     errEl.textContent = 'Please fill in cycle length, duration, and next expected day.';
     return;
   }
+  const maxDuration = haidhOfficialMaxDuration(setupSelectedRuling);
+  if(periodLength > maxDuration){
+    errEl.textContent = `Duration cannot exceed ${maxDuration} days for the selected ruling.`;
+    return;
+  }
+  const minFrequency = haidhMinCycleFrequency(periodLength);
+  if(cycleLength < minFrequency){
+    errEl.textContent = `Haidh cycle frequency must be at least ${minFrequency} days for a ${periodLength}-day duration.`;
+    return;
+  }
   try{
     await apiSaveProfile({
       haidh_cycle_length: cycleLength,
       haidh_period_length: periodLength,
       haidh_next_expected: nextExpected,
+      haidh_ruling: setupSelectedRuling,
       setup_complete: true
     });
     const lastStart = addDaysISO(nextExpected, -cycleLength);

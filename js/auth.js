@@ -2,7 +2,7 @@
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
 
-let currentUser = { name: '', role: 'student' };
+let currentUser = { name: '', role: 'student', trackHaidh: false };
 
 // Nav destinations — the same set drives both the dropdown menu and the
 // Home page tiles (per the "similar icons/tiles" decision). Screens not
@@ -24,9 +24,18 @@ const NAV_ITEMS = [
 // teachers even though the backend already 403s them regardless (this is
 // just about not showing a button that would only ever fail for them).
 const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
+// V3.39: shown only once the student has opted in via the Setup Haidh
+// section's "Haaidha" checkbox (track_haidh) — matches the field's own
+// female-only gating (a male student's track_haidh can never become true
+// through the normal Setup UI), so gating on this one flag is enough,
+// no separate gender check needed here.
+const HAIDH_NAV_ITEM = { id: 'haidhDetail', label: 'Haidh', icon: 'haidh' };
 
 function visibleNavItems(){
-  return currentUser.role === 'admin' ? NAV_ITEMS.concat([ADMIN_NAV_ITEM]) : NAV_ITEMS;
+  let items = NAV_ITEMS;
+  if(currentUser.trackHaidh) items = items.concat([HAIDH_NAV_ITEM]);
+  if(currentUser.role === 'admin') items = items.concat([ADMIN_NAV_ITEM]);
+  return items;
 }
 
 function renderNavItemsInto(containerId, extraItemsHtml){

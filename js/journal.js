@@ -27,6 +27,7 @@ const JOURNAL_DEFAULT_ROLLUP_DAYS = 80; // ~80 days of rollups + 10 expanded ≈
 const JOURNAL_LOAD_MORE_DAYS = 28;      // one "page" of further rollup history per tap
 
 let journalData = {};      // date -> { sabaq: [], sabaqDhor: [], dhor: [] }
+let journalAttendance = {}; // date -> 'haidh' | 'predicted-haidh' (V3.39)
 let journalRollupDays = JOURNAL_DEFAULT_ROLLUP_DAYS; // how far back "Load more" has extended to
 
 function todayISO(){ return new Date().toISOString().slice(0,10); }
@@ -39,13 +40,14 @@ function isoDateNDaysAgo(n){
 
 async function loadJournalData(totalDays){
   const since = isoDateNDaysAgo(totalDays);
-  const [sabaq, sabaqDhor, dhor] = await Promise.all([
-    apiSabaq.get(since),
-    apiSabaqDhor.get(since),
-    apiDhor.get(since)
-  ]);
+  const calls = [apiSabaq.get(since), apiSabaqDhor.get(since), apiDhor.get(since)];
+  // V3.39: only fetch attendance for students who've actually opted into
+  // haidh tracking — skips a pointless call for everyone else.
+  if(currentUser.trackHaidh) calls.push(apiGetAttendance());
+  const [sabaq, sabaqDhor, dhor, attendance] = await Promise.all(calls);
 
   journalData = {};
+  journalAttendance = {};
   const today = todayISO();
   // Always include today, even with nothing logged yet, so there's
   // always a row to interact with.
@@ -61,6 +63,12 @@ async function loadJournalData(totalDays){
   bucket(sabaq, 'sabaq');
   bucket(sabaqDhor, 'sabaqDhor');
   bucket(dhor, 'dhor');
+
+  if(attendance){
+    (attendance.data || []).forEach(row => {
+      if(row.status === 'haidh' || row.status === 'predicted-haidh') journalAttendance[row.date] = row.status;
+    });
+  }
 }
 
 function formatDateCell(iso){
@@ -196,6 +204,28 @@ function renderJournalRow(date, day){
 
   const tr = document.createElement('tr');
   tr.appendChild(dateCell);
+
+  // V3.39: a haidh mark (planned or confirmed, no visual difference —
+  // confirmed in chat) shows as static text in the Sabaq column ONLY
+  // when nothing at all has been logged for the day yet — any of the 3
+  // log types being present means haidh is cancelled for that date, full
+  // stop, so the row falls straight through to the normal rendering
+  // below with no haidh mention anywhere.
+  const hasAnyLog = (day.sabaq && day.sabaq.length) || (day.sabaqDhor && day.sabaqDhor.length) || (day.dhor && day.dhor.length);
+  const haidhStatus = journalAttendance[date];
+  if(haidhStatus && !hasAnyLog){
+    const haidhTd = document.createElement('td');
+    haidhTd.className = 'journal-cell journal-cell-haidh';
+    haidhTd.textContent = 'Haidh - log sabaq/dhor to cancel';
+    tr.appendChild(haidhTd);
+    ['sabaqDhor', 'dhor'].forEach(() => {
+      const td = document.createElement('td');
+      td.className = 'journal-cell';
+      td.innerHTML = journalCellShorthand(null, []);
+      tr.appendChild(td);
+    });
+    return tr;
+  }
 
   ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
     const td = document.createElement('td');
