@@ -7,6 +7,34 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.40.5 — Haidh calendar: width cap, confirm-bar icons, cross-month ranges (2026-08-08)
+
+**Files touched:** `index.html`, `js/haidhDetailScreen.js`, `css/haidh.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Three small, independent items, one of them requiring no code change at all.
+
+**Width cap** — `#screen-haidhDetail` gets the app's standard 30%/50% width cap on tablet/desktop (`--width-tablet`/`--width-desktop`, `tokens.css`), the same pattern already used by `#screen-settings`/`#screen-admin`/`.login-card`. It had simply never been given the cap before — unrelated to Juz Tracker's own deliberate full-width exemption, which was a specific opt-out for a different screen.
+
+**Confirm-bar icons** — the confirm/predict button and Cancel both now carry an icon alongside their text. The confirm button reuses the `save` icon (same one Settings' own Haidh section save button already uses, for visual consistency across the feature), added via `innerHTML` alongside its existing dynamic "Confirm as haidh"/"Predict as haidh" text. Cancel reuses `close` (the same icon the Dhor timer already uses for its own discard/cancel action), set once at module load since its label never changes.
+
+**Cross-month range selection** — turned out to already work, verified by tracing every place `haidhRangeStart`/`haidhRangeEnd` are read: none of them, nor `haidhPendingRangeBounds`, `onHaidhCalDayTap`, `renderHaidhRangeBar`, or `onHaidhRangeConfirm`, ever reference which month is currently displayed (`haidhCalViewYear`/`haidhCalViewMonth`) — the pending range is plain date strings throughout. Tapping a day, navigating to a different month via prev/next, and tapping a day there already produces a valid range. No behavior changed; added a comment documenting this as a real requirement so a future edit doesn't accidentally scope range state to the current view.
+
+---
+
+## V3.40.4 — Haidh calendar: confirm/predict as one decision per range (2026-08-08)
+
+**Files touched:** `index.html`, `js/haidhDetailScreen.js`, `shared/haidhRules.js`, `worker/src/attendance.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Simplifies the marking model, confirmed in chat right after V3.40.3's fixes made the calendar visible again. Previously, a new range's status was decided per date automatically (past/today → `haidh`, future → `predicted-haidh`), so a period starting today and running a few days ahead would end up "today confirmed, the rest predicted" — which doesn't reflect reality once a period has actually started. Now the whole range gets one uniform status, decided once: "confirmed" if it touches today or the past — including transitively, through an adjacent existing mark — and "predicted" only if it's entirely future with no such connection. `evaluateHaidhRange` (`shared/haidhRules.js`) already computed the extended run's start for validation purposes; this reuses that same `runStart` rather than adding parallel logic. `handleMarkHaidhRange` (`worker/src/attendance.js`) now assigns one status to every date in the batch instead of branching per date.
+
+The confirm bar's button reflects this before the student commits — "Confirm as haidh" or "Predict as haidh" instead of a generic "Mark as haidh" — via a new client-side `haidhRangeTouchesPastOrToday()` that mirrors the server's own extension logic using the already-loaded `haidhCalAttendance`. Tapping an already-marked day to clear it needed no changes — that already was, and still is, the correct 2-state toggle for a single day.
+
+Rejection messages (duration cap and gap rule, in both `handleMarkHaidhRange` and `handleSetAttendance` for consistency) now end with "Please revise your history." rather than only stating which rule failed.
+
+The new status-decision logic was verified directly against 5 concrete scenarios before delivery — including the one that matters most: a future range that connects to an existing run touching today correctly becomes confirmed, while a future range merely adjacent to another future-only run correctly stays predicted rather than being wrongly upgraded.
+
+---
+
 ## V3.40.3 — Haidh calendar: 3 real bugs, all fixed and verified (2026-08-08)
 
 **Files touched:** `index.html`, `js/haidhDetailScreen.js`, `shared/haidhRules.js`, `worker/src/attendance.js`, `js/sw.js`, `js/juzTrackerScreen.js` (re-included, was missing from the live deploy), `TODO.md`, `CHANGELOG.md`.

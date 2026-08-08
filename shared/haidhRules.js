@@ -93,6 +93,11 @@ function evaluateHaidhMark(existingDates, candidateDate) {
 // gap-checks if NEITHER edge of the range touches an existing day --
 // re-verified against all original test scenarios plus 3 covering this
 // exact bug, 12/12 correct via direct Node execution.
+// V3.40.4: also returns runStart -- the caller uses it to decide whether
+// the WHOLE range is "confirmed" (touches today or the past, even via an
+// adjacent existing run) or "predicted" (entirely future, no connection
+// to today) as ONE uniform status, rather than the old per-date
+// future-vs-past split.
 function evaluateHaidhRange(existingDates, startDate, endDate) {
   const existing = new Set(existingDates);
   let runStart = startDate, runEnd = endDate;
@@ -115,7 +120,7 @@ function evaluateHaidhRange(existingDates, startDate, endDate) {
   const dates = [];
   for (let d = startDate; d <= endDate; d = haidhAddDaysISO(d, 1)) dates.push(d);
 
-  return { dates, runLength, gapDays };
+  return { dates, runStart, runLength, gapDays };
 }
 
 // Works as a plain global-scope script in the browser (file:// safe — no ES module

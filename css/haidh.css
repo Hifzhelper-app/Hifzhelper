@@ -2,6 +2,22 @@
    Hifzhelper — Haidh calendar (V3.39)
    ============================================================ */
 
+/* V3.40.5: the calendar screen had never been given the app's standard
+   30%/50% width cap on larger screens (--width-tablet/--width-desktop,
+   tokens.css) -- same pattern as #screen-settings/#screen-admin/
+   .login-card. This is unrelated to Juz Tracker's DELIBERATE full-width
+   exemption (V3.40) -- that was an explicit opt-out for a different
+   screen, this one was simply never given the cap in the first place. */
+#screen-haidhDetail {
+  width: 100%;
+}
+@media (min-width: 768px) and (max-width: 1179px) {
+  #screen-haidhDetail { width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  #screen-haidhDetail { width: var(--width-desktop); margin: 0 auto; }
+}
+
 .haidh-cal-nav {
   display: flex;
   align-items: center;
@@ -85,11 +101,19 @@
 }
 .haidh-range-bar-actions { display: flex; gap: var(--space-sm); flex: 0 0 auto; }
 .haidh-range-confirm-btn, .haidh-range-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border-radius: 999px;
   font: inherit;
   font-size: 13px;
   padding: 8px 16px;
   cursor: pointer;
+}
+.haidh-range-confirm-btn svg, .haidh-range-cancel-btn svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
 }
 .haidh-range-confirm-btn {
   border: none;

@@ -1,5 +1,5 @@
 // ============================================================
-// Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2)
+// Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
 // Reached from the "Haidh" nav item, or from the journal's Sabaq-column
 // "Haidh" text for a specific date (param, if provided, jumps straight
@@ -9,7 +9,7 @@
 // no separate "range mode" button (confirmed in chat: real haidh is
 // never realistically a single isolated day). Tap 1 = pending start, tap
 // 2 = pending end (can be the same day again, for a 1-day range) —
-// nothing is written until the confirm bar's "Mark" button is pressed.
+// nothing is written until the confirm bar's button is pressed.
 // No minimum range length is enforced; only the existing duration/gap
 // caps (POST /attendance/mark-range, server-side, whole range validated
 // before anything is written — an invalid range rejects entirely, no
@@ -18,13 +18,21 @@
 // unchanged from before — continuity with the original "tap a marked
 // day to clear it" behavior, which only ever applied to removing.
 //
+// V3.40.4: the WHOLE pending range gets ONE uniform status, decided
+// once, not a per-date future-vs-past split — confirmed in chat: a
+// period starting today and running a few days into the future is
+// entirely "confirmed", not "today confirmed, the rest predicted".
+// The confirm bar's button reflects which action it's about to take
+// (haidhRangeTouchesPastOrToday) before the student commits: "Confirm
+// as haidh" if the range touches today or the past (even via an
+// adjacent existing mark), "Predict as haidh" if it's entirely future.
+// Rejection messages now include an actionable suggestion.
+//
 // A day carries one of three SAVED states here: unmarked,
 // 'predicted-haidh' (lighter shade — a plan, not yet real) or 'haidh'
 // (full shade — confirmed/actual), plus a 4th, purely local/unsaved
-// state while a range is being built ("selecting"). A date in the
-// future becomes a plan ('predicted-haidh') when confirmed; today or a
-// past date becomes real ('haidh') directly. No deletion of any log
-// ever happens here, and nothing on the Sabaq/Sabaq Dhor/Dhor detail
+// state while a range is being built ("selecting"). No deletion of any
+// log ever happens here, and nothing on the Sabaq/Sabaq Dhor/Dhor detail
 // cards is touched (confirmed in chat) — this screen only ever writes
 // to the attendance table.
 //
@@ -80,6 +88,16 @@ async function loadHaidhCalAttendance(){
 }
 
 function haidhPendingRangeBounds(){
+  // V3.40.5: haidhRangeStart/End are plain YYYY-MM-DD strings, never
+  // tied to whichever month is currently displayed (haidhCalViewYear/
+  // haidhCalViewMonth) -- confirmed as a requirement in chat: a range
+  // must be selectable across a calendar month boundary (tap a day,
+  // navigate via prev/next, tap a day in the new month). Verified this
+  // already holds throughout the file -- nothing here or in
+  // onHaidhCalDayTap/renderHaidhRangeBar/onHaidhRangeConfirm reads the
+  // viewed month, so this keeps working as long as that stays true. Any
+  // future change that scopes range state to the current month view
+  // would break this.
   if(haidhRangeStart == null) return null;
   if(haidhRangeEnd == null) return [haidhRangeStart, haidhRangeStart];
   return haidhRangeStart <= haidhRangeEnd ? [haidhRangeStart, haidhRangeEnd] : [haidhRangeEnd, haidhRangeStart];
@@ -110,6 +128,19 @@ function haidhCalDayCell(dateISO, inCurrentMonth){
   return btn;
 }
 
+// V3.40.4: mirrors the Worker's own runStart extension
+// (shared/haidhRules.js's evaluateHaidhRange) so the confirm button can
+// tell the student which action it's about to take before they commit --
+// extends the pending range's start backward through any
+// immediately-adjacent existing mark, then checks whether that reaches
+// today or earlier. haidhAddDaysISO comes from shared/haidhRules.js,
+// loaded as a plain global script same as everywhere else it's used.
+function haidhRangeTouchesPastOrToday(bounds){
+  let runStart = bounds[0];
+  while(haidhCalAttendance[haidhAddDaysISO(runStart, -1)]) runStart = haidhAddDaysISO(runStart, -1);
+  return runStart <= haidhTodayISO();
+}
+
 function renderHaidhRangeBar(){
   const bar = document.getElementById('haidhRangeBar');
   const bounds = (haidhRangeStart != null && haidhRangeEnd != null) ? haidhPendingRangeBounds() : null;
@@ -119,6 +150,16 @@ function renderHaidhRangeBar(){
   }
   const n = haidhDaysBetween(bounds[0], bounds[1]) + 1;
   document.getElementById('haidhRangeBarText').textContent = n + (n === 1 ? ' day selected' : ' days selected');
+  // V3.40.4: the whole range gets ONE status -- confirmed if it touches
+  // today/the past (even via an adjacent existing mark), predicted if
+  // it's entirely future with no such connection -- so the button says
+  // which action it's about to take rather than a generic "mark". V3.40.5:
+  // an icon alongside the text now too, requested directly ("save and
+  // cancel icons") -- reuses the same `save` icon already used for
+  // Settings' own Haidh save button, for visual consistency across the
+  // feature; innerHTML instead of textContent since it's icon+text now.
+  document.getElementById('haidhRangeConfirmBtn').innerHTML =
+    iconHtml('save') + '<span>' + (haidhRangeTouchesPastOrToday(bounds) ? 'Confirm as haidh' : 'Predict as haidh') + '</span>';
   bar.classList.remove('hidden');
 }
 
@@ -242,7 +283,11 @@ document.getElementById('haidhCalNextBtn').innerHTML = iconHtml('chevronDown');
 document.getElementById('haidhCalPrevBtn').addEventListener('click', () => shiftHaidhCalMonth(-1));
 document.getElementById('haidhCalNextBtn').addEventListener('click', () => shiftHaidhCalMonth(1));
 
-// V3.40.2: range-select confirm bar.
+// V3.40.2: range-select confirm bar. V3.40.5: Cancel gets its icon+text
+// once here (its label never changes) -- reuses `close`, the same icon
+// already used elsewhere for a discard/cancel action (the Dhor timer's
+// own Close button).
+document.getElementById('haidhRangeCancelBtn').innerHTML = iconHtml('close') + '<span>Cancel</span>';
 document.getElementById('haidhRangeCancelBtn').addEventListener('click', () => {
   haidhClearPendingRange();
   renderHaidhCalGrid();
