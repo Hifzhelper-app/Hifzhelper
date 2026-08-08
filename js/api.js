@@ -158,8 +158,14 @@ function apiGetAttendance(month){
   const qs = month ? '?month=' + encodeURIComponent(month) : '';
   return apiFetch('/attendance' + qs);
 }
-function apiSetAttendance(date, status){
-  return apiFetch('/attendance', { method: 'POST', body: JSON.stringify({ date, status }) });
+// V3.40.2: apiSetAttendance removed -- its only caller (the Haidh
+// calendar's single-day mark path) was replaced by apiMarkHaidhRange
+// below. Backend handleSetAttendance/its route left untouched -- that's
+// the separately PARKED "attendance" decision (see TODO.md), not
+// something this change resolves.
+// V3.40.2: the calendar's tap-first/tap-last range-select.
+function apiMarkHaidhRange(startDate, endDate){
+  return apiFetch('/attendance/mark-range', { method: 'POST', body: JSON.stringify({ startDate, endDate }) });
 }
 function apiDeleteAttendance(date){
   return apiFetch('/attendance?date=' + encodeURIComponent(date), { method: 'DELETE' });

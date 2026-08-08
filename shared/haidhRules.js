@@ -80,12 +80,36 @@ function evaluateHaidhMark(existingDates, candidateDate) {
   return { runLength, gapDays };
 }
 
+// V3.40.2: the Haidh calendar's tap-first/tap-last range-select needs to
+// validate a whole proposed SPAN at once, not just one date -- reuses
+// evaluateHaidhMark exactly, by simulating marking each date in the range
+// one at a time (in order) against a growing working set, rather than
+// duplicating its run/gap math. existingDates must already exclude
+// anything inside [startDate, endDate] (the caller's job, same as
+// evaluateHaidhMark's own existingDates contract). Pure date-math, no
+// DB/network access, no cap-comparison -- the caller applies the same
+// haidhCodeMaxRunDays/HAIDH_GAP_CODE comparison it already uses for a
+// single date, just once per step here.
+function evaluateHaidhRange(existingDates, startDate, endDate) {
+  const dates = [];
+  for (let d = startDate; d <= endDate; d = haidhAddDaysISO(d, 1)) dates.push(d);
+
+  const working = existingDates.slice();
+  const steps = dates.map((candidate) => {
+    const result = evaluateHaidhMark(working, candidate);
+    working.push(candidate);
+    return { date: candidate, runLength: result.runLength, gapDays: result.gapDays };
+  });
+  return { dates, steps };
+}
+
 // Works as a plain global-scope script in the browser (file:// safe — no ES module
 // CORS restrictions) AND as a CommonJS module for the Worker (wrangler/esbuild
 // supports require()). Nothing above this line needs to change either way.
 if(typeof module !== 'undefined' && module.exports){
   module.exports = {
     HAIDH_OFFICIAL_MAX_DURATION, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE,
-    haidhOfficialMaxDuration, haidhCodeMaxRunDays, haidhMinCycleFrequency, evaluateHaidhMark
+    haidhOfficialMaxDuration, haidhCodeMaxRunDays, haidhMinCycleFrequency, evaluateHaidhMark,
+    evaluateHaidhRange
   };
 }

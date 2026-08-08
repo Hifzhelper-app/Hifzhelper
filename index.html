@@ -21,18 +21,18 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.40"></script>
+<script src="js/pwaManifest.js?v=3.40.2"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.40">
-<link rel="stylesheet" href="css/base.css?v=3.40">
-<link rel="stylesheet" href="css/nav.css?v=3.40">
-<link rel="stylesheet" href="css/journal-table.css?v=3.40">
-<link rel="stylesheet" href="css/components.css?v=3.40">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.40">
-<link rel="stylesheet" href="css/settings.css?v=3.40">
-<link rel="stylesheet" href="css/admin.css?v=3.40">
-<link rel="stylesheet" href="css/haidh.css?v=3.40">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.40">
+<link rel="stylesheet" href="css/tokens.css?v=3.40.2">
+<link rel="stylesheet" href="css/base.css?v=3.40.2">
+<link rel="stylesheet" href="css/nav.css?v=3.40.2">
+<link rel="stylesheet" href="css/journal-table.css?v=3.40.2">
+<link rel="stylesheet" href="css/components.css?v=3.40.2">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.40.2">
+<link rel="stylesheet" href="css/settings.css?v=3.40.2">
+<link rel="stylesheet" href="css/admin.css?v=3.40.2">
+<link rel="stylesheet" href="css/haidh.css?v=3.40.2">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.40.2">
 </head>
 <body>
 
@@ -531,7 +531,16 @@
       </div>
       <div class="haidh-cal-weekdays" id="haidhCalWeekdays"></div>
       <div class="haidh-cal-grid" id="haidhCalGrid"></div>
-      <p class="form-hint" id="haidhCalHint">Tap a day to mark haidh. Tap a marked day to clear it.</p>
+      <!-- V3.40.2: range-select confirm bar -- hidden until both a
+           pending start and end are set (js/haidhDetailScreen.js). -->
+      <div class="haidh-range-bar hidden" id="haidhRangeBar">
+        <span id="haidhRangeBarText"></span>
+        <div class="haidh-range-bar-actions">
+          <button type="button" class="haidh-range-cancel-btn" id="haidhRangeCancelBtn">Cancel</button>
+          <button type="button" class="haidh-range-confirm-btn" id="haidhRangeConfirmBtn">Mark as haidh</button>
+        </div>
+      </div>
+      <p class="form-hint" id="haidhCalHint">Tap a start day, then an end day, to mark a haidh range. Tap an already-marked day to clear it.</p>
       <div class="form-error" id="haidhCalError"></div>
     </section>
 
@@ -549,7 +558,18 @@
         <h2>Juz Tracker</h2>
       </div>
       <div class="juz-tracker-wrap">
-        <kaaba-juz-tracker controls="full"></kaaba-juz-tracker>
+        <!-- V3.40.1: controls="full" removed entirely (it was all-or-
+             nothing -- no way to keep Reset while dropping Download SVG
+             and Mark next juz individually). Progress bar + Reset are
+             hand-built below instead, wired in js/juzTrackerScreen.js.
+             Marking a juz now happens only by tapping the tiles
+             themselves, per user request. -->
+        <kaaba-juz-tracker controls="none"></kaaba-juz-tracker>
+        <div class="juz-tracker-bar">
+          <span class="juz-tracker-count" id="juzTrackerCount">0 / 30 juz</span>
+          <div class="juz-tracker-track"><div class="juz-tracker-fill" id="juzTrackerFill"></div></div>
+          <button type="button" class="juz-tracker-reset-btn" id="juzTrackerResetBtn">Reset</button>
+        </div>
       </div>
     </section>
 
@@ -744,35 +764,41 @@
       <!-- Haidh section (new, V3.9.0) — shown only when gender is F
            (toggled live off the gender picker above, not just on reload).
            Reuses the existing /attendance/predict backend (live since
-           migration 0001) as-is — see settingsScreen.js. -->
+           migration 0001) as-is — see settingsScreen.js.
+           V3.40.1: heading relabeled "Haaidha" with the opt-in checkbox
+           now inline in the heading row itself (was its own separate row
+           below) -- #haaidha_checkbox keeps the same id, so the existing
+           change listener in settingsScreen.js needed no changes. The
+           description paragraph moved below the Ruling row. -->
       <div class="settings-section detail-page hidden" id="section-haidh">
         <div class="settings-header-row">
-          <h2>Haidh</h2>
+          <!-- V3.39: general opt-in, writes straight to track_haidh via
+               apiSaveProfile on change -- deliberately outside this
+               section's own Save button/payload (confirmed in chat: "will
+               not require a separate save"). -->
+          <label class="haidh-heading-check">
+            <input type="checkbox" id="haaidha_checkbox">
+            <h2>Haaidha</h2>
+          </label>
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="save-status" id="haidhSaveStatus">saved ✓</span>
             <button type="button" class="icon-btn" id="haidhSaveBtn" aria-label="Save"></button>
           </div>
         </div>
-        <p class="form-hint" style="margin-top:0;">Plans will be adjusted for haidh days. Can be adjusted for actual haidh at any time.</p>
 
-        <!-- V3.39: general opt-in, writes straight to track_haidh via
-             apiSaveProfile on change -- deliberately outside the section's
-             own Save button/payload (confirmed in chat: "will not require
-             a separate save"). -->
-        <label class="cb-private-row">
-          <input type="checkbox" id="haaidha_checkbox">
-          Haaidha
-        </label>
-
-        <div class="settings-row">
-          <label>Ruling</label>
-          <div class="switch-track switch-track-small" id="haidh_ruling_switch">
+        <!-- V3.40.1: was .switch-track-small (fixed 72px, built for the
+             2-letter M/F gender switch) -- "Shafi'i" was visibly clipping
+             to "Sha". Now its own centered row at 75% width instead. -->
+        <label class="haidh-ruling-label">Ruling</label>
+        <div class="haidh-ruling-row">
+          <div class="switch-track" id="haidh_ruling_switch">
             <div class="switch-thumb"></div>
             <button type="button" class="switch-option" data-value="hanafi">Hanafi</button>
             <button type="button" class="switch-option" data-value="shafii">Shafi'i</button>
           </div>
         </div>
-        <p class="form-hint" id="haidhRulingHint" style="margin-top:0;"></p>
+
+        <p class="form-hint" style="margin-top:0;">Plans will be adjusted for haidh days. Can be adjusted for actual haidh at any time.</p>
 
         <div class="settings-row"><label>Haidh cycle frequency (days)</label><input type="number" inputmode="numeric" id="haidh_cycle_length" min="1"></div>
         <div class="settings-row"><label>How many haidh days per cycle</label><input type="number" inputmode="numeric" id="haidh_period_length" min="1"></div>
@@ -786,28 +812,29 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.40"></script>
-<script src="shared/haidhRules.js?v=3.40"></script>
-<script src="js/icons.js?v=3.40"></script>
-<script src="js/customDate.js?v=3.40"></script>
-<script src="js/api.js?v=3.40"></script>
-<script src="js/uiSwitch.js?v=3.40"></script>
-<script src="js/position.js?v=3.40"></script>
-<script src="js/auth.js?v=3.40"></script>
-<script src="js/home.js?v=3.40"></script>
-<script src="js/tajweed.js?v=3.40"></script>
-<script src="js/commentPrivacy.js?v=3.40"></script>
-<script src="js/session-timer.js?v=3.40"></script>
-<script src="js/journal.js?v=3.40"></script>
-<script src="js/dhorPage.js?v=3.40"></script>
-<script src="js/sabaqPage.js?v=3.40"></script>
-<script src="js/sabaqDhorPage.js?v=3.40"></script>
-<script src="js/reflectionCard.js?v=3.40"></script>
-<script src="js/logDetailScreen.js?v=3.40"></script>
-<script src="js/haidhDetailScreen.js?v=3.40"></script>
-<script src="js/kaabaTracker.js?v=3.40"></script>
-<script src="js/settingsScreen.js?v=3.40"></script>
-<script src="js/adminPage.js?v=3.40"></script>
-<script src="js/app.js?v=3.40"></script>
+<script src="shared/data.js?v=3.40.2"></script>
+<script src="shared/haidhRules.js?v=3.40.2"></script>
+<script src="js/icons.js?v=3.40.2"></script>
+<script src="js/customDate.js?v=3.40.2"></script>
+<script src="js/api.js?v=3.40.2"></script>
+<script src="js/uiSwitch.js?v=3.40.2"></script>
+<script src="js/position.js?v=3.40.2"></script>
+<script src="js/auth.js?v=3.40.2"></script>
+<script src="js/home.js?v=3.40.2"></script>
+<script src="js/tajweed.js?v=3.40.2"></script>
+<script src="js/commentPrivacy.js?v=3.40.2"></script>
+<script src="js/session-timer.js?v=3.40.2"></script>
+<script src="js/journal.js?v=3.40.2"></script>
+<script src="js/dhorPage.js?v=3.40.2"></script>
+<script src="js/sabaqPage.js?v=3.40.2"></script>
+<script src="js/sabaqDhorPage.js?v=3.40.2"></script>
+<script src="js/reflectionCard.js?v=3.40.2"></script>
+<script src="js/logDetailScreen.js?v=3.40.2"></script>
+<script src="js/haidhDetailScreen.js?v=3.40.2"></script>
+<script src="js/kaabaTracker.js?v=3.40.2"></script>
+<script src="js/juzTrackerScreen.js?v=3.40.2"></script>
+<script src="js/settingsScreen.js?v=3.40.2"></script>
+<script src="js/adminPage.js?v=3.40.2"></script>
+<script src="js/app.js?v=3.40.2"></script>
 </body>
 </html>

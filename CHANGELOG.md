@@ -7,6 +7,34 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.40.2 — Haidh calendar range-select (2026-08-08)
+
+**Files touched:** `index.html`, `css/haidh.css`, `js/haidhDetailScreen.js`, `js/api.js`, `shared/haidhRules.js`, `worker/src/attendance.js`, `worker/src/index.js`, `TODO.md`, `CHANGELOG.md`.
+
+(User asked for this as "3.40.1" — bumped to 3.40.2 instead since 3.40.1's own files already shipped with different content, and every changed file needs a fresh version string regardless of what the round gets called, per this project's own versioning convention.)
+
+Making a NEW haidh mark is now tap-first/tap-last range-select, replacing the old immediate single-tap-toggle — confirmed in chat, no separate "range select mode" button needed. Tap day 1 sets a pending start (new `.haidh-cal-day-selecting` highlight — a 3rd color, distinct from the existing confirmed/planned shading, so a still-editable selection never looks already-saved). Tap day 2 (same day again = a 1-day range) sets the end and highlights the whole span. Nothing is written until the new confirm bar's "Mark N days as haidh" is pressed — "Cancel" clears the pending selection instead. No minimum range length is enforced (corrected mid-spec by the user — realistic duration is a user-managed judgment call, not something the app validates a floor on; only the existing maximum-duration and gap caps still apply). Tapping an already-confirmed/planned day *outside* of an active selection still clears just that one day directly, unchanged from before — continuity with the original "tap a marked day to clear it," which only ever applied to removing.
+
+**New `POST /attendance/mark-range`** (`worker/src/attendance.js`) is a genuinely atomic batch operation, not N sequential single-day calls — confirmed in chat: an invalid range must reject the whole batch, marking nothing. It fetches the student's existing haidh/predicted-haidh dates *outside* the proposed range, then validates every date *inside* the range in chronological order via a new `evaluateHaidhRange` (`shared/haidhRules.js`), which reuses `evaluateHaidhMark`'s exact existing per-date run-length/gap math by simulating adding each date to a growing working set — no duplicated validation logic, same single source of truth the rest of the Haidh caps already use. The very first date that would exceed the ruling's duration cap or violate the 15-day gap rule fails the whole request before anything is written; a fully valid range is then written in one `env.DB.batch()` call for genuine atomicity. Verified directly against 9 scenarios before considering this done: plain short ranges, exactly-at-cap and over-cap, a range that only becomes invalid once merged with an adjacent *existing* run (not just the new dates alone), both a gap violation and a gap-OK case, and both rulings.
+
+**`apiSetAttendance`** (`js/api.js`) removed — its only caller was the old single-tap immediate-mark path this replaces. Backend `handleSetAttendance` and its route are deliberately untouched: that's the separately PARKED "attendance" decision in `TODO.md` (present/absent marking for a future teacher view), not something this change resolves.
+
+---
+
+## V3.40.1 — Juz Tracker button removal + Settings Haidh redesign + a real calendar bug fix (2026-08-08)
+
+**Files touched:** `index.html`, `css/juzTracker.css`, `css/settings.css`, `js/settingsScreen.js`, `js/haidhDetailScreen.js`, `js/juzTrackerScreen.js` (new), `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Three independent pieces of a "Haidh mods" + "Juz Tracker deletions" ask, all previously spec'd and documented in `TODO.md` before any code was touched, per the standing process rule. A 4th piece from the same ask — the Haidh calendar's tap-first/tap-last range-select and its highlight state — is deliberately NOT in this release; it was already flagged as "not yet designed in detail," and guessing at the interaction model felt wrong for something that writes real haidh data. Left open in `TODO.md` with the specific questions that need answering first.
+
+**Juz Tracker** (`index.html`, `css/juzTracker.css`, `js/juzTrackerScreen.js` new) — both "Download SVG" and "Mark next juz" removed; marking a juz now only happens by tapping the tiles themselves, which was always wired independently of the control bar anyway. `js/kaabaTracker.js`'s `controls` attribute turned out to be all-or-nothing (`"full"` or `"none"`), so keeping the progress bar and Reset meant giving up the component's own built-in bar entirely and hand-building those two pieces instead — a small new file wires `juz-change` to a plain count/fill-bar readout and `el.reset()` to the Reset button, styled with the app's own tokens rather than the component's baked-in palette (which lives in its own Shadow DOM regardless).
+
+**Settings Haidh section** (`index.html`, `css/settings.css`, `js/settingsScreen.js`) — heading text becomes "Haaidha", with the existing `#haaidha_checkbox` moved inline into the heading row itself (wrapped together in one `<label>`, so tapping the heading text also toggles it) — same element id throughout, so its save-on-change listener in `js/settingsScreen.js` needed no changes. The Ruling switch (Hanafi/Shafi'i) moves out of the label+input `.settings-row` pattern into its own centered row at 75% width — this incidentally fixes a real, visible bug: it was previously squeezed into `.switch-track-small`, a fixed-72px class built for the 2-letter M/F gender switch elsewhere, which is why "Shafi'i" was rendering as "Sha". `#haidhRulingHint` ("Hanafi: haidh cannot exceed 10 days.") is removed entirely — the element, and both places `js/settingsScreen.js` populated it via the now-also-removed `HAIDH_RULING_HINTS` lookup — this is UI copy only; the actual 10/15-day caps remain enforced server-side in `worker/src/profile.js`, untouched. The "Plans will be adjusted..." description paragraph moves from the top of the section to right after the Ruling row. The 3 numeric/date input rows get a shared `min-height` (`#section-haidh .settings-row`) so they're no longer uneven — 2 of the 3 labels wrap to 2 lines on mobile widths and 1 doesn't.
+
+**Haidh calendar, real bug found and fixed** (`js/haidhDetailScreen.js`) — the prev/next month buttons were already correctly wired to `shiftHaidhCalMonth(-1/1)`, and `css/haidh.css` already had rotation rules ready for an icon (`.haidh-cal-prev svg`/`.haidh-cal-next svg`), but nothing anywhere had ever actually injected one — the buttons were fully functional but completely invisible, not just unstyled. Fixed with `iconHtml('chevronDown')` on both, matching the rotation the CSS was always built for.
+
+---
+
 ## V3.40 — Juz Tracker, Phase 1 (free play) (2026-08-08)
 
 **Files touched:** `index.html`, `js/icons.js`, `js/auth.js`, `js/app.js`, `js/kaabaTracker.js` (new), `css/juzTracker.css` (new), `js/sw.js`, `CHANGELOG.md`.
