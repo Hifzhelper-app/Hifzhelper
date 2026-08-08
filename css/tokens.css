@@ -36,6 +36,13 @@
   --color-accent:     var(--palette-evergreen);
   --color-accent-soft:var(--palette-sky);
 
+  /* Haidh (V3.39) — reuses the existing palette rather than introducing
+     a new raw hex, per this file's own "every color is a variable"
+     rule. Mauve already reads as a warm, distinct accent against the
+     rest of the palette. */
+  --color-haidh: var(--palette-mauve);
+  --color-haidh-soft: #F1E4E6; /* predicted/planned calendar days — lighter shade, confirmed in chat */
+
   /* Status colors — deliberately separate from the palette above; these
      carry fixed meaning (error, success) and shouldn't shift if the
      palette is restyled later. */

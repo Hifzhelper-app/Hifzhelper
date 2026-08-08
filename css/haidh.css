@@ -1,0 +1,61 @@
+/* ============================================================
+   Hifzhelper — Haidh calendar (V3.39)
+   ============================================================ */
+
+.haidh-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--space-md) 0 var(--space-sm);
+}
+.haidh-cal-nav #haidhCalMonthLabel {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.haidh-cal-prev svg { transform: rotate(90deg); }
+.haidh-cal-next svg { transform: rotate(-90deg); }
+
+.haidh-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-ink-faint);
+  margin-bottom: var(--space-xs);
+}
+
+.haidh-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.haidh-cal-day {
+  aspect-ratio: 1;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.haidh-cal-day-muted { color: var(--color-ink-faint); background: var(--color-page-bg); }
+.haidh-cal-day-today { border-color: var(--color-accent); border-width: 2px; }
+
+/* Confirmed/actual haidh — full shade. Planned/predicted — lighter
+   shade (confirmed in chat: visually distinct, using the existing
+   predicted-haidh status). No difference once a planned day auto-
+   resolves — that's a backend/attendance distinction, not a visual one
+   here; a day only ever shows "planned" while it's still genuinely in
+   the future. */
+.haidh-cal-day-confirmed {
+  background: var(--color-haidh);
+  border-color: var(--color-haidh);
+  color: #FFFFFF;
+}
+.haidh-cal-day-planned {
+  background: var(--color-haidh-soft);
+  border-color: var(--color-haidh-soft);
+  color: var(--color-ink);
+}

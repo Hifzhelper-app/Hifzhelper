@@ -132,6 +132,16 @@
 .journal-cell-text {
   color: var(--color-ink);
 }
+
+/* V3.39: haidh mark with nothing logged yet — static text (no checkbox,
+   confirmed in chat), permanently overridable by logging any entry for
+   that date. */
+.journal-cell-haidh {
+  color: var(--color-haidh);
+  font-size: 11px;
+  line-height: 1.3;
+  font-style: italic;
+}
 /* 2026-08-05, confirmed in chat: was a plain, non-interactive span --
    now a real button, the popup's own trigger (js/journal.js's
    openEntriesPopup), listing every entry for that date/type instead of
