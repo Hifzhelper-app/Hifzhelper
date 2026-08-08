@@ -28,7 +28,11 @@ function showWelcome(name){
 // V3.9.0: 'settings' now also covers Dhor Schedule and Haidh — the old
 // 'plans' nav item/placeholder is gone entirely (no separate destination
 // for it anymore, confirmed in chat), so SCREEN_LABELS lost that entry.
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, haidhDetail: true };
+// V3.40: 'juzTracker' is fully static (the embedded <kaaba-juz-tracker>
+// component owns all of its own behavior) -- SCREENS_BUILT still needs the
+// entry so it doesn't fall to the "coming soon" placeholder, but showScreen()
+// below needs no dedicated branch for it, unlike every other built screen.
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, haidhDetail: true, juzTracker: true };
 const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
@@ -162,6 +166,7 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_sabaq').innerHTML = iconHtml('sabaq') + '<span>Sabaq</span>';
   document.getElementById('th_sabaqDhor').innerHTML = iconHtml('sabaqDhor') + '<span>Sabaq Dhor</span>';
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
+  document.getElementById('juzTrackerHeaderIcon').innerHTML = iconHtml('juzTracker');
   document.querySelectorAll('.journal-header-row button[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => showScreen('logDetail', btn.dataset.nav));
   });
