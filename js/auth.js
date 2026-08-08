@@ -17,7 +17,10 @@ const NAV_ITEMS = [
   // entry point for it now (uses the user-supplied 'detail' icon).
   { id: 'logDetail', label: 'Detail', icon: 'detail' },
   { id: 'reflections', label: 'Tadabbur', icon: 'reflections' },
-  { id: 'progress', label: 'Progress', icon: 'progress' },
+  // V3.41.1: "Progress" (the coming-soon placeholder for the gamified
+  // dhor-rings visual map, never actually built -- see TODO.md's spec
+  // for it) deleted entirely, confirmed in chat -- no dependents, this
+  // one entry was the whole thing.
   // V3.40: Juz Tracker, Phase 1 (free play) -- a standalone Kaaba-puzzle
   // widget, no backend tie-in yet. Same unconditional visibility as every
   // other item here; no student/teacher split exists anywhere in NAV_ITEMS
@@ -46,8 +49,15 @@ function visibleNavItems(){
 
 function renderNavItemsInto(containerId, extraItemsHtml){
   const el = document.getElementById(containerId);
+  // V3.41.1: icon now wrapped in its own span (.nav-icon-item-icon),
+  // separate from the label -- confirmed in chat: Home's tiles need the
+  // square/border/shadow/background chip around the ICON ONLY, with the
+  // label sitting below it, OUTSIDE that box, not sharing one shared box
+  // together. Neutral/unstyled by default (see css/base.css) so the
+  // dropdown menu's own plain icon+label look is unaffected -- only
+  // #homeGrid's own CSS (css/nav.css) gives the chip its visual treatment.
   el.innerHTML = visibleNavItems().map(item =>
-    `<button class="nav-icon-item" data-nav="${item.id}">${iconHtml(item.icon)}<span>${item.label}</span></button>`
+    `<button class="nav-icon-item" data-nav="${item.id}"><span class="nav-icon-item-icon">${iconHtml(item.icon)}</span><span class="nav-icon-item-label">${item.label}</span></button>`
   ).join('') + (extraItemsHtml || '');
   el.querySelectorAll('[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -87,8 +97,8 @@ function closeAuthDropdown(){
 function setupAuthBandAndDropdown(){
   renderNavItemsInto('authDropdownNav',
     '<div class="dropdown-divider"></div>' +
-    `<button class="nav-icon-item" id="refreshBtn">${iconHtml('refresh')}<span>Refresh</span></button>` +
-    `<button class="nav-icon-item" id="logoutBtn">${iconHtml('logout')}<span>Log out</span></button>`
+    `<button class="nav-icon-item" id="refreshBtn"><span class="nav-icon-item-icon">${iconHtml('refresh')}</span><span class="nav-icon-item-label">Refresh</span></button>` +
+    `<button class="nav-icon-item" id="logoutBtn"><span class="nav-icon-item-icon">${iconHtml('logout')}</span><span class="nav-icon-item-label">Log out</span></button>`
   );
   document.getElementById('authBandToggle').innerHTML = iconHtml('menu');
   document.getElementById('authBandToggle').addEventListener('click', toggleAuthDropdown);

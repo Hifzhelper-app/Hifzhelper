@@ -133,9 +133,11 @@ async function bootApp(){
     showWelcome(currentUser.name || 'back');
     armBackGuard();
     // V3.7.0: a new user (setup_complete still 0) lands on Setup first —
-    // returning users go straight to the journal as before. Setup itself
-    // is also reachable any time afterward via the "Settings" nav item.
-    showScreen(profile.setup_complete ? 'journal' : 'settings');
+    // returning users go straight to Home as of V3.41.1 (was Journal
+    // before, confirmed changed in chat). Setup itself is also reachable
+    // any time afterward via the "Settings" nav item; Journal remains
+    // fully reachable as its own nav item too, just no longer the default.
+    showScreen(profile.setup_complete ? 'home' : 'settings');
   } catch(e){
     showBanner("Couldn't load your profile: " + e.message);
     clearToken();
@@ -176,6 +178,10 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
   document.getElementById('juzTrackerHeaderIcon').innerHTML = iconHtml('juzTracker');
   document.getElementById('adminHeaderIcon').innerHTML = iconHtml('admin');
+  // V3.41.1: Home's own header icon, confirmed in chat -- colored
+  // lavender specifically (css/nav.css's #homeHeaderIcon rule), unlike
+  // every other screen's ink-soft .card-header-icon default.
+  document.getElementById('homeHeaderIcon').innerHTML = iconHtml('home');
   document.querySelectorAll('.journal-header-row button[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => showScreen('logDetail', btn.dataset.nav));
   });

@@ -4,6 +4,44 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.41.1 (2026-08-08)
+
+- [x] Home screen restructured: olive background (`#screen-home`,
+  reuses `--palette-sage` — the same color the top auth band already
+  uses, not a new color), a real `card-header-row` + lavender `home`
+  icon added (previously just a bare `<h2>`), heading text set to white
+  for contrast against the new olive background (Claude's own necessary
+  follow-on, not separately asked — dark ink text on sage would have
+  been hard to read).
+- [x] `#homeGrid` is now a white container (`--color-surface`) sitting
+  on that olive background, tiles arranged inside it.
+- [x] Tile structure corrected (was cosmetic-only in V3.41, now
+  structural): `js/auth.js`'s `renderNavItemsInto` wraps each icon in
+  its own `.nav-icon-item-icon` span, separate from the label — Home's
+  own CSS boxes just that icon span (square, white background, thin
+  border, rounded corners, shadow), with the label sitting below it,
+  outside the box. The dropdown menu's own tiles use the exact same
+  new markup but stay visually unchanged (the wrapper is neutral by
+  default; only `#homeGrid`'s own rules add the chip look) — same for
+  the Refresh/Log out items, updated for structural consistency even
+  though they're dropdown-only.
+- [x] Active-nav highlight corrected from evergreen to lavender
+  (`.nav-icon-item.active`, `css/base.css`) — one-line color swap, same
+  mechanism otherwise. Flagging for awareness, not blocking: lavender
+  (`#E3DADE`) is a pale color, and the dropdown's own background is
+  white — contrast there will be soft/subtle. Built exactly as
+  specified since it was stated explicitly and repeated; worth a look
+  once live in case a bolder tone is wanted after all.
+- [x] Home replaces Journal as the post-login landing screen
+  (`bootApp()`, `js/app.js`) — new-user-lands-on-Settings-first is
+  untouched; Journal remains fully reachable as its own nav item.
+- [x] "Progress" deleted from `NAV_ITEMS` (`js/auth.js`) — was always
+  just an unbuilt coming-soon placeholder. Its now-orphaned icon
+  definition removed from `js/icons.js` too, confirmed no other
+  callers anywhere.
+- [x] All syntax-checked, HTML tag balance re-confirmed (181 div, 9
+  section, matched) before delivery.
+
 ## Done — V3.41 (2026-08-08)
 
 - [x] X-to-Home button on every screen except Home itself (Journal,
