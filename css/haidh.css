@@ -59,3 +59,45 @@
   border-color: var(--color-haidh-soft);
   color: var(--color-ink);
 }
+
+/* V3.40.2: a pending, not-yet-saved range being built via tap-first/
+   tap-last -- deliberately a 3rd, distinct color (accent, not haidh's
+   own mauve) so a still-editable selection never looks like it's
+   already saved. Comes after -confirmed/-planned so it wins visually
+   if a pending selection is ever built over an already-marked day
+   (shouldn't normally happen -- see js/haidhDetailScreen.js -- but
+   kept defensive rather than assuming it can't). */
+.haidh-cal-day-selecting {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
+.haidh-range-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-accent-soft);
+  border-radius: var(--radius-sm);
+}
+.haidh-range-bar-actions { display: flex; gap: var(--space-sm); flex: 0 0 auto; }
+.haidh-range-confirm-btn, .haidh-range-cancel-btn {
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.haidh-range-confirm-btn {
+  border: none;
+  background: var(--palette-evergreen);
+  color: white;
+}
+.haidh-range-cancel-btn {
+  border: 1px solid var(--color-table-border);
+  background: transparent;
+  color: var(--color-ink-soft);
+}

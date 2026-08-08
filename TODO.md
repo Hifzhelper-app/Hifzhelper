@@ -4,6 +4,65 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.40.2 (2026-08-08)
+
+- [x] Haidh calendar range-select built: tap-first/tap-last, no separate
+  mode button. Tap 1 = pending start, tap 2 = pending end (same day
+  twice = 1-day range), highlighted live (`.haidh-cal-day-selecting`, a
+  3rd color distinct from confirmed/planned). Nothing is written until
+  the new confirm bar's "Mark N days as haidh" is pressed; "Cancel"
+  clears the pending selection. Tapping an already-confirmed day
+  outside of an active selection still clears just that one day
+  directly, unchanged.
+- [x] No minimum range length enforced (corrected by user mid-spec —
+  only the existing max-duration/gap caps apply, not a floor).
+- [x] New `POST /attendance/mark-range` (`worker/src/attendance.js`)
+  validates the WHOLE proposed span before writing anything — existing
+  dates outside the range are fetched, then every date inside the range
+  is evaluated in order via the new `evaluateHaidhRange`
+  (`shared/haidhRules.js`, reuses `evaluateHaidhMark`'s exact per-date
+  run/gap math rather than duplicating it) against the student's
+  ruling. Any single date failing rejects the whole batch — nothing is
+  written. A valid range writes via one atomic `env.DB.batch()` call.
+  Verified directly (not just read) against 9 scenarios: plain ranges,
+  exactly-at-cap, over-cap, a range that only exceeds the cap once
+  merged with an adjacent existing run, gap violations and gap-OK cases,
+  both rulings.
+- [x] `apiSetAttendance` (`js/api.js`) removed — its only caller (the
+  old single-tap immediate-mark path) no longer exists, replaced by
+  `apiMarkHaidhRange`. Backend `handleSetAttendance`/its route left
+  untouched — that's the separately PARKED "attendance" decision below,
+  not something this change resolves.
+
+## Done — V3.40.1 (2026-08-08)
+
+- [x] Juz Tracker: "Download SVG" and "Mark next juz" buttons both
+  removed — marking now happens only by tapping the tiles.
+  `js/kaabaTracker.js`'s `controls` attribute is all-or-nothing, so
+  this meant switching to `controls="none"` and hand-building a
+  progress bar + Reset button ourselves (new `js/juzTrackerScreen.js`,
+  CSS in `css/juzTracker.css`) rather than losing Reset along with the
+  other two.
+- [x] Settings Haidh section redesigned: heading relabeled "Haaidha"
+  with the opt-in checkbox now inline in the heading row (same
+  `#haaidha_checkbox` id, so its existing save-on-change listener
+  needed no changes); Ruling switch rebuilt as its own centered
+  75%-width row (also fixes a real bug — "Shafi'i" was clipping to
+  "Sha" in the old fixed-72px `.switch-track-small`); the
+  `#haidhRulingHint` text and its `HAIDH_RULING_HINTS` lookup removed
+  entirely, not hidden; description paragraph moved below the Ruling
+  row; the 3 input rows given a shared min-height so they're no longer
+  uneven.
+- [x] Haidh calendar prev/next month buttons: real bug fixed — they
+  were already correctly wired to change the month, just never given
+  an icon (`iconHtml('chevronDown')`, matching what `css/haidh.css`'s
+  rotation rules already expected), so they were invisible rather than
+  just unstyled.
+- [ ] NOT built this round, still open in "Flagged" below: the
+  tap-first/tap-last range-select gesture and its highlight state —
+  genuinely underspecified (see the open questions there), held back
+  rather than guessed at given it writes real haidh data.
+
 ## Done — V3.38 (2026-08-07)
 
 - [x] IndoPak's Maqra/Rub'/Hizb terminology picker removed entirely, on

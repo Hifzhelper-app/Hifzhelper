@@ -5,7 +5,7 @@ import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleD
 import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
 import { handleGetReflections, handleSaveReflection, handleUpdateReflection, handleDeleteReflection } from './reflections.js';
 import { handleGetPlans } from './plans.js';
-import { handleGetAttendance, handleSetAttendance, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
+import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
 import { handleGetProfile, handleSaveProfile } from './profile.js';
 import { handleGetDhorDefaultEntry, handleGetUpcomingDhorQueue } from './dhorSchedule.js';
@@ -80,6 +80,7 @@ export default {
 
       if (path === '/attendance' && request.method === 'GET') return respond(await handleGetAttendance(request, env, auth));
       if (path === '/attendance' && request.method === 'POST') return respond(await handleSetAttendance(request, env, auth));
+      if (path === '/attendance/mark-range' && request.method === 'POST') return respond(await handleMarkHaidhRange(request, env, auth));
       if (path === '/attendance' && request.method === 'DELETE') return respond(await handleDeleteAttendance(request, env, auth));
       if (path === '/attendance/predict' && request.method === 'POST') return respond(await handlePredictHaidh(request, env, auth));
 

@@ -1,5 +1,5 @@
 import { validateAttendanceBody, isValidDate } from './utils.js';
-import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark } from '../../shared/haidhRules.js';
+import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark, evaluateHaidhRange } from '../../shared/haidhRules.js';
 
 // GET /attendance?month=YYYY-MM (or student_id for a teacher)
 export async function handleGetAttendance(request, env, auth) {
@@ -63,6 +63,62 @@ export async function handleSetAttendance(request, env, auth) {
   ).bind(studentId, body.date, body.status).run();
 
   return { data: { saved: true } };
+}
+
+// POST /attendance/mark-range — marks every date from startDate to
+// endDate (inclusive) as haidh in one go, from the calendar's
+// tap-first/tap-last range-select (V3.40.2, confirmed in chat: no
+// separate "range mode" — this replaces the old immediate
+// single-tap-toggle for making a NEW mark; tapping a single
+// already-confirmed day to CLEAR it still goes through the existing
+// DELETE /attendance below, untouched; no minimum range length is
+// enforced, only the existing duration/gap caps). The whole range is
+// validated BEFORE anything is written (existing dates outside the
+// range + every date inside it, evaluated in order via
+// evaluateHaidhRange), and written as one atomic D1 batch — confirmed
+// in chat: an invalid range rejects entirely, no partial marks.
+export async function handleMarkHaidhRange(request, env, auth) {
+  let body;
+  try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
+  const { startDate, endDate } = body || {};
+  if (!isValidDate(startDate) || !isValidDate(endDate) || startDate > endDate) {
+    return { error: 'startDate and endDate (YYYY-MM-DD, startDate on or before endDate) are required', status: 400 };
+  }
+
+  const studentId = auth.id;
+  const student = await env.DB.prepare('SELECT haidh_ruling FROM students WHERE id = ?').bind(studentId).first();
+  const ruling = (student && student.haidh_ruling) || 'hanafi';
+
+  // Existing dates OUTSIDE the proposed range only — dates inside it are
+  // being freshly set by this call, not "existing" for this check (same
+  // exclusion handleSetAttendance does with `date != ?`, generalized to a
+  // span).
+  const { results } = await env.DB.prepare(
+    `SELECT date FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND (date < ? OR date > ?)`
+  ).bind(studentId, startDate, endDate).all();
+  const existingDates = results.map((r) => r.date);
+
+  const { dates, steps } = evaluateHaidhRange(existingDates, startDate, endDate);
+  for (const step of steps) {
+    if (step.runLength > haidhCodeMaxRunDays(ruling)) {
+      return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}`, status: 400 };
+    }
+    if (step.gapDays !== null && step.gapDays < HAIDH_GAP_CODE) {
+      return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh`, status: 400 };
+    }
+  }
+
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const statements = dates.map((date) => {
+    const status = date > todayISO ? 'predicted-haidh' : 'haidh';
+    return env.DB.prepare(
+      `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?)
+       ON CONFLICT(student_id, date) DO UPDATE SET status = excluded.status`
+    ).bind(studentId, date, status);
+  });
+  await env.DB.batch(statements);
+
+  return { data: { saved: true, count: dates.length } };
 }
 
 // DELETE /attendance?date=YYYY-MM-DD — clears a day back to "unset".
