@@ -22,7 +22,7 @@ human-readable reference for the same thing.
 | `failed_attempts` | INTEGER | Added in migration 0002, for login rate-limiting. Resets to 0 on success. |
 | `locked_until` | TEXT | Added in migration 0002. ISO timestamp; NULL = not locked. |
 | `gender` | TEXT | Added in migration 0004. `M` or `F`. Stored directly (not just derived haidh eligibility) — may drive different styling later. |
-| `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Only ever shown as an option to females; not auto-set from gender. |
+| `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Only ever shown as an option to females; not auto-set from gender. V3.39: finally wired to real UI — Setup's Haidh section "Haaidha" checkbox, saved instantly via `apiSaveProfile({track_haidh})` outside that section's own Save button. Gates the "Haidh" nav item (`js/auth.js`). |
 | `setup_complete` | INTEGER | Added in migration 0004. `1`/`0`. Gates whether the setup wizard shows on login. |
 | `journal_name` | TEXT | Added in migration 0009. A custom title for the student's own journal — not their real name. |
 | `mushaf` | TEXT | Added in migration 0009. `13line` / `15line_madani` / `15line_indopak`. V3.36, confirmed in chat: the earlier `hybrid` value removed entirely (migration 0016) — traced and confirmed it never actually behaved differently from `13line` (its `ref` logic fell through to the same `waterval` branch), so nothing real was lost by removing it. Replaced with `15line_indopak`, using its own verified page/line dataset (`shared/data.js`'s `AYAH_LINE_INDOPAK`) for Sabaq's Lines/Pages, not Madina's. |
@@ -34,9 +34,10 @@ human-readable reference for the same thing.
 | `dhor_quantity` | INTEGER | Added in migration 0011. How many of the above unit, per session (e.g. `2` quarters). |
 | `dhor_frequency` | TEXT | Added in migration 0011. `daily` / `twice` / NULL. |
 | `dhor_days_of_week` | TEXT | Added in migration 0011. JSON array, e.g. `["mon","wed","fri"]`. |
-| `haidh_cycle_length` | INTEGER | Added in migration 0011. Persisted purely so Setup can redisplay the student's last-entered value — the real prediction logic is unchanged (`/attendance/predict`, live since migration 0001). |
-| `haidh_period_length` | INTEGER | Added in migration 0011. Same purpose as above. |
+| `haidh_cycle_length` | INTEGER | Added in migration 0011. Persisted purely so Setup can redisplay the student's last-entered value — the real prediction logic is unchanged (`/attendance/predict`, live since migration 0001). Labeled "Haidh cycle frequency" in Setup as of V3.39. Clinically-standard start-to-start cycle length (confirmed in chat), NOT the inter-period gap itself — its real minimum is dynamic, `haidh_period_length + 15` (`shared/haidhRules.js`'s `haidhMinCycleFrequency`), not a flat number, since the 15-day gap rule has to hold for whatever duration the student enters. |
+| `haidh_period_length` | INTEGER | Added in migration 0011. Same purpose as above. Labeled "How many haidh days per cycle" in Setup as of V3.39. Capped at the student's `haidh_ruling` (10 for hanafi, 15 for shafii — `shared/haidhRules.js`'s `haidhOfficialMaxDuration`). |
 | `haidh_next_expected` | TEXT | Added in migration 0011. `YYYY-MM-DD`. What the Setup screen actually asks the student for; the frontend computes `/attendance/predict`'s own `lastStart` param from this (`lastStart = haidh_next_expected − haidh_cycle_length`) rather than asking for `lastStart` directly. |
+| `haidh_ruling` | TEXT | Added in migration 0018 (V3.39). `hanafi` / `shafii`, `NOT NULL DEFAULT 'hanafi'` — which of the two supported fiqh rulings sets this student's max haidh duration. Defaults silently rather than blocking (confirmed in chat: not a required choice). |
 
 ## Tables: `sabaq_log`, `sabaq_dhor_log`, `dhor_log`, `reflections` (V2 — replaces `entries`)
 
@@ -174,7 +175,7 @@ Composite primary key `(student_id, date)`.
 |---|---|---|
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
-| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh`. Auto-set to `present` whenever any entry is logged that day — sabaq always wins, overriding even a prior `haidh`. |
+| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh`. Auto-set to `present` whenever any entry is logged that day — sabaq always wins, overriding even a prior `haidh`. V3.39: setting `haidh`/`predicted-haidh` (`handleSetAttendance`, `worker/src/attendance.js`) is capped two ways, both via `shared/haidhRules.js`'s `evaluateHaidhMark` — a continuous run can't exceed the student's `haidh_ruling` max (+1 calendar day, for a haidh that starts/ends mid-day), and a new run can't start until 15 official / 14 code days have passed since the last one. Never touches `sabaq_log`/`sabaq_dhor_log`/`dhor_log` in either direction (confirmed in chat: "no log deletion, nothing changes on detail cards"). |
 
 ## Table: `position`
 
