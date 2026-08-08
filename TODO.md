@@ -4,6 +4,88 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Flagged — Phase 2/Maktab: shared timezone (2026-08-08)
+
+- [ ] Future-proofing note, NOT current-phase work (Phase 2/Maktab
+  hasn't started — see profile): once there's a maktab with students
+  across different timezones, everyone needs to operate on ONE shared,
+  canonical timezone (attendance/haidh/journal date boundaries, etc.),
+  rather than each device's own local timezone — otherwise "today"
+  means a different calendar day for different users, plus the exact
+  class of bug just diagnosed below becomes structural rather than a
+  one-off. Raised in chat right after debugging the timezone date-shift
+  bug, deliberately kept separate from that fix (the fix itself stays
+  device-timezone-agnostic and correct either way).
+- [ ] Open design questions for whenever this is picked up: is the
+  canonical timezone fixed or configurable per maktab; where a
+  teacher/admin would set it (Maktab phase doesn't exist yet); whether
+  the UI should still DISPLAY times in each user's own local time for
+  readability while storing/calculating against the shared one, or show
+  the maktab's timezone everywhere regardless of viewer location.
+
+
+## Done — V3.40.3 (2026-08-08)
+
+- [x] Haidh calendar display bug: TRUE root cause was
+  `js/haidhDetailScreen.js`'s `loadHaidhCalAttendance` destructuring
+  `const { data } = await apiGetAttendance()` — but `apiGetAttendance()`
+  already resolves directly to the array (`worker/src/index.js`'s
+  `respond()` always unwraps to `result.data` before sending), so
+  `data` was always `undefined` and `haidhCalAttendance` was *always*
+  empty regardless of any date. Fixed: `const data = await
+  apiGetAttendance();`. Confirmed via live console debugging (not
+  inference) that this was the actual cause, not the timezone bug below
+  — the timezone bug was real but entirely masked by this one.
+- [x] Timezone date-shift bug, same file: `renderHaidhCalGrid`'s 3
+  cell-building loops computed each date via `new Date(y,m,d)
+  .toISOString().slice(0,10)`, which silently shifts the date backward
+  a day for any positive-UTC-offset timezone (device confirmed South
+  African Standard Time, UTC+2). Fixed with a new `haidhLocalISO()`
+  helper that reads the constructed Date's own local
+  getFullYear()/getMonth()/getDate() back out directly, never routing
+  through UTC — correct for any timezone. `haidhTodayISO()` and
+  `shared/haidhRules.js`'s `haidhAddDaysISO` (uses `Date.UTC()`) were
+  never affected.
+- [x] Range-validation adjacency bug: `evaluateHaidhRange`
+  (`shared/haidhRules.js`) rewritten to evaluate a proposed range as
+  ONE unit (extend the run outward from the range's own edges using
+  only true external existing dates, gap-check only if neither edge
+  touches one) instead of per-date incremental steps — the old version
+  wrongly rejected a range directly adjacent to an existing
+  haidh/predicted-haidh block with "15 days have not passed", since the
+  first date checked hadn't "seen" the rest of its own range yet. Also
+  naturally fixes the separate "marking should override predicted"
+  note, since the write side already did the right thing — the
+  validation bug was the only thing blocking it. Caller
+  (`handleMarkHaidhRange`, `worker/src/attendance.js`) updated for the
+  function's new single-verdict return shape.
+  `evaluateHaidhMark`/`handleSetAttendance` (single-day path) untouched
+  and still correct. Re-verified all 3 fixes together against the
+  actual edited files before delivery (12/12 range scenarios, timezone
+  helper re-tested in SAST).
+- [x] `js/juzTrackerScreen.js` (found missing from the live deploy last
+  session) included again in this delivery, so one upload covers
+  everything outstanding.
+
+## Flagged — Haidh screens, small tweaks (2026-08-08)
+
+- [ ] Checkbox next to "Haaidha": make it 2x its current size, and move
+  it from the LEFT of the heading text (where V3.40.1 put it) to the
+  RIGHT of it instead — heading text first, checkbox immediately after.
+  User's message cut off after "...to" — worth confirming there wasn't
+  more to this before building.
+- [ ] Remove the "Ruling" label entirely (`.haidh-ruling-label` above
+  the Hanafi/Shafi'i switch, added in V3.40.1) — just the switch itself,
+  no text label above it.
+- [ ] The Haidh CALENDAR screen (`#screen-haidhDetail`) needs to be
+  capped at the standard 30%/50% width rule on larger screens
+  (`--width-tablet`/`--width-desktop`, tokens.css — same pattern as
+  `#screen-admin`/`#screen-settings`/`.log-detail-card`). Confirmed via
+  code: it currently has NO width-capping CSS at all (full width at
+  every breakpoint) — this is the opposite of Juz Tracker's DELIBERATE
+  full-width exemption (V3.40), so no conflict, just a screen that was
+  never given the cap in the first place.
+
 ## Done — V3.40.2 (2026-08-08)
 
 - [x] Haidh calendar range-select built: tap-first/tap-last, no separate

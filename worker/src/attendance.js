@@ -98,14 +98,12 @@ export async function handleMarkHaidhRange(request, env, auth) {
   ).bind(studentId, startDate, endDate).all();
   const existingDates = results.map((r) => r.date);
 
-  const { dates, steps } = evaluateHaidhRange(existingDates, startDate, endDate);
-  for (const step of steps) {
-    if (step.runLength > haidhCodeMaxRunDays(ruling)) {
-      return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}`, status: 400 };
-    }
-    if (step.gapDays !== null && step.gapDays < HAIDH_GAP_CODE) {
-      return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh`, status: 400 };
-    }
+  const { dates, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
+  if (runLength > haidhCodeMaxRunDays(ruling)) {
+    return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}`, status: 400 };
+  }
+  if (gapDays !== null && gapDays < HAIDH_GAP_CODE) {
+    return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh`, status: 400 };
   }
 
   const todayISO = new Date().toISOString().slice(0, 10);
