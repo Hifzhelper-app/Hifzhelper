@@ -84,14 +84,24 @@ input, select, textarea {
   background: none;
   border: none;
 }
+/* V3.41.1: icon now wrapped in its own span (js/auth.js's
+   renderNavItemsInto) so Home can box just the icon while the label
+   stays outside that box -- neutral/unstyled here (no background,
+   border, sizing beyond centering the svg) so the dropdown menu's own
+   plain icon+label look stays exactly as it was; only #homeGrid's own
+   rules (css/nav.css) give the icon wrapper its chip treatment. */
+.nav-icon-item-icon { display: flex; align-items: center; justify-content: center; }
 .nav-icon-item svg { width: 28px; height: 28px; }
 .nav-icon-item:active { opacity: 0.6; }
 /* V3.41: whichever screen is currently open gets its nav icon (both the
    dropdown and Home) highlighted, confirmed in chat -- reuses the same
-   accent-color language .log-detail-dots .dot.active already
-   established, rather than a new visual pattern. currentColor on the
-   icon means one color rule recolors both the svg and the label. */
-.nav-icon-item.active { color: var(--color-accent); }
+   color-language idea .log-detail-dots .dot.active already established
+   (a distinct accent color signaling "current"), rather than a new
+   visual pattern. currentColor on the icon means one color rule
+   recolors both the svg and the label together.
+   V3.41.1: corrected to lavender specifically, confirmed in chat --
+   was accent/evergreen in V3.41. */
+.nav-icon-item.active { color: var(--palette-lavender); }
 
 /* A visible, simple way to surface errors — never a silent failure
    (CONVENTIONS.md principle 3). */

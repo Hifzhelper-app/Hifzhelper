@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.41.1 — Home screen redesign: olive/white/lavender, landing page, Progress removed (2026-08-08)
+
+**Files touched:** `index.html`, `js/auth.js`, `js/app.js`, `js/icons.js`, `css/nav.css`, `css/base.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+A full Home screen restructure plus two smaller navigation corrections, confirmed in chat right after V3.41 shipped the first pass at the tile restyle.
+
+**Home's new look** — the screen background is now olive, reusing `--palette-sage` (the exact color the top auth band already uses — no new color introduced). Home gets a real header (a `card-header-row` with a `home` icon, colored lavender) where it previously had only a bare `<h2>`; the heading text itself is now white for contrast against the olive, a necessary follow-on rather than something separately requested. `#homeGrid` becomes its own white container sitting on top of that olive background, with the tiles arranged inside it.
+
+**Tile structure, corrected** — V3.41's restyle put the background/border/shadow chip around the whole tile (icon + label sharing one box). This was structural, not cosmetic, per this round: `js/auth.js`'s `renderNavItemsInto` now wraps each icon in its own `.nav-icon-item-icon` span, separate from the label, and only Home's CSS boxes that icon span specifically — square, white background, thin border, rounded corners, shadow — with the label sitting below it, outside the box, matching a standard phone-home-screen icon convention. The dropdown menu picks up the same new markup but stays visually identical, since the wrapper is neutral by default and only `#homeGrid`'s own rules add the chip look; the Refresh/Log out items (hardcoded outside the shared render function) were updated to the same structure too, for consistency, even though they only ever appear in the dropdown.
+
+**Two corrections to what V3.41 shipped**: the active-screen nav highlight is now lavender instead of evergreen — flagging one thing for a look once live: lavender is a pale color and the dropdown's own background is white, so the contrast there will read soft/subtle rather than bold. Built exactly as specified since it was stated clearly and repeated, but worth confirming it reads the way it's meant to.
+
+**Navigation changes** — Home now replaces Journal as the screen a returning user lands on after login (`bootApp()`, `js/app.js`); a new user with setup still incomplete is unaffected, and Journal remains fully reachable as its own nav item either way. "Progress" (the coming-soon placeholder for the not-yet-built gamified dhor-rings map) is deleted from `NAV_ITEMS` entirely, and its now-orphaned icon definition removed from `js/icons.js` too — confirmed via search to have no other callers anywhere.
+
+---
+
 ## V3.41 — X-to-Home everywhere, Home tile restyle, active-nav highlight (2026-08-08)
 
 **Files touched:** `index.html`, `js/app.js`, `js/logDetailScreen.js`, `css/detail-pages.css`, `css/nav.css`, `css/base.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
