@@ -18,6 +18,12 @@ const NAV_ITEMS = [
   { id: 'logDetail', label: 'Detail', icon: 'detail' },
   { id: 'reflections', label: 'Tadabbur', icon: 'reflections' },
   { id: 'progress', label: 'Progress', icon: 'progress' },
+  // V3.40: Juz Tracker, Phase 1 (free play) -- a standalone Kaaba-puzzle
+  // widget, no backend tie-in yet. Same unconditional visibility as every
+  // other item here; no student/teacher split exists anywhere in NAV_ITEMS
+  // yet (confirmed in chat -- the whole app is personal-to-user today, the
+  // Maktab/teacher phase hasn't started), so there's nothing to gate on.
+  { id: 'juzTracker', label: 'Juz Tracker', icon: 'juzTracker' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
 ];
 // Admin-only destination — appended conditionally, not shown to students/
