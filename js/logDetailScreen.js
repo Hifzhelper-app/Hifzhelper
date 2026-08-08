@@ -28,13 +28,11 @@ document.getElementById('sabaqSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('sabaqDhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('dhorSaveIcon').innerHTML = iconHtml('save');
 
-// V3.19.0: xclose exits back to Journal -- the landing page this screen
-// is always reached from (via a journal-table cell click). There's no
-// navigation history stack anywhere in the app (showScreen is a direct
-// switch, not a push/pop), so "back" has no more general meaning here
-// than that fixed target.
+// V3.41: xclose now exits to Home like every other screen (confirmed
+// in chat -- was Journal-only before, per the reasoning below, which no
+// longer applies now that ALL screens get a consistent X-to-Home).
 document.getElementById('logDetailClose').innerHTML = iconHtml('close');
-document.getElementById('logDetailClose').addEventListener('click', () => showScreen('journal'));
+document.getElementById('logDetailClose').addEventListener('click', () => showScreen('home'));
 
 // V3.22.0: edit screen bottom-bar icons (Sabaq/Sabaq Dhor/Dhor), injected
 // once here like the rest of this file's icons. Update reuses the exact

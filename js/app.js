@@ -53,6 +53,14 @@ async function showScreen(id, param){
   if(id === 'settings') await renderSettingsScreen();
   if(id === 'reflections') await renderTadabburScreen();
   if(id === 'haidhDetail') await renderHaidhDetailScreen(param);
+  // V3.41: highlight whichever nav icon matches the screen just shown, in
+  // both the dropdown and Home grid -- confirmed in chat. Runs AFTER any
+  // screen-specific render above, since renderHomeScreen() rebuilds
+  // #homeGrid's markup from scratch every time it's called, which would
+  // wipe this out if it were set any earlier.
+  document.querySelectorAll('.nav-icon-item[data-nav]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.nav === id);
+  });
   // V3.8.0: generalized from the old fixJournalTopPaint(), which only ever
   // corrected #screen-journal — every OTHER screen (including Setup) had
   // the exact same Safari "invisible until scroll" symptom, just never
@@ -167,8 +175,22 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_sabaqDhor').innerHTML = iconHtml('sabaqDhor') + '<span>Sabaq Dhor</span>';
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
   document.getElementById('juzTrackerHeaderIcon').innerHTML = iconHtml('juzTracker');
+  document.getElementById('adminHeaderIcon').innerHTML = iconHtml('admin');
   document.querySelectorAll('.journal-header-row button[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => showScreen('logDetail', btn.dataset.nav));
+  });
+
+  // V3.41: X-to-Home, confirmed in chat for every screen except Home
+  // itself. All identical (same icon, same action), so wired centrally
+  // here in one pass rather than repeating the same 2 lines in each
+  // screen's own file — screen-logDetail's pre-existing close button
+  // (js/logDetailScreen.js) is the one exception, kept in its own file
+  // since it already had its own icon/listener wiring from before, now
+  // just repointed to Home instead of Journal.
+  ['journalCloseBtn', 'adminCloseBtn', 'settingsCloseBtn', 'tadabburCloseBtn', 'haidhDetailCloseBtn', 'juzTrackerCloseBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    btn.innerHTML = iconHtml('close');
+    btn.addEventListener('click', () => showScreen('home'));
   });
 
   if(getToken()){
