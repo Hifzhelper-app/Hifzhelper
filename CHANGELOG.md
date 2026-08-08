@@ -7,6 +7,24 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.40 — Juz Tracker, Phase 1 (free play) (2026-08-08)
+
+**Files touched:** `index.html`, `js/icons.js`, `js/auth.js`, `js/app.js`, `js/kaabaTracker.js` (new), `css/juzTracker.css` (new), `js/sw.js`, `CHANGELOG.md`.
+
+Full spec gathered over several rounds in chat before any code was touched, per the standing process rule. A new nav item + screen embeds the user-supplied `<kaaba-juz-tracker>` custom element (an isometric Kaaba cube, 30 clickable tiles mapped 1:1 to juz 1–30) exactly as uploaded, dropped in verbatim as `js/kaabaTracker.js`.
+
+**Nav placement** — `NAV_ITEMS` (`js/auth.js`) already drives both the dropdown menu and the Home grid from one array (`renderNavItemsInto`), so one entry gives both surfaces automatically, same as every other item — placed between Progress and Settings. No student/teacher gating: confirmed in chat that the whole app is personal-to-user today and the Maktab/teacher phase hasn't started, so there's nothing to condition on yet.
+
+**Icon** (`js/icons.js`) — no user-supplied SVG this round (the uploaded component's own art is full puzzle artwork, not nav-icon-sized), so this is Lucide's standard "box" icon adapted to a simple line cube, plus one short accent line for the kiswah band, matching the file's existing viewBox-only/stroke-only format.
+
+**Free play behavior, confirmed in chat:** no `persist` attribute on the element, so nothing is ever written to localStorage or the backend — Phase 1 is a fully standalone toy. Progress resets whenever the app itself reloads, but stays put if you navigate to another screen and back within the same session (matches the component's own natural in-memory state — no extra reset logic needed). Amiri, which the component auto-loads from Google Fonts, was kept at its default.
+
+**Sizing, added to scope mid-build:** the screen deliberately opts OUT of the app-wide 30%/50% max-width cap (`--width-tablet`/`--width-desktop`, tokens.css) that `#screen-admin`/`#screen-settings`/`.log-detail-card` use — the puzzle takes the full screen width at every breakpoint instead, bounded only by `#appContent`'s own existing padding and its 1400px cap at ≥1200px. `css/juzTracker.css` (new) adds top/left/right padding around the puzzle only, no bottom — best reading of how the request was phrased; flag if that's wrong. The component's own SVG already scales to 100% of its container width with `height:auto`, so no extra responsive CSS was needed for that part.
+
+**`js/sw.js`, found while touching it for this release's own version bump:** its `ASSETS` list had fallen behind `index.html` — still missing `css/haidh.css`, `shared/haidhRules.js`, and `js/haidhDetailScreen.js` from V3.39. Brought back in sync and bumped to v3.40 along with this release's own new files. This service worker is still not registered anywhere (confirmed inert, same as before), so this was a no-behavior-change consistency fix, not a live bug fix.
+
+---
+
 ## V3.39 — Haidh tracking (2026-08-07)
 
 **Files touched:** `index.html`, `css/tokens.css`, `css/journal-table.css`, `css/haidh.css` (new), `js/icons.js`, `js/auth.js`, `js/app.js`, `js/settingsScreen.js`, `js/journal.js`, `js/haidhDetailScreen.js` (new), `shared/haidhRules.js` (new), `worker/src/attendance.js`, `worker/src/profile.js`, `worker/migrations/0018_haidh_ruling.sql` (new), `SCHEMA.md`.
