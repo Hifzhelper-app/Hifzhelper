@@ -1,0 +1,21 @@
+/* ============================================================
+   Hifzhelper — Juz Tracker screen (V3.40, Phase 1: free play)
+   ============================================================
+   Deliberately opts OUT of the app-wide 30%/50% width cap
+   (tokens.css --width-tablet/--width-desktop, applied elsewhere to
+   #screen-admin/#screen-settings/.log-detail-card etc.) -- confirmed
+   in chat: the puzzle takes the screen's full width at every
+   breakpoint instead. #appContent's own padding and its 1400px cap
+   at >=1200px (base.css) still apply here same as every other
+   screen; this file only adds the extra top/left/right padding
+   around the puzzle itself so it doesn't sit flush against the
+   screen edges, without capping its width. */
+
+.juz-tracker-wrap {
+  padding: var(--space-lg) var(--space-lg) 0;
+}
+
+/* The component's own <kaaba-juz-tracker> element already scales its
+   internal SVG to 100% of its container's width (kaaba-tracker.js's own
+   CSS), so no width/height rules are needed here for it to fill this
+   wrapper responsively at any screen size. */
