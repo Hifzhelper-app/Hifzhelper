@@ -4,6 +4,56 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.40.5 (2026-08-08)
+
+- [x] Haidh calendar screen (`#screen-haidhDetail`) now capped at the
+  standard 30%/50% width rule on larger screens
+  (`--width-tablet`/`--width-desktop`), matching
+  `#screen-settings`/`#screen-admin`/`.login-card` — it had simply never
+  been given the cap before, unrelated to Juz Tracker's own deliberate
+  full-width exemption.
+- [x] Confirm bar's buttons now carry icons alongside their text — a
+  `save` icon on the confirm/predict button (same icon Settings' own
+  Haidh save button already uses, for visual consistency) and a `close`
+  icon on Cancel (same icon the Dhor timer already uses for a
+  discard/cancel action). Both dynamic-text and static-text buttons
+  updated (`innerHTML` instead of `textContent`).
+- [x] Cross-month range selection: confirmed via code trace, not a new
+  build — `haidhRangeStart`/`haidhRangeEnd` and every function that
+  reads them were already plain date strings never scoped to the
+  currently-viewed month, so tapping a day, navigating via prev/next,
+  and tapping a day in a different month already produced a valid
+  range. Documented with a comment so a future change doesn't
+  accidentally scope it to the current view.
+
+## Done — V3.40.4 (2026-08-08)
+
+- [x] Haidh calendar marking model simplified from the automatic
+  per-date future-vs-past split to a 2-state toggle, confirmed in chat:
+  a new range gets ONE uniform status for the whole thing, decided
+  once — "confirmed" (`haidh`) if it touches today or the past, even
+  via an adjacent existing mark (`evaluateHaidhRange`'s own `runStart`
+  extension, now exposed for this); "predicted" (`predicted-haidh`) if
+  it's entirely future with no such connection. No more "today
+  confirmed, the rest of the range predicted" for a period that starts
+  today. Tapping an already-marked day still just clears it directly
+  (unchanged) — that's already the correct 2-state toggle for an
+  individual day, nothing needed changing there.
+- [x] Confirm bar's button now says which action it's about to take —
+  "Confirm as haidh" or "Predict as haidh" — computed client-side via a
+  new `haidhRangeTouchesPastOrToday()` that mirrors the server's own
+  `runStart` logic, rather than a generic "Mark as haidh" label.
+- [x] Rejection messages (both the duration-cap and gap-rule errors, in
+  both `handleMarkHaidhRange` and `handleSetAttendance` for
+  consistency) now end with "Please revise your history." rather than
+  just stating which rule failed.
+- [x] Verified the new status-decision logic directly (not just read)
+  against 5 scenarios: plain future range, range including today, range
+  fully in the past, a future range that connects to an existing run
+  touching today (correctly becomes confirmed), and a future range
+  adjacent to a future-only existing run (correctly stays predicted,
+  not wrongly confirmed just for being adjacent to anything).
+
 ## Flagged — Phase 2/Maktab: shared timezone (2026-08-08)
 
 - [ ] Future-proofing note, NOT current-phase work (Phase 2/Maktab
@@ -67,7 +117,7 @@ section.
   session) included again in this delivery, so one upload covers
   everything outstanding.
 
-## Flagged — Haidh screens, small tweaks (2026-08-08)
+## Flagged — Settings Haidh heading tweaks (2026-08-08)
 
 - [ ] Checkbox next to "Haaidha": make it 2x its current size, and move
   it from the LEFT of the heading text (where V3.40.1 put it) to the
@@ -77,14 +127,6 @@ section.
 - [ ] Remove the "Ruling" label entirely (`.haidh-ruling-label` above
   the Hanafi/Shafi'i switch, added in V3.40.1) — just the switch itself,
   no text label above it.
-- [ ] The Haidh CALENDAR screen (`#screen-haidhDetail`) needs to be
-  capped at the standard 30%/50% width rule on larger screens
-  (`--width-tablet`/`--width-desktop`, tokens.css — same pattern as
-  `#screen-admin`/`#screen-settings`/`.log-detail-card`). Confirmed via
-  code: it currently has NO width-capping CSS at all (full width at
-  every breakpoint) — this is the opposite of Juz Tracker's DELIBERATE
-  full-width exemption (V3.40), so no conflict, just a screen that was
-  never given the cap in the first place.
 
 ## Done — V3.40.2 (2026-08-08)
 

@@ -50,10 +50,10 @@ export async function handleSetAttendance(request, env, auth) {
 
     const { runLength, gapDays } = evaluateHaidhMark(existingDates, body.date);
     if (runLength > haidhCodeMaxRunDays(ruling)) {
-      return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}`, status: 400 };
+      return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400 };
     }
     if (gapDays !== null && gapDays < HAIDH_GAP_CODE) {
-      return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh`, status: 400 };
+      return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh. Please revise your history.`, status: 400 };
     }
   }
 
@@ -77,6 +77,18 @@ export async function handleSetAttendance(request, env, auth) {
 // range + every date inside it, evaluated in order via
 // evaluateHaidhRange), and written as one atomic D1 batch — confirmed
 // in chat: an invalid range rejects entirely, no partial marks.
+//
+// V3.40.4: the WHOLE range gets ONE uniform status now, not a per-date
+// future-vs-past split — confirmed in chat: a period that starts today
+// and runs a few days into the future is entirely "confirmed", not
+// "today confirmed, the rest predicted", since it's not a guess once
+// it's actually started. A range counts as touching today/the past (and
+// so becomes 'haidh') if its fully-extended run — including anything it
+// connects to via an adjacent existing mark, same runStart
+// evaluateHaidhRange already computes for validation — reaches back to
+// today or earlier; a range that's entirely future with no such
+// connection becomes 'predicted-haidh' instead. Rejection messages now
+// include an actionable suggestion rather than just stating the rule.
 export async function handleMarkHaidhRange(request, env, auth) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
@@ -98,25 +110,25 @@ export async function handleMarkHaidhRange(request, env, auth) {
   ).bind(studentId, startDate, endDate).all();
   const existingDates = results.map((r) => r.date);
 
-  const { dates, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
+  const { dates, runStart, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
   if (runLength > haidhCodeMaxRunDays(ruling)) {
-    return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}`, status: 400 };
+    return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400 };
   }
   if (gapDays !== null && gapDays < HAIDH_GAP_CODE) {
-    return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh`, status: 400 };
+    return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh. Please revise your history.`, status: 400 };
   }
 
   const todayISO = new Date().toISOString().slice(0, 10);
-  const statements = dates.map((date) => {
-    const status = date > todayISO ? 'predicted-haidh' : 'haidh';
-    return env.DB.prepare(
+  const status = runStart <= todayISO ? 'haidh' : 'predicted-haidh';
+  const statements = dates.map((date) =>
+    env.DB.prepare(
       `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?)
        ON CONFLICT(student_id, date) DO UPDATE SET status = excluded.status`
-    ).bind(studentId, date, status);
-  });
+    ).bind(studentId, date, status)
+  );
   await env.DB.batch(statements);
 
-  return { data: { saved: true, count: dates.length } };
+  return { data: { saved: true, count: dates.length, status } };
 }
 
 // DELETE /attendance?date=YYYY-MM-DD — clears a day back to "unset".
