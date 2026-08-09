@@ -81,25 +81,29 @@
    the icon turns red, the "Log out" label stays the normal ink color. */
 #logoutBtn svg { color: var(--color-error); }
 
-/* ---- Home page (V3.41.1 restructure, V3.42 reconsidered) ---- */
-/* V3.42: Home's own olive/sage screen background, padding, radius, and
-   width cap (V3.41.1/V3.41.2) are all REMOVED here -- confirmed in
-   chat, reconsidered so every screen shares ONE universal treatment
-   instead (--surface-track, the new .screen base class, css/base.css)
-   rather than Home being a special case. The white-heading-text fix
-   (added specifically because dark ink was hard to read on the darker
-   olive) is reverted too, for the same reason -- --surface-track is
-   light enough that the normal dark-ink heading (every other screen's
-   default) reads fine here now. #homeHeaderIcon stays lavender --
-   that part wasn't reconsidered, still Home-specific. */
+/* ---- Home page (V3.41.1 restructure, V3.43 reconsidered) ---- */
+/* V3.43: Home's own olive/sage screen background (V3.41.1) is REMOVED
+   -- every screen is white by default now (css/base.css's .screen
+   rule), Home is no longer a special case. Its header TEXT is deleted
+   entirely too (index.html) -- just the lavender icon remains, so the
+   white-heading-text color fix from V3.41.1 (needed for contrast
+   against the old olive) is removed as dead code along with it. */
 #homeHeaderIcon { color: var(--palette-lavender); }
+/* V3.41.2: standard 30%/50% width cap on larger screens, confirmed in
+   chat -- same pattern as #screen-settings/#screen-admin/
+   #screen-haidhDetail. Home had never been given this. */
+@media (min-width: 768px) and (max-width: 1179px) {
+  #screen-home { width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  #screen-home { width: var(--width-desktop); margin: 0 auto; }
+}
 
-/* #homeGrid is now one of the shared .screen-container instances
-   (class added directly in index.html) -- already white/radius/padding
-   from that shared class, this just adds the flex-wrap tile layout on
-   top. V3.41.2: switched from a stretching grid (equal 1fr columns,
-   tiles grew/shrank with viewport width) to flex-wrap with a fixed
-   tile size, confirmed in chat, per a reference image -- tiles stay a
+/* The tile grid is now its own white container sitting on the olive
+   background, confirmed in chat -- tiles arranged inside it.
+   V3.41.2: switched from a stretching grid (equal 1fr columns, tiles
+   grew/shrank with viewport width) to flex-wrap with a fixed tile
+   size, confirmed in chat, per a reference image -- tiles stay a
    constant size regardless of screen size and simply wrap onto a new
    row if there isn't room, rather than stretching to fill the
    container. */

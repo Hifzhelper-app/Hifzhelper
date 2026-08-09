@@ -34,55 +34,11 @@ input, select, textarea {
 
 .hidden { display: none !important; }
 
-/* V3.42: .screen becomes a real, universal base class -- previously had
-   no styling of its own at all (only .hidden handled visibility).
-   Adopted from a reference stylesheet's sizing principles, confirmed in
-   chat: the screen itself is a card (padding/background/radius/shadow),
-   with white containers nesting INSIDE it -- a two-layer system, not a
-   flat backdrop. Show/hide logic is UNCHANGED -- still .hidden above,
-   driven by js/app.js's showScreen(); only these sizing/visual
-   properties are new.
-   Height: min(100vh-based fallback, then a 100dvh-based recalculation)
-   using --auth-band-height (js/auth.js sets this live on #appShell,
-   already accounts for the real device safe-area) directly here rather
-   than a :root-level derived token, since custom properties only
-   cascade downward and .screen (a descendant of #appShell) correctly
-   sees the live value this way -- same pattern .log-detail-card already
-   uses correctly for its own height calc.
-   Width: full/edge-to-edge at the screen level -- the 30/50 cap that
-   used to live on individual screens (#screen-settings/#screen-admin/
-   #screen-haidhDetail/#screen-home) moves to containers instead. */
-.screen {
-  width: 100%;
-  min-height: calc(100vh - var(--auth-band-height, 60px) - var(--screen-gap) - var(--screen-bottom-space));
-  min-height: calc(100dvh - var(--auth-band-height, 60px) - var(--screen-gap) - var(--screen-bottom-space));
-  padding: var(--space-lg);
-  background: var(--surface-track);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
-}
-
-/* V3.42: shared container class -- confirmed in chat, applied wherever
-   a screen's actual content lives (Home's #homeGrid, a screen's own
-   body wrapper, each Settings section, Journal's table wrapper). White,
-   the 30/50 cap (moved here from the screen level), and horizontally
-   centered once that cap actually narrows it on larger screens
-   (margin:0 auto is a no-op at mobile width, where the container is
-   already effectively full width). Sits at the TOP of its .screen
-   parent by default -- .screen has no flex/align-items of its own, so
-   this needs no explicit top-alignment rule, just the absence of
-   anything that would center it vertically. */
-.screen-container {
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-}
-@media (min-width: 768px) and (max-width: 1179px) {
-  .screen-container { width: var(--width-tablet); margin: 0 auto; }
-}
-@media (min-width: 1180px) {
-  .screen-container { width: var(--width-desktop); margin: 0 auto; }
-}
+/* V3.43: every individual screen is white by default, confirmed in
+   chat -- Settings overrides this specifically (css/settings.css),
+   since it's genuinely different (its own --surface-app backdrop with
+   4 white sections inside it, not a plain white screen itself). */
+.screen { background: var(--color-surface); }
 
 /* App shell: banner fixed at top, content fills the rest */
 #appShell {
@@ -93,6 +49,15 @@ input, select, textarea {
 #appContent {
   flex: 1;
   width: 100%;
+  /* V3.43: explicit min-height, confirmed in chat -- #appContent's
+     existing flex:1 (within #appShell's flex column) already fills
+     available space naturally, so this is mostly making that explicit
+     rather than fixing a gap; kept as min-height (not height) so
+     genuinely long content can still grow past it and the page scrolls,
+     never a fixed box that clips. */
+  min-height: calc(100vh - var(--auth-band-height, 60px));
+  min-height: calc(100dvh - var(--auth-band-height, 60px));
+  background: var(--surface-track);
   padding: var(--space-md);
   /* V3.4.3: a position:sticky sibling (#authBand) before a flex:1 sibling
      in a flex column is a known WebKit compositing quirk — Safari computed
