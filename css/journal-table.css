@@ -66,12 +66,6 @@
      app's own top band; the header row's own real height (set above)
      accounts for the rest, so the scroll area fills exactly whatever
      space is genuinely left in the viewport. */
-  /* V3.42 note: doesn't account for the new .screen/.screen-container
-     padding layers now sitting above this element (nested one level
-     deeper than before) -- left as an approximation rather than a
-     precise recalculation without live testing; worst case this scrolls
-     slightly more/less tightly than ideal, not a functional break, the
-     outer page can still scroll normally either way. */
   max-height: calc(100vh - var(--auth-band-height, 60px) - 52px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -83,14 +77,23 @@
   font-size: 13px;
 }
 
-/* V3.42: the negative-margin bleed-to-edge technique that used to live
-   here is REMOVED -- it was built to cancel out #appContent's old
-   padding so the table reached the screen's edges, which no longer
-   applies now that .journal-header-row + .journal-wrap sit together
-   inside one .screen-container (css/base.css, added directly in
-   index.html) -- capped/centered on larger screens instead of
-   bleeding edge-to-edge, and just naturally fills the container's own
-   padding on mobile. */
+/* V3.44: the negative-margin edge-bleed technique that used to live
+   here is REMOVED -- it was built to cancel out #appContent's own
+   padding so the table reached the screen's edges, which is
+   fundamentally incompatible with the new requirement below (a fixed
+   width + centering can't coexist with negative margins pulling the
+   element wider than its container). Necessary consequence of the
+   70% rule, not a separately-requested change.
+   .journal-header-row + .journal-wrap TOGETHER (confirmed explicitly
+   in chat -- not just the wrap alone, so the two stay visually
+   aligned as one continuous colored-top/white-bottom card) become an
+   exception to the standard 30%/50% cap, same as Juz Tracker already
+   is -- a fixed 70% width instead, at the same breakpoints the
+   standard cap applies everywhere else. A 4-column table needs more
+   room than the standard cap gives it, unlike a simple form/section. */
+@media (min-width: 768px) {
+  .journal-header-row, .journal-wrap { width: 70%; margin-left: auto; margin-right: auto; }
+}
 
 .journal-table td {
   padding: var(--space-sm);

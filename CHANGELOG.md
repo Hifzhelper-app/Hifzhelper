@@ -7,6 +7,30 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.44 — Core color inversion, content wrappers, breakpoint corrections (2026-08-09)
+
+**Files touched:** `index.html`, `css/tokens.css`, `css/base.css`, `css/settings.css`, `css/admin.css`, `css/haidh.css`, `css/journal-table.css`, `js/auth.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The full build of the redesign thread that followed V3.43 — a genuine reversal of that release's color assignment, prompted by realizing `.journal-wrap` and each `.settings-section` already occupied the same hierarchical role (a white card of actual content, directly inside its screen), which made it clear the pattern belonged everywhere, not just on Settings.
+
+**The core inversion**: `#appContent` is now `--color-page-bg` (was `--surface-track`); every individual screen is now `--surface-track` (was white). Screens picked up real padding (10px on every side), rounded corners, and their own min-height formula — mirroring `#appContent`'s own, additionally subtracting `#appContent`'s padding via the existing `--appcontent-vpad` token, the same technique already used for Log Detail's cards and the Timer.
+
+A new shared class, `.screen-content` (`css/base.css`), is where the standard "white, 30/50-capped" treatment now lives — white background, the cap, its own padding and radius. Tadabbur, Haidh, and Admin all get a new body-content wrapper using it; Settings' 4 sections switch to it too, replacing the width-cap rule they used to duplicate individually.
+
+**Settings** loses its `--surface-app` special case entirely — it's just another `--surface-track` screen now, no longer different from anything else. `--surface-app` is retired from active use (the token stays defined, nothing references it).
+
+**Journal**'s old negative-margin technique — built to bleed the table to the screen's raw edges — is removed, since it's fundamentally incompatible with the new confirmed exception: `.journal-header-row` and `.journal-wrap` together get a fixed 70% width and center themselves, the same shape as Juz Tracker's existing full-width exemption, rather than following the standard cap a 4-column table doesn't have room for.
+
+**Haidh and Admin** both had the identical, previously-undiscovered gap: their body content sat directly in the screen with no wrapper of its own, relying entirely on a screen-level cap for width control. Haidh's was also where a confirmed rendering bug lived — the calendar spanning the full browser width with no restriction at all on a wide desktop window. Both screens' old screen-level caps are removed, and their content now lives inside its own `.screen-content` wrapper instead, with an explicit width control point that doesn't depend on whatever was going wrong before.
+
+**Three breakpoint corrections**, all converging on the same number: `--appcontent-vpad` and `#appContent`'s own padding both move from 720px to 768px; `#appContent`'s `max-width` (which stays Hifzhelper's own 1400px, not stdstyles' 1280px) moves from 1200px to 1180px. All three now match the `--width-tablet`/`--width-desktop` breakpoints already used everywhere else in the app, rather than three separate systems disagreeing across small windows of viewport width.
+
+**The dropdown menu** gets a "Home" entry, added the same way Refresh and Log Out already were — hardcoded directly rather than added to `NAV_ITEMS`, so it doesn't also duplicate into Home's own tile grid.
+
+One thing deliberately left alone: `#screen-home` still carries its own separate screen-level width cap, the same pattern just removed from Settings, Admin, and Haidh. It was never part of the explicitly-named list this round, so it's untouched rather than assumed — worth a decision on consistency, flagged in `TODO.md`.
+
+---
+
 ## V3.43 — `#appContent`/screen architecture, rebased on real V3.41.2 (2026-08-09)
 
 **Files touched:** `index.html`, `css/tokens.css`, `css/base.css`, `css/nav.css`, `css/settings.css`, `css/detail-pages.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

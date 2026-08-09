@@ -4,6 +4,75 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Flagged — Home header icon removal, separate from the redesign above (2026-08-09)
+
+- [ ] Remove the home icon from Home's own header row entirely,
+  confirmed in chat — this is `#homeHeaderIcon`, the lavender `home`
+  icon in Home's `card-header-row` (V3.43 already stripped the "Home"
+  text label next to it). Now the icon itself goes too, leaving that
+  header row empty of both icon and text. Not yet decided/asked: does
+  the empty `card-header-row` div stay in the markup (just visually
+  blank), or does the whole header row element get removed too,
+  leaving the tile grid as the screen's only content? Leaning toward
+  removing the whole row rather than leaving a blank one, but flagging
+  rather than assuming. NOT part of the V3.44 build below — separate,
+  still unresolved.
+
+## Done — V3.44 (2026-08-09)
+
+Full build of the entire `#appContent`/screen redesign thread, plus the
+Admin gap found and confirmed along the way.
+
+- [x] **Core color inversion**: `#appContent` is now `--color-page-bg`
+  (was `--surface-track`); every individual screen is now
+  `--surface-track` (was white, via the universal `.screen` rule).
+  Screens get real padding (10px all sides), radius, and their own
+  min-height formula (mirrors `#appContent`'s, additionally
+  subtracting `#appContent`'s own padding via `--appcontent-vpad`,
+  same pattern already used for Log Detail/Timer).
+- [x] New shared `.screen-content` class (`css/base.css`) — white,
+  standard 30/50 cap, own padding/radius. Used by Tadabbur, Haidh, and
+  Admin's new body-content wrappers, and each of Settings' 4 sections
+  (replacing their individually-duplicated cap rules).
+- [x] **Settings**: `--surface-app` special case fully removed —
+  Settings is no longer different from any other screen, just another
+  `--surface-track` screen with white `.screen-content` sections
+  inside it. `--surface-app` retired from actual use (token definition
+  kept, nothing references it anymore).
+- [x] **Journal**: the old negative-margin edge-bleed technique removed
+  (incompatible with a fixed-width, centered element). New confirmed
+  exception: `.journal-header-row` + `.journal-wrap` together, fixed
+  70% width + centered, same shape as Juz Tracker's existing full-width
+  exemption.
+- [x] **Haidh**: its own screen-level width cap removed (this was also
+  where the confirmed rendering bug lived — calendar spanning the full
+  browser width with no cap at all). Calendar content now wrapped in
+  `.screen-content` for its own explicit width control.
+- [x] **Admin**: same gap as Haidh, found on request by checking the
+  code directly — register box + search + list had no shared wrapper
+  either. Same fix: screen-level cap removed, body content wrapped in
+  `.screen-content`.
+- [x] **Juz Tracker**: `#screen-juzTracker` picks up the same
+  min-height formula as every other screen via the universal `.screen`
+  rule — no separate work needed. `.juz-tracker-wrap` confirmed
+  unchanged (already transparent, stays that way — the one deliberate
+  exception to the white-content rule).
+- [x] **Breakpoint corrections**: `--appcontent-vpad` and
+  `#appContent`'s own padding both moved from 720px to 768px;
+  `#appContent`'s `max-width` breakpoint moved from 1200px to 1180px
+  (value stays Hifzhelper's own 1400px, not stdstyles' 1280px) — all
+  three now match every other width threshold in the app.
+- [x] **Dropdown**: "Home" added, hardcoded the same way Refresh/Log
+  out already are (not added to `NAV_ITEMS`, so `#homeGrid` doesn't
+  duplicate it).
+- [x] Flagged, not touched in this build: `#screen-home` still has its
+  own separate screen-level cap, same pattern that was just removed
+  from Settings/Admin/Haidh — it wasn't part of the explicitly-named
+  list, so left as-is rather than assumed. Worth a decision on
+  consistency.
+- [x] All syntax/HTML-tag-balance/CSS-brace-balance checked before
+  delivery.
+
 ## Done — V3.43 (2026-08-09)
 
 Built from the REAL V3.41.2 baseline the user uploaded directly

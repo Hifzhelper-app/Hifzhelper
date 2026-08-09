@@ -34,11 +34,43 @@ input, select, textarea {
 
 .hidden { display: none !important; }
 
-/* V3.43: every individual screen is white by default, confirmed in
-   chat -- Settings overrides this specifically (css/settings.css),
-   since it's genuinely different (its own --surface-app backdrop with
-   4 white sections inside it, not a plain white screen itself). */
-.screen { background: var(--color-surface); }
+/* V3.44: CORE COLOR INVERSION, confirmed explicitly in chat twice
+   ("Screens are surface-track" / "any sections or containers in a
+   screen will have white background"). Reverses V3.43: screens are now
+   --surface-track (was white), their actual content becomes white
+   cards instead (see .screen-content below). Padding (10px all sides)
+   and radius are new -- V3.43 gave .screen no padding/radius at all.
+   Min-height mirrors #appContent's own formula, additionally
+   subtracting #appContent's own padding (--appcontent-vpad,
+   tokens.css) since the screen sits inside that padding -- same
+   pattern already used for .log-detail-card/#dhorTimerHost. Settings
+   no longer overrides this (css/settings.css) -- it's just another
+   --surface-track screen now, --surface-app retired. */
+.screen {
+  background: var(--surface-track);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  min-height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2));
+  min-height: calc(100dvh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2));
+}
+
+/* V3.44: shared class for the standard "content inside a screen" look
+   -- white, the 30/50 cap, centered once that cap narrows it. Used by
+   Tadabbur/Haidh/Admin's new body-content wrappers and each Settings
+   section (replacing their own individually-duplicated cap rules).
+   Journal's header+wrap pair and Juz Tracker are the confirmed
+   exceptions -- they don't use this class at all. */
+.screen-content {
+  background: var(--color-surface);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+}
+@media (min-width: 768px) and (max-width: 1179px) {
+  .screen-content { width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  .screen-content { width: var(--width-desktop); margin: 0 auto; }
+}
 
 /* App shell: banner fixed at top, content fills the rest */
 #appShell {
@@ -57,8 +89,16 @@ input, select, textarea {
      never a fixed box that clips. */
   min-height: calc(100vh - var(--auth-band-height, 60px));
   min-height: calc(100dvh - var(--auth-band-height, 60px));
-  background: var(--surface-track);
-  padding: var(--space-md);
+  /* V3.44: background changes from --surface-track to --color-page-bg
+     (the existing cream token) -- confirmed in chat, part of the same
+     color inversion above. Padding: left/right reduced to a flat 10px
+     at every screen size (was 16px mobile / 32px tablet+) -- confirmed
+     correction, superseding the old breakpoint-varying values for this
+     axis specifically. Top/bottom UNCHANGED, still breakpoint-varying
+     below. Border-radius new -- V3.43 never gave this element one. */
+  background: var(--color-page-bg);
+  padding: var(--space-md) 10px;
+  border-radius: var(--radius-md);
   /* V3.4.3: a position:sticky sibling (#authBand) before a flex:1 sibling
      in a flex column is a known WebKit compositing quirk — Safari computed
      this element's layout correctly but didn't PAINT it until something
@@ -71,13 +111,24 @@ input, select, textarea {
 
 /* Tablet and up: a bit more breathing room, content can use a wider
    max-width so long table rows/rings don't stretch uncomfortably thin,
-   but still no fixed narrow column wasting screen space. */
-@media (min-width: 720px) {
+   but still no fixed narrow column wasting screen space.
+   V3.44: breakpoint corrected from 720px to 768px, confirmed in chat --
+   matches every other width threshold in the app now. Only top/bottom
+   padding changes here; left/right stays the flat 10px set above. */
+@media (min-width: 768px) {
   #appContent {
-    padding: var(--space-lg) var(--space-xl);
+    padding: var(--space-lg) 10px;
   }
 }
-@media (min-width: 1200px) {
+/* V3.44: #appContent adopts stdstyles' own strategy for its .app-shell
+   -- confirmed in chat, traced through stdstyles precisely first: its
+   .screen is genuinely uncapped in its own rule, the real width cap
+   lives entirely on .app-shell (the rough equivalent of #appContent
+   here), individual screens just inherit whatever width their parent
+   already has. Breakpoint corrected from 1200px to 1180px, matching
+   every other width threshold in the app -- value stays Hifzhelper's
+   own existing 1400px, not stdstyles' 1280px (confirmed explicitly). */
+@media (min-width: 1180px) {
   #appContent {
     max-width: 1400px;
     margin: 0 auto;
