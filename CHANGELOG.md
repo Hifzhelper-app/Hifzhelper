@@ -7,6 +7,24 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.42 — `.screen` architecture: a real base class, containers, one universal background (2026-08-08)
+
+**Files touched:** `index.html`, `css/tokens.css`, `css/base.css`, `css/settings.css`, `css/admin.css`, `css/haidh.css`, `css/nav.css`, `css/journal-table.css`, `css/detail-pages.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+A genuine architecture shift, prompted by reviewing a reference stylesheet from a different app for potential conflicts before adopting anything — several real ones came up (a `.screen` class name collision with inverted show/hide logic, `position:fixed` vs this app's `position:sticky` banner with its own known Safari fix, a single global pixel width cap competing with the existing per-screen 30/50 percentage system). What actually got adopted, confirmed piece by piece in chat, deliberately avoided all three: the show/hide mechanism stays exactly as it was (`.hidden`, `showScreen()`), and only the reference's *sizing principles* — not its literal class names or mechanism — were brought over.
+
+`.screen` (`css/base.css`) had no styling of its own before this — visibility was the only thing `.hidden` ever controlled. It's now a real card: padding, a universal `--surface-track` background, rounded corners, a shadow, and a genuine `min-height` formula based on `100vh`/`100dvh` minus the auth band and safe-area space — reusing the app's own existing *dynamic* `--auth-band-height` (already live-computed in `js/auth.js`) rather than a new fixed constant. Width is now full/edge-to-edge at the screen level for every screen — the 30/50 cap that used to live individually on `#screen-settings`/`#screen-admin`/`#screen-haidhDetail`/`#screen-home` is gone from the screen level entirely.
+
+A new shared `.screen-container` class (white, the 30/50 cap moved here, centered once that cap narrows it, sits at the top by default) is where that cap actually lives now, applied per screen since the structure varies a lot: Home's `#homeGrid` just picked up the class (it was already white). Tadabbur, Haidh, and Admin each get a new container wrapping their body content, with the header row staying on the screen's own background, matching Home's existing pattern. Settings' 4 independent sections each become their own container — their background changed from sky-blue to white to match everywhere else, since they already looked like independent cards, just not white ones. Journal's header row and table now share one container together, and the old negative-margin technique that used to bleed the table to the screen's edges is removed — it was built specifically to cancel out the old flat-screen padding, which no longer applies now that the table sits in a capped, centered container instead. Log Detail only picked up the width-cap/centering portion on `.log-detail-rail` itself, not the full container treatment (padding/background would have fought its existing horizontal scroll-snap swipe mechanics) — its individual `.log-detail-card`s already had their own white background, border, and radius, satisfying the "container" idea before this change even started.
+
+Juz Tracker is deliberately excluded from all of this — it was already built to always stay full-width, and wrapping it in the new container would have reintroduced the exact cap it exists specifically to avoid.
+
+Home's recent olive/sage-specific background is reconsidered and reverted here — every screen shares the one new universal background instead of Home being a special case, confirmed directly in chat ("every screen should share one background"). Its white heading text, added specifically for contrast against the darker olive, reverts to the normal dark-ink color every other screen's heading already uses.
+
+No JavaScript was touched this round — the show/hide mechanism was deliberately left alone, so nothing here required a script change.
+
+---
+
 ## V3.41.2 — Home tile, fixed sizing, 30/50 cap, darker border (2026-08-08)
 
 **Files touched:** `js/home.js`, `css/nav.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

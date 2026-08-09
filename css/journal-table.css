@@ -66,6 +66,12 @@
      app's own top band; the header row's own real height (set above)
      accounts for the rest, so the scroll area fills exactly whatever
      space is genuinely left in the viewport. */
+  /* V3.42 note: doesn't account for the new .screen/.screen-container
+     padding layers now sitting above this element (nested one level
+     deeper than before) -- left as an approximation rather than a
+     precise recalculation without live testing; worst case this scrolls
+     slightly more/less tightly than ideal, not a functional break, the
+     outer page can still scroll normally either way. */
   max-height: calc(100vh - var(--auth-band-height, 60px) - 52px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -77,19 +83,14 @@
   font-size: 13px;
 }
 
-/* Header row and the rows container bleed to the edges of the screen —
-   cancels out #appContent's own left/right padding rather than
-   requiring #appContent itself to lose padding everywhere. */
-.journal-header-row, .journal-wrap {
-  margin-left: calc(-1 * var(--space-md) + var(--space-xs));
-  margin-right: calc(-1 * var(--space-md) + var(--space-xs));
-}
-@media (min-width: 720px) {
-  .journal-header-row, .journal-wrap {
-    margin-left: calc(-1 * var(--space-xl) + var(--space-xs));
-    margin-right: calc(-1 * var(--space-xl) + var(--space-xs));
-  }
-}
+/* V3.42: the negative-margin bleed-to-edge technique that used to live
+   here is REMOVED -- it was built to cancel out #appContent's old
+   padding so the table reached the screen's edges, which no longer
+   applies now that .journal-header-row + .journal-wrap sit together
+   inside one .screen-container (css/base.css, added directly in
+   index.html) -- capped/centered on larger screens instead of
+   bleeding edge-to-edge, and just naturally fills the container's own
+   padding on mobile. */
 
 .journal-table td {
   padding: var(--space-sm);
