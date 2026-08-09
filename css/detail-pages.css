@@ -862,6 +862,20 @@
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
 }
+/* V3.42: width-cap+centering only (not the full .screen-container
+   treatment -- no padding/background of its own, which would interfere
+   with the existing scroll-snap rail and its cards' own edge-to-edge
+   swipe behavior). Individual .log-detail-card elements already have
+   their own white background/border/radius (below) -- they already
+   satisfied the "container" concept before this change, so nothing
+   about them needed to change, just the overall rail's own max width
+   on larger screens now that this cap moved off the screen level. */
+@media (min-width: 768px) and (max-width: 1179px) {
+  .log-detail-rail { width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  .log-detail-rail { width: var(--width-desktop); margin: 0 auto; }
+}
 /* 2026-08-05, confirmed in chat: height was a flat 70vh regardless of
    how much space was actually available above it (the auth band, the
    dots row) -- leaving a real, substantial gap of unused space below

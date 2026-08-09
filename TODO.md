@@ -4,6 +4,43 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.42 (2026-08-08)
+
+- [x] `.screen` is now a real, universal base class (`css/base.css`) —
+  previously had no styling at all. Own card treatment (padding,
+  `--surface-track` background, radius, shadow), full-width (no cap at
+  the screen level), a real `min-height` formula
+  (`100vh`/`100dvh`-based, reusing the existing dynamic
+  `--auth-band-height` rather than a new fixed constant). Show/hide
+  itself is unchanged — still `.hidden`, still `showScreen()`.
+- [x] New shared `.screen-container` class — white, the 30/50 cap
+  (moved here from individual screens), centered once that cap
+  actually narrows it, sits at the top of its `.screen` by default (no
+  vertical centering).
+- [x] Applied per screen: Home (`#homeGrid`, already white, just
+  capped+centered now); Tadabbur/Haidh/Admin — new container wraps the
+  body, header row stays on the screen's own background; Settings — 4
+  independent sections, each its own container (background changed
+  from sky-blue to white to match); Journal — header row + table
+  together in one container (the old negative-margin edge-bleed
+  technique removed, no longer applicable); Log Detail — only the
+  width-cap/centering portion applied to `.log-detail-rail` itself
+  (not padding/background, which would've fought the existing
+  scroll-snap swipe rail) — individual `.log-detail-card`s already had
+  their own white/border/radius, nothing there needed to change.
+- [x] Juz Tracker deliberately EXCLUDED from the new container
+  treatment — it was already built to always stay full-width, and
+  adding a container would have reintroduced the exact cap it was
+  built to avoid.
+- [x] Home's olive/sage-specific background reconsidered and reverted
+  — every screen now shares the one universal `--surface-track`
+  background instead. Home's white heading text (added specifically
+  for contrast against the darker olive) reverted to the normal
+  dark-ink heading every other screen uses.
+- [x] All syntax/HTML-tag-balance/CSS-brace-balance checked before
+  delivery — no JS files touched this round (show/hide mechanism
+  intentionally unchanged).
+
 ## Done — V3.41.2 (2026-08-08)
 
 - [x] Real "Home" tile added inside `#homeGrid` itself, as the first

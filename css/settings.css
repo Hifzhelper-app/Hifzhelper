@@ -23,20 +23,19 @@
    one rounded track, a sliding highlighted thumb, replacing the old
    .tajweed-tag button-group look for these specific controls (still
    used elsewhere — days-of-week, slide-in grid cells — unchanged).
-   ============================================================ */
 
-#screen-settings {
-  width: 100%;
-}
-@media (min-width: 768px) and (max-width: 1179px) {
-  #screen-settings { width: var(--width-tablet); margin: 0 auto; }
-}
-@media (min-width: 1180px) {
-  #screen-settings { width: var(--width-desktop); margin: 0 auto; }
-}
+   V3.42: the screen-level width cap above moved to the new universal
+   .screen class (css/base.css) -- #screen-settings no longer sets its
+   own width. Each of the 4 sections below is now one of the new white
+   "containers" (css/base.css's .screen-container, added directly in
+   index.html) instead of the screen itself being capped -- confirmed
+   in chat, containers are white. .settings-section's own background
+   changed from --palette-sky to white (--color-surface) to match --
+   these sections already looked like independent cards before this,
+   just not white ones. */
 
 .settings-section {
-  background: var(--palette-sky);
+  background: var(--color-surface);
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-md);
   padding: var(--space-md);
@@ -239,6 +238,38 @@
   text-align: right;
 }
 .settings-row input[type="date"] { width: 160px; }
+
+/* V3.40.1: Haidh section redesign. Heading + opt-in checkbox now share
+   one row (was heading, then a separate .cb-private-row checkbox below)
+   -- wrapping both in one <label> also means tapping the "Haaidha" text
+   itself toggles the checkbox, not just the box. */
+.haidh-heading-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+.haidh-heading-check input { width: 20px; height: 20px; flex: 0 0 auto; }
+
+/* Ruling switch: was squeezed into .settings-row + .switch-track-small
+   (a fixed 72px built for the 2-letter M/F gender switch elsewhere) --
+   "Shafi'i" visibly clipped to "Sha" as a result. Now its own row,
+   centered, sized as a fraction of the row instead of a fixed px width. */
+.haidh-ruling-label { display: block; margin-bottom: 4px; }
+.haidh-ruling-row {
+  display: flex;
+  justify-content: center;
+  padding-bottom: var(--space-sm);
+}
+.haidh-ruling-row .switch-track { width: 75%; }
+
+/* Haidh section's 3 input rows: 2 of the 3 labels wrap to 2 lines on
+   mobile widths ("How many haidh days per cycle", "Next expected haidh
+   day") while the 3rd doesn't, leaving uneven row heights -- a shared
+   min-height fixes that without touching .settings-row's other usages
+   elsewhere on this screen (Default targets), which don't have this
+   problem. */
+#section-haidh .settings-row { min-height: 56px; }
 
 /* Juz'/Surah "mark completed sections" slide-in grids (V3.9.0) — replaces
    the old inline mode-toggle-then-grid pattern entirely (2 buttons that

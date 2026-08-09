@@ -2,19 +2,12 @@
    Hifzhelper — admin screen
    ============================================================ */
 
-/* Container width: app-wide responsive protocol (V3.4.2, refined V3.4.3
-   — see --width-tablet/--width-desktop in tokens.css, and the threshold
-   note in components.css). Unlike .login-card, this isn't inside a
-   flex-centering parent, so it needs its own margin:auto. */
-#screen-admin {
-  max-width: 100%;
-}
-@media (min-width: 768px) and (max-width: 1179px) {
-  #screen-admin { max-width: var(--width-tablet); margin: 0 auto; }
-}
-@media (min-width: 1180px) {
-  #screen-admin { max-width: var(--width-desktop); margin: 0 auto; }
-}
+/* V3.42: the screen-level width cap that used to live here moved to
+   the new universal .screen class (css/base.css) -- #screen-admin no
+   longer sets its own width. The body content below the header row is
+   now wrapped in a .screen-container div directly in index.html
+   instead (confirmed in chat: containers are white and get the cap,
+   not the screen itself). */
 
 .admin-register-box {
   background: var(--color-surface);
