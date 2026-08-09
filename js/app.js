@@ -53,6 +53,7 @@ async function showScreen(id, param){
   if(id === 'settings') await renderSettingsScreen();
   if(id === 'reflections') await renderTadabburScreen();
   if(id === 'haidhDetail') await renderHaidhDetailScreen(param);
+  if(id === 'juzTracker') await renderJuzTrackerScreen();
   // V3.41: highlight whichever nav icon matches the screen just shown, in
   // both the dropdown and Home grid -- confirmed in chat. Runs AFTER any
   // screen-specific render above, since renderHomeScreen() rebuilds
