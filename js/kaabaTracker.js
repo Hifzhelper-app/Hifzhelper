@@ -85,7 +85,7 @@
   }
 
   const CSS = `
-.kt-svg{display:block;width:100%;height:auto;overflow:visible;font-family:'Amiri',Georgia,'Times New Roman',serif;-webkit-tap-highlight-color:transparent}
+.kt-svg{display:block;width:100%;height:auto;max-height:70vh;overflow:visible;font-family:'Amiri',Georgia,'Times New Roman',serif;-webkit-tap-highlight-color:transparent}
 .t .f{stroke-width:1;transition:fill .5s ease,stroke .5s ease}
 .t.top .f{fill:#eceae3;stroke:#d4d0c5}
 .t.left .f{fill:#e2dfd6;stroke:#cfcbc0}

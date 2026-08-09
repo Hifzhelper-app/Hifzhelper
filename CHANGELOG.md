@@ -7,6 +7,40 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45 — Juz Tracker connected to the Dhor pool (2026-08-09)
+
+**Files touched:** `index.html`, `css/juzTracker.css`, `js/juzTrackerScreen.js`, `js/kaabaTracker.js`, `js/app.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The Juz Tracker was, until this version, a self-contained puzzle with no connection to a student's actual memorization data — a full session-only "free play" mode. This connects it to the same Dhor pool (`students.baseline_selection`) the existing Settings picker already reads from and writes to.
+
+**Loading**: `renderJuzTrackerScreen` now runs every time the screen is entered (replacing what used to be a one-time setup function that only ran once at page load), fetching the student's profile and coloring a tile for any juz with all 4 of its quarter-units already present in the pool — the same "complete" rule the existing picker uses, via the same `quarterUnitsForJuz` helper.
+
+**Saving** is a genuinely careful piece, given the real risk of silently corrupting actual memorization progress if this went wrong. Tapping the new Save icon diffs the tracker's current state against what was loaded at entry, and if anything changed, shows a confirmation modal listing exactly what's about to happen — which juz are newly marked complete, which are newly un-marked, both if the same session did both — with OK to proceed or Cancel to go back and adjust. On OK, only the specific juz actually touched get written: their 4 quarter-units added or removed from a freshly re-fetched copy of the pool, leaving every other juz completely untouched. This was a deliberate choice over rebuilding the whole pool from the tracker's current tile state, the way the existing Settings picker does — a full rebuild would have carried the exact same edge-case risk already found in that picker's own code (documented separately, not fixed as part of this): if the tracker's own load ever missed detecting an already-complete juz, saving would silently drop it. The targeted approach sidesteps that entirely rather than reproducing it on a new screen. Verified directly with 4 Node-run scenarios before delivery, including the specific case this whole design exists to protect — a partial juz already in the pool (simulating Sabaq Dhor's own leftover progress, which only ever moves whole juz, never partial ones) stays completely untouched by an unrelated save elsewhere on the tracker.
+
+The header is restructured to match what was asked for specifically on this screen, different from the pattern used everywhere else: a white background instead of the screen's own `--surface-track`, Save sitting immediately next to the "Juz Tracker" heading rather than grouped with Close, and Close pushed separately to the far right.
+
+The sizing problem — the cube running past the bottom of the visible viewport on a wide desktop window, confirmed via 2 screenshots — turned out to require touching `js/kaabaTracker.js` directly rather than the screen's own CSS: the component renders inside a shadow DOM, and its `.kt-svg` styling lives entirely inside that boundary, unreachable from ordinary external stylesheets. A `max-height: 70vh` there now keeps the whole cube visible without scrolling, on any screen size.
+
+No backend changes were needed anywhere in this — `POST /profile` already fully supported writing `baseline_selection`, confirmed by reading the handler directly rather than assuming.
+
+---
+
+## V3.44.1 — Tadabbur redesign (2026-08-09)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/customDate.js`, `js/reflectionCard.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+A full redesign of the Tadabbur screen, scoped deliberately to frontend-only work — "no new backend for now" — after the fuller version of this request (an ayah chooser, real hashtag search) turned out to need a new migration and got pushed to a later round.
+
+The header row — icon, "Tadabbur" title, Save, and the close button — moves inside the white card as its first child now, the same structural pattern Sabaq's own `.log-detail-card` already uses, rather than sitting outside the card on the screen's own background. A date field is new (`#tadabbur_date`) — `reflections.date` already existed in the schema, it just wasn't exposed anywhere in the UI before this, so no migration was needed. It's wired the same way Sabaq's date field already works: not a dynamic reload when changed, just "which date this entry is for," read once at save time — which means backdating a reflection now works the same way backdating a Sabaq log already did. The private checkbox moves above the reflection textarea instead of below it, and that textarea now flexes to fill the card (`flex: 1`, bigger 18px text) instead of sitting at a fixed `rows="8"`, which needed the card itself to become a flex column with a real height to grow into.
+
+The card also gets its own width exception — 50%, deliberately not the standard 30/50 rule, staying at 50% even past the `1180px` breakpoint where the shared `.screen-content` class would otherwise narrow it to 30% — more room for long reflection text was the explicit reason. A third named exception now, alongside Journal's 70% and Juz Tracker's full width, each for its own stated reason rather than an arbitrary one.
+
+Caught and fixed during this build: an early edit accidentally deleted `.log-detail-rail`'s own CSS properties while adding a section comment above it. Found and corrected immediately via direct inspection, before anything was delivered.
+
+**Follow-up, same version**: the flagged backend limitation is now resolved too — `worker/src/reflections.js`'s update path can write `date`. This wasn't the simple one-line whitelist edit it first looked like, though: `FIELDS` is shared with the create path, and `insertLog` zips that array with its own `values` array by *position* to build the INSERT statement. Adding `date` there would have left `FIELDS` at 3 items against `values`' still-2, silently misaligning every column after it — caught via direct verification before delivery, not left to be discovered later. Fixed instead with a separate `UPDATE_FIELDS` whitelist used only by the update path, which matches fields by name rather than position, so it doesn't share that risk. Verified directly with a Node simulation of both paths before shipping: the create path is unaffected, and the update path now correctly picks up a `date` key when present.
+
+---
+
 ## V3.44 — Core color inversion, content wrappers, breakpoint corrections (2026-08-09)
 
 **Files touched:** `index.html`, `css/tokens.css`, `css/base.css`, `css/settings.css`, `css/admin.css`, `css/haidh.css`, `css/journal-table.css`, `js/auth.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

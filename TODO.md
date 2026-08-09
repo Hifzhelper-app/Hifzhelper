@@ -4,6 +4,110 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45 (2026-08-09)
+
+Juz Tracker connected to the Dhor pool, plus its own sizing fix and
+header restructure.
+
+- [x] **Pool-based initialization**: the tracker now fetches the
+  student's profile (`apiGetProfile`) every time the screen is
+  entered (`renderJuzTrackerScreen`, now called from `showScreen`
+  rather than the old one-time IIFE) and colors tiles for whichever
+  juz have all 4 of their quarter-units present in
+  `baseline_selection` — same "complete" rule the existing Settings
+  picker already uses (`quarterUnitsForJuz`, `shared/data.js`).
+- [x] **Save flow**: tapping the new Save icon compares the tracker's
+  current state against what was loaded at screen-entry, computing
+  which juz were newly marked and newly unmarked. If nothing changed,
+  it's a silent no-op. Otherwise, a confirmation modal
+  (`.modal-overlay`/`.modal-card`, matching the app's existing
+  pattern) lists exactly what's about to happen — "X juz have been
+  marked complete: Juz ..." and/or "Y juz have been un-marked: Juz
+  ..." if both happened in the same session — with OK/Cancel.
+- [x] **TARGETED add/remove** (Claude's own recommendation from
+  earlier, not separately re-confirmed, but implemented as the safer
+  choice): on OK, only the specific juz actually touched this session
+  get added/removed — 4 quarter-units each — re-fetching the current
+  pool right before writing rather than trusting a possibly-stale
+  copy. Verified directly via 4 Node-run scenarios before delivery,
+  including the specific case this whole approach exists to protect:
+  a partial juz already in the pool (simulating Sabaq Dhor's own
+  leftover progress) stays completely untouched by an unrelated
+  save elsewhere on the tracker.
+- [x] **Un-marking supported**, confirmed explicitly — same
+  confirmation flow as marking, matching the existing picker's own
+  toggle-either-direction capability.
+- [x] **Header restructured**: white background (was sitting on the
+  screen's own `--surface-track` like every other screen); Save sits
+  right next to the "Juz Tracker" heading, Close pushed separately to
+  the far right via `margin-left: auto` — a plain flex row rather than
+  the standard 3-column `.card-header-row` grid, since that shape
+  didn't fit this specific layout.
+- [x] **Sizing fix**: the SVG's own internal CSS (inside its shadow
+  DOM — confirmed via direct inspection that external CSS can't reach
+  it, so this had to go in `js/kaabaTracker.js` itself, not
+  `css/juzTracker.css`) now caps at `max-height: 70vh`, so the cube
+  always fits the viewport without scrolling — confirmed via 2
+  screenshots showing exactly this problem on a wide desktop window
+  before the fix.
+- [x] No backend changes needed at all — `apiSaveProfile`/`POST
+  /profile` already fully supported `baseline_selection` via the
+  existing Settings picker, confirmed by reading the handler directly
+  before assuming so.
+- [x] All syntax/HTML-balance/CSS-balance checked, plus the core
+  add/remove logic directly verified via Node before delivery (not
+  just assumed correct from reading it).
+
+## Done — V3.44.1 (2026-08-09)
+
+Full Tadabbur redesign, scoped to frontend-only per the user's explicit
+"no new backend for now."
+
+- [x] Header row (icon/"Tadabbur"/save-wrap/close button) moved inside
+  the white `.screen-content` card as its first child, matching
+  Sabaq's own `.log-detail-card` pattern.
+- [x] Date field added (`#tadabbur_date`) — `reflections.date` already
+  existed in the schema, just wasn't exposed in the UI; no migration
+  needed. Wired the same way Sabaq's own date field works: not a
+  dynamic reload-on-change, just "which date this entry is for," read
+  at save time. Added to `wireCustomDateDisplay`'s list alongside the
+  other 3 date inputs for consistent cross-browser display.
+- [x] Private checkbox moved above the reflection textarea.
+- [x] Reflection textarea flexes to fill the card (`flex:1;
+  min-height:0`) instead of a fixed `rows="8"`, with bigger text
+  (18px). Card (`#tadabburCard`) is a flex column with its own
+  min-height formula so there's real vertical space for the textarea
+  to actually grow into.
+- [x] Card gets its own 50% width restriction — deliberately not the
+  standard 30/50 rule; stays at 50% even at the `≥1180px` breakpoint
+  where `.screen-content` would otherwise drop to 30%, to give the
+  long reflection text more room. A third exception alongside
+  Journal's 70% and Juz Tracker's full-width.
+- [x] REAL MISTAKE caught and fixed during this build: an early edit
+  accidentally deleted `.log-detail-rail`'s own CSS properties
+  (display/gap/overflow/scroll-snap) while adding an unrelated section
+  comment above it — caught immediately via direct inspection before
+  delivery, restored correctly.
+- [x] RESOLVED (V3.44.1 follow-up, `worker/src/reflections.js`): the
+  update path can now write `date` too. NOT a simple one-line whitelist
+  edit as first proposed, though — direct verification caught a real
+  bug in that first attempt before delivery: `FIELDS` is shared with
+  the CREATE path, and `insertLog` (`logHelpers.js`) zips that array
+  with its own `values` array BY POSITION to build the INSERT
+  statement's column list. Adding `date` there would have made
+  `FIELDS` 3 items against `values`' still-2, misaligning every column
+  after it — not an error, silently wrong data. Fixed instead with a
+  separate `UPDATE_FIELDS` whitelist used only by the update path
+  (which iterates present fields by name, not position, so this one
+  was safe on its own) — `FIELDS` itself stays untouched, `date`
+  already being handled by its own dedicated parameter there. Verified
+  directly via Node simulation before delivery: insert path unaffected
+  (correct column/value alignment, no duplicate `date`), update path
+  correctly picks up a `date` key when present and still works
+  normally without one.
+- [x] All syntax/HTML-tag-balance/CSS-brace-balance checked before
+  delivery.
+
 ## Flagged — Home header icon removal, separate from the redesign above (2026-08-09)
 
 - [ ] Remove the home icon from Home's own header row entirely,
