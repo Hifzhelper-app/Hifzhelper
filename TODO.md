@@ -4,6 +4,73 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.43 (2026-08-09)
+
+Built from the REAL V3.41.2 baseline the user uploaded directly
+(`Hifzhelper-ca4ed3c5cc7ed3104dfc425a5a921ad3b15ad62b.zip`), not from
+Claude's earlier speculative V3.42/V3.42.1 sandbox work, which the user
+confirmed was never actually implemented. Final agreed terminology:
+`#appContent` (the one persistent wrapper) = user's "screen";
+each individual `#screen-home`/`#screen-journal`/etc. = user's
+"container".
+
+- [x] 4 new tokens added (`css/tokens.css`): `--surface-app: #EBE5D9`,
+  `--surface-track: #A2ABA1`, `--surface-banner: #4A5D4E` (value
+  corrected from an earlier `#758976` given in this same
+  conversation), `--surface-contrast: #9E83B8`. Plus a new
+  `--appcontent-vpad` helper token (mobile = `--space-md`, `--space-lg`
+  from 720px, matching `#appContent`'s own existing breakpoint) — one
+  source of truth reused by the Log Detail/Timer height recalibration
+  below, instead of duplicating that breakpoint condition elsewhere.
+- [x] `#appContent` gets `background: var(--surface-track)` plus an
+  explicit `min-height` (`100vh`/`100dvh` minus the auth band) — mostly
+  making explicit what its existing `flex:1` already provided
+  implicitly, per the user's request; kept as `min-height` so genuinely
+  long content still grows and the page scrolls, never a fixed box.
+- [x] Auth band (`--color-banner`) changed from `var(--palette-sage)`
+  to `var(--surface-banner)`.
+- [x] Every individual screen is white by default now (new `.screen`
+  rule, `css/base.css`) — including Home, whose old olive-specific
+  `#screen-home` background override is removed entirely.
+- [x] Settings is the one deliberate exception, confirmed twice in
+  chat: `#screen-settings` keeps its own distinct `--surface-app`
+  backdrop rather than the universal white, with its 4 sections
+  (Profile/Hifz Setup/Dhor Schedule/Haidh) white inside it — a second,
+  nested instance of the same "colored backdrop, white cards" pattern
+  the rest of the app has one layer up. The 4 sections' own background
+  changed from `--palette-sky` to white to match. The existing
+  `#screen-settings` 30/50 width cap from the real V3.41.2 baseline
+  needed no changes — it already matched what "containers get 30/50"
+  wants.
+- [x] Home's header text deleted entirely, confirmed in chat — just
+  the lavender `home` icon remains, no `<h2>Home</h2>` at all. The
+  white-heading-text color fix from V3.41.1 (needed for contrast
+  against the old olive) removed as dead code along with it.
+- [x] `.log-detail-card` (both its normal and `.editing-active` states)
+  and `#dhorTimerHost` (both its normal and `>=1180px` desktop states)
+  all recalibrated to also subtract `#appContent`'s own vertical
+  padding (`--appcontent-vpad`) from their height formulas — these
+  predated `#appContent` having any explicit sizing of its own, so
+  they never accounted for that space being unavailable; without this
+  they'd run past the visible viewport by exactly that amount.
+- [x] All syntax/HTML-tag-balance/CSS-brace-balance checked before
+  delivery.
+
+## Done — V3.42.1 (2026-08-09)
+
+- [x] REAL BUG, found via screenshot right after V3.42 shipped: the
+  Log Detail screen (Sabaq/Sabaq Dhor/Dhor rail + Timer) was cramped
+  into unreadable slivers on tablet/desktop. Root cause: V3.42 added a
+  width-cap to `.log-detail-rail` itself, but this screen already had
+  its own bespoke width handling at the exact same `>=1180px`
+  breakpoint (a 4-column grid + each `.log-detail-card`'s own
+  `max-width: 30%`) — the two compounded, each column ending up at
+  roughly 30% ÷ 4 ≈ 7.5% of the viewport. Fixed by removing V3.42's
+  addition entirely — this screen never needed it, its own pre-existing
+  system already handled this correctly. `css/detail-pages.css` only;
+  no other screen was affected (they didn't have a competing system
+  like this one did).
+
 ## Done — V3.42 (2026-08-08)
 
 - [x] `.screen` is now a real, universal base class (`css/base.css`) —

@@ -14,17 +14,17 @@
   --palette-sage:     #829672;
   --palette-evergreen:#344C3D;
 
-  /* ---- --surface- tokens: not yet wired to anything, added on request
-     for future reference elsewhere in the app. ---- */
+  /* ---- V3.43: surface- tokens for the new #appContent/screen
+     architecture (confirmed in chat) ---- */
   --surface-app:      #EBE5D9;
   --surface-track:    #A2ABA1;
-  --surface-banner:   #758976;
+  --surface-banner:   #4A5D4E;
   --surface-contrast: #9E83B8;
 
   /* ---- Semantic usage — map palette colors to what they're FOR.
      Change the app's look by editing these lines, not by hunting through
      component CSS for hardcoded colors. ---- */
-  --color-banner:            var(--palette-sage);
+  --color-banner:            var(--surface-banner);
   --color-banner-text:       #FFFFFF;
 
   /* Journal table — matches the physical paper planner exactly */
@@ -100,19 +100,14 @@
      the percentage VALUES are centralized here. */
   --width-tablet: 50%;
   --width-desktop: 30%;
+}
 
-  /* ---- V3.42: .screen sizing, adopted from a reference stylesheet's
-     principles (screen-top-space/bottom-space formula) but reusing
-     Hifzhelper's OWN --auth-band-height, which js/auth.js already sets
-     live on #appShell (accounts for the real device safe-area) rather
-     than a new fixed constant. --screen-top-space is NOT defined here
-     at :root -- custom properties only cascade downward, and
-     --auth-band-height lives on #appShell, a descendant of :root, so
-     :root itself would only ever see the var()'s fallback (60px), never
-     the real live value. Computed directly in .screen's own rule
-     instead (css/base.css), same pattern .log-detail-card already uses
-     correctly for its own height. --screen-gap/--screen-bottom-space
-     have no such dependency, safe to keep here. */
-  --screen-gap: var(--space-md);
-  --screen-bottom-space: max(var(--screen-gap), env(safe-area-inset-bottom, 0px));
+/* V3.43: single source of truth for #appContent's own vertical padding
+   (--space-md mobile, --space-lg from 720px per css/base.css), reused
+   by the Log Detail cards + Timer height recalibration below so there's
+   only one place that needs to match #appContent's real breakpoint
+   instead of duplicating the 720px condition in multiple files. */
+:root { --appcontent-vpad: var(--space-md); }
+@media (min-width: 720px) {
+  :root { --appcontent-vpad: var(--space-lg); }
 }

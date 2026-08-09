@@ -714,7 +714,9 @@
 #dhorTimerHost {
   flex: 0 0 100%;
   scroll-snap-align: start;
-  height: calc(100vh - var(--auth-band-height, 60px) - 36px);
+  /* V3.43: same #appContent-padding recalibration as .log-detail-card
+     above -- confirmed in chat as affecting the Timer too. */
+  height: calc(100vh - var(--auth-band-height, 60px) - 36px - (var(--appcontent-vpad) * 2));
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -726,7 +728,7 @@
      dots-inner{display:none}, below) -- same auth-band-only calculation
      as .editing-active, not the "normal" one, since there's genuinely
      nothing to subtract for it here either. */
-  #dhorTimerHost { height: calc(100vh - var(--auth-band-height, 60px)); max-width: 30%; }
+  #dhorTimerHost { height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2)); max-width: 30%; }
 }
 /* 2026-08-05, confirmed in chat: same technique .modal-overlay
    (css/components.css) already uses for History/Plan Dhor's own
@@ -862,20 +864,6 @@
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
 }
-/* V3.42: width-cap+centering only (not the full .screen-container
-   treatment -- no padding/background of its own, which would interfere
-   with the existing scroll-snap rail and its cards' own edge-to-edge
-   swipe behavior). Individual .log-detail-card elements already have
-   their own white background/border/radius (below) -- they already
-   satisfied the "container" concept before this change, so nothing
-   about them needed to change, just the overall rail's own max width
-   on larger screens now that this cap moved off the screen level. */
-@media (min-width: 768px) and (max-width: 1179px) {
-  .log-detail-rail { width: var(--width-tablet); margin: 0 auto; }
-}
-@media (min-width: 1180px) {
-  .log-detail-rail { width: var(--width-desktop); margin: 0 auto; }
-}
 /* 2026-08-05, confirmed in chat: height was a flat 70vh regardless of
    how much space was actually available above it (the auth band, the
    dots row) -- leaving a real, substantial gap of unused space below
@@ -898,13 +886,18 @@
   background: var(--color-surface);
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-md);
-  height: calc(100vh - var(--auth-band-height, 60px) - 36px);
+  /* V3.43: now also subtracts #appContent's own vertical padding
+     (--appcontent-vpad, tokens.css), confirmed in chat -- this formula
+     predates #appContent having any explicit sizing of its own, so it
+     never accounted for that space being unavailable; without this the
+     card would run past the visible viewport by exactly that amount. */
+  height: calc(100vh - var(--auth-band-height, 60px) - 36px - (var(--appcontent-vpad) * 2));
   display: flex;
   flex-direction: column;
   overflow: hidden; /* .card-scroll below does the actual scrolling */
 }
 .log-detail-card.editing-active {
-  height: calc(100vh - var(--auth-band-height, 60px));
+  height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2));
 }
 .log-detail-card .card-scroll {
   overflow-y: auto;
@@ -929,7 +922,7 @@
      visible in the grid, nothing to indicate a position within) -- same
      auth-band-only calculation as .editing-active uses everywhere,
      since there's genuinely nothing to subtract for it here either. */
-  .log-detail-card { height: calc(100vh - var(--auth-band-height, 60px)); max-width: 30%; }
+  .log-detail-card { height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2)); max-width: 30%; }
 }
 
 /* Dot indicators -- only meaningful while the rail actually swipes;
