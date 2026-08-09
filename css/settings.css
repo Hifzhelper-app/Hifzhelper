@@ -25,31 +25,23 @@
    used elsewhere — days-of-week, slide-in grid cells — unchanged).
    ============================================================ */
 
-#screen-settings {
-  width: 100%;
-  /* V3.43: Settings is genuinely different from every other screen,
-     confirmed in chat -- it does NOT get the universal white
-     background (css/base.css's .screen rule) like other screens.
-     Instead it keeps its own distinct backdrop, --surface-app, with
-     its 4 sections (below) white inside it -- a second, nested
-     instance of the same "colored backdrop, white cards" pattern the
-     rest of the app has at the #appContent/screen level, one layer
-     deeper here specifically for Settings. --surface-app has no other
-     role anywhere else in this whole plan. */
-  background: var(--surface-app);
-}
-@media (min-width: 768px) and (max-width: 1179px) {
-  #screen-settings { width: var(--width-tablet); margin: 0 auto; }
-}
-@media (min-width: 1180px) {
-  #screen-settings { width: var(--width-desktop); margin: 0 auto; }
-}
+/* V3.44: #screen-settings's own background/width-cap overrides
+   (V3.43's --surface-app special case) are REMOVED entirely, confirmed
+   in chat -- Settings is no longer different from any other screen; it
+   picks up the universal --surface-track background and min-height
+   like everywhere else (css/base.css's .screen rule). --surface-app
+   is retired, no longer used anywhere. Its 4 sections below now use
+   the shared .screen-content class (css/base.css) for their own
+   30/50 cap, rather than each screen individually duplicating that
+   rule -- confirmed explicitly: the screen itself is never
+   independently capped, only content is. */
 
 .settings-section {
-  /* V3.43: was --palette-sky (light blue) -- changed to white to match
-     the "sections stay white" confirmation, now that the screen around
-     them has its own distinct --surface-app backdrop instead. */
-  background: var(--color-surface);
+  /* V3.44: now also .screen-content (index.html) for its white
+     background + 30/50 cap -- this rule only adds the border/radius/
+     padding/spacing specific to how a Settings section looks, doesn't
+     duplicate the background or width-cap .screen-content already
+     provides. */
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-md);
   padding: var(--space-md);

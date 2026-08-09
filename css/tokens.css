@@ -103,11 +103,16 @@
 }
 
 /* V3.43: single source of truth for #appContent's own vertical padding
-   (--space-md mobile, --space-lg from 720px per css/base.css), reused
+   (--space-md mobile, --space-lg from 768px per css/base.css), reused
    by the Log Detail cards + Timer height recalibration below so there's
    only one place that needs to match #appContent's real breakpoint
-   instead of duplicating the 720px condition in multiple files. */
+   instead of duplicating the condition in multiple files.
+   V3.44: breakpoint corrected from 720px to 768px, confirmed in chat --
+   matches every other width-related threshold in the app now (the
+   --width-tablet/--width-desktop caps, #appContent's own new
+   max-width), which previously disagreed with this one across a 48px
+   window. */
 :root { --appcontent-vpad: var(--space-md); }
-@media (min-width: 720px) {
+@media (min-width: 768px) {
   :root { --appcontent-vpad: var(--space-lg); }
 }

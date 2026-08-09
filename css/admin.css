@@ -2,12 +2,13 @@
    Hifzhelper — admin screen
    ============================================================ */
 
-/* V3.42: the screen-level width cap that used to live here moved to
-   the new universal .screen class (css/base.css) -- #screen-admin no
-   longer sets its own width. The body content below the header row is
-   now wrapped in a .screen-container div directly in index.html
-   instead (confirmed in chat: containers are white and get the cap,
-   not the screen itself). */
+/* V3.44: the screen-level width cap that used to live here is REMOVED
+   entirely, confirmed in chat -- #screen-admin is never independently
+   capped now, it's just another --surface-track screen (css/base.css's
+   universal .screen rule). The register box + search + list below are
+   now wrapped in a new .screen-content div (index.html) for their own
+   30/50 cap instead -- same gap Haidh had, confirmed against the code
+   on request before this fix. */
 
 .admin-register-box {
   background: var(--color-surface);
