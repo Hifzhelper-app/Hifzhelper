@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.5 — Sabaq Dhor manual field: rebuilt to match what it actually is (2026-08-10)
+
+**Files touched:** `js/position.js`, `js/sabaqDhorPage.js`, `index.html`, `css/detail-pages.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+V3.45.4 shipped Sabaq Dhor's manual-select field as a persistent override on stored position — set it once, and it would take precedence over the computed frontier until a new Sabaq entry cleared it automatically. Further conversation revealed that was the wrong shape entirely. The field turned out to be something much simpler: a third way to contribute to the exact same composited from/to range Sabaq Dhor's own section checkboxes already build for whichever single entry is about to be saved — nothing about it needs to persist beyond that one save, and it has no bearing whatsoever on Sabaq Dhor's own future "current" position, which continues unconditionally being built from the most recent Sabaq entry regardless of anything ever entered here.
+
+`sabaqDhorManualOverride` comes back out entirely — `js/position.js` no longer stores or clears it, since it no longer exists at all. `compositeCheckedSabaqDhorRows` gets extended instead: when the new checkbox is checked, its surah:ayah point competes in the same earliest-start/latest-end comparison the section checkboxes' own rows already go through, not a separate calculation running alongside it. Verified directly with 5 Node scenarios before delivery, including the specific edge case of the manual value correctly extending an existing section-based range further, and a manual-checked-but-empty case falling back gracefully with no crash.
+
+The checkbox itself is now genuinely passive — the old `#sabaqDhorManualSaveBtn` click handler is gone completely, since there's no longer a separate "save" action for it to trigger. It behaves exactly like the 2 existing "Confirm Sabaq Dhor" checkboxes: no listener of its own, read once, at the moment the card's own Save button is tapped.
+
+Three more confirmed changes land in the same delivery: the manual section now sits below the auto (section-based) one rather than above it; "Set current position manually" becomes "Set Sabaq Dhor," now labeling the checkbox directly rather than sitting above the picker as its own separate label; and "Mark sections revised" becomes "Confirm Sabaq Dhor." A checkbox sizing bug also gets fixed — both `.sabaqDhor-row-cb` and the new checkbox get explicit `20px × 20px` sizing from the app's own `768px` breakpoint up, since neither had any CSS at all before this and was rendering at each browser's own small native default on desktop/tablet. Deliberately scoped by class/id rather than touching `.cb-private-row` globally, since Sabaq's own "Confirm selection" checkbox uses that same class and was already confirmed rendering correctly — changing it globally would have resized something nobody reported as a problem.
+
+---
+
 ## V3.45.4 — Sabaq/Sabaq Dhor position rebuilt around real history (2026-08-10)
 
 **Files touched:** `js/position.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
