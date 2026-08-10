@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.10 — Sabaq Dhor's manual field becomes a genuine part of the shared grid (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `index.html`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+V3.45.9 tried to make "Set Sabaq Dhor" match "Quarter 2"/"Quarter 1" in height and width by matching values across what were still 2 separate layout contexts — and the height fix didn't actually hold up once live. This version takes the architectural fix instead, extending the same principle already proven for the 2 section rows in V3.21.2 (one shared grid, so every column genuinely lines up rather than approximately matching): "Set Sabaq Dhor" is now a genuine 4th part of that same `#sabaqDhor_sections` grid, not a separate row sitting below it.
+
+The real complexity here wasn't the CSS — it was making sure this didn't quietly break something that already worked. That grid's entire content gets rebuilt from scratch 4 separate times during ordinary use (screen load, Move to Dhor, and both rollup-merge/split toggle taps), and moving the manual field inside it meant every one of those triggers would now also wipe out whatever a student had already typed there. The fix: read the manual field's live values immediately before the rebuild, then write them straight back onto the freshly-created elements right after — the exact same rebuild-then-rewire approach this function was already using successfully for the Move-to-Dhor buttons, just extended to one more element instead of invented from scratch. Verified directly against the real function body before shipping, not a reimplementation: 4 scenarios covering a first render, a value surviving one rebuild, a value surviving with its checkbox deliberately left unticked, and a value surviving 2 rebuilds in a row, plus 6 checks on the actual generated markup and operation ordering.
+
+One thing worth being honest about going in: putting all 3 rows in one grid guarantees they share identical column widths, which is what actually fixes the left-alignment and width problems by construction. It does not automatically fix row heights — CSS grid rows still size independently of each other unless something explicitly ties them together, which is exactly why the previous `min-height: 44px` attempt didn't visibly resolve things. That same rule is kept here, now scoped to the field's new position inside the grid, with the underlying reasoning written out in the delivery notes — flagged for a live look given it's already fallen short once.
+
+---
+
 ## V3.45.9 — Checkbox boxes hidden, timer icon repositioned, Sabaq Dhor boxes matched (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
