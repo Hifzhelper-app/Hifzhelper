@@ -453,24 +453,23 @@ function dhorTimerTargetMinutes(perJuzMinutes){
 // unconditionally, replacing already-correct CSS with an unnecessary
 // JS calculation) and the whole visualViewport/MutationObserver
 // approach has been removed entirely, not just adjusted.
-// 2026-08-04, confirmed in chat: the Timer is now a permanent rail card
-// (js/logDetailScreen.js, index.html) rather than an on-demand overlay,
-// so "opening" it means scrolling the rail there, not un-hiding
-// anything -- there's no hidden state to remove any more. Navigates to
-// logDetail first only if not already there, rather than always calling
-// showScreen('logDetail', 'timer') unconditionally -- that would
-// re-render Sabaq/Sabaq Dhor/Dhor from scratch every time (renderLogDetailScreen's
-// own Promise.all), discarding any in-progress, unsaved work on them
-// just because the timer was opened from elsewhere.
-function scrollRailToTimer(){
-  const screen = document.getElementById('screen-logDetail');
-  if(screen.classList.contains('hidden')){
-    showScreen('logDetail', 'timer');
-    return;
-  }
-  const rail = document.getElementById('logDetailRail');
-  const timerCard = document.getElementById('dhorTimerHost');
-  rail.scrollTo({ left: timerCard.offsetLeft, behavior: 'smooth' });
+// V3.45.7: the Timer moved OUT of the rail entirely (index.html), to a
+// truly top-level, always-mounted element sibling to #appShell --
+// confirmed in chat as needing to stay visible across ANY navigation
+// while running and to have its own dropdown/Home/per-card entry
+// points, neither of which a screen-swapped rail card could ever do.
+// "Opening" it now means un-hiding that element directly (no rail to
+// scroll to anymore); "closing" it means hiding it again. Every entry
+// point opens it minimized ("mode='mini'") per the confirmed default --
+// maximizing is the user's own separate, deliberate action from there
+// (the 'timer-expand' listener below), same as it always was.
+function openFloatingTimer(){
+  const host = document.getElementById('dhorTimerHost');
+  host.classList.remove('hidden');
+  host.mode = 'mini';
+}
+function closeFloatingTimer(){
+  document.getElementById('dhorTimerHost').classList.add('hidden');
 }
 document.getElementById('dhorStopwatchToggle').addEventListener('click', async () => {
   const host = document.getElementById('dhorTimerHost');
@@ -480,28 +479,35 @@ document.getElementById('dhorStopwatchToggle').addEventListener('click', async (
     if(profile.target_minutes_per_juz != null) perJuzMinutes = profile.target_minutes_per_juz;
   } catch(e){ /* fall back to the same 40 the field itself defaults to */ }
   host.setAttribute('target', String(dhorTimerTargetMinutes(perJuzMinutes)));
-  host.mode = 'full';
-  scrollRailToTimer();
+  openFloatingTimer();
 });
-// Close (2026-08-04, REDEFINED, confirmed in chat): used to minimise;
-// now stops AND discards the session entirely -- a genuinely different
-// action from the new dedicated Minimise button. reset() (js/session-
-// timer.js) now also halts the clock, not just zeros it, so this is a
-// clean "throw the whole session away" -- nothing about it is saved.
-// No longer hides anything afterward -- the Timer is a permanent rail
-// card now, there's nothing to hide; it simply sits there freshly reset,
-// same as Sabaq/Sabaq Dhor/Dhor do after their own resets.
+// V3.45.7: new header-icon entry points, confirmed in chat -- Sabaq/
+// Sabaq Dhor/Dhor only, explicitly not Tadabbur. Same openFloatingTimer()
+// as every other entry point; unlike Dhor's own Stopwatch button above,
+// these don't have a "target minutes per juz'" concept of their own to
+// set first, so they just open whatever target the timer already has.
+document.getElementById('sabaqTimerBtn').addEventListener('click', openFloatingTimer);
+document.getElementById('sabaqDhorTimerBtn').addEventListener('click', openFloatingTimer);
+document.getElementById('dhorTimerBtn').addEventListener('click', openFloatingTimer);
+// Close: stops AND discards the session entirely -- a genuinely
+// different action from the dedicated Minimise button. reset()
+// (js/session-timer.js) also halts the clock, not just zeros it, so
+// this is a clean "throw the whole session away" -- nothing about it
+// is saved. V3.45.7: now also hides the timer again afterward, since
+// it's no longer a permanent rail card with nowhere to hide to -- it's
+// back to being something that can be genuinely closed.
 document.getElementById('dhorTimerHost').addEventListener('timer-close', (e) => {
   e.target.reset();
+  closeFloatingTimer();
 });
 // Maximise (still emits 'timer-expand', same event the old tap-to-expand
-// mini pill used) re-opens the full view and scrolls the rail to the
-// Timer card -- the timer's own running state was never actually
-// affected by being minimised, just its screen position, so nothing
-// about it needs restoring here.
+// mini pill used) just switches to the full view now -- V3.45.7: no
+// longer scrolls anywhere, since the timer isn't a rail card to scroll
+// to at all anymore. The timer's own running state was never actually
+// affected by being minimised, just its display mode, so nothing about
+// it needs restoring here.
 document.getElementById('dhorTimerHost').addEventListener('timer-expand', (e) => {
   e.target.mode = 'full';
-  scrollRailToTimer();
 });
 // "Note Time" (2026-08-04, renamed from "Save", confirmed in chat -- the
 // action is genuinely "record what the clock says," not a generic save):
@@ -510,8 +516,9 @@ document.getElementById('dhorTimerHost').addEventListener('timer-expand', (e) =>
 // lost); OK transfers elapsed+laps into the card's own fields the same
 // way "Save" always did, and populates the new lap-times rollup next to
 // the Stopwatch button (visible until the Dhor entry itself is actually
-// logged). Resets the timer afterward -- no longer hides anything, the
-// Timer is a permanent rail card now.
+// logged). Resets the timer afterward and hides it again (V3.45.7 --
+// same as the Close handler above, since this is also a genuine end to
+// the session, not a minimise).
 document.getElementById('dhorTimerHost').addEventListener('timer-save', (e) => {
   if(!confirm('Would you like to save this Dhor entry?\n\nCancel: no save, leave data in place.\nOK: save Dhor log.')) return;
   const { elapsed, laps } = e.detail;
@@ -519,6 +526,7 @@ document.getElementById('dhorTimerHost').addEventListener('timer-save', (e) => {
   setDhorDurationFields(Math.round(elapsed / 1000));
   renderDhorLapRollup();
   e.target.reset();
+  closeFloatingTimer();
 });
 // Card-level lap-times rollup (2026-08-04, confirmed in chat): shows
 // what Note Time captured, right next to the Stopwatch button, until the

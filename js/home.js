@@ -20,4 +20,15 @@ function renderHomeScreen(){
   homeTile.className = 'nav-icon-item active';
   homeTile.innerHTML = `<span class="nav-icon-item-icon">${iconHtml('home')}</span><span class="nav-icon-item-label">Home</span>`;
   document.getElementById('homeGrid').prepend(homeTile);
+
+  // V3.45.7: Timer tile, confirmed in chat -- same hardcoded pattern as
+  // Home's own tile above (also deliberately not part of NAV_ITEMS, for
+  // the same reason), but this one DOES get a click listener, unlike
+  // Home's -- it's a real action (opens the floating timer), not just
+  // an "already here" indicator the way Home's own tile is.
+  const timerTile = document.createElement('div');
+  timerTile.className = 'nav-icon-item';
+  timerTile.innerHTML = `<span class="nav-icon-item-icon">${iconHtml('timer')}</span><span class="nav-icon-item-label">Timer</span>`;
+  timerTile.addEventListener('click', () => openFloatingTimer());
+  document.getElementById('homeGrid').appendChild(timerTile);
 }
