@@ -49,12 +49,38 @@ function refForMushafSabaqDhor(mushaf){
   return 'waterval';
 }
 
+// V3.45.10: "Set Sabaq Dhor" is now a genuine part of this SAME shared
+// grid, confirmed in chat -- the unified-grid architecture, extending
+// V3.21.2's own "every checkbox genuinely shares the same column"
+// principle to include the manual field too. Resolves the height/
+// width/left-alignment mismatches that persisted across V3.45.6-
+// V3.45.9 by construction (all 3 "rows" now genuinely share identical
+// column tracks) rather than by matching values across what used to be
+// 2 separate layout contexts. Since this container's own innerHTML
+// gets rebuilt from scratch on every rollup-toggle tap and Move-to-
+// Dhor action (not just fresh screen loads -- rebuildRowsFromPosition
+// calls this from 4 separate places), this function now preserves the
+// manual field's own live state (its surah:ayah value, its checkbox)
+// across every one of those rebuilds -- read BEFORE clearing innerHTML,
+// reapplied to the freshly-created nodes AFTER. A student who's already
+// entered something there before tapping merge/split shouldn't lose
+// it. The chevron/ayah-change listeners (previously wired once, at
+// script-load time, back when these elements were static markup in
+// index.html) now get re-wired fresh every render instead -- the same
+// established pattern this function already used successfully for
+// Move-to-Dhor's own buttons, just extended to cover this row too.
 function renderSabaqDhorRows(){
   const el = document.getElementById('sabaqDhor_sections');
-  if(sabaqDhorRows.length === 0){
-    el.innerHTML = `<p class="form-hint">Nothing to revise yet -- log a Sabaq entry first.</p>`;
-    return;
-  }
+
+  // Preserve manual field state, if it currently exists -- it won't on
+  // this function's very first-ever call this session (nothing to
+  // preserve then, which correctly means it starts blank on a fresh
+  // screen load, same as the section checkboxes always start
+  // unchecked).
+  const existingManualCb = document.getElementById('sabaqDhorManual_cb');
+  const preservedManualValue = existingManualCb ? readSabaqDhorManualField() : null;
+  const preservedManualChecked = existingManualCb ? existingManualCb.checked : false;
+
   // V3.21.2: sabaqDhor_sections is now ITSELF the grid (css/detail-pages.css),
   // not a plain container holding N independent per-row grids -- each row's
   // checkbox kept landing at a slightly different pixel position depending
@@ -64,13 +90,53 @@ function renderSabaqDhorRows(){
   // Every row emits exactly 3 direct grid children (text, move-button-or-
   // empty-placeholder, checkbox) so column position is never at the mercy
   // of which rows happen to have a Move to Dhor button and which don't.
-  el.innerHTML = sabaqDhorRows.map(r => `
+  const rowsHtml = sabaqDhorRows.length === 0
+    ? `<p class="form-hint">Nothing to revise yet -- log a Sabaq entry first.</p>`
+    : sabaqDhorRows.map(r => `
     <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
     ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : '<span></span>'}
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
   `).join('');
+
+  // "Set Sabaq Dhor" itself, as the same 3 grid children every section
+  // row emits (picker field / empty placeholder, since it never has a
+  // Move-to-Dhor action / checkbox-box), preceded by its own label
+  // spanning all 3 columns (.sabaq-dhor-sections-header, css/detail-
+  // pages.css) -- always rendered, independent of whether there are
+  // any section rows to revise at all.
+  const manualHtml = `
+    <label class="sabaq-dhor-sections-header">Set Sabaq Dhor</label>
+    <div class="verse-ref-field">
+      <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_chevron">&#x25B2;&#x25BC;</button>
+      <span class="verse-ref-surah-label" id="sabaqDhorManual_surah_label">—</span>
+      <span class="verse-ref-ayah-cell">
+        <span class="verse-ref-sep">:</span>
+        <input type="number" inputmode="numeric" class="verse-ref-ayah" id="sabaqDhorManual_ayah">
+      </span>
+      <span class="verse-ref-ayah-stepper">
+        <button type="button" class="verse-ref-ayah-up" data-target="sabaqDhorManual_ayah">&#x25B2;</button>
+        <button type="button" class="verse-ref-ayah-down" data-target="sabaqDhorManual_ayah">&#x25BC;</button>
+      </span>
+    </div>
+    <span></span>
+    <span class="checkbox-box"><input type="checkbox" id="sabaqDhorManual_cb"></span>
+  `;
+
+  el.innerHTML = rowsHtml + manualHtml;
+
   el.querySelectorAll('.move-to-dhor-btn').forEach(btn => {
     btn.addEventListener('click', () => moveRowToDhor(btn.dataset.id));
+  });
+
+  // Reapply preserved manual-field state to the freshly-created nodes,
+  // then re-wire this row's own listeners fresh -- the previous nodes
+  // (and whatever was attached to them) are gone now.
+  renderSabaqDhorManualField(preservedManualValue);
+  document.getElementById('sabaqDhorManual_cb').checked = preservedManualChecked;
+  document.getElementById('sabaqDhorManual_chevron').addEventListener('click', openSurahPickerForSabaqDhorManual);
+  document.getElementById('sabaqDhorManual_ayah').addEventListener('change', () => {
+    const v = readSabaqDhorManualField();
+    if(v) renderSabaqDhorManualField(v);
   });
 }
 
@@ -187,8 +253,16 @@ async function renderSabaqDhorScreen(){
     sabaqTo: computedFrontier,
     activeJuz: computedFrontier ? getJuzForPosition(computedFrontier.surah, computedFrontier.ayah, sabaqDhorRef) : null
   });
-  renderSabaqDhorManualField(null);
-  document.getElementById('sabaqDhorManual_cb').checked = false;
+  // V3.45.10: the old renderSabaqDhorManualField(null)/checkbox-reset
+  // pair that used to sit here is REMOVED -- the manual field's own
+  // DOM nodes no longer exist yet at this point in the load flow
+  // (they're only created inside renderSabaqDhorRows, called below via
+  // rebuildRowsFromPosition, now that "Set Sabaq Dhor" is a genuine
+  // part of that same rendered grid rather than static markup already
+  // present in index.html). That function now handles "starts blank on
+  // a fresh screen load" naturally on its own: nothing exists yet to
+  // preserve on its very first call this session, which is exactly the
+  // blank state this used to set explicitly.
   // 2026-08-06, confirmed in chat: Maqra is the new base/default level
   // when the Rub'/Hizb model is active -- Waterval's own default
   // (quarters) is completely unchanged.
@@ -412,14 +486,18 @@ function openSurahPickerForSabaqDhorManual(){
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
   document.getElementById('sabaqDhorManualSurahPickerCloseBtn').addEventListener('click', () => overlay.remove());
 }
-document.getElementById('sabaqDhorManual_chevron').addEventListener('click', openSurahPickerForSabaqDhorManual);
-// Ayah up/down steppers already wired app-wide (js/sabaqPage.js's own
-// generic .verse-ref-ayah-up/-down handlers, keyed off data-target, not
-// scoped to Sabaq specifically) -- no separate wiring needed here.
-document.getElementById('sabaqDhorManual_ayah').addEventListener('change', () => {
-  const v = readSabaqDhorManualField();
-  if(v) renderSabaqDhorManualField(v);
-});
+// V3.45.10: the top-level chevron/ayah-change listener setup that used
+// to sit here is REMOVED entirely -- these elements no longer exist at
+// script-load time at all now (they're only ever created dynamically,
+// inside renderSabaqDhorRows, now that "Set Sabaq Dhor" is a genuine
+// part of that rendered grid rather than static markup already present
+// in index.html) -- the same wiring now happens fresh inside that
+// function on every render instead (see its own comment for why).
+// Ayah up/down steppers still need no separate wiring of their own --
+// js/sabaqPage.js's generic .verse-ref-ayah-up/-down handlers are
+// keyed off data-target, not scoped to Sabaq specifically, so they
+// already reach these elements automatically regardless of where in
+// the DOM they're created.
 // V3.45.5: the old #sabaqDhorManualSaveBtn click handler is REMOVED
 // entirely -- the checkbox that replaced that button is passive, same
 // as the 2 "Confirm Sabaq Dhor" section checkboxes, with no listener

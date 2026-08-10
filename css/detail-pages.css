@@ -440,23 +440,33 @@
    the picker takes remaining space, the checkbox-box sits fixed-width
    at the end, same as the section rows' own grid below so both align
    at the same horizontal position. */
-.sabaq-dhor-manual-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-}
-/* V3.45.9: min-height added here, scoped specifically to Sabaq Dhor's
-   own manual field, confirmed in chat as needing to match
-   .sabaq-dhor-row-text's own new min-height (see that rule's own
-   comment for the full reasoning) and .checkbox-box's 44px -- NOT
-   added to the shared .verse-ref-field rule itself, which Sabaq's own
-   From/To fields also use and weren't part of this request; scoping
-   it here avoids any risk of changing those unrelated fields' own
-   sizing. This field's content (the ayah-stepper especially) never
-   wraps the way .sabaq-dhor-row-text's plain text can, so min-height
-   and a hard height produce an identical result here regardless --
-   min-height used only for consistency with that rule. */
-.sabaq-dhor-manual-row .verse-ref-field { flex: 1; min-width: 0; min-height: 44px; }
+/* V3.45.10: .sabaq-dhor-manual-row (a separate flex wrapper) and its
+   own scoped min-height rule are REMOVED entirely, confirmed in chat --
+   "Set Sabaq Dhor" is no longer a separate layout context at all. It's
+   now a genuine 4th part of the SAME #sabaqDhor_sections grid
+   "Quarter 2"/"Quarter 1" already share (js/sabaqDhorPage.js's
+   renderSabaqDhorRows) -- the unified-grid architecture this version
+   builds, extending V3.21.2's own "every checkbox genuinely shares the
+   same column" principle to include the manual field too. Resolves
+   the width/left-alignment mismatches (V3.45.9's own invisible-spacer
+   hack is also gone, no longer needed -- an empty <span> in the same
+   position "Quarter 2"/"Quarter 1" already use when they have no Move
+   button naturally occupies that column now, no faked-width button
+   required) by construction rather than by matching values across
+   what used to be 2 separate contexts. */
+/* "Set Sabaq Dhor" itself, as a genuine grid item spanning all 3
+   columns -- everything else (font-size/color/margin) already comes
+   from the shared .detail-page label rule; this only adds the one
+   grid-specific property that rule doesn't and can't set. */
+.sabaq-dhor-sections-header { grid-column: 1 / -1; }
+/* min-height moved here from the old .sabaq-dhor-manual-row .verse-
+   ref-field scope -- same reasoning as before (matches
+   .sabaq-dhor-row-text's own min-height and .checkbox-box's 44px, NOT
+   applied to the shared .verse-ref-field rule itself since Sabaq's own
+   From/To fields use that too and aren't part of this), just now
+   scoped to this field's new position as a direct child of
+   #sabaqDhor_sections instead of the removed wrapper. */
+#sabaqDhor_sections > .verse-ref-field { min-height: 44px; }
 /* V3.19.0: rollup control is now a 2-button vertical stepper sitting to
    the left of the section list itself (js/icons.js: rollupMerge/
    rollupSplit), replacing the old full-width row above the list. Each

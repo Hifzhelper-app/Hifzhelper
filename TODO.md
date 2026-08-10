@@ -4,6 +4,87 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Flagged — Sabaq Dhor: unwanted vertical spacing, large-screens-only (2026-08-10)
+
+The one item from the earlier 3-issue regression list NOT resolved by
+V3.45.10's unified-grid rebuild (height and left-alignment were both
+resolved as a natural consequence of that rebuild; this is genuinely
+separate).
+
+- [ ] Reported alongside 2 other now-resolved issues: unwanted vertical
+  space between elements on Sabaq Dhor, specifically on large screens.
+  Honestly flagged, not fully explained: checked directly that nothing
+  in what shipped up to that point was breakpoint-scoped, which
+  doesn't on its own explain a large-screens-only symptom. One real,
+  confirmed difference exists at the 1180px breakpoint
+  (`.log-detail-card` itself gets taller there, since the dots row
+  disappears and stops needing to be subtracted) — but that's
+  whole-card bottom space, not clearly the same thing as gaps between
+  specific elements.
+- [ ] Needs a fresh look now that V3.45.10's unified-grid rebuild has
+  landed — the exact spacing may look different once "Set Sabaq Dhor"
+  is a genuine part of the same grid rather than a separate row below
+  it, so re-confirming against the current build makes more sense
+  than continuing to investigate against what's already been
+  superseded.
+- [ ] Nothing built yet.
+
+## Done — V3.45.10 (2026-08-10)
+
+Sabaq Dhor's "Set Sabaq Dhor" rebuilt as a genuine 4th part of the same
+shared grid "Quarter 2"/"Quarter 1" already share — the architectural fix,
+not another round of patching values to match across 2 separate contexts.
+
+- [x] **User's own proposal**, confirmed fixable with real evidence before
+  building: extends V3.21.2's own "every checkbox genuinely shares the
+  same column" principle (already proven for the 2 section rows) to
+  include the manual field as a 3rd row in that same grid.
+- [x] **The real risk, confirmed and solved directly**: `#sabaqDhor_sections`
+  gets its entire `innerHTML` rebuilt from scratch 4 separate times
+  during normal use (initial load, Move to Dhor, both rollup-merge/split
+  toggles) — moving the manual field inside that same container meant
+  every one of those, including an ordinary rollup-toggle tap mid-entry,
+  would wipe out whatever a student had already entered there.
+  `renderSabaqDhorRows` now reads the manual field's live state (its
+  surah:ayah value, its checkbox) BEFORE clearing `innerHTML`, and
+  reapplies it to the freshly-created nodes AFTER — the same "rebuild +
+  re-wire" pattern this function already used successfully for the
+  Move-to-Dhor buttons, just extended to cover one more element. Verified
+  directly against the real function body (not a reimplementation): 4
+  state-preservation scenarios (blank on first render, value+checkbox
+  surviving one re-render, value surviving with checkbox left unchecked,
+  value surviving 2 consecutive re-renders) all pass, plus 6 structural
+  checks confirming the actual markup/operation-ordering is correct.
+- [x] **"Set Sabaq Dhor" (the label) is now a genuine grid item** spanning
+  all 3 columns (`grid-column: 1 / -1`, new `.sabaq-dhor-sections-header`
+  class) — CSS grid auto-places a full-span item onto its own row, so it
+  correctly sits between "Quarter 1"'s own row and the picker row without
+  breaking the grid's continuous flow.
+- [x] **V3.45.9's invisible-spacer hack is gone** — no longer needed. The
+  picker field now naturally occupies this grid's same `1fr` first column
+  "Quarter 2"/"Quarter 1" use, with a genuine empty `<span></span>` in the
+  2nd column (the same placeholder those rows already use when they have
+  no Move-to-Dhor button) rather than a hidden button faking that
+  column's width.
+- [x] **Height and left-alignment resolved as a natural consequence** of
+  all 3 rows now genuinely sharing identical column tracks — not
+  something matched after the fact. `min-height: 44px` kept (scoped to
+  `#sabaqDhor_sections > .verse-ref-field` now, its new position), since
+  matching row heights still isn't automatic even within one shared grid
+  (grid rows size independently unless explicitly matched) — full
+  reasoning on why the V3.45.9 attempt didn't hold up, and why this
+  should still work now, documented in the delivery notes; flagged for
+  live re-confirmation given that history.
+- [x] Old, now-dead code removed entirely: `.sabaq-dhor-manual-row` (CSS),
+  the static manual-field markup in `index.html`, the old top-level
+  (script-load-time) chevron/ayah-change listener wiring — replaced with
+  wiring that happens fresh inside the render function instead, since the
+  old wiring would have failed outright once these elements stopped being
+  static markup.
+- [x] All syntax/HTML/CSS balance checked, plus 10 total Node-based
+  verifications (4 state-preservation scenarios + 6 structural checks)
+  before delivery.
+
 ## Done — V3.45.9 (2026-08-10)
 
 3 refinements: removed the visible box around every checkbox (keeping the
