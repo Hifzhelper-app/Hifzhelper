@@ -1,6 +1,6 @@
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
-   Current as of V3.45.12
+   Current as of V3.45.13
    ============================================================ */
 
 .detail-page label {
@@ -509,6 +509,40 @@
   cursor: pointer;
 }
 .sabaq-dhor-rollup-btn svg { width: 18px; height: 18px; }
+
+/* V3.45.13: breakpoint-specific Sabaq Dhor refinements. The existing
+   768-1179px layout is deliberately untouched because it already renders
+   correctly.
+
+   Mobile: when neither roll-up direction is available, JS marks the
+   otherwise-empty stepper as .rollup-inactive. Removing only that empty
+   gutter, then reducing the checkbox track/gaps/horizontal group padding,
+   returns enough width to the field column for the current-quarter text
+   to remain on one line. Checkbox height stays 44px and every checkbox
+   remains outside its field border but inside the outer group border. */
+@media (max-width: 767px) {
+  .sabaq-dhor-rollup-stepper.rollup-inactive { display: none; }
+  .sabaq-dhor-sections-list {
+    grid-template-columns: minmax(0, 1fr) auto 32px;
+    column-gap: var(--space-xs);
+    padding-inline: var(--space-xs);
+  }
+  #sabaqDhor_sections .checkbox-box { width: 32px; }
+}
+
+/* Large: an auto-sized CSS grid can stretch its implicit auto rows when
+   surplus block-axis space reaches the container, leaving a 44px field
+   visibly centred inside a much taller row. Size the group from its own
+   content, make implicit rows max-content, and pack them at the start.
+   Four pixels of vertical outer padding then matches the 4px row gap. */
+@media (min-width: 1180px) {
+  .sabaq-dhor-sections-list {
+    height: max-content;
+    grid-auto-rows: max-content;
+    align-content: start;
+    padding-block: var(--space-xs);
+  }
+}
 
 /* Combined surah:ayah input field -- V3.18.0 rebuild as an explicit CSS
    grid (chevron:surah:ayah:chevron at 10:50:30:10, per the confirmed
