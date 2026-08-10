@@ -4,6 +4,38 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.6 (2026-08-10)
+
+Checkbox sizing finally resolved for real, via a container-box approach
+rather than trying to size the native checkbox itself — plus the
+matching bordered-box treatment for the section-row text labels.
+
+- [x] **`.checkbox-box`** (new, shared, `css/detail-pages.css`): a
+  44×44px bordered container (same `border`/`border-radius`/
+  `background` as `.verse-ref-field`), the checkbox sitting inside it
+  unstyled. Replaces V3.45.5's `width`/`height`-on-the-native-checkbox
+  fix entirely, which turned out not to reliably work — a container
+  element respects explicit CSS dimensions consistently across
+  browsers where a native checkbox doesn't always. One shared class
+  now used everywhere this treatment applies, not a scattered
+  per-screen rule.
+- [x] **`.sabaq-dhor-row-text`** gets the same bordered-box look as
+  `.verse-ref-field` — border/radius/padding/background all matching
+  exactly. Previously these labels had no box of their own at all,
+  just plain grid-cell text.
+- [x] **Alignment**: `.sabaq-dhor-sections-list`'s checkbox column
+  changed from `auto` to a fixed `44px`, matching `.checkbox-box`'s own
+  width exactly, so the section checkboxes and the manual-selection
+  row's own checkbox-box land at the identical horizontal position.
+- [x] **Manual field restructured**: the checkbox moves out of "Set
+  Sabaq Dhor" entirely (previously both lived together in one
+  `.cb-private-row` label) into its own `.checkbox-box`, sitting next
+  to the picker in a new `.sabaq-dhor-manual-row` flex row — the
+  picker takes remaining space, the checkbox-box stays fixed-width at
+  the end. "Set Sabaq Dhor" is now a plain, unboxed label above the
+  row, matching what the annotated screenshot specified.
+- [x] All syntax/HTML/CSS balance checked before delivery.
+
 ## Done — V3.45.5 (2026-08-10)
 
 Sabaq Dhor's manual field rebuilt to match what it actually turned out

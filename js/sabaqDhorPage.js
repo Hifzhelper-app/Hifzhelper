@@ -67,7 +67,7 @@ function renderSabaqDhorRows(){
   el.innerHTML = sabaqDhorRows.map(r => `
     <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
     ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : '<span></span>'}
-    <input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}">
+    <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
   `).join('');
   el.querySelectorAll('.move-to-dhor-btn').forEach(btn => {
     btn.addEventListener('click', () => moveRowToDhor(btn.dataset.id));

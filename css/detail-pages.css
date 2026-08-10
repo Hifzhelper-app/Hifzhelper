@@ -301,7 +301,12 @@
    computed approximations of the same column. */
 .sabaq-dhor-sections-list {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  /* V3.45.6: 3rd column changed from auto to a fixed 44px, confirmed in
+     chat, matching .checkbox-box's own width exactly -- so this grid's
+     checkbox column and the manual-selection row's own checkbox-box
+     below it (a separate flex row, not part of this grid) land at the
+     identical horizontal position, not just visually close. */
+  grid-template-columns: 1fr auto 44px;
   align-items: center;
   column-gap: var(--space-sm);
   row-gap: 4px;
@@ -313,6 +318,16 @@
   font-size: 14px;
   padding: 2px 0;
 }
+/* V3.45.6: bordered-box look, confirmed in chat as matching
+   .verse-ref-field's own exact style (border/border-radius/padding/
+   background) -- previously this had no box of its own at all, just
+   plain grid-cell text. */
+.sabaq-dhor-row-text {
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  background: var(--color-surface);
+}
 .move-to-dhor-btn {
   border: 1px solid var(--palette-evergreen);
   color: var(--palette-evergreen);
@@ -321,24 +336,38 @@
   padding: 4px 8px;
   font-size: 12px;
 }
-/* V3.45.5: checkbox sizing fix, confirmed as a large/medium-screen-only
-   issue -- mobile already renders these at a correct size (checked
-   directly against .sabaqDhor-row-cb before this: it had NO CSS
-   anywhere, rendering at whatever size each browser's own native
-   checkbox defaults to, small and fixed on desktop/tablet). Explicit
-   size added here, from the app's own 768px breakpoint upward only --
-   below that, left alone entirely, since mobile isn't the problem.
-   Deliberately scoped to these 2 specific checkboxes by class/id,
-   NOT a global `.cb-private-row input` rule -- Sabaq's/Sabaq Dhor's
-   own "Confirm selection" checkboxes already use that same class and
-   were confirmed already rendering correctly, so a global change
-   there would resize something that was never reported as a problem. */
-@media (min-width: 768px) {
-  .sabaqDhor-row-cb, #sabaqDhorManual_cb {
-    width: 20px;
-    height: 20px;
-  }
+/* V3.45.6: replaces V3.45.5's width/height-only fix on the native
+   checkbox itself, confirmed in chat as unreliable across browsers --
+   native checkboxes (appearance:auto, the default) don't always
+   respect explicit width/height the same way other elements do. This
+   sidesteps that entirely: a plain container div/span reliably
+   respects explicit CSS dimensions regardless of browser, so the
+   checkbox itself stays unstyled and just sits inside one. Same
+   bordered-box look as .verse-ref-field again, sized to comfortably
+   fit a checkbox with real padding around it -- one shared class used
+   everywhere a checkbox needs this treatment, not a scattered rule
+   per screen. */
+.checkbox-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  flex: 0 0 auto;
 }
+/* V3.45.6: Sabaq Dhor's own manual-selection row, confirmed in chat --
+   the picker takes remaining space, the checkbox-box sits fixed-width
+   at the end, same as the section rows' own grid below so both align
+   at the same horizontal position. */
+.sabaq-dhor-manual-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.sabaq-dhor-manual-row .verse-ref-field { flex: 1; min-width: 0; }
 /* V3.19.0: rollup control is now a 2-button vertical stepper sitting to
    the left of the section list itself (js/icons.js: rollupMerge/
    rollupSplit), replacing the old full-width row above the list. Each
