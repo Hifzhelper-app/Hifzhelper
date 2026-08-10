@@ -7,8 +7,25 @@
 // be ONE per day (unlike Sabaq/Sabaq Dhor/Dhor, which allow multiple
 // entries per day by design). So this card loads today's existing
 // reflection if one exists and UPDATES it in place on save, rather than
-// always creating a new row. No date selector on this card (per spec) --
-// always today.
+// always creating a new row.
+//
+// V3.44.1: date field added, confirmed in chat -- reflections.date
+// already existed in the schema (no migration needed), just wasn't
+// exposed in the UI before this. Same pattern Sabaq's own date field
+// already uses: it doesn't dynamically reload a different day's entry
+// when changed, it's simply "which date this entry is for," read at
+// save time -- allows backdating a reflection the same way Sabaq
+// already allows backdating a log.
+//
+// V3.45.1: History button added, confirmed in chat -- missed in the
+// first round. Reuses js/dhorPage.js's renderRecentEntries (same
+// pattern Sabaq/Sabaq Dhor/Dhor already use), extended there with a
+// new opt-in onRowClick parameter specifically for this: tapping the
+// edit-pencil icon loads the entry for editing (loadTadabburEntryForEdit,
+// below, registered the same way the other 3 cards' own edit handlers
+// are), while tapping the row's own content opens it for reading
+// instead (showTadabburReadView, below) -- both confirmed explicitly
+// as the two separate interactions wanted here.
 //
 // V3.14.2: reverted from V3.12.0's Public/Private switch back to a plain
 // checkbox, same as the other 3 cards' Notes block.
@@ -23,11 +40,38 @@ let tadabburCurrentId = null;
 document.getElementById('tadabburHeaderIcon').innerHTML = iconHtml('reflections');
 document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
 
+function loadTadabburEntryForEdit(row){
+  tadabburCurrentId = row.id;
+  document.getElementById('tadabbur_text').value = row.reflection || '';
+  document.getElementById('tadabbur_private').checked = !!row.is_private;
+  document.getElementById('tadabbur_date').value = row.date;
+}
+EDIT_HANDLERS.reflections = loadTadabburEntryForEdit;
+
+// V3.45.1: read-only view, confirmed in chat -- tapping a history
+// entry's own content (not its edit icon) shows the full reflection
+// text without loading it into the editable form. Simple modal
+// reusing the app's existing .modal-overlay/.modal-card pattern, same
+// as everywhere else a small popup is needed.
+function showTadabburReadView(row){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" id="tadabburReadCloseBtn">&times;</button>
+    <h2>${row.date}</h2>
+    <p style="white-space:pre-wrap;">${(row.reflection || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.getElementById('tadabburReadCloseBtn').addEventListener('click', () => overlay.remove());
+}
+
 async function renderTadabburScreen(){
   tadabburCurrentId = null;
   const textarea = document.getElementById('tadabbur_text');
   textarea.value = '';
   document.getElementById('tadabbur_private').checked = false;
+  document.getElementById('tadabbur_date').value = todayISO();
   document.getElementById('tadabburError').textContent = '';
   try{
     const rows = await apiReflections.getForDate(todayISO());
@@ -36,17 +80,20 @@ async function renderTadabburScreen(){
       tadabburCurrentId = existing.id;
       textarea.value = existing.reflection || '';
       document.getElementById('tadabbur_private').checked = !!existing.is_private;
+      document.getElementById('tadabbur_date').value = existing.date;
     }
   } catch(e){
     // Non-fatal -- leave the form blank rather than blocking the whole card
     // over a failed prefill fetch; saving still works either way.
   }
+  await renderRecentEntries('reflections', apiReflections, 'tadabburHistoryRail', showTadabburReadView);
 }
 
 document.getElementById('tadabburSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('tadabburError');
   errEl.textContent = '';
   const fields = {
+    date: document.getElementById('tadabbur_date').value || todayISO(),
     reflection: document.getElementById('tadabbur_text').value || null,
     is_private: document.getElementById('tadabbur_private').checked
   };
@@ -54,7 +101,7 @@ document.getElementById('tadabburSaveBtn').addEventListener('click', async () =>
     if(tadabburCurrentId){
       await apiReflections.update(tadabburCurrentId, fields);
     } else {
-      const result = await apiReflections.save(Object.assign({ date: todayISO() }, fields));
+      const result = await apiReflections.save(fields);
       if(result && result.data && result.data.id) tadabburCurrentId = result.data.id;
     }
     document.getElementById('tadabburSaveStatus').classList.add('show');

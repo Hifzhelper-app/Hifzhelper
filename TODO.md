@@ -4,6 +4,50 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.1 (2026-08-09)
+
+Tadabbur regression fixes plus a new History feature, all found and
+confirmed via a live screenshot.
+
+- [x] **Date-field visibility bug fixed**: `#tadabbur_date` now sits
+  inside a proper `.card-date-row` wrapper (same pattern
+  Sabaq/Sabaq Dhor/Dhor already use), which gives it the explicit,
+  fixed height (`--dhor-row2-h`, defined directly on `#tadabburCard`
+  since it doesn't carry the `.detail-page` class that normally
+  provides it) that `wireCustomDateDisplay`'s own `height: 100%`
+  mechanism needs to resolve correctly. Today's date (already being
+  set correctly under the hood since V3.44.1) should now actually be
+  visible.
+- [x] **Close button repositioned**: moved out of the header row's
+  grid entirely, now `position: absolute` pinned to `#tadabburCard`'s
+  top-right corner (`#tadabburCard` itself gained `position:
+  relative` as the anchor) — same corner-× pattern `.modal-card
+  .close-btn` already uses elsewhere in the app, rather than
+  inventing new values.
+- [x] **Tadabbur History added**: reuses `renderRecentEntries`
+  (`js/dhorPage.js`, already powering Sabaq/Sabaq Dhor/Dhor's own
+  history), extended with a new opt-in `onRowClick` parameter —
+  purely additive, the 3 existing callers don't pass it, so their own
+  rows stay exactly as non-interactive as before. Tapping the
+  edit-pencil icon loads the entry into the form for editing
+  (`loadTadabburEntryForEdit`, registered via `EDIT_HANDLERS`, same
+  mechanism the other 3 types use); tapping the row's own content
+  instead opens a simple read-only modal showing the full date and
+  reflection text. The list itself shows each entry's first line
+  (truncated at 60 characters) — verified directly via several Node
+  scenarios (short/multi-line/very-long/empty/whitespace-only
+  reflections) before delivery.
+- [x] **Textarea-not-flexing issue**: left as-is, still not
+  root-caused. The CSS reads correctly on paper and I can't confirm
+  why the live result doesn't match without actual browser access —
+  flagged plainly rather than guessing at a fix. Worth checking again
+  after this delivery, since the header-row/date-row restructuring
+  done alongside it might incidentally change something, but this
+  wasn't verified either way.
+- [x] All syntax/HTML-balance/CSS-balance checked, plus the new
+  first-line/truncation logic directly verified via Node before
+  delivery.
+
 ## Done — V3.45 (2026-08-09)
 
 Juz Tracker connected to the Dhor pool, plus its own sizing fix and

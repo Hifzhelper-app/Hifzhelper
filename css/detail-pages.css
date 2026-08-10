@@ -595,6 +595,11 @@
   cursor: pointer;
 }
 .history-entry-edit-btn svg { width: 16px; height: 16px; }
+/* V3.45.1: only added to .history-entry-content when a caller passes
+   renderRecentEntries' new onRowClick parameter (currently just
+   Tadabbur) -- Sabaq/Sabaq Dhor/Dhor's own rows stay non-interactive
+   outside their edit icon, exactly as before. */
+.history-entry-content-clickable { cursor: pointer; }
 .history-full-list {
   margin-top: var(--space-md);
   max-height: 60vh;
@@ -857,6 +862,79 @@
    chat this space could take a larger icon. */
 #dhorStopwatchToggle svg { width: 28px; height: 28px; }
 
+/* V3.44.1: Tadabbur's own card, confirmed in chat -- deliberately a
+   different exception from the standard 30/50 rule: 50% specifically,
+   at every breakpoint the cap would otherwise narrow it further
+   (unlike most screen-content instances, which drop to 30% at
+   >=1180px, this one stays at 50% throughout -- more room for long
+   reflection text was the explicit reason given). Flex column so the
+   textarea below can flex to fill the remaining space after the
+   header/date/checkbox/label take their own natural height.
+   min-height mirrors .screen's own formula, additionally subtracting
+   .screen's own 10px-all-sides padding (20px total top+bottom) since
+   this card sits inside that padding -- same technique already used
+   elsewhere (--appcontent-vpad) for a parent's padding not otherwise
+   being accounted for. */
+#tadabburCard {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2) - 20px);
+  min-height: calc(100dvh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2) - 20px);
+  /* V3.45.1: anchor point for .tadabbur-close-btn's absolute
+     positioning below, confirmed in chat -- matches .modal-card's own
+     position:relative for the same corner-x-button pattern used
+     elsewhere in the app. */
+  position: relative;
+  /* V3.45.1: .card-date-row (below) needs --dhor-row2-h, normally
+     defined on .detail-page (line ~177) -- this card doesn't carry
+     that class (it would also pull in .detail-page's own unrelated
+     label/input/textarea styling, which isn't wanted here), so the
+     same 44px value is defined directly on this card instead. */
+  --dhor-row2-h: 44px;
+}
+@media (min-width: 768px) {
+  #tadabburCard { width: var(--width-tablet); margin: 0 auto; }
+}
+@media (min-width: 1180px) {
+  /* Deliberately repeats --width-tablet (50%), not --width-desktop
+     (30%) -- .screen-content's own >=1180px rule would otherwise drop
+     this to 30% like everywhere else; this override keeps it at 50%
+     throughout instead. */
+  #tadabburCard { width: var(--width-tablet); margin: 0 auto; }
+}
+/* V3.45.1: close button moves out of the header row's own grid flow
+   entirely, confirmed in chat -- pinned to the card's top-right
+   corner instead of sitting inline (previously grouped with Save via
+   .card-header-right, which is now removed since only Save remains in
+   that slot). Values match .modal-card .close-btn's own established
+   corner-x pattern exactly, rather than inventing new ones. */
+.tadabbur-close-btn {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+}
+#tadabburCard label { margin-top: var(--space-sm); }
+/* V3.44.1: flexes to fill the card's own remaining height, confirmed
+   in chat -- grows/shrinks with the card rather than staying a fixed
+   rows-based size. min-height:0 is the standard flexbox fix for a
+   flex:1 child otherwise refusing to shrink below its content's
+   natural size (same pattern .card-scroll already uses elsewhere).
+   Font-size increased per "make the input text bigger".
+   V3.45.1: NOT YET ROOT-CAUSED -- confirmed via live screenshot that
+   this isn't actually growing to fill the card in practice, despite
+   this CSS reading correctly on paper. Left as-is rather than
+   guessing at an unverified fix; flagged for the user to re-check
+   after this delivery, since it may or may not resolve as a side
+   effect of the header-row/date-row restructuring done alongside it
+   in this same version. */
+#tadabbur_text {
+  flex: 1;
+  min-height: 0;
+  font-size: 18px;
+  resize: none;
+}
+
+/* ---- Log Detail rail (swipeable Sabaq/Sabaq Dhor/Dhor cards) ---- */
 .log-detail-rail {
   display: flex;
   gap: var(--space-md);
