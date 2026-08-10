@@ -4,30 +4,43 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
-## Flagged — Sabaq Dhor: unwanted vertical spacing, large-screens-only (2026-08-10)
+## Done — V3.45.11 (2026-08-10)
 
-The one item from the earlier 3-issue regression list NOT resolved by
-V3.45.10's unified-grid rebuild (height and left-alignment were both
-resolved as a natural consequence of that rebuild; this is genuinely
-separate).
+Sabaq Dhor's 3 rows visually consolidated into one clean group — a single
+shared border instead of 3 separate ones, one heading instead of two,
+and even spacing throughout as a direct consequence rather than a
+separately-chased fix.
 
-- [ ] Reported alongside 2 other now-resolved issues: unwanted vertical
-  space between elements on Sabaq Dhor, specifically on large screens.
-  Honestly flagged, not fully explained: checked directly that nothing
-  in what shipped up to that point was breakpoint-scoped, which
-  doesn't on its own explain a large-screens-only symptom. One real,
-  confirmed difference exists at the 1180px breakpoint
-  (`.log-detail-card` itself gets taller there, since the dots row
-  disappears and stops needing to be subtracted) — but that's
-  whole-card bottom space, not clearly the same thing as gaps between
-  specific elements.
-- [ ] Needs a fresh look now that V3.45.10's unified-grid rebuild has
-  landed — the exact spacing may look different once "Set Sabaq Dhor"
-  is a genuine part of the same grid rather than a separate row below
-  it, so re-confirming against the current build makes more sense
-  than continuing to investigate against what's already been
-  superseded.
-- [ ] Nothing built yet.
+- [x] **One shared border, not 3 separate ones.** `border`/`border-radius`/
+  `background`/outer `padding` moved from each individual row
+  (`.sabaq-dhor-row-text`/`.verse-ref-field`) up to
+  `.sabaq-dhor-sections-list` itself — the whole grid now reads as one
+  visual container, with all 3 rows genuinely inside it rather than each
+  drawing its own box. Each row's own internal padding (breathing room
+  within its own cell) stays, kept separate from the group's own outer
+  edge.
+- [x] **The manual field's own border-removal scoped precisely** —
+  `#sabaqDhor_sections > .verse-ref-field { border: none; background: none; }`,
+  not a change to the shared `.verse-ref-field` rule itself, which
+  Sabaq's own From/To fields also use and still need their individual
+  border untouched.
+- [x] **"Set Sabaq Dhor" heading removed entirely** — one shared border
+  around all 3 rows already makes clear on its own they're the same
+  "Confirm Sabaq Dhor" action, so a 2nd heading became redundant.
+  `.sabaq-dhor-sections-header`'s own CSS rule and its markup in
+  `js/sabaqDhorPage.js` both removed.
+- [x] **Even spacing resolved as a direct consequence, not a separate
+  fix** — the previously-larger, inconsistent gap before this row was
+  specifically that removed heading's own inherited `margin-top` sitting
+  on top of the grid's `row-gap`. With the label gone, every row
+  transition now has nothing but that same `row-gap` between it,
+  matching the "Quarter 2"-to-"Quarter 1" spacing exactly, confirmed
+  directly by the user as already looking right.
+- [x] No dangling comments left behind — the explanatory comment that
+  used to describe the now-removed `.sabaq-dhor-sections-header` rule
+  was found and removed along with it, not left orphaned.
+- [x] All syntax/CSS balance checked, every reference to the removed
+  heading confirmed genuinely gone from both files before delivery.
 
 ## Done — V3.45.10 (2026-08-10)
 
