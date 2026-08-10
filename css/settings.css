@@ -179,6 +179,11 @@
   font-size: 12px;
   padding: 0 4px;
 }
+/* V3.45.3: the Juz method switch's tracker option holds an icon
+   instead of text (confirmed in chat) -- .btn-icon has no sizing of
+   its own anywhere in the app, so it's constrained here specifically
+   to fit this switch's own compact 26px-tall track. */
+#juzMethodSwitch .btn-icon svg { width: 16px; height: 16px; }
 
 /* Section-subheader (V3.11.0) — "Target for Dhor" reads as a proper
    header (darker, heavier) rather than a plain field label like the

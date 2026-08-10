@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.3 — Native confirm() + Settings link to the Juz Tracker (2026-08-09)
+
+**Files touched:** `index.html`, `css/settings.css`, `js/juzTrackerScreen.js`, `js/settingsScreen.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The Juz Tracker's confirmation dialog moves from the custom modal built in V3.45 to a native `confirm()` — a richer, 2-part message that shows both what's about to change and, separately, the complete resulting list of every juz that will be marked complete once saved, grouped 3 per line for readability. `formatJuzListThreePerLine` and `buildJuzConfirmMessage` (`js/juzTrackerScreen.js`) do this work, and both are shared with the Settings "Mark completed Juz" grid, which previously had no confirmation of any kind when closed — now it gets the exact same message, computed the same way. Verified the message-building logic directly against 4 scenarios (marking, un-marking, both together, and the edge case where the resulting list becomes empty) before delivery.
+
+The Settings link to the Juz Tracker — deferred back when the tracker itself was first planned — is in now. The label above the button changes from "Mark completed sections," a leftover from when Surah-based history still existed, to "Mark completed Juz," matching what the button itself already said. A new switch lets the student pick between the visual tracker (the default) and the existing list-style grid, reusing the app's own established switch component rather than building something new — the tracker option is represented by its own icon rather than text, which needed its own explicit sizing since the generic icon-button class it's built from had never carried any sizing rules of its own before this. The existing button's own click handler now checks the switch's current selection and opens whichever method is chosen.
+
+---
+
 ## V3.45.2 — Tadabbur card sizing fix (2026-08-09)
 
 **Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
