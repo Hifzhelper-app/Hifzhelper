@@ -878,8 +878,20 @@
 #tadabburCard {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2) - 20px);
-  min-height: calc(100dvh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2) - 20px);
+  /* V3.45.2: min-height changed to height, confirmed in chat -- the
+     card's own display:flex/flex-direction:column and #tadabbur_text's
+     own flex:1 were never the problem (both correct since V3.44.1).
+     What was missing: this card never had a DEFINITE size, only a
+     minimum, for its internal flex children to actually distribute
+     within -- min-height alone doesn't reliably guarantee that the way
+     an explicit height does. Deliberately NOT touching #appContent/
+     .screen (the app-wide flex-cascade alternative was considered and
+     rejected as too risky, since those are shared by every screen) --
+     this stays fully scoped to this one card. height still allows
+     genuinely long content to push the card taller, same as before,
+     since nothing here sets overflow:hidden. */
+  height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2) - 20px);
+  height: calc(100dvh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2) - 20px);
   /* V3.45.1: anchor point for .tadabbur-close-btn's absolute
      positioning below, confirmed in chat -- matches .modal-card's own
      position:relative for the same corner-x-button pattern used
