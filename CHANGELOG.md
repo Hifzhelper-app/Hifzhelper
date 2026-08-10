@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.1 — Tadabbur regression fixes + History (2026-08-09)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/reflectionCard.js`, `js/dhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Two real regressions from V3.44.1, found via a live screenshot, plus a feature that was missed in that same round.
+
+The date field's invisible-text problem traced back to a genuine gap: `#tadabbur_date` was a plain, unwrapped input, while every other date input in the app (`.card-date-row`, used by Sabaq/Sabaq Dhor/Dhor) gives its input an explicit, fixed height before `wireCustomDateDisplay` wraps it — that wrapping mechanism's own `height: 100%` styling depends entirely on that fixed-height parent existing. Tadabbur's field now sits inside the same `.card-date-row` wrapper as everywhere else, which needed `--dhor-row2-h` (normally supplied by the `.detail-page` class, which this card doesn't carry) defined directly on `#tadabburCard` instead — pulling in the whole `.detail-page` class for one variable would have brought its unrelated label/input/textarea styling along with it, so this was the more surgical fix.
+
+The close button moves out of the header row's own layout entirely and gets pinned to the card's top-right corner with `position: absolute`, the same technique `.modal-card .close-btn` already uses for corner × buttons elsewhere in the app — `#tadabburCard` picked up `position: relative` as the anchor point this needed.
+
+Tadabbur now has a History button, reusing `js/dhorPage.js`'s `renderRecentEntries` — the same function already powering Sabaq, Sabaq Dhor, and Dhor's own history. It gained one new capability for this: an opt-in `onRowClick` parameter, purely additive so the 3 existing callers are entirely unaffected by not passing it. Tapping a history entry's edit-pencil icon loads it into the form for editing, exactly like the other 3 types already work. Tapping the entry's own content instead opens a plain read-only view of the full date and reflection text — new UI that didn't exist anywhere in the app before this, since none of the other 3 types have a row-level tap interaction, only their edit icon. Each row in the list shows the entry's first line, truncated at 60 characters — verified against several edge cases (multi-line text, a very long single line, empty and whitespace-only reflections) before delivery.
+
+One thing intentionally left alone: the reflection textarea still isn't flexing to fill its card the way it's meant to, and this version doesn't claim to have fixed it. The CSS reads correctly and nothing found during this pass explains the mismatch with the live screenshot — rather than guess at a change with no confirmed reason behind it, this stays flagged in `TODO.md` for a closer look, worth rechecking after this delivery in case the surrounding restructuring changed anything incidentally.
+
+---
+
 ## V3.45 — Juz Tracker connected to the Dhor pool (2026-08-09)
 
 **Files touched:** `index.html`, `css/juzTracker.css`, `js/juzTrackerScreen.js`, `js/kaabaTracker.js`, `js/app.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

@@ -1324,7 +1324,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 // confirmed scope -- button alone is enough for now. Button text is now
 // type-specific ("Sabaq History", "Dhor History", etc.) instead of a
 // generic "History".
-const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'History' };
+const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'History', reflections: 'Tadabbur History' };
 // V3.21.0: each row now gets an edit (pencil) icon. Editing loads the
 // entry into that card's own form (loadXForEdit, defined per-card) rather
 // than a separate edit form -- reuses all the existing validation/
@@ -1332,7 +1332,13 @@ const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor Histo
 // sorted most-recent-first) is passed through so Sabaq's save handler
 // knows whether it's safe to recompute position afterward -- see
 // js/sabaqPage.js for why that matters.
-async function renderRecentEntries(type, client, railId){
+// V3.45.1: optional 4th parameter onRowClick, confirmed in chat for
+// Tadabbur specifically -- tapping an entry's own content area (not
+// its edit icon) opens it for reading. Purely additive: the 3 existing
+// callers (Sabaq/Sabaq Dhor/Dhor) don't pass this, so their rows stay
+// exactly as non-interactive as before -- only Tadabbur's own call
+// site opts in.
+async function renderRecentEntries(type, client, railId, onRowClick){
   const container = document.getElementById(railId);
   let rows = [];
   try{ rows = await client.get(); } catch(e){ rows = []; }
@@ -1349,7 +1355,7 @@ async function renderRecentEntries(type, client, railId){
       <h2>History</h2>
       <div class="history-full-list">
         ${rows.slice(0, 50).map((r, i) => `<div class="history-entry-row">
-          <div>
+          <div class="history-entry-content"${onRowClick ? ` data-index="${i}"` : ''}>
             <div class="rail-card-date">${r.date}</div>
             <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
             ${type === 'dhor' && r.lap_times && r.lap_times.length > 0 ? `<div class="rail-card-laps">${r.lap_times.map(formatDhorDuration).join(' · ')}</div>` : ''}
@@ -1367,6 +1373,15 @@ async function renderRecentEntries(type, client, railId){
         EDIT_HANDLERS[type](row, row === rows[0]);
       });
     });
+    if(onRowClick){
+      overlay.querySelectorAll('.history-entry-content').forEach(el => {
+        el.classList.add('history-entry-content-clickable');
+        el.addEventListener('click', () => {
+          const row = rows.slice(0, 50)[parseInt(el.dataset.index, 10)];
+          onRowClick(row);
+        });
+      });
+    }
     overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
     document.getElementById('historyPopupCloseBtn').addEventListener('click', () => overlay.remove());
   });
@@ -1375,5 +1390,14 @@ function describeEntryForRail(type, r){
   if(type === 'dhor') return `${describeDhorSegment(r.segment_from, r.segment_to, r.ref || dhorCurrentRef)} · ${r.mistakes||0} mistakes${r.duration_seconds?` · ${Math.round(r.duration_seconds/60)} min`:''}`;
   if(type === 'sabaq') return `${r.sabaq_from}-${r.sabaq_to}${r.line_count?` · ${r.line_count} lines`:''}${r.page_count?` · ${r.page_count} pages`:''}`;
   if(type === 'sabaqDhor') return `${r.from_surah}:${r.from_ayah}-${r.to_surah}:${r.to_ayah} · ${r.mistakes||0} mistakes`;
+  // V3.45.1: reflections' own summary is its first line, confirmed in
+  // chat ("date and first line of tadabbur entry") -- truncated too,
+  // in case a single line itself runs long, so a row never grows to
+  // dominate the list.
+  if(type === 'reflections'){
+    const firstLine = (r.reflection || '').split('\n')[0].trim();
+    if(!firstLine) return '(empty)';
+    return firstLine.length > 60 ? firstLine.slice(0, 60) + '…' : firstLine;
+  }
   return '';
 }
