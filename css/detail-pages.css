@@ -321,6 +321,24 @@
   padding: 4px 8px;
   font-size: 12px;
 }
+/* V3.45.5: checkbox sizing fix, confirmed as a large/medium-screen-only
+   issue -- mobile already renders these at a correct size (checked
+   directly against .sabaqDhor-row-cb before this: it had NO CSS
+   anywhere, rendering at whatever size each browser's own native
+   checkbox defaults to, small and fixed on desktop/tablet). Explicit
+   size added here, from the app's own 768px breakpoint upward only --
+   below that, left alone entirely, since mobile isn't the problem.
+   Deliberately scoped to these 2 specific checkboxes by class/id,
+   NOT a global `.cb-private-row input` rule -- Sabaq's/Sabaq Dhor's
+   own "Confirm selection" checkboxes already use that same class and
+   were confirmed already rendering correctly, so a global change
+   there would resize something that was never reported as a problem. */
+@media (min-width: 768px) {
+  .sabaqDhor-row-cb, #sabaqDhorManual_cb {
+    width: 20px;
+    height: 20px;
+  }
+}
 /* V3.19.0: rollup control is now a 2-button vertical stepper sitting to
    the left of the section list itself (js/icons.js: rollupMerge/
    rollupSplit), replacing the old full-width row above the list. Each

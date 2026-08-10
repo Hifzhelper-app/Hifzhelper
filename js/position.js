@@ -1,6 +1,6 @@
 // ============================================================
 // Hifzhelper — client-side position tracking (V3.12.0, rebuilt V3.14.0)
-// Current as of V3.45.4
+// Current as of V3.45.5
 // The Worker's position.js only stores whatever JSON blob it's given (see
 // that file's own comment) — all the actual progress logic lives here,
 // same "computed client-side" design already documented in SCHEMA.md.
@@ -26,12 +26,17 @@
 // silently misjudge "further along" for any student whose real path
 // doesn't match it. The simpler "most recent entry wins" rule sidesteps
 // that entirely -- no cross-juz' comparison anywhere in this file
-// anymore. Sabaq Dhor also gets a genuinely new capability out of this
-// same conversation: position.sabaqDhorManualOverride, a direct manual
-// override Sabaq Dhor didn't have before (Sabaq itself never needed
-// this -- its own From/To fields are already freely editable). No
-// separate "reset" needed for it either -- logging a new Sabaq entry IS
-// the reset (advancePositionAfterSabaq, below, clears it automatically).
+// anymore.
+//
+// V3.45.5: V3.45.4 also added position.sabaqDhorManualOverride, a
+// persistent manual-position override for Sabaq Dhor -- REMOVED again
+// here after further discussion. That field was never actually needed:
+// Sabaq Dhor's manual-select field turned out to just be a 3rd input
+// into the exact same composited from/to range its own "Confirm Sabaq
+// Dhor" checkboxes already build for whichever single entry is being
+// saved (compositeCheckedSabaqDhorRows, js/sabaqDhorPage.js) -- nothing
+// about it needs to persist on `position` at all, let alone affect a
+// future prepopulation the way this field would have.
 //
 // Everything below computeActualSabaqFrontier/advancePositionAfterSabaq
 // -- computeLingeringRows, computeSabaqDhorRows, computeCurrentJuzRows,
@@ -391,18 +396,23 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
 // computeActualSabaqFrontier computed by the caller BEFORE and AFTER
 // this save respectively. Still needs to detect a juz'-crossing for
 // previousJuz's own "lingering juz'" tracking (genuinely stateful,
-// unrelated to the frontier-storage problem this rebuild fixes) --
-// and now also clears sabaqDhorManualOverride on every save, confirmed
-// in chat as the reset mechanism: logging a new Sabaq entry IS the
-// reset, no separate action needed.
+// unrelated to the frontier-storage problem this rebuild fixes).
+// V3.45.5: the sabaqDhorManualOverride clearing added in V3.45.4 is
+// REMOVED again -- turned out, after further discussion, that field
+// was never actually needed. Sabaq Dhor's manual-select field isn't a
+// persistent override on stored position at all; it's a 3rd input into
+// the exact same composited from/to range Sabaq Dhor's own "Confirm
+// Sabaq Dhor" checkboxes already build (compositeCheckedSabaqDhorRows,
+// js/sabaqDhorPage.js), scoped to whichever single entry is being
+// saved right now -- nothing about it persists on `position` at all,
+// so there's nothing here to clear.
 function advancePositionAfterSabaq(position, oldFrontier, newFrontier, ref){
-  if(!newFrontier) return Object.assign({}, position, { sabaqDhorManualOverride: null });
+  if(!newFrontier) return position;
   const newActiveJuz = getJuzForPosition(newFrontier.surah, newFrontier.ayah, ref);
   const oldActiveJuz = oldFrontier ? getJuzForPosition(oldFrontier.surah, oldFrontier.ayah, ref) : null;
   const crossedIntoNewJuz = oldActiveJuz != null && newActiveJuz !== oldActiveJuz;
   return Object.assign({}, position, {
-    previousJuz: crossedIntoNewJuz ? oldActiveJuz : (position.previousJuz || null),
-    sabaqDhorManualOverride: null
+    previousJuz: crossedIntoNewJuz ? oldActiveJuz : (position.previousJuz || null)
   });
 }
 

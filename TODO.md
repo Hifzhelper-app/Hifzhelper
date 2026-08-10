@@ -4,6 +4,53 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.5 (2026-08-10)
+
+Sabaq Dhor's manual field rebuilt to match what it actually turned out
+to be — a 3rd input into the existing composited-range mechanism, not a
+persistent override — plus the confirmed UI restructure and checkbox
+sizing fix.
+
+- [x] **`sabaqDhorManualOverride` removed entirely** — out of
+  `js/position.js` (`advancePositionAfterSabaq` no longer clears it,
+  since it no longer exists at all) and out of `js/sabaqDhorPage.js`'s
+  load flow (no more checking it ahead of the computed frontier — the
+  field just starts blank on every fresh load now, same as the section
+  checkboxes always start unchecked).
+- [x] **`compositeCheckedSabaqDhorRows` extended** to fold in the
+  manual field as a genuine 3rd source — when its checkbox is checked,
+  the entered surah:ayah (treated as a zero-length range at that one
+  point) competes in the exact same earliest-start/latest-end
+  comparison the section checkboxes' own rows already go through, not
+  a separate calculation. Verified directly via 5 Node scenarios
+  (section-only, manual-only, both together with the manual value
+  correctly extending the range, manual checked but the field somehow
+  empty falling back gracefully with no crash, and nothing checked at
+  all) before delivery.
+- [x] **The old `#sabaqDhorManualSaveBtn` click handler is gone** —
+  the checkbox that replaced it is fully passive, exactly like the 2
+  "Confirm Sabaq Dhor" checkboxes, with no listener of its own; its
+  state is only ever read once, inside the composite function, at the
+  moment the card's own Save button is tapped.
+- [x] **Reordered**: the manual selection section now sits below the
+  auto (section-based) selection, not above it.
+- [x] **2 label changes**: "Set current position manually" → "Set
+  Sabaq Dhor"; "Mark sections revised" → "Confirm Sabaq Dhor".
+  "Set Sabaq Dhor" now labels the checkbox directly (same
+  `.cb-private-row` pattern Sabaq's/Sabaq Dhor's own existing "Confirm
+  selection" checkbox already uses) rather than sitting as a separate
+  label above the picker.
+- [x] **Checkbox sizing fix**: `.sabaqDhor-row-cb` and the new
+  `#sabaqDhorManual_cb` both get explicit `20px × 20px` sizing, scoped
+  to the app's own `768px` breakpoint upward only — mobile is left
+  completely untouched, since it was never the problem. Deliberately
+  scoped by class/id rather than a global `.cb-private-row input`
+  rule, since Sabaq's/Sabaq Dhor's own "Confirm selection" checkboxes
+  already use that same class and were confirmed already rendering
+  correctly — a global change there would have resized something that
+  was never reported as broken.
+- [x] All syntax/HTML/CSS balance checked before delivery.
+
 ## Done — V3.45.4 (2026-08-10)
 
 Sabaq/Sabaq Dhor position tracking rebuilt around real history instead of

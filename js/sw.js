@@ -1,20 +1,20 @@
-const CACHE_NAME = 'hifzhelper-v3.45.4'; // bumped for the V3.45.4 release
+const CACHE_NAME = 'hifzhelper-v3.45.5'; // bumped for the V3.45.5 release
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=3.45.4', 'shared/data.js?v=3.45.4', 'shared/haidhRules.js?v=3.45.4', './appicons/logo.png',
-  './css/tokens.css?v=3.45.4', './css/base.css?v=3.45.4', './css/nav.css?v=3.45.4', './css/journal-table.css?v=3.45.4',
-  './css/components.css?v=3.45.4', './css/detail-pages.css?v=3.45.4', './css/settings.css?v=3.45.4', './css/admin.css?v=3.45.4',
-  './css/haidh.css?v=3.45.4', './css/juzTracker.css?v=3.45.4',
-  './js/icons.js?v=3.45.4', './js/customDate.js?v=3.45.4', './js/api.js?v=3.45.4', './js/uiSwitch.js?v=3.45.4', './js/position.js?v=3.45.4',
-  './js/auth.js?v=3.45.4', './js/home.js?v=3.45.4', './js/tajweed.js?v=3.45.4',
-  './js/commentPrivacy.js?v=3.45.4', './js/session-timer.js?v=3.45.4', './js/journal.js?v=3.45.4', './js/dhorPage.js?v=3.45.4',
-  './js/sabaqPage.js?v=3.45.4', './js/sabaqDhorPage.js?v=3.45.4', './js/reflectionCard.js?v=3.45.4',
-  './js/logDetailScreen.js?v=3.45.4', './js/haidhDetailScreen.js?v=3.45.4', './js/kaabaTracker.js?v=3.45.4',
-  './js/juzTrackerScreen.js?v=3.45.4',
-  './js/settingsScreen.js?v=3.45.4', './js/adminPage.js?v=3.45.4', './js/app.js?v=3.45.4'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=3.45.5', 'shared/data.js?v=3.45.5', 'shared/haidhRules.js?v=3.45.5', './appicons/logo.png',
+  './css/tokens.css?v=3.45.5', './css/base.css?v=3.45.5', './css/nav.css?v=3.45.5', './css/journal-table.css?v=3.45.5',
+  './css/components.css?v=3.45.5', './css/detail-pages.css?v=3.45.5', './css/settings.css?v=3.45.5', './css/admin.css?v=3.45.5',
+  './css/haidh.css?v=3.45.5', './css/juzTracker.css?v=3.45.5',
+  './js/icons.js?v=3.45.5', './js/customDate.js?v=3.45.5', './js/api.js?v=3.45.5', './js/uiSwitch.js?v=3.45.5', './js/position.js?v=3.45.5',
+  './js/auth.js?v=3.45.5', './js/home.js?v=3.45.5', './js/tajweed.js?v=3.45.5',
+  './js/commentPrivacy.js?v=3.45.5', './js/session-timer.js?v=3.45.5', './js/journal.js?v=3.45.5', './js/dhorPage.js?v=3.45.5',
+  './js/sabaqPage.js?v=3.45.5', './js/sabaqDhorPage.js?v=3.45.5', './js/reflectionCard.js?v=3.45.5',
+  './js/logDetailScreen.js?v=3.45.5', './js/haidhDetailScreen.js?v=3.45.5', './js/kaabaTracker.js?v=3.45.5',
+  './js/juzTrackerScreen.js?v=3.45.5',
+  './js/settingsScreen.js?v=3.45.5', './js/adminPage.js?v=3.45.5', './js/app.js?v=3.45.5'
 ];
 
 self.addEventListener('install', (event) => {
