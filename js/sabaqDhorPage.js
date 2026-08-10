@@ -174,20 +174,21 @@ async function renderSabaqDhorScreen(){
   sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
   sabaqDhorPosition = await loadPosition();
-  // V3.45.4: sabaqTo/activeJuz computed fresh from real Sabaq history,
-  // same source js/sabaqPage.js's own screen now uses -- OR
-  // sabaqDhorManualOverride if the student has set one (new this
-  // version), which takes precedence until a new Sabaq entry clears it
-  // (js/position.js's advancePositionAfterSabaq does that clearing).
+  // V3.45.4/V3.45.5: sabaqTo/activeJuz computed fresh from real Sabaq
+  // history, same source js/sabaqPage.js's own screen now uses. The
+  // manual-select field itself no longer factors into this at all
+  // (see file header) -- it always starts blank on a fresh load, same
+  // as the "Confirm Sabaq Dhor" checkboxes below it always start
+  // unchecked.
   let entriesForFrontier = [];
   try{ entriesForFrontier = await apiSabaq.get(); } catch(e){ entriesForFrontier = []; }
   const computedFrontier = computeActualSabaqFrontier(entriesForFrontier, sabaqDhorRef);
-  const effectiveFrontier = sabaqDhorPosition.sabaqDhorManualOverride || computedFrontier;
   sabaqDhorPosition = Object.assign({}, sabaqDhorPosition, {
-    sabaqTo: effectiveFrontier,
-    activeJuz: effectiveFrontier ? getJuzForPosition(effectiveFrontier.surah, effectiveFrontier.ayah, sabaqDhorRef) : null
+    sabaqTo: computedFrontier,
+    activeJuz: computedFrontier ? getJuzForPosition(computedFrontier.surah, computedFrontier.ayah, sabaqDhorRef) : null
   });
-  renderSabaqDhorManualField(effectiveFrontier);
+  renderSabaqDhorManualField(null);
+  document.getElementById('sabaqDhorManual_cb').checked = false;
   // 2026-08-06, confirmed in chat: Maqra is the new base/default level
   // when the Rub'/Hizb model is active -- Waterval's own default
   // (quarters) is completely unchanged.
@@ -212,10 +213,21 @@ async function renderSabaqDhorScreen(){
 // Composites whichever rows stayed checked into one overall from/to range
 // -- earliest checked row's start to the latest checked row's end.
 // Returns null if nothing's checked (nothing to save).
+// V3.45.5: also folds in the manual-select field, confirmed in chat as
+// a 3rd source feeding the exact same composite, not a separate
+// mechanism -- when #sabaqDhorManual_cb is checked, its own surah:ayah
+// point (both "from" and "to" the same point, a zero-length range)
+// competes in the same earliest-start/latest-end comparison as every
+// section row already does.
 function compositeCheckedSabaqDhorRows(){
   const checkedIds = Array.from(document.querySelectorAll('.sabaqDhor-row-cb:checked')).map(cb => cb.dataset.id);
-  if(checkedIds.length === 0) return null;
   const checked = sabaqDhorRows.filter(r => checkedIds.includes(r.id));
+  const manualChecked = document.getElementById('sabaqDhorManual_cb').checked;
+  const manualValue = manualChecked ? readSabaqDhorManualField() : null;
+  if(manualValue){
+    checked.push({ fromSurah: manualValue.surah, fromAyah: manualValue.ayah, toSurah: manualValue.surah, toAyah: manualValue.ayah });
+  }
+  if(checked.length === 0) return null;
   let from = checked[0], to = checked[0];
   for(const r of checked){
     if(compareVerseKey(r.fromSurah, r.fromAyah, from.fromSurah, from.fromAyah) < 0) from = r;
@@ -408,23 +420,9 @@ document.getElementById('sabaqDhorManual_ayah').addEventListener('change', () =>
   const v = readSabaqDhorManualField();
   if(v) renderSabaqDhorManualField(v);
 });
-
-document.getElementById('sabaqDhorManualSaveBtn').addEventListener('click', async () => {
-  const value = readSabaqDhorManualField();
-  if(!value) return; // nothing entered, nothing to save
-  try{
-    // savePosition (js/position.js) strips sabaqTo/activeJuz before
-    // persisting regardless -- what actually gets stored here is just
-    // sabaqDhorManualOverride, alongside previousJuz/sabaqDhorRollup
-    // untouched.
-    const toSave = Object.assign({}, sabaqDhorPosition, { sabaqDhorManualOverride: value });
-    await savePosition(toSave);
-    sabaqDhorPosition = Object.assign({}, toSave, {
-      sabaqTo: value,
-      activeJuz: getJuzForPosition(value.surah, value.ayah, sabaqDhorRef)
-    });
-    rebuildRowsFromPosition();
-  } catch(e){
-    alert("Couldn't save: " + e.message);
-  }
-});
+// V3.45.5: the old #sabaqDhorManualSaveBtn click handler is REMOVED
+// entirely -- the checkbox that replaced that button is passive, same
+// as the 2 "Confirm Sabaq Dhor" section checkboxes, with no listener
+// of its own. Its checked state and the picker's current value are
+// only ever read once, inside compositeCheckedSabaqDhorRows, at the
+// moment the card's own Save button is tapped.

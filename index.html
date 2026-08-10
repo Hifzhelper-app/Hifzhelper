@@ -21,18 +21,18 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.45.4"></script>
+<script src="js/pwaManifest.js?v=3.45.5"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.45.4">
-<link rel="stylesheet" href="css/base.css?v=3.45.4">
-<link rel="stylesheet" href="css/nav.css?v=3.45.4">
-<link rel="stylesheet" href="css/journal-table.css?v=3.45.4">
-<link rel="stylesheet" href="css/components.css?v=3.45.4">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.45.4">
-<link rel="stylesheet" href="css/settings.css?v=3.45.4">
-<link rel="stylesheet" href="css/admin.css?v=3.45.4">
-<link rel="stylesheet" href="css/haidh.css?v=3.45.4">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.45.4">
+<link rel="stylesheet" href="css/tokens.css?v=3.45.5">
+<link rel="stylesheet" href="css/base.css?v=3.45.5">
+<link rel="stylesheet" href="css/nav.css?v=3.45.5">
+<link rel="stylesheet" href="css/journal-table.css?v=3.45.5">
+<link rel="stylesheet" href="css/components.css?v=3.45.5">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.45.5">
+<link rel="stylesheet" href="css/settings.css?v=3.45.5">
+<link rel="stylesheet" href="css/admin.css?v=3.45.5">
+<link rel="stylesheet" href="css/haidh.css?v=3.45.5">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.45.5">
 </head>
 <body>
 
@@ -313,14 +313,39 @@
             </div>
             <div class="card-date-row"><input type="date" id="sabaqDhor_date" class="card-header-date"><div class="history-container" id="sabaqDhorRecentRail"></div></div>
 
-            <!-- V3.45.4: manual override for Sabaq Dhor's own "current"
-                 position, confirmed in chat -- exactly like Sabaq's own
-                 picker fields, reused here as a single point rather than
-                 a from/to pair. Clears automatically the next time a new
-                 Sabaq entry is saved (js/position.js's
-                 advancePositionAfterSabaq) -- confirmed as the reset
-                 mechanism, no separate reset button needed. -->
-            <label>Set current position manually</label>
+            <!-- V3.19.0: "Sections to revise" removed; "Confirm Sabaq
+                 Dhor" (V3.45.5, was "Mark sections revised") now labels
+                 the checkbox list specifically. The rollup control is a
+                 single stepper (2 stacked icon buttons, not a full row
+                 above the list) sitting to the left of the list itself
+                 -- each button's visibility is set in JS based on real
+                 eligibility (js/sabaqDhorPage.js), not just cosmetically
+                 hidden. -->
+            <label>Confirm Sabaq Dhor</label>
+            <div class="sabaq-dhor-sections-row">
+              <div class="sabaq-dhor-rollup-stepper">
+                <button type="button" class="sabaq-dhor-rollup-btn" id="sabaqDhor_rollup_up" title="Roll up (merge)"></button>
+                <button type="button" class="sabaq-dhor-rollup-btn" id="sabaqDhor_rollup_down" title="Split down"></button>
+              </div>
+              <div id="sabaqDhor_sections" class="sabaq-dhor-sections-list"></div>
+            </div>
+
+            <!-- V3.45.4/V3.45.5: manual selection, confirmed in chat to
+                 sit below the auto (section-based) selection above,
+                 not above it. Behaves exactly like the 2 checkboxes in
+                 "Confirm Sabaq Dhor" above -- a passive checkbox with
+                 no listener of its own, read only once at card-save
+                 time (compositeCheckedSabaqDhorRows, js/sabaqDhorPage.js),
+                 folding this single surah:ayah point into the same
+                 composited from/to range those checkboxes already
+                 build. Same .cb-private-row pattern already used for
+                 Sabaq's/Sabaq Dhor's own "Confirm selection" checkbox
+                 elsewhere -- checkbox and label together as one line,
+                 not a separate label above the picker. -->
+            <label class="cb-private-row">
+              <input type="checkbox" id="sabaqDhorManual_cb">
+              Set Sabaq Dhor
+            </label>
             <div class="verse-ref-field">
               <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_chevron">&#x25B2;&#x25BC;</button>
               <span class="verse-ref-surah-label" id="sabaqDhorManual_surah_label">—</span>
@@ -333,23 +358,7 @@
                 <button type="button" class="verse-ref-ayah-down" data-target="sabaqDhorManual_ayah">&#x25BC;</button>
               </span>
             </div>
-            <button type="button" class="settings-action-btn" id="sabaqDhorManualSaveBtn">Set position</button>
 
-            <!-- V3.19.0: "Sections to revise" removed; "Mark sections
-                 revised" now labels the checkbox list specifically. The
-                 rollup control is a single stepper (2 stacked icon
-                 buttons, not a full row above the list) sitting to the
-                 left of the list itself -- each button's visibility is
-                 set in JS based on real eligibility (js/sabaqDhorPage.js),
-                 not just cosmetically hidden. -->
-            <label>Mark sections revised</label>
-            <div class="sabaq-dhor-sections-row">
-              <div class="sabaq-dhor-rollup-stepper">
-                <button type="button" class="sabaq-dhor-rollup-btn" id="sabaqDhor_rollup_up" title="Roll up (merge)"></button>
-                <button type="button" class="sabaq-dhor-rollup-btn" id="sabaqDhor_rollup_down" title="Split down"></button>
-              </div>
-              <div id="sabaqDhor_sections" class="sabaq-dhor-sections-list"></div>
-            </div>
             <div class="picker-row">
               <div><label style="margin-top:16px;">Mistakes</label><input type="number" inputmode="numeric" id="sabaqDhor_mistakes"></div>
               <div><label>Tajweed</label><div id="sabaqDhorTajweedPicker"></div></div>
@@ -872,29 +881,29 @@
   </main>
 </div>
 
-<script src="shared/data.js?v=3.45.4"></script>
-<script src="shared/haidhRules.js?v=3.45.4"></script>
-<script src="js/icons.js?v=3.45.4"></script>
-<script src="js/customDate.js?v=3.45.4"></script>
-<script src="js/api.js?v=3.45.4"></script>
-<script src="js/uiSwitch.js?v=3.45.4"></script>
-<script src="js/position.js?v=3.45.4"></script>
-<script src="js/auth.js?v=3.45.4"></script>
-<script src="js/home.js?v=3.45.4"></script>
-<script src="js/tajweed.js?v=3.45.4"></script>
-<script src="js/commentPrivacy.js?v=3.45.4"></script>
-<script src="js/session-timer.js?v=3.45.4"></script>
-<script src="js/journal.js?v=3.45.4"></script>
-<script src="js/dhorPage.js?v=3.45.4"></script>
-<script src="js/sabaqPage.js?v=3.45.4"></script>
-<script src="js/sabaqDhorPage.js?v=3.45.4"></script>
-<script src="js/reflectionCard.js?v=3.45.4"></script>
-<script src="js/logDetailScreen.js?v=3.45.4"></script>
-<script src="js/haidhDetailScreen.js?v=3.45.4"></script>
-<script src="js/kaabaTracker.js?v=3.45.4"></script>
-<script src="js/juzTrackerScreen.js?v=3.45.4"></script>
-<script src="js/settingsScreen.js?v=3.45.4"></script>
-<script src="js/adminPage.js?v=3.45.4"></script>
-<script src="js/app.js?v=3.45.4"></script>
+<script src="shared/data.js?v=3.45.5"></script>
+<script src="shared/haidhRules.js?v=3.45.5"></script>
+<script src="js/icons.js?v=3.45.5"></script>
+<script src="js/customDate.js?v=3.45.5"></script>
+<script src="js/api.js?v=3.45.5"></script>
+<script src="js/uiSwitch.js?v=3.45.5"></script>
+<script src="js/position.js?v=3.45.5"></script>
+<script src="js/auth.js?v=3.45.5"></script>
+<script src="js/home.js?v=3.45.5"></script>
+<script src="js/tajweed.js?v=3.45.5"></script>
+<script src="js/commentPrivacy.js?v=3.45.5"></script>
+<script src="js/session-timer.js?v=3.45.5"></script>
+<script src="js/journal.js?v=3.45.5"></script>
+<script src="js/dhorPage.js?v=3.45.5"></script>
+<script src="js/sabaqPage.js?v=3.45.5"></script>
+<script src="js/sabaqDhorPage.js?v=3.45.5"></script>
+<script src="js/reflectionCard.js?v=3.45.5"></script>
+<script src="js/logDetailScreen.js?v=3.45.5"></script>
+<script src="js/haidhDetailScreen.js?v=3.45.5"></script>
+<script src="js/kaabaTracker.js?v=3.45.5"></script>
+<script src="js/juzTrackerScreen.js?v=3.45.5"></script>
+<script src="js/settingsScreen.js?v=3.45.5"></script>
+<script src="js/adminPage.js?v=3.45.5"></script>
+<script src="js/app.js?v=3.45.5"></script>
 </body>
 </html>
