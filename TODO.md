@@ -4,6 +4,70 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.4 (2026-08-10)
+
+Sabaq/Sabaq Dhor position tracking rebuilt around real history instead of
+a separately-stored, silently-desyncable value — the architectural fix
+for the prepopulation bug, not a patch.
+
+- [x] **`computeActualSabaqFrontier`** (new, `js/position.js`): the
+  frontier is now always computed fresh from actual Sabaq entries, never
+  stored. Deliberately simple per the user's own correction to an
+  earlier draft — no cross-juz' comparison at all, just whichever entry
+  is most recently dated (date descending, id as tiebreaker), then that
+  one entry's own within-entry frontier. `sabaqTo`/`activeJuz` are no
+  longer part of the stored position shape at all — `savePosition`
+  strips them centrally before every single write, regardless of what's
+  passed in, so they can never be accidentally persisted from any call
+  site (caught this as a real risk in my own draft mid-build, before
+  delivery — every position object in memory during this session
+  legitimately carries them for the existing row-computation functions
+  to read, which made it an easy mistake to nearly make).
+- [x] **`advancePositionAfterSabaq`** substantially simplified — the old
+  `SABAQ_STUDY_ORDER`-based cross-juz' "is this genuinely further along"
+  check is gone entirely (it's what could never actually be correct once
+  study paths diverge past juz' 30/29). Still detects a genuine
+  juz'-crossing for `previousJuz`'s own lingering-juz' tracking (real,
+  unrelated state), and now also clears `sabaqDhorManualOverride` on
+  every save — logging a new Sabaq entry IS the reset, confirmed in
+  chat, no separate reset action anywhere.
+- [x] **Sabaq Dhor gets a genuinely new manual-select field** — "Set
+  current position manually," a single surah:ayah point (not a from/to
+  pair), built to visually and structurally match Sabaq's own picker
+  fields exactly per the user's explicit confirmation, though
+  implemented as its own dedicated functions rather than generalizing
+  Sabaq's tightly-coupled existing ones — avoids any risk to Sabaq's
+  own, already-working picker. The ayah up/down steppers needed no new
+  wiring at all — Sabaq's own stepper handler is already a generic,
+  app-wide selector keyed off `data-target`, not scoped to Sabaq
+  specifically.
+- [x] Every downstream row-computation function — `computeLingeringRows`,
+  `computeSabaqDhorRows`, `computeCurrentJuzRows`,
+  `computeSabaqDhorSections`, `computeSabaqDhorSectionsMaqra`,
+  `maybeAutoMoveToDhor` — is completely UNCHANGED. They always just read
+  `.sabaqTo`/`.activeJuz`/`.previousJuz` off whatever position-shaped
+  object they're given; what changed is only who constructs that object
+  and how (`js/sabaqPage.js`/`js/sabaqDhorPage.js` now compute
+  `sabaqTo`/`activeJuz` fresh before calling into any of this).
+- [x] Verified directly against the REAL production code throughout, not
+  a reimplementation — loaded the actual `shared/data.js` and
+  `js/position.js` into Node and ran the exact originally-reported bug
+  scenario end-to-end (Sabaq's own prepopulation AND Sabaq Dhor's
+  "current" quarter both independently recompute to the correct 3:166/
+  3:165), plus 6 frontier scenarios (out-of-order dates, same-date
+  tiebreaking, juz' 30's backwards direction, no history at all,
+  malformed entries) and the `savePosition` stripping fix itself, before
+  writing a single line of the delivery.
+- [x] One judgment call flagged rather than silently assumed: the
+  position-advance block in `sabaqPage.js`'s save handler keeps a
+  best-effort silent catch, same shape as before — but what's actually
+  at stake behind it is now much smaller than the original bug. A
+  failure there can now only affect `previousJuz`/clearing the manual
+  override, never prepopulation itself (which recomputes independently
+  from real history on its own next load, unconditionally). Not
+  separately re-confirmed with the user.
+- [x] All syntax/HTML-balance checked before delivery.
+
 ## Done — V3.45.3 (2026-08-09)
 
 Native confirm() for both the Juz Tracker and the Settings picker, plus
