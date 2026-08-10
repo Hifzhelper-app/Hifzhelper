@@ -6,6 +6,14 @@
 // renderJuzTrackerScreen(), called from showScreen() (js/app.js) every
 // time this screen is entered, since the tracker's initial state now
 // needs to reflect the pool fresh each visit, not just once.
+//
+// V3.45.3: confirmation switched from a custom .modal-overlay/
+// .modal-card popup to a native confirm(), confirmed in chat -- richer
+// 2-part message (what's changing, plus the full resulting completed-
+// juz list). formatJuzListThreePerLine/buildJuzConfirmMessage (below)
+// are shared with js/settingsScreen.js's own "Mark completed Juz" grid,
+// which now gets the same confirmation treatment -- this file loads
+// before that one (index.html), so it owns these.
 // ============================================================
 
 // One-time setup, same pattern reflectionCard.js already uses for
@@ -16,6 +24,43 @@
 document.getElementById('juzTrackerSaveIcon').innerHTML = iconHtml('save');
 
 let juzTrackerInitialValue = []; // pool-derived state at screen-entry, for diffing at save time
+
+// Groups a sorted list of juz numbers into lines of 3, comma-separated
+// within each line -- confirmed in chat as the exact format wanted for
+// the "resulting list" part of the confirmation message.
+function formatJuzListThreePerLine(juzArray){
+  const sorted = juzArray.slice().sort((a, b) => a - b);
+  const lines = [];
+  for(let i = 0; i < sorted.length; i += 3){
+    lines.push(sorted.slice(i, i + 3).map(j => 'Juz ' + j).join(', '));
+  }
+  return lines.join('\n');
+}
+
+// Builds the full native-confirm() message text, confirmed in chat as
+// 2 parts: what's changing (marked complete and/or un-marked -- both
+// can appear together if a session did both, Claude's own extension
+// beyond the user's own description, which only covered marking), then
+// the full RESULTING list of every completed juz (not just what
+// changed), 3 per line. Shared between the tracker's own save flow and
+// the Settings picker's commitAndClose, so both give the exact same
+// message shape.
+function buildJuzConfirmMessage(newlyMarked, newlyUnmarked, resultingFullList){
+  const parts = [];
+  if(newlyMarked.length){
+    const list = newlyMarked.slice().sort((a, b) => a - b).map(j => 'Juz ' + j).join(', ');
+    parts.push(`${newlyMarked.length} juz have been marked complete: ${list}`);
+  }
+  if(newlyUnmarked.length){
+    const list = newlyUnmarked.slice().sort((a, b) => a - b).map(j => 'Juz ' + j).join(', ');
+    parts.push(`${newlyUnmarked.length} juz have been un-marked: ${list}`);
+  }
+  const line1 = parts.join('\n');
+  const line2 = resultingFullList.length
+    ? `The list of completed juz will now be:\n${formatJuzListThreePerLine(resultingFullList)}`
+    : 'No juz will be marked complete.';
+  return `${line1}\n\n${line2}`;
+}
 
 async function renderJuzTrackerScreen(){
   const el = document.querySelector('kaaba-juz-tracker');
@@ -68,80 +113,45 @@ async function renderJuzTrackerScreen(){
       return; // nothing changed since entry/last save -- nothing to confirm
     }
 
-    showJuzConfirmModal(newlyMarked, newlyUnmarked, async () => {
-      // TARGETED add/remove, confirmed as Claude's own recommendation
-      // (not directly confirmed by the user either way) -- only touch
-      // the specific juz actually interacted with this session, add
-      // newly-marked's 4 quarter-units, remove newly-unmarked's,
-      // leaving every OTHER juz already in the pool untouched. Avoids
-      // the rebuild-from-scratch edge-case risk already documented for
-      // the existing Settings picker (TODO.md) -- re-fetches the
-      // CURRENT pool right before writing, rather than reusing the
-      // possibly-stale one loaded at screen-entry, in case something
-      // else changed it in the meantime (e.g. Sabaq Dhor's own
-      // progressive move-to-Dhor, in another tab/session).
-      let currentPool;
-      try {
-        const profile = await apiGetProfile();
-        currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
-      } catch(e) {
-        currentPool = pool.slice(); // fall back to what was loaded at screen-entry
-      }
-      const toAdd = newlyMarked.flatMap(juz => quarterUnitsForJuz(juz));
-      const toRemove = new Set(newlyUnmarked.flatMap(juz => quarterUnitsForJuz(juz)));
-      const updatedPool = [...new Set([...currentPool, ...toAdd])].filter(u => !toRemove.has(u));
+    // TARGETED add/remove, confirmed as Claude's own recommendation
+    // (not directly confirmed by the user either way) -- only touch
+    // the specific juz actually interacted with this session, add
+    // newly-marked's 4 quarter-units, remove newly-unmarked's,
+    // leaving every OTHER juz already in the pool untouched. Avoids
+    // the rebuild-from-scratch edge-case risk already documented for
+    // the existing Settings picker (TODO.md) -- re-fetches the
+    // CURRENT pool right before building the confirm message (not
+    // just before writing), rather than reusing the possibly-stale
+    // one loaded at screen-entry, in case something else changed it
+    // in the meantime (e.g. Sabaq Dhor's own progressive
+    // move-to-Dhor, in another tab/session) -- this also means the
+    // "resulting list" shown in the confirm message itself is
+    // accurate, not just what gets written after confirming.
+    let currentPool;
+    try {
+      const profile = await apiGetProfile();
+      currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
+    } catch(e) {
+      currentPool = pool.slice(); // fall back to what was loaded at screen-entry
+    }
+    const toAdd = newlyMarked.flatMap(juz => quarterUnitsForJuz(juz));
+    const toRemove = new Set(newlyUnmarked.flatMap(juz => quarterUnitsForJuz(juz)));
+    const updatedPool = [...new Set([...currentPool, ...toAdd])].filter(u => !toRemove.has(u));
+    const resultingFullList = Array.from({length: 30}, (_, i) => i + 1)
+      .filter(juz => quarterUnitsForJuz(juz).every(u => updatedPool.includes(u)));
 
-      try {
-        await apiSaveProfile({ baseline_selection: updatedPool });
-        juzTrackerInitialValue = current.slice();
-        saveStatusEl.classList.add('show');
-        setTimeout(() => saveStatusEl.classList.remove('show'), 1800);
-      } catch(e){
-        // This screen has no dedicated form-error element the way
-        // Sabaq/Tadabbur/etc. do -- a plain alert is the simplest way
-        // to surface a save failure without adding one just for this.
-        alert("Couldn't save: " + e.message);
-      }
-    });
+    if(!confirm(buildJuzConfirmMessage(newlyMarked, newlyUnmarked, resultingFullList))) return;
+
+    try {
+      await apiSaveProfile({ baseline_selection: updatedPool });
+      juzTrackerInitialValue = current.slice();
+      saveStatusEl.classList.add('show');
+      setTimeout(() => saveStatusEl.classList.remove('show'), 1800);
+    } catch(e){
+      // This screen has no dedicated form-error element the way
+      // Sabaq/Tadabbur/etc. do -- a plain alert is the simplest way
+      // to surface a save failure without adding one just for this.
+      alert("Couldn't save: " + e.message);
+    }
   };
-}
-
-// Confirmation modal, confirmed in chat: "X juz have been marked
-// complete" + a list, OK to continue / Cancel to correct. Extended
-// here (Claude's own reasoning, not separately specified) to also
-// cover un-marking with a parallel message, since removal is
-// confirmed as a supported action too -- both can appear together if
-// the same session did both. Reuses the existing .modal-overlay/
-// .modal-card pattern (css/components.css), built dynamically the
-// same way js/settingsScreen.js's own section-grid modal already is,
-// rather than a native confirm() (which can't render a formatted list
-// this way).
-function showJuzConfirmModal(newlyMarked, newlyUnmarked, onConfirm){
-  const messages = [];
-  if(newlyMarked.length){
-    const list = newlyMarked.slice().sort((a, b) => a - b).map(j => 'Juz ' + j).join(', ');
-    messages.push(`<p>${newlyMarked.length} juz have been marked complete: ${list}</p>`);
-  }
-  if(newlyUnmarked.length){
-    const list = newlyUnmarked.slice().sort((a, b) => a - b).map(j => 'Juz ' + j).join(', ');
-    messages.push(`<p>${newlyUnmarked.length} juz have been un-marked: ${list}</p>`);
-  }
-
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-card">
-    <h2>Confirm changes</h2>
-    ${messages.join('')}
-    <div class="modal-actions">
-      <button type="button" class="secondary" id="juzConfirmCancelBtn">Cancel</button>
-      <button type="button" class="primary" id="juzConfirmOkBtn">OK</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-
-  document.getElementById('juzConfirmCancelBtn').addEventListener('click', () => overlay.remove());
-  document.getElementById('juzConfirmOkBtn').addEventListener('click', () => {
-    overlay.remove();
-    onConfirm();
-  });
 }

@@ -135,6 +135,11 @@ function openSectionGridModal(){
   // each marked juz' back out to its 4 quarter-unit IDs.
   const draft = Array.from({length: 30}, (_, i) => i + 1)
     .filter(juz => quarterUnitsForJuz(juz).every(u => baselineSelection.includes(u)));
+  // V3.45.3: snapshot of what was complete when the modal opened,
+  // separate from `draft` itself since that array gets mutated as the
+  // user toggles tiles -- needed to diff against at close time for the
+  // new confirmation message.
+  const initialComplete = draft.slice();
   const items = Array.from({length: 30}, (_, i) => [i + 1, `Juz ${i + 1}`]);
 
   const overlay = document.createElement('div');
@@ -159,7 +164,19 @@ function openSectionGridModal(){
     });
   });
 
+  // V3.45.3: same confirmation treatment as the Juz Tracker, confirmed
+  // in chat -- this picker previously had zero confirmation of any
+  // kind when closed. Reuses buildJuzConfirmMessage
+  // (js/juzTrackerScreen.js, loads before this file) so both give the
+  // exact same message shape. Nothing changed -> commits silently with
+  // no prompt, same as before. Cancel leaves the modal open rather
+  // than closing it, so the user can keep adjusting.
   const commitAndClose = () => {
+    const newlyMarked = draft.filter(j => !initialComplete.includes(j));
+    const newlyUnmarked = initialComplete.filter(j => !draft.includes(j));
+    if(newlyMarked.length || newlyUnmarked.length){
+      if(!confirm(buildJuzConfirmMessage(newlyMarked, newlyUnmarked, draft))) return;
+    }
     baselineSelection = draft.flatMap(juz => quarterUnitsForJuz(juz));
     renderBaselineSummary();
     overlay.remove();
@@ -167,7 +184,23 @@ function openSectionGridModal(){
   overlay.addEventListener('click', e => { if(e.target === overlay) commitAndClose(); });
   document.getElementById('sectionGridCloseBtn').addEventListener('click', commitAndClose);
 }
-document.getElementById('openJuzGridBtn').addEventListener('click', openSectionGridModal);
+// V3.45.3: previously-deferred "Settings link" to the Juz Tracker,
+// confirmed in chat -- lets the user choose between the visual tracker
+// (default) or this existing grid-list picker. juzMethodChoice is a
+// plain in-memory preference, not persisted anywhere -- defaults back
+// to 'tracker' on every fresh Settings visit rather than remembering a
+// prior choice, since nothing in chat asked for it to be saved.
+let juzMethodChoice = 'tracker';
+document.getElementById('juzMethodTrackerIcon').innerHTML = iconHtml('juzTracker');
+renderSwitch('juzMethodSwitch', juzMethodChoice);
+wireSwitch('juzMethodSwitch', (value) => {
+  juzMethodChoice = value;
+  renderSwitch('juzMethodSwitch', juzMethodChoice);
+});
+document.getElementById('openJuzGridBtn').addEventListener('click', () => {
+  if(juzMethodChoice === 'tracker') showScreen('juzTracker');
+  else openSectionGridModal();
+});
 
 // ---------- Dhor Plan (renamed from "Dhor Schedule" in V3.11.0) ----------
 let setupSelectedGranularity = null;

@@ -4,6 +4,40 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.3 (2026-08-09)
+
+Native confirm() for both the Juz Tracker and the Settings picker, plus
+the previously-deferred Settings link to the Juz Tracker.
+
+- [x] **Juz Tracker's confirmation switched to native `confirm()`**,
+  replacing the earlier custom `.modal-overlay`/`.modal-card` popup —
+  richer 2-part message: what's changing (marked complete and/or
+  un-marked, both if a session did both), then the full RESULTING list
+  of every completed juz, grouped 3 per line. Verified directly via 4
+  Node scenarios before delivery (marking, un-marking, both together,
+  and the resulting-list-becomes-empty edge case).
+- [x] **Settings "Mark completed Juz" grid gets the same treatment** —
+  previously had zero confirmation of any kind when closed. New
+  `buildJuzConfirmMessage`/`formatJuzListThreePerLine` helpers
+  (`js/juzTrackerScreen.js`) are shared between both screens so the
+  message is identical either way. Cancel leaves the modal open for
+  further adjustment rather than closing it.
+- [x] **Settings link to the Juz Tracker added** (the piece deferred
+  from the original V3.45 planning): label above the button changes
+  from "Mark completed sections" (a Surah-history leftover) to "Mark
+  completed Juz", matching the button's own text. New switcher reuses
+  the app's existing `.switch-track`/`.switch-thumb`/`.switch-option`
+  component (`js/uiSwitch.js`) — an icon (`iconHtml('juzTracker')`,
+  newly sized specifically for this compact switch, since `.btn-icon`
+  has no sizing of its own anywhere else in the app) for the Tracker
+  choice, defaulting to selected; plain text for "Juz list". The
+  existing button's click handler now branches on the switch's current
+  value — `showScreen('juzTracker')` or the existing grid modal — no
+  separate buttons needed. The choice itself is a plain in-memory
+  preference, not persisted — resets to Tracker on every fresh
+  Settings visit, since saving it wasn't asked for.
+- [x] All syntax/HTML-balance/CSS-balance checked.
+
 ## Done — V3.45.2 (2026-08-09)
 
 The Tadabbur card sizing fix — both the min-height-not-taking-effect issue
