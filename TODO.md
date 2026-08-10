@@ -4,6 +4,26 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.13 (2026-08-10)
+
+Sabaq Dhor's large- and mobile-screen layouts refined after live checks;
+the already-correct medium breakpoint is unchanged.
+
+- [x] Large grid now sizes to its content, uses max-content implicit rows,
+  and packs rows at the start instead of stretching the first rows vertically.
+- [x] Large outer group retains its border with compact 4px vertical padding
+  and the existing 4px spacing between rows.
+- [x] Roll-up visibility now exposes an explicit `.rollup-inactive` state when
+  neither direction is available.
+- [x] Mobile removes only the inactive roll-up gutter, preserving genuinely
+  available roll-up controls.
+- [x] Mobile checkbox track reduced from 44px to 32px without changing its
+  44px height or moving the checkbox inside the field border.
+- [x] Mobile column gaps and horizontal outer padding reduced from 8px to 4px,
+  returning width to the field column to prevent the current-quarter wrap.
+- [x] No rules added for 768-1179px; the medium rendering remains unchanged.
+- [x] All CSS/JS version references synchronized at V3.45.13.
+
 ## Done — V3.45.12 (2026-08-10)
 
 Sabaq Dhor's 3 fields now sit as compact, equally aligned bordered rows

@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.13 — Sabaq Dhor large/mobile breakpoint refinement (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Live checks of V3.45.12 confirmed the medium breakpoint already renders correctly, so this release deliberately leaves 768-1179px untouched and corrects only the 2 affected ranges.
+
+At 1180px and above, the 44px fields were being centred inside grid tracks that had absorbed surplus vertical space, producing large blank areas above and below the first row. The Sabaq Dhor grid now takes its block height from its own content, sizes implicit rows to `max-content`, packs them at the start, and uses the same 4px vertical outer padding as its 4px row gap. This keeps the outer border while collapsing the 3 rows to their intended compact group.
+
+Below 768px, the field column was losing width to an inactive roll-up wrapper and its flex gap, a 44px checkbox track, two 8px grid gaps, and 8px horizontal outer padding. `updateRollupStepperVisibility()` now marks the stepper `.rollup-inactive` when both directions are unavailable; mobile CSS removes only that inactive gutter. The mobile checkbox track becomes 32px wide while remaining 44px high, and the horizontal grid gaps and outer padding become 4px. Together those changes return enough width to the first field to avoid the reported wrap without moving its checkbox inside the field border or changing the medium layout. When a roll-up control is genuinely available, its wrapper remains present and functional.
+
+All CSS/JS references and the inert `js/sw.js` asset list are synchronized at V3.45.13.
+
+---
+
 ## V3.45.12 — Sabaq Dhor bordered rows and compact alignment (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

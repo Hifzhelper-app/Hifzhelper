@@ -1,6 +1,6 @@
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
-// Current as of V3.38
+// Current as of V3.45.13
 // V3.16.0 (Phase 2a): rebuilt around position -- recites the CURRENT
 // juz' from its start to wherever Sabaq has reached, excluding today's
 // brand-new portion. Builds quarter by quarter as Sabaq progresses; the
@@ -206,8 +206,15 @@ function updateRollupStepperVisibility(){
   const rowIdsAtLevel = (level) => computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, level, sabaqDhorBaselineSelection).map(r => r.id).join(',');
   const canMergeUp = idx < order.length - 1 && rowIdsAtLevel(order[idx + 1]) !== currentIds;
   const canSplitDown = idx > 0 && rowIdsAtLevel(order[idx - 1]) !== currentIds;
-  document.getElementById('sabaqDhor_rollup_up').style.display = canMergeUp ? '' : 'none';
-  document.getElementById('sabaqDhor_rollup_down').style.display = canSplitDown ? '' : 'none';
+  const mergeBtn = document.getElementById('sabaqDhor_rollup_up');
+  const splitBtn = document.getElementById('sabaqDhor_rollup_down');
+  mergeBtn.style.display = canMergeUp ? '' : 'none';
+  splitBtn.style.display = canSplitDown ? '' : 'none';
+  // V3.45.13: both hidden buttons used to leave their empty wrapper and
+  // the parent flex gap in place. Mobile CSS uses this state class to
+  // remove that inactive gutter and return the width to the section grid;
+  // tablet/desktop styling deliberately ignores the class.
+  mergeBtn.parentElement.classList.toggle('rollup-inactive', !canMergeUp && !canSplitDown);
 }
 
 // Chevron steps one position up/down through rollupLevelOrder(sabaqDhorRef)
