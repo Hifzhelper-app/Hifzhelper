@@ -45,7 +45,6 @@ document.getElementById('logDetailClose').addEventListener('click', () => showSc
   document.getElementById(`${prefix}EditDeleteIcon`).innerHTML = iconHtml('trash');
   document.getElementById(`${prefix}EditUpdateIcon`).innerHTML = iconHtml('save');
 });
-document.getElementById('dhorStopwatchIcon').innerHTML = iconHtml('timer');
 
 // V3.22.0: the edit "screen" is a full takeover of THIS screen rather
 // than a new entry in js/app.js's router -- reuses each card's existing

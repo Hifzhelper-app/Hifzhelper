@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.8 — V3.45.7 follow-up: rail-grid fix, Stopwatch cleanup, timer labels, maximized sizing (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `index.html`, `js/dhorPage.js`, `js/logDetailScreen.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+A live screenshot of V3.45.7's actual result surfaced a real bug alongside 3 refinements. `.log-detail-rail`'s wide-screen grid rule had been left at `repeat(4, 1fr)` — a straightforward miss, not caught when Timer came out of the rail in the previous version. 3 real cards were being squeezed into quarter-width columns each, with the leftover 4th column explaining the large empty gap the screenshot showed. Now `repeat(3, 1fr)`, matching what's actually there.
+
+Dhor's own pre-existing Stopwatch button — which predates V3.45.7's header-icon system entirely — comes out completely: the button, its column, its CSS, and every JS reference across 3 files. It had become straightforwardly redundant with the new header icon. One detail worth being precise about: the old button's target-minutes-per-juz' setup logic didn't just get deleted along with it — it moved into Dhor's own new header-icon handler, since Dhor remains the one card with a genuine target concept of its own that needs setting correctly before the timer opens. Duration itself stays exactly as it was, deliberately not expanded to fill the space — an earlier proposal to do that was explicitly withdrawn.
+
+Every timer icon gets a "Timer" text label now, matching the same icon-on-top, uppercase-label convention the Save button already established — nothing invented, just extended to a new spot. And the maximized timer, which previously just filled the entire viewport unconditionally in both modes, gets a real size and position of its own: 60% of viewport height, centered both horizontally and vertically, width capped at the app's own standard 50%/30% breakpoints. This should also incidentally resolve an earlier report that the timer's own close icon wasn't responding while maximized — it was sitting right at the very top edge, overlapping the device's own status bar, a classic dead-zone scenario. Worth confirming live rather than assuming fixed, but the mechanism that caused it (full-viewport positioning with nothing to keep controls clear of screen edges) is gone either way.
+
+---
+
 ## V3.45.7 — Timer relocated to a true, app-wide floating overlay (2026-08-10)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/dhorPage.js`, `js/logDetailScreen.js`, `js/auth.js`, `js/home.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
