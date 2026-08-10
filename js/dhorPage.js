@@ -471,7 +471,25 @@ function openFloatingTimer(){
 function closeFloatingTimer(){
   document.getElementById('dhorTimerHost').classList.add('hidden');
 }
-document.getElementById('dhorStopwatchToggle').addEventListener('click', async () => {
+// V3.45.8: the old #dhorStopwatchToggle click handler that used to be
+// here is REMOVED entirely, confirmed in chat -- redundant with the
+// new header-icon entry point below. Its own target-minutes-per-juz'
+// setup logic moves into dhorTimerBtn's own handler just below, rather
+// than being lost -- Dhor is still the one card with a genuine "target"
+// concept of its own (target_minutes_per_juz, Setup), so its own
+// header icon should still set that correctly before opening, same as
+// header icon should still set that correctly before opening, same as
+// the old button always did.
+// V3.45.7/V3.45.8: new header-icon entry points, confirmed in chat --
+// Sabaq/Sabaq Dhor/Dhor only, explicitly not Tadabbur. Sabaq/Sabaq
+// Dhor have no "target minutes per juz'" concept of their own, so they
+// just open whatever target the timer already has. Dhor's own icon
+// carries the target-setup logic the old Stopwatch button used to
+// have (see the removed-button comment above) -- still the one card
+// with a genuine target concept (target_minutes_per_juz, Setup).
+document.getElementById('sabaqTimerBtn').addEventListener('click', openFloatingTimer);
+document.getElementById('sabaqDhorTimerBtn').addEventListener('click', openFloatingTimer);
+document.getElementById('dhorTimerBtn').addEventListener('click', async () => {
   const host = document.getElementById('dhorTimerHost');
   let perJuzMinutes = 40;
   try{
@@ -481,14 +499,6 @@ document.getElementById('dhorStopwatchToggle').addEventListener('click', async (
   host.setAttribute('target', String(dhorTimerTargetMinutes(perJuzMinutes)));
   openFloatingTimer();
 });
-// V3.45.7: new header-icon entry points, confirmed in chat -- Sabaq/
-// Sabaq Dhor/Dhor only, explicitly not Tadabbur. Same openFloatingTimer()
-// as every other entry point; unlike Dhor's own Stopwatch button above,
-// these don't have a "target minutes per juz'" concept of their own to
-// set first, so they just open whatever target the timer already has.
-document.getElementById('sabaqTimerBtn').addEventListener('click', openFloatingTimer);
-document.getElementById('sabaqDhorTimerBtn').addEventListener('click', openFloatingTimer);
-document.getElementById('dhorTimerBtn').addEventListener('click', openFloatingTimer);
 // Close: stops AND discards the session entirely -- a genuinely
 // different action from the dedicated Minimise button. reset()
 // (js/session-timer.js) also halts the clock, not just zeros it, so
@@ -749,7 +759,6 @@ function enterDhorRawRangeMode(range){
   document.getElementById('dhor_mistakes').disabled = true;
   document.getElementById('dhor_duration_min').disabled = true;
   document.getElementById('dhor_duration_sec').disabled = true;
-  document.getElementById('dhorStopwatchToggle').disabled = true;
   const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
   if(tajweedBtn) tajweedBtn.disabled = true;
   dhorActivePlanId = null;
@@ -762,7 +771,6 @@ function exitDhorRawRangeMode(){
   document.getElementById('dhor_mistakes').disabled = false;
   document.getElementById('dhor_duration_min').disabled = false;
   document.getElementById('dhor_duration_sec').disabled = false;
-  document.getElementById('dhorStopwatchToggle').disabled = false;
   const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
   if(tajweedBtn) tajweedBtn.disabled = false;
 }

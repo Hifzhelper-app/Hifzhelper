@@ -65,12 +65,26 @@
 }
 .card-header-timer-btn {
   justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   border: none;
   background: none;
-  color: var(--color-ink-soft);
   padding: 0;
+  font-size: 10px;
+  font-weight: normal;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  cursor: pointer;
 }
-.card-header-timer-btn svg { width: 24px; height: 24px; }
+/* V3.45.8: added a "Timer" text label below the icon, confirmed in
+   chat -- matches the icon-on-top/uppercase-label convention
+   .card-header-save-btn already uses. Icon itself shrunk from 24px to
+   20px so icon+label together still fit within this column's existing
+   15% share of the header row's width, rather than widening the
+   column itself. */
+.card-header-timer-btn svg { width: 20px; height: 20px; }
 .card-header-row h2 { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-header-icon { width: 22px; height: 22px; color: var(--color-ink-soft); justify-self: center; }
 .card-header-icon svg { width: 100%; height: 100%; }
@@ -779,6 +793,37 @@
   z-index: 260;
   border-radius: 0;
 }
+/* V3.45.8: maximized (mode="full") state gets its own size and
+   position, confirmed in chat -- was inheriting the base rule's full-
+   viewport inset:0 unconditionally (both modes identical apart from
+   mini's own override), which is also the likely explanation for the
+   reported close-icon dead zone (the × sitting right at the very top
+   edge, overlapping the device's own status bar). Explicitly resets
+   inset to auto before setting top/left -- the base rule's inset:0
+   would otherwise still apply its own right/bottom sides even with
+   top/left overridden here. Height fixed at 60% of viewport
+   (--dhor-row2-h and other viewport-relative formulas elsewhere in
+   this file are unrelated -- this is a plain, direct 60vh, not
+   derived from any existing pattern). Width follows the app's own
+   standard 50%/30% cap at the existing 768px/1180px breakpoints --
+   same --width-tablet/--width-desktop tokens every other capped
+   screen already uses, not new values invented for this. */
+#dhorTimerHost[mode="full"] {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  height: 60vh;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+@media (min-width: 768px) and (max-width: 1179px) {
+  #dhorTimerHost[mode="full"] { width: var(--width-tablet); }
+}
+@media (min-width: 1180px) {
+  #dhorTimerHost[mode="full"] { width: var(--width-desktop); }
+}
 /* 2026-08-05, confirmed in chat: same technique .modal-overlay
    (css/components.css) already uses for History/Plan Dhor's own
    bottom-anchored sheets, applied here for the same underlying reason.
@@ -844,25 +889,10 @@
   padding-left: 4px;
 }
 
-/* V3.23.1: Stopwatch toggle sits beside Duration (its shared .picker-row
-   parent already gives both a 50/50 split) -- reuses the same icon-on-
-   top/no-border convention as Save and the edit-bottombar buttons,
-   centered within its own column since it isn't paired with a label the
-   way Duration's input is. Opens #dhorTimerHost (see above) -- 2026-08-04:
-   replaced the old inline #dhorTimerPanel entirely, which used to always
-   reserve its own space below Duration until first hidden by default. */
-.dhor-stopwatch-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-/* 2026-08-03: was centered within the whole cell, which isn't the same
-   as lining up with the Duration INPUT specifically -- Duration has its
-   own label pushing the input down, so a plain vertical center landed
-   slightly above the input's actual bottom edge. The invisible label
-   above (index.html) now takes up the same space Duration's real label
-   does, and both the input and this button share an explicit height, so
-   their bottom edges line up exactly rather than approximately. */
+/* V3.45.8: the Stopwatch column that used to sit here
+   (.dhor-stopwatch-col/#dhorStopwatchToggle) is REMOVED entirely,
+   confirmed in chat -- redundant with the new timer-icon header
+   button (V3.45.7). Duration's own CSS below is unchanged. */
 /* 2026-08-04, confirmed in chat: Duration split into 2 plain number
    fields (Minutes/Seconds) instead of one text field holding "mm:ss" --
    a colon in the middle of a single field doesn't play well with the
@@ -885,26 +915,6 @@
   font-weight: 600;
   color: var(--color-ink-faint);
 }
-#dhorStopwatchToggle {
-  height: var(--dhor-row2-h);
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  border: none;
-  background: none;
-  padding: 4px;
-  font-size: 10px;
-  font-weight: normal;
-  text-transform: uppercase;
-  color: var(--color-ink);
-  cursor: pointer;
-}
-/* Bigger than the shared default icon size (was 22px) -- confirmed in
-   chat this space could take a larger icon. */
-#dhorStopwatchToggle svg { width: 28px; height: 28px; }
 
 /* V3.44.1: Tadabbur's own card, confirmed in chat -- deliberately a
    different exception from the standard 30/50 rule: 50% specifically,
@@ -1048,11 +1058,17 @@
 @media (min-width: 1180px) {
   .log-detail-rail {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* V3.45.8: was repeat(4, 1fr), left over from the old 4-card layout
+       (Timer was the 4th slot) -- confirmed as a real bug, not
+       ambiguous. Timer's removal in V3.45.7 was never matched here, so
+       the 3 real cards were each being squeezed into 1/4-width columns,
+       leaving a permanently empty 4th column and a large unused gap on
+       the right at wide screens. */
+    grid-template-columns: repeat(3, 1fr);
     overflow: visible;
     scroll-snap-type: none;
   }
-  /* Dots row is hidden entirely at this breakpoint (all 4 cards already
+  /* Dots row is hidden entirely at this breakpoint (all 3 cards already
      visible in the grid, nothing to indicate a position within) -- same
      auth-band-only calculation as .editing-active uses everywhere,
      since there's genuinely nothing to subtract for it here either. */
@@ -1060,7 +1076,7 @@
 }
 
 /* Dot indicators -- only meaningful while the rail actually swipes;
-   hidden entirely on the desktop grid, where all 4 cards are visible at
+   hidden entirely on the desktop grid, where all 3 cards are visible at
    once and there's nothing to indicate a position within. Text labels
    (V3.12.0) instead of plain circles -- same active/inactive states.
    V3.19.0: row is now a 3-col grid (spacer:dots:close) so the dots stay

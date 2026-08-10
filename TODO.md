@@ -17,6 +17,50 @@ section.
   note for later, no action requested this turn.
 - [ ] Nothing built yet.
 
+## Done — V3.45.8 (2026-08-10)
+
+V3.45.7 follow-up: fixed a real bug the rail-shrink introduced, removed
+Dhor's now-redundant Stopwatch button, labeled every timer icon, and
+gave the maximized timer its own proper size and centered position.
+
+- [x] **Real bug fixed**: `.log-detail-rail`'s `≥1180px` rule was still
+  `grid-template-columns: repeat(4, 1fr)`, left over from the old
+  4-card layout — 3 real cards were being squeezed into 1/4-width
+  columns each, with a permanently empty 4th column explaining the
+  large unused gap in the screenshot. Now `repeat(3, 1fr)`. 2 nearby
+  stale "all 4 cards" comments corrected too, for accuracy.
+- [x] **Dhor's own pre-existing Stopwatch button removed entirely**
+  (`.dhor-stopwatch-col`/`#dhorStopwatchToggle`, its CSS, and every
+  JS reference — click handler, 2 disabled-state toggles, icon
+  injection) — genuinely redundant with V3.45.7's own header-icon
+  entry point. Duration deliberately left exactly as it was, NOT
+  expanded to fill the resulting space, per the explicit correction.
+  Its target-minutes-per-juz' setup logic didn't just get deleted —
+  moved into Dhor's own new header-icon handler instead, since Dhor
+  is still the one card with a genuine target concept of its own
+  (`target_minutes_per_juz`, Setup) that the old button always set
+  correctly before opening.
+- [x] **"Timer" text label added** to all 3 new header-icon buttons
+  (Sabaq/Sabaq Dhor/Dhor), matching `.card-header-save-btn`'s own
+  icon-on-top/uppercase-label convention. Icon shrunk 24px→20px so
+  icon+label together still fit the existing column width rather than
+  widening the column itself.
+- [x] **Maximized timer given its own real size and position** —
+  previously inherited the base rule's unconditional full-viewport
+  `inset: 0`. New `#dhorTimerHost[mode="full"]` rule: `height: 60vh`
+  (a direct, specific value, not derived from an existing pattern),
+  centered both horizontally and vertically
+  (`top/left: 50%; transform: translate(-50%, -50%)`), width capped
+  at the app's own standard 50%/30% breakpoints
+  (`--width-tablet`/`--width-desktop`, same tokens every other capped
+  screen already uses). This should also resolve the reported
+  close-icon dead zone as a side effect — the × no longer sits at the
+  very top edge overlapping the device's status bar — to be
+  re-confirmed live rather than assumed fixed.
+- [x] All syntax/HTML/CSS balance checked, every removed reference
+  confirmed genuinely gone (only explanatory comments remain), before
+  delivery.
+
 ## Done — V3.45.7 (2026-08-10)
 
 Timer relocated from a permanent 4th rail card to a truly top-level,
