@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.12 — Sabaq Dhor bordered rows and compact alignment (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The single outer border introduced in V3.45.11 stays exactly where it is, continuing to group the complete "Confirm Sabaq Dhor" section. Inside that group, the 2 generated quarter fields and the manual surah:ayah picker each regain their own border. Their associated checkboxes remain outside those individual field borders, but inside the outer group border, in the existing fixed 44px checkbox column.
+
+The alignment problem came from the 2 quarter fields being `<label>` elements: they inherited `.detail-page label`'s 16px top margin and 4px bottom margin, while the manual picker is a `<div>` and inherited neither. A scoped `#sabaqDhor_sections > .sabaq-dhor-row-text` rule now resets those margins to zero. All 3 grid rows therefore use only the shared 4px `row-gap`, while their fields and checkbox containers share the same 44px minimum height. The existing shared 3-column grid remains intact, so each checkbox continues moving with its associated field and all checkboxes stay on one vertical line. No JavaScript, save behaviour, or data handling changed.
+
+The release references in `index.html` and the inert `js/sw.js` asset list are now synchronized at `3.45.12`. The uploaded source had `index.html` still at `3.45.10` while `js/sw.js` had already reached `3.45.11`; this release gives every CSS/JS URL one fresh version as required by the project's cache-busting convention.
+
+---
+
 ## V3.45.11 — Sabaq Dhor's 3 rows consolidated into one visual group (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

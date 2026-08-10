@@ -4,6 +4,27 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.12 (2026-08-10)
+
+Sabaq Dhor's 3 fields now sit as compact, equally aligned bordered rows
+inside the existing outer group border.
+
+- [x] Kept the existing outer border, background, radius, and padding
+  around the complete 3-row group.
+- [x] Restored an individual border around each of the 2 quarter fields
+  and the manual surah:ayah picker.
+- [x] Kept every checkbox outside its associated field border but inside
+  the outer group border, in the existing fixed 44px checkbox column.
+- [x] Reset the generated `<label>` rows' inherited top and bottom margins
+  so all 3 rows use only the same 4px grid gap.
+- [x] Kept the 44px minimum field height and 44px checkbox container height,
+  giving the 3 rows equal height when text remains on one line while still
+  allowing a narrow-screen label to wrap without clipping.
+- [x] Preserved the shared-grid architecture and optional Move-to-Dhor
+  column; no JavaScript, save logic, or data handling changed.
+- [x] Synchronized every `index.html` and `js/sw.js` CSS/JS version reference
+  at V3.45.12.
+
 ## Done — V3.45.11 (2026-08-10)
 
 Sabaq Dhor's 3 rows visually consolidated into one clean group — a single
