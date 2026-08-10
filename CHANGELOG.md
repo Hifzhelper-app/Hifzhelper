@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.11 — Sabaq Dhor's 3 rows consolidated into one visual group (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+V3.45.10 gave "Quarter 2," "Quarter 1," and "Set Sabaq Dhor" a genuinely shared grid, which fixed their width and left-alignment — but each row still drew its own separate border, and "Set Sabaq Dhor" still carried its own heading above it, both leftovers from when these were 2 separate layout contexts. This version finishes the consolidation: one border wraps all 3 rows as a single group instead of 3 separate boxes, and the second heading comes out entirely, since a single shared border already makes clear on its own that all 3 rows belong to "Confirm Sabaq Dhor."
+
+The spacing fix worth calling out specifically, because it wasn't chased as its own separate change: the previously inconsistent gap before "Set Sabaq Dhor" turned out to be that heading's own inherited top margin, sitting on top of the grid's own row spacing. Once the heading itself was gone, every row transition was left with nothing but that same shared spacing value between it — which the user had already pointed to directly as the amount that looks right. The fix followed from removing the heading; it didn't need its own line of CSS.
+
+One thing worth being precise about: the border removal on the manual field's own picker is scoped specifically to its position inside this grid (`#sabaqDhor_sections > .verse-ref-field`), not a change to `.verse-ref-field` itself, which Sabaq's own From/To fields also use and were never part of this — those keep their own individual border exactly as before.
+
+---
+
 ## V3.45.10 — Sabaq Dhor's manual field becomes a genuine part of the shared grid (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `index.html`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

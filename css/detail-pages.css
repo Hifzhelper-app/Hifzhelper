@@ -353,6 +353,13 @@
    every checkbox genuinely shares the same column across every row, the
    same way an HTML table's cells would -- not just three separately-
    computed approximations of the same column. */
+/* V3.45.11: border/border-radius/background moved here from each
+   individual row (.sabaq-dhor-row-text/.verse-ref-field, both below),
+   confirmed in chat -- ONE shared border wrapping all 3 rows together
+   as a single visual group, rather than 3 separately-bordered boxes.
+   padding added here too, wrapping the whole group's own edges (each
+   row's own smaller padding, kept below, is separate -- breathing
+   room within that row's own cell, not the group's outer edge). */
 .sabaq-dhor-sections-list {
   display: grid;
   /* V3.45.6: 3rd column changed from auto to a fixed 44px, confirmed in
@@ -366,6 +373,10 @@
   row-gap: 4px;
   flex: 1;
   min-width: 0;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  padding: var(--space-sm);
 }
 .sabaq-dhor-row-text {
   min-width: 0;
@@ -376,11 +387,16 @@
    .verse-ref-field's own exact style (border/border-radius/padding/
    background) -- previously this had no box of its own at all, just
    plain grid-cell text. */
+/* V3.45.11: border/border-radius/background REMOVED here, confirmed in
+   chat -- moved up to .sabaq-dhor-sections-list itself instead (see
+   that rule's own comment), as ONE shared border wrapping all 3 rows
+   as a single group rather than each row having its own separate box.
+   Internal padding/min-height/flex-centering all stay -- still needed
+   for this row's own breathing room and height-matching within its
+   own cell in the shared grid, independent of the outer border/
+   background now living one level up. */
 .sabaq-dhor-row-text {
-  border: 1px solid var(--color-table-border);
-  border-radius: var(--radius-sm);
   padding: var(--space-sm);
-  background: var(--color-surface);
   /* V3.45.9: explicit min-height added, confirmed in chat -- matches
      .checkbox-box's own 44px (the box sitting directly beside it in
      the same row) and .verse-ref-field below, so all 3 long boxes on
@@ -454,19 +470,31 @@
    button naturally occupies that column now, no faked-width button
    required) by construction rather than by matching values across
    what used to be 2 separate contexts. */
-/* "Set Sabaq Dhor" itself, as a genuine grid item spanning all 3
-   columns -- everything else (font-size/color/margin) already comes
-   from the shared .detail-page label rule; this only adds the one
-   grid-specific property that rule doesn't and can't set. */
-.sabaq-dhor-sections-header { grid-column: 1 / -1; }
-/* min-height moved here from the old .sabaq-dhor-manual-row .verse-
-   ref-field scope -- same reasoning as before (matches
-   .sabaq-dhor-row-text's own min-height and .checkbox-box's 44px, NOT
-   applied to the shared .verse-ref-field rule itself since Sabaq's own
-   From/To fields use that too and aren't part of this), just now
-   scoped to this field's new position as a direct child of
-   #sabaqDhor_sections instead of the removed wrapper. */
-#sabaqDhor_sections > .verse-ref-field { min-height: 44px; }
+/* V3.45.11: .sabaq-dhor-sections-header is REMOVED entirely, confirmed
+   in chat -- the "Set Sabaq Dhor" heading itself is gone (its own
+   markup removed from js/sabaqDhorPage.js too), redundant now that one
+   shared border around all 3 rows already makes clear they're all part
+   of the same "Confirm Sabaq Dhor" action. Removing this heading also
+   resolves the inconsistent spacing reported separately -- it was
+   specifically this label's own inherited margin-top (from the shared
+   .detail-page label rule) sitting on top of the grid's own row-gap
+   that made the gap before this row larger than the "Quarter 2"-to-
+   "Quarter 1" gap elsewhere; with the label gone, every row transition
+   has nothing but that same row-gap between it. */
+/* border/background REMOVED here too, confirmed in chat -- same
+   reasoning as .sabaq-dhor-row-text's own version above, now this
+   field's own border/background come from the shared
+   .sabaq-dhor-sections-list rule instead. Scoped specifically to this
+   field's position as a direct child of #sabaqDhor_sections, NOT
+   applied to the shared .verse-ref-field rule itself, since Sabaq's
+   own From/To fields use that too and still need their own individual
+   border -- untouched, not part of this. min-height kept from before,
+   same reasoning as .sabaq-dhor-row-text's own. */
+#sabaqDhor_sections > .verse-ref-field {
+  min-height: 44px;
+  border: none;
+  background: none;
+}
 /* V3.19.0: rollup control is now a 2-button vertical stepper sitting to
    the left of the section list itself (js/icons.js: rollupMerge/
    rollupSplit), replacing the old full-width row above the list. Each

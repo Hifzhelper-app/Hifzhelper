@@ -98,14 +98,22 @@ function renderSabaqDhorRows(){
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
   `).join('');
 
-  // "Set Sabaq Dhor" itself, as the same 3 grid children every section
-  // row emits (picker field / empty placeholder, since it never has a
-  // Move-to-Dhor action / checkbox-box), preceded by its own label
-  // spanning all 3 columns (.sabaq-dhor-sections-header, css/detail-
-  // pages.css) -- always rendered, independent of whether there are
-  // any section rows to revise at all.
+  // V3.45.11: "Set Sabaq Dhor"'s own heading is REMOVED entirely,
+  // confirmed in chat -- one shared border now wraps all 3 rows as a
+  // single visual group (css/detail-pages.css), making clear on its
+  // own they're all the same "Confirm Sabaq Dhor" action, without
+  // needing a 2nd heading to say so. This also resolves the previously
+  // inconsistent row-to-row spacing as a side effect -- that heading's
+  // own inherited margin-top was the specific cause of the larger gap
+  // before this row; with the label gone, every row transition now has
+  // nothing but the grid's own row-gap between it, matching "Quarter
+  // 2"-to-"Quarter 1"'s own spacing exactly. "Set Sabaq Dhor" itself
+  // still emits the same 3 grid children every section row does
+  // (picker field / empty placeholder, since it never has a
+  // Move-to-Dhor action / checkbox-box) -- always rendered,
+  // independent of whether there are any section rows to revise at
+  // all.
   const manualHtml = `
-    <label class="sabaq-dhor-sections-header">Set Sabaq Dhor</label>
     <div class="verse-ref-field">
       <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_chevron">&#x25B2;&#x25BC;</button>
       <span class="verse-ref-surah-label" id="sabaqDhorManual_surah_label">—</span>
