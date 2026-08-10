@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.6 — Checkbox sizing resolved for real (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+V3.45.5's checkbox sizing fix — explicit `width`/`height` on the native checkboxes themselves — didn't hold up in practice, confirmed via a live screenshot showing the section checkboxes still rendering tiny while a checkbox targeted by the exact same rule right below them rendered correctly. The likely reason: native checkboxes don't always respect explicit dimensions consistently across browsers the way other elements do — a real, known limitation, not something specific to how that one rule was written.
+
+This version sidesteps the problem entirely rather than fighting it further. A new shared `.checkbox-box` class wraps each checkbox in a plain, bordered container — same visual style `.verse-ref-field` already established — sized explicitly at 44×44px. A container element reliably respects CSS sizing regardless of browser; the checkbox inside it stays completely unstyled. The section-row text labels get the same bordered-box treatment for visual consistency, matching an annotated screenshot that specified this precisely.
+
+Alignment needed its own small fix: the section list's checkbox column moves from `auto` to a fixed `44px`, matching `.checkbox-box`'s own width exactly, so it lines up with the manual-selection row's own checkbox-box even though the two sit in genuinely different layout contexts (one inside a CSS grid, one in a plain flex row). The manual field itself gets restructured along the way — the checkbox, which used to live inside the "Set Sabaq Dhor" label itself, moves out into its own boxed container next to the picker, exactly where the screenshot showed it should sit.
+
+---
+
 ## V3.45.5 — Sabaq Dhor manual field: rebuilt to match what it actually is (2026-08-10)
 
 **Files touched:** `js/position.js`, `js/sabaqDhorPage.js`, `index.html`, `css/detail-pages.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
