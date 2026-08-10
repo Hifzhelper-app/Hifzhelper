@@ -4,6 +4,66 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Flagged — Future: hide the checkbox boxes (2026-08-10)
+
+- [x] V3.45.6 confirmed working via live screenshot — all 3 checkboxes
+  (2 section rows + "Set Sabaq Dhor") now render as consistent,
+  equal-sized bordered boxes, correctly aligned at the same horizontal
+  position.
+- [x] Stated intent for a future round, not this one: hide the visible
+  boxes around the checkboxes. Not yet specified how much — e.g.
+  whether `.checkbox-box`'s own border/background goes but its sizing/
+  alignment role stays, or something else entirely. Purely a forward
+  note for later, no action requested this turn.
+- [ ] Nothing built yet.
+
+## Done — V3.45.7 (2026-08-10)
+
+Timer relocated from a permanent 4th rail card to a truly top-level,
+always-mounted overlay — a genuine architectural change, not a UI tweak.
+
+- [x] **Removed from the rail entirely**: `LOG_DETAIL_CARD_ORDER` drops
+  `'timer'` (rail is now exactly 3 cards), the Timer dot is gone from
+  the dots row.
+- [x] **Relocated in the DOM**: `<session-timer id="dhorTimerHost">`
+  moves out of `#screen-logDetail` to a true sibling of `#appShell` —
+  outside the entire screen-swapping system, so `showScreen()`'s own
+  `.hidden` toggling (which only ever touches `.screen` elements)
+  never affects it. Hidden by default now (`class="hidden"`), since
+  it's no longer always-visible as a rail card.
+- [x] **CSS rewritten for both modes**: the old "full" mode styling
+  (`flex`, `scroll-snap-align`) was entirely rail-context-specific and
+  meaningless once there's no rail to belong to — replaced with its
+  own `position: fixed; inset: 0` treatment, matching the approach
+  "mini" mode already used. Both modes are now genuine, full-viewport
+  overlays.
+- [x] **New `openFloatingTimer()`/`closeFloatingTimer()`**
+  (`js/dhorPage.js`) replace the old `scrollRailToTimer()` entirely —
+  opening now means un-hiding the relocated element directly (no rail
+  to scroll to anymore); closing hides it again. Every entry point
+  opens minimized (`mode = 'mini'`) per the confirmed default,
+  including Dhor's own pre-existing Stopwatch toggle, which previously
+  opened in full mode.
+- [x] **3 new entry points**: a timer icon on Sabaq/Sabaq Dhor/Dhor's
+  own header rows (explicitly not Tadabbur, confirmed) — scoped via a
+  new 4-column header-grid variant applied only to these 3 cards by
+  id, leaving the shared `.card-header-row` rule untouched for every
+  other screen. Plus a "Timer" entry in the dropdown and a new Home
+  tile, both hardcoded the same way "Home" itself was added earlier
+  (deliberately not part of `NAV_ITEMS`, which is built for navigating
+  to full screens via `showScreen()`, not toggling a floating overlay)
+  — each calling `openFloatingTimer()` directly.
+- [x] **"Never hidden while running" confirmed to fall out naturally
+  from the relocation itself** — once `showScreen()` no longer touches
+  the timer at all, the only way it's ever hidden is the explicit
+  Close action, which already resets the session first (never "hidden
+  while still running," always "hidden after being reset"). No extra
+  event-listening logic needed beyond the relocation itself.
+- [x] All syntax/HTML/CSS balance checked, plus every new element ID
+  confirmed to exist exactly once (or, for the dynamically-generated
+  dropdown entries, confirmed to match the same `0`-in-static-HTML
+  pattern the existing "Home" entry already has) before delivery.
+
 ## Done — V3.45.6 (2026-08-10)
 
 Checkbox sizing finally resolved for real, via a container-box approach

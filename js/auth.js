@@ -101,7 +101,13 @@ function setupAuthBandAndDropdown(){
     // NAV_ITEMS, so it doesn't also duplicate into #homeGrid itself).
     // Placed before the divider, closer to the other destinations than
     // the session actions after it.
+    // V3.45.7: Timer added the same way, right alongside Home -- calls
+    // openFloatingTimer() (js/dhorPage.js) directly rather than
+    // showScreen(), since the timer isn't a screen at all anymore, a
+    // truly top-level element shown/hidden independently of the whole
+    // screen-swapping system.
     `<button class="nav-icon-item" id="homeDropdownBtn"><span class="nav-icon-item-icon">${iconHtml('home')}</span><span class="nav-icon-item-label">Home</span></button>` +
+    `<button class="nav-icon-item" id="timerDropdownBtn"><span class="nav-icon-item-icon">${iconHtml('timer')}</span><span class="nav-icon-item-label">Timer</span></button>` +
     '<div class="dropdown-divider"></div>' +
     `<button class="nav-icon-item" id="refreshBtn"><span class="nav-icon-item-icon">${iconHtml('refresh')}</span><span class="nav-icon-item-label">Refresh</span></button>` +
     `<button class="nav-icon-item" id="logoutBtn"><span class="nav-icon-item-icon">${iconHtml('logout')}</span><span class="nav-icon-item-label">Log out</span></button>`
@@ -111,6 +117,10 @@ function setupAuthBandAndDropdown(){
   document.getElementById('homeDropdownBtn').addEventListener('click', () => {
     closeAuthDropdown();
     showScreen('home');
+  });
+  document.getElementById('timerDropdownBtn').addEventListener('click', () => {
+    closeAuthDropdown();
+    openFloatingTimer();
   });
   document.getElementById('logoutBtn').addEventListener('click', () => {
     clearToken();

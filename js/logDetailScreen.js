@@ -8,14 +8,11 @@
 // grid — no scrolling, dots hidden via CSS).
 // ============================================================
 
-// 2026-08-04, confirmed in chat: the rail's 4th slot is now the Timer
-// (a permanent card, not an on-demand overlay) instead of Tadabbur --
-// Tadabbur moved to its own standalone nav destination/screen
-// (js/reflectionCard.js, js/app.js's 'reflections' route). The Timer
-// itself is a self-contained web component (js/session-timer.js) --
-// nothing here renders its content the way renderSabaqScreen() etc. do
-// for the other 3, so it's simply absent from the Promise.all below.
-const LOG_DETAIL_CARD_ORDER = ['sabaq', 'sabaqDhor', 'dhor', 'timer'];
+// V3.45.7: 'timer' removed from this order -- it's no longer a rail
+// card at all (index.html/js/dhorPage.js), relocated to a truly
+// top-level, always-mounted element outside the whole screen-swapping
+// system. The rail is exactly 3 cards now.
+const LOG_DETAIL_CARD_ORDER = ['sabaq', 'sabaqDhor', 'dhor'];
 
 // V3.12.0: header icons (display only, no click action) + save-button
 // icons for all 3 real cards, injected once here rather than per-render
@@ -27,6 +24,12 @@ document.getElementById('dhorHeaderIcon').innerHTML = iconHtml('dhor');
 document.getElementById('sabaqSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('sabaqDhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('dhorSaveIcon').innerHTML = iconHtml('save');
+// V3.45.7: new timer-icon buttons, one per card (Sabaq/Sabaq Dhor/Dhor
+// only, confirmed explicitly NOT Tadabbur) -- click handlers wired in
+// js/dhorPage.js alongside the rest of the timer's own open/close logic.
+document.getElementById('sabaqTimerBtnIcon').innerHTML = iconHtml('timer');
+document.getElementById('sabaqDhorTimerBtnIcon').innerHTML = iconHtml('timer');
+document.getElementById('dhorTimerBtnIcon').innerHTML = iconHtml('timer');
 
 // V3.41: xclose now exits to Home like every other screen (confirmed
 // in chat -- was Journal-only before, per the reasoning below, which no

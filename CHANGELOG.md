@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.7 — Timer relocated to a true, app-wide floating overlay (2026-08-10)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/dhorPage.js`, `js/logDetailScreen.js`, `js/auth.js`, `js/home.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The Dhor timer was, since V3.34, a permanent 4th card in the Sabaq/Sabaq Dhor/Dhor swipe rail — always present, but only reachable by first navigating to that one screen and swiping to it. This version moves it out of the rail and out of the screen it lived inside entirely, to a true sibling of the app's own top-level shell, so it can be opened from anywhere and — the real point of the request — stay visible while running no matter where the student navigates to next.
+
+That last part turned out to already be broken in a subtle way worth being upfront about: the timer's "mini" floating mode already had real `position: fixed` styling, and an existing comment claimed it "floats free... independent of which card is in view." Checked directly before touching anything, and that was only ever true within the log-detail screen itself — a `position: fixed` element is still fully removed from rendering the moment any ancestor gets `display: none`, which is exactly what happens to the entire screen the instant the student navigates anywhere else. The fix isn't a CSS tweak; it's relocating the element itself, which is what most of this delivery is.
+
+`openFloatingTimer()`/`closeFloatingTimer()` (`js/dhorPage.js`) replace the old rail-scrolling logic entirely — every entry point now just un-hides the relocated element directly and sets it to minimized, matching the confirmed default (maximizing stays the student's own deliberate action from there, unchanged). Three new entry points exist now: a timer icon on Sabaq's, Sabaq Dhor's, and Dhor's own header rows specifically (not Tadabbur), plus a dropdown entry and a Home tile, both added the same hardcoded way "Home" itself was — `NAV_ITEMS` is built around navigating to full screens, which this isn't.
+
+One thing that fell out for free rather than needing its own logic: "never hidden while running." Once the timer is outside `showScreen()`'s reach entirely, the only way it's ever hidden again is the explicit Close action — which already resets the session first, every time, so it's never actually possible to end up with a hidden-but-still-running timer in the first place. No event-listening machinery needed for that part at all, just the relocation itself.
+
+---
+
 ## V3.45.6 — Checkbox sizing resolved for real (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

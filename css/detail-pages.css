@@ -53,6 +53,24 @@
   align-items: center;
   gap: var(--space-sm);
 }
+/* V3.45.7: Sabaq/Sabaq Dhor/Dhor's own header rows get a 4th column for
+   the new timer icon, confirmed in chat -- scoped to just these 3
+   cards by id rather than changing the shared .card-header-row rule
+   itself, since every other screen (Tadabbur, Juz Tracker, etc.) still
+   uses the plain 3-column version and shouldn't be affected. */
+#card-sabaq .card-header-row,
+#card-sabaqDhor .card-header-row,
+#card-dhor .card-header-row {
+  grid-template-columns: 10% 55% 15% 20%;
+}
+.card-header-timer-btn {
+  justify-self: center;
+  border: none;
+  background: none;
+  color: var(--color-ink-soft);
+  padding: 0;
+}
+.card-header-timer-btn svg { width: 24px; height: 24px; }
 .card-header-row h2 { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-header-icon { width: 22px; height: 22px; color: var(--color-ink-soft); justify-self: center; }
 .card-header-icon svg { width: 100%; height: 100%; }
@@ -746,41 +764,20 @@
 
 /* Dhor's timer (2026-08-04, confirmed in chat) -- now a permanent rail
    card (index.html's #logDetailRail, in the exact position Tadabbur
-   used to occupy) rather than an on-demand full-screen overlay. Sized
-   to match .log-detail-card exactly (flex:0 0 100%/height calc/etc.)
-   since it can't literally use that class -- it's a custom element
-   (session-timer.js), not a <div>, so its own sizing has to be spelled
-   out here rather than inherited by sharing a class. Its "mini" mode is
-   the one part that's still a genuine position:fixed floating pill,
-   independent of the rail entirely -- confirmed in chat as unchanged by
-   this restructuring ("minimise/maximise works the same"), since a
-   running session should stay visible over whatever screen is showing,
-   not just while the rail happens to be in view. */
-/* 2026-08-05, confirmed in chat: same "normal" calculation as
-   .log-detail-card above -- this is a separate custom element (not a
-   .log-detail-card, so the fix above doesn't reach it automatically),
-   previously its own separate, duplicated 70vh value. Only ever needs
-   the "normal" standard, never the editing one -- the Timer has no
-   edit state the way the other 3 cards do, so the dots row is always
-   present alongside it whenever it's genuinely visible in full mode. */
+   used to occupy) rather than an on-demand full-screen overlay.
+   V3.45.7: relocated again, this time OUT of the rail entirely --
+   confirmed in chat as needing to be "extremely useful"-level
+   accessible (dropdown/Home/per-card entry points) and to stay visible
+   across ANY navigation while running, neither of which the rail-card
+   version could ever do. Both modes are now genuine position:fixed,
+   full-viewport overlays -- "full" mode below no longer inherits any
+   sizing from the rail context it used to sit in (flex/scroll-snap-
+   align, both meaningless now that there's no rail to belong to). */
 #dhorTimerHost {
-  flex: 0 0 100%;
-  scroll-snap-align: start;
-  /* V3.43: same #appContent-padding recalibration as .log-detail-card
-     above -- confirmed in chat as affecting the Timer too. */
-  height: calc(100vh - var(--auth-band-height, 60px) - 36px - (var(--appcontent-vpad) * 2));
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-@media (min-width: 768px) and (max-width: 1179px) {
-  #dhorTimerHost { flex: 0 0 calc(50% - (var(--space-md) / 2)); }
-}
-@media (min-width: 1180px) {
-  /* Dots row is hidden entirely at this breakpoint too (.log-detail-
-     dots-inner{display:none}, below) -- same auth-band-only calculation
-     as .editing-active, not the "normal" one, since there's genuinely
-     nothing to subtract for it here either. */
-  #dhorTimerHost { height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2)); max-width: 30%; }
+  position: fixed;
+  inset: 0;
+  z-index: 260;
+  border-radius: 0;
 }
 /* 2026-08-05, confirmed in chat: same technique .modal-overlay
    (css/components.css) already uses for History/Plan Dhor's own
