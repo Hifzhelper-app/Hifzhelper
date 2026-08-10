@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.2 — Tadabbur card sizing fix (2026-08-09)
+
+**Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The card-not-filling-available-space issue from V3.45.1 traced back to a genuinely subtle root cause, found by the user rather than guessed at: the flex relationship was broken two levels above `#tadabburCard`, not at the card's own level. `#appContent` never established `display: flex` for its own children, so `#screen-reflections` — and `#tadabburCard` inside it — was never actually forced to fill the space its own `min-height` set aside. Each level's `min-height` happened to be independently viewport-relative, which is exactly why reading any single rule in isolation never revealed a conflict.
+
+Two ways to fix this were on the table. Extending the flex chain properly up through `#appContent` and `.screen` would have worked, but those are shared rules every screen in the app depends on — fixing one card by restructuring what all of them sit on was too much risk for this. The chosen fix stays entirely inside Tadabbur's own card: `#tadabburCard`'s `min-height` becomes `height`, same formula, same values. `#tadabburCard`'s own `display: flex; flex-direction: column` and `#tadabbur_text`'s own `flex: 1; min-height: 0` were correct all along — what was missing was the card having a definite size, not just a minimum, for that already-correct internal relationship to actually distribute space within. `height` alone still lets genuinely long content push the card taller, since nothing here constrains overflow.
+
+---
+
 ## V3.45.1 — Tadabbur regression fixes + History (2026-08-09)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/reflectionCard.js`, `js/dhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

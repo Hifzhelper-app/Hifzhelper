@@ -4,6 +4,36 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.2 (2026-08-09)
+
+The Tadabbur card sizing fix — both the min-height-not-taking-effect issue
+and the still-open textarea-flex issue, resolved together by one root
+cause and one change.
+
+- [x] Root cause (user's own diagnosis, verified by tracing the full
+  ancestor chain): the flex relationship was broken 2 levels above
+  `#tadabburCard`, not at the card's own level. `#appContent` never
+  set `display:flex` for its own children, so `#screen-reflections`
+  (and `#tadabburCard` inside it) was never actually forced to fill
+  the available space — each level's own `min-height` just happened
+  to be independently viewport-relative, which is why nothing looked
+  wrong reading each rule in isolation.
+- [x] Two approaches considered — extending the flex chain up through
+  `#appContent`/`.screen` (rejected: those are shared by every screen
+  in the app, too risky to fix one card by touching all of them) vs.
+  giving `#tadabburCard` itself a definite size (chosen: fully scoped
+  to this one card).
+- [x] Fix implemented: `#tadabburCard`'s `min-height` formula becomes
+  `height` (replacing, not duplicating alongside it) — same viewport-
+  relative calc, same values, just a definite size instead of a
+  minimum. `#tadabburCard`'s own `display:flex; flex-direction:column`
+  and `#tadabbur_text`'s own `flex:1; min-height:0` were never the
+  problem and are unchanged — they just needed a container with an
+  actual, known size to distribute within. `height` still lets
+  genuinely long content overflow taller, same as before, since
+  nothing here sets `overflow: hidden`.
+- [x] CSS balance checked before delivery.
+
 ## Done — V3.45.1 (2026-08-09)
 
 Tadabbur regression fixes plus a new History feature, all found and
