@@ -4,18 +4,52 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
-## Flagged — Future: hide the checkbox boxes (2026-08-10)
+## Done — V3.45.9 (2026-08-10)
 
-- [x] V3.45.6 confirmed working via live screenshot — all 3 checkboxes
-  (2 section rows + "Set Sabaq Dhor") now render as consistent,
-  equal-sized bordered boxes, correctly aligned at the same horizontal
-  position.
-- [x] Stated intent for a future round, not this one: hide the visible
-  boxes around the checkboxes. Not yet specified how much — e.g.
-  whether `.checkbox-box`'s own border/background goes but its sizing/
-  alignment role stays, or something else entirely. Purely a forward
-  note for later, no action requested this turn.
-- [ ] Nothing built yet.
+3 refinements: removed the visible box around every checkbox (keeping the
+checkbox itself and its sizing role untouched), moved the timer icon to
+sit right against each card's own heading, and matched all 3 of Sabaq
+Dhor's long boxes in height and width.
+
+- [x] **`.checkbox-box`'s border and background removed entirely** —
+  confirmed 3 times, most precisely as "the container's border, not
+  the checkbox's own" — the checkbox itself (its own native border,
+  size) is completely untouched. Its `width`/`height`/`display: flex`/
+  `align-items`/`justify-content` (the sizing/alignment role that
+  actually solved the original cross-browser checkbox-sizing problem,
+  V3.45.6) all stay exactly as they were.
+- [x] **Timer icon now sits immediately after each heading** rather
+  than floating in a separately fixed-width grid column. New
+  `.card-header-title-group` wraps the `<h2>` and timer button
+  together as one flex unit — the button's position now dynamically
+  follows wherever the heading text actually ends, instead of a fixed
+  ~65% position regardless of text length. Header grid simplified
+  back to 3 columns (`10% 70% 20%`, matching the shared default's own
+  proportions) from the previous 4-column variant. The shared
+  `.card-header-row h2` ellipsis-truncation rule still reaches the
+  heading correctly at its new nesting depth (a descendant selector,
+  confirmed directly) — no duplicate rule needed. `justify-self`
+  (a grid-only property) removed from `.card-header-timer-btn`, no
+  longer relevant now that it's a flex child, not a direct grid child.
+- [x] **Sabaq Dhor's 3 long boxes now match in height and width.**
+  Height: both `.sabaq-dhor-row-text` and (scoped specifically to
+  Sabaq Dhor's own manual field, NOT the shared `.verse-ref-field`
+  rule Sabaq's own From/To fields also use) `.sabaq-dhor-manual-row
+  .verse-ref-field` get an explicit `min-height: 44px`, matching
+  `.checkbox-box`'s own size. `min-height` deliberately, not a hard
+  `height` — "Quarter 2 (current): 3:130 - 3:165" can wrap to 2 lines
+  on narrower screens, and a fixed height would have clipped that
+  wrapped text; `min-height` matches on the wide screens where the
+  mismatch was actually reported, without risking overflow anywhere
+  narrower. Width: an invisible spacer (`visibility: hidden`, `aria-
+  hidden`, `tabindex="-1"`) added to the manual row, sharing
+  `.move-to-dhor-btn`'s exact class and text content rather than a
+  guessed pixel value — guarantees its rendered width genuinely
+  matches the "Confirm Sabaq Dhor" rows' own 2nd grid column (which
+  takes up real space even when empty, since it's one shared grid
+  track across both rows), rather than assuming a number that could
+  drift if that button's own CSS ever changes.
+- [x] All syntax/HTML/CSS balance checked before delivery.
 
 ## Done — V3.45.8 (2026-08-10)
 

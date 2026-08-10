@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.9 — Checkbox boxes hidden, timer icon repositioned, Sabaq Dhor boxes matched (2026-08-10)
+
+**Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+3 refinements to what V3.45.6–V3.45.8 already shipped. The border and background around every checkbox come off entirely — confirmed 3 times over, with the clearest version distinguishing the checkbox's own native border (left completely alone) from the container wrapping it (`.checkbox-box`, the actual target). Its sizing and alignment role — the part that genuinely fixed the earlier cross-browser checkbox-sizing problem — is untouched; only the visible border and background go, and the background was already invisible either way since it matched the surrounding card's own color exactly.
+
+The timer icon on Sabaq/Sabaq Dhor/Dhor's own header rows used to sit in a separate, fixed-width grid column — meaning it always started at roughly the same horizontal position regardless of how short the actual heading text was, creating a visible gap that made it look disconnected rather than reading as one phrase. A new `.card-header-title-group` groups the heading and the timer button into one flex unit instead, so the button's position now genuinely follows wherever the text ends.
+
+Sabaq Dhor's 3 long boxes — the 2 "Confirm Sabaq Dhor" rows and the "Set Sabaq Dhor" picker — now match in both height and width. Height needed an explicit `min-height: 44px` on both (not a hard `height`, since the section rows' own text can wrap to 2 lines on narrower screens and a fixed height would have clipped it). Width needed something more deliberate: an invisible spacer added to the manual row, sharing `.move-to-dhor-btn`'s exact class and text rather than a guessed pixel value, so its width is guaranteed to match the other rows' own 2nd grid column — which, being one shared grid track across both "Confirm Sabaq Dhor" rows, takes up real space even on rows where it's empty.
+
+---
+
 ## V3.45.8 — V3.45.7 follow-up: rail-grid fix, Stopwatch cleanup, timer labels, maximized sizing (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `index.html`, `js/dhorPage.js`, `js/logDetailScreen.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
