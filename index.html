@@ -21,18 +21,18 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.45.8"></script>
+<script src="js/pwaManifest.js?v=3.45.9"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.45.8">
-<link rel="stylesheet" href="css/base.css?v=3.45.8">
-<link rel="stylesheet" href="css/nav.css?v=3.45.8">
-<link rel="stylesheet" href="css/journal-table.css?v=3.45.8">
-<link rel="stylesheet" href="css/components.css?v=3.45.8">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.45.8">
-<link rel="stylesheet" href="css/settings.css?v=3.45.8">
-<link rel="stylesheet" href="css/admin.css?v=3.45.8">
-<link rel="stylesheet" href="css/haidh.css?v=3.45.8">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.45.8">
+<link rel="stylesheet" href="css/tokens.css?v=3.45.9">
+<link rel="stylesheet" href="css/base.css?v=3.45.9">
+<link rel="stylesheet" href="css/nav.css?v=3.45.9">
+<link rel="stylesheet" href="css/journal-table.css?v=3.45.9">
+<link rel="stylesheet" href="css/components.css?v=3.45.9">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.45.9">
+<link rel="stylesheet" href="css/settings.css?v=3.45.9">
+<link rel="stylesheet" href="css/admin.css?v=3.45.9">
+<link rel="stylesheet" href="css/haidh.css?v=3.45.9">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.45.9">
 </head>
 <body>
 
@@ -221,8 +221,10 @@
           <div class="card-scroll">
             <div class="card-header-row">
               <span class="card-header-icon" id="sabaqHeaderIcon"></span>
-              <h2>Sabaq</h2>
-              <button type="button" class="card-header-timer-btn" id="sabaqTimerBtn" aria-label="Open Timer"><span class="btn-icon" id="sabaqTimerBtnIcon"></span><span>Timer</span></button>
+              <div class="card-header-title-group">
+                <h2>Sabaq</h2>
+                <button type="button" class="card-header-timer-btn" id="sabaqTimerBtn" aria-label="Open Timer"><span class="btn-icon" id="sabaqTimerBtnIcon"></span><span>Timer</span></button>
+              </div>
               <div class="card-header-save-wrap">
                 <span class="save-status" id="sabaqSaveStatus">saved ✓</span>
                 <button type="button" class="card-header-save-btn" id="sabaqSaveBtn"><span class="btn-icon" id="sabaqSaveIcon"></span><span class="save-btn-text">Save</span></button>
@@ -302,8 +304,10 @@
           <div class="card-scroll">
             <div class="card-header-row">
               <span class="card-header-icon" id="sabaqDhorHeaderIcon"></span>
-              <h2>Sabaq Dhor</h2>
-              <button type="button" class="card-header-timer-btn" id="sabaqDhorTimerBtn" aria-label="Open Timer"><span class="btn-icon" id="sabaqDhorTimerBtnIcon"></span><span>Timer</span></button>
+              <div class="card-header-title-group">
+                <h2>Sabaq Dhor</h2>
+                <button type="button" class="card-header-timer-btn" id="sabaqDhorTimerBtn" aria-label="Open Timer"><span class="btn-icon" id="sabaqDhorTimerBtnIcon"></span><span>Timer</span></button>
+              </div>
               <div class="card-header-save-wrap">
                 <span class="save-status" id="sabaqDhorSaveStatus">saved ✓</span>
                 <button type="button" class="card-header-save-btn" id="sabaqDhorSaveBtn"><span class="btn-icon" id="sabaqDhorSaveIcon"></span><span class="save-btn-text">Save</span></button>
@@ -360,6 +364,21 @@
                   <button type="button" class="verse-ref-ayah-down" data-target="sabaqDhorManual_ayah">&#x25BC;</button>
                 </span>
               </div>
+              <!-- V3.45.9: invisible spacer, confirmed in chat as
+                   needed for width to match "Confirm Sabaq Dhor"'s own
+                   2 rows -- those sit in a shared grid whose 2nd
+                   column (.move-to-dhor-btn or an empty placeholder)
+                   takes up real space even when empty, leaving less
+                   remaining width for their own text box than this
+                   row (which has no such column at all) would
+                   otherwise get. Same class + exact same text content
+                   as the real button, so its rendered width is
+                   guaranteed to match exactly -- not a guessed pixel
+                   value that could drift if that button's own CSS
+                   ever changes. visibility:hidden (not display:none)
+                   so it still occupies space in the layout, aria-
+                   hidden since it conveys nothing to assistive tech. -->
+              <button type="button" class="move-to-dhor-btn" style="visibility:hidden" aria-hidden="true" tabindex="-1">Move to Dhor</button>
               <span class="checkbox-box"><input type="checkbox" id="sabaqDhorManual_cb"></span>
             </div>
 
@@ -382,8 +401,10 @@
           <div class="card-scroll">
             <div class="card-header-row">
               <span class="card-header-icon" id="dhorHeaderIcon"></span>
-              <h2>Dhor</h2>
-              <button type="button" class="card-header-timer-btn" id="dhorTimerBtn" aria-label="Open Timer"><span class="btn-icon" id="dhorTimerBtnIcon"></span><span>Timer</span></button>
+              <div class="card-header-title-group">
+                <h2>Dhor</h2>
+                <button type="button" class="card-header-timer-btn" id="dhorTimerBtn" aria-label="Open Timer"><span class="btn-icon" id="dhorTimerBtnIcon"></span><span>Timer</span></button>
+              </div>
               <div class="card-header-save-wrap">
                 <span class="save-status" id="dhorSaveStatus">saved ✓</span>
                 <button type="button" class="card-header-save-btn" id="dhorSaveBtn"><span class="btn-icon" id="dhorSaveIcon"></span><span class="save-btn-text">Save</span></button>
@@ -891,29 +912,29 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.45.8"></script>
-<script src="shared/haidhRules.js?v=3.45.8"></script>
-<script src="js/icons.js?v=3.45.8"></script>
-<script src="js/customDate.js?v=3.45.8"></script>
-<script src="js/api.js?v=3.45.8"></script>
-<script src="js/uiSwitch.js?v=3.45.8"></script>
-<script src="js/position.js?v=3.45.8"></script>
-<script src="js/auth.js?v=3.45.8"></script>
-<script src="js/home.js?v=3.45.8"></script>
-<script src="js/tajweed.js?v=3.45.8"></script>
-<script src="js/commentPrivacy.js?v=3.45.8"></script>
-<script src="js/session-timer.js?v=3.45.8"></script>
-<script src="js/journal.js?v=3.45.8"></script>
-<script src="js/dhorPage.js?v=3.45.8"></script>
-<script src="js/sabaqPage.js?v=3.45.8"></script>
-<script src="js/sabaqDhorPage.js?v=3.45.8"></script>
-<script src="js/reflectionCard.js?v=3.45.8"></script>
-<script src="js/logDetailScreen.js?v=3.45.8"></script>
-<script src="js/haidhDetailScreen.js?v=3.45.8"></script>
-<script src="js/kaabaTracker.js?v=3.45.8"></script>
-<script src="js/juzTrackerScreen.js?v=3.45.8"></script>
-<script src="js/settingsScreen.js?v=3.45.8"></script>
-<script src="js/adminPage.js?v=3.45.8"></script>
-<script src="js/app.js?v=3.45.8"></script>
+<script src="shared/data.js?v=3.45.9"></script>
+<script src="shared/haidhRules.js?v=3.45.9"></script>
+<script src="js/icons.js?v=3.45.9"></script>
+<script src="js/customDate.js?v=3.45.9"></script>
+<script src="js/api.js?v=3.45.9"></script>
+<script src="js/uiSwitch.js?v=3.45.9"></script>
+<script src="js/position.js?v=3.45.9"></script>
+<script src="js/auth.js?v=3.45.9"></script>
+<script src="js/home.js?v=3.45.9"></script>
+<script src="js/tajweed.js?v=3.45.9"></script>
+<script src="js/commentPrivacy.js?v=3.45.9"></script>
+<script src="js/session-timer.js?v=3.45.9"></script>
+<script src="js/journal.js?v=3.45.9"></script>
+<script src="js/dhorPage.js?v=3.45.9"></script>
+<script src="js/sabaqPage.js?v=3.45.9"></script>
+<script src="js/sabaqDhorPage.js?v=3.45.9"></script>
+<script src="js/reflectionCard.js?v=3.45.9"></script>
+<script src="js/logDetailScreen.js?v=3.45.9"></script>
+<script src="js/haidhDetailScreen.js?v=3.45.9"></script>
+<script src="js/kaabaTracker.js?v=3.45.9"></script>
+<script src="js/juzTrackerScreen.js?v=3.45.9"></script>
+<script src="js/settingsScreen.js?v=3.45.9"></script>
+<script src="js/adminPage.js?v=3.45.9"></script>
+<script src="js/app.js?v=3.45.9"></script>
 </body>
 </html>

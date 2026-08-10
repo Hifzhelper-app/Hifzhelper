@@ -58,13 +58,34 @@
    cards by id rather than changing the shared .card-header-row rule
    itself, since every other screen (Tadabbur, Juz Tracker, etc.) still
    uses the plain 3-column version and shouldn't be affected. */
+/* V3.45.9: simplified back to 3 columns, confirmed in chat -- the
+   heading and timer button are no longer 2 separate grid columns
+   (that's what caused the timer button to sit a fixed distance from
+   the heading regardless of how short the text was, "hanging around"
+   rather than reading as one phrase). Now grouped together in
+   .card-header-title-group below instead, so the timer button's
+   position dynamically follows wherever the heading text actually
+   ends. Same 10/70/20 proportions the shared default already uses. */
 #card-sabaq .card-header-row,
 #card-sabaqDhor .card-header-row,
 #card-dhor .card-header-row {
-  grid-template-columns: 10% 55% 15% 20%;
+  grid-template-columns: 10% 70% 20%;
 }
+/* Heading + timer button as one flex unit, confirmed in chat --
+   min-width:0 lets the h2's own ellipsis-truncation (the shared
+   .card-header-row h2 rule below still applies, unchanged, since it's
+   a descendant selector) keep working correctly inside a flex
+   context; the timer button doesn't grow/shrink (flex: 0 0 auto),
+   sitting immediately after however much space the heading text
+   itself actually takes up. */
+.card-header-title-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.card-header-title-group .card-header-timer-btn { flex: 0 0 auto; }
 .card-header-timer-btn {
-  justify-self: center;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -80,10 +101,11 @@
 }
 /* V3.45.8: added a "Timer" text label below the icon, confirmed in
    chat -- matches the icon-on-top/uppercase-label convention
-   .card-header-save-btn already uses. Icon itself shrunk from 24px to
-   20px so icon+label together still fit within this column's existing
-   15% share of the header row's width, rather than widening the
-   column itself. */
+   .card-header-save-btn already uses. Icon shrunk from 24px to 20px.
+   V3.45.9: `justify-self: center` (a grid-only property) removed --
+   no longer a direct grid child of .card-header-row at all, now a
+   flex child of .card-header-title-group instead (see that rule's
+   own comment above for why). */
 .card-header-timer-btn svg { width: 20px; height: 20px; }
 .card-header-row h2 { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-header-icon { width: 22px; height: 22px; color: var(--color-ink-soft); justify-self: center; }
@@ -359,6 +381,22 @@
   border-radius: var(--radius-sm);
   padding: var(--space-sm);
   background: var(--color-surface);
+  /* V3.45.9: explicit min-height added, confirmed in chat -- matches
+     .checkbox-box's own 44px (the box sitting directly beside it in
+     the same row) and .verse-ref-field below, so all 3 long boxes on
+     this screen render identical in height regardless of what's
+     inside them. min-height rather than a hard height deliberately --
+     this row's own text ("Quarter 2 (current): 3:130 - 3:165") can
+     wrap to 2 lines on narrower screens, and a fixed height would
+     clip that wrapped text; min-height matches on the wide screens
+     where the mismatch was actually observed, without risking
+     overflow anywhere narrower text wraps. Without this at all,
+     .verse-ref-field's own internal ayah-stepper (2 buttons stacked
+     vertically) has a taller natural content height than this box's
+     own single line of text, even with the same padding value. */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 .move-to-dhor-btn {
   border: 1px solid var(--palette-evergreen);
@@ -379,15 +417,23 @@
    fit a checkbox with real padding around it -- one shared class used
    everywhere a checkbox needs this treatment, not a scattered rule
    per screen. */
+/* V3.45.9: border/background removed, confirmed in chat -- the
+   checkbox itself was already "perfect as-is," it was specifically
+   this container's own visible border drawing an unwanted box shape
+   around it that needed to go. background was already invisible
+   either way (matched the surrounding card's own color exactly) --
+   removed anyway for cleanliness, not because it was ever the thing
+   being seen. Sizing/alignment/centering role (the actual fix for the
+   original cross-browser checkbox-sizing problem, V3.45.6) is
+   completely unchanged -- the checkbox still sits centered in the
+   same 44x44px area, still aligned identically across all 3 rows,
+   just with no visible border marking that area's edges anymore. */
 .checkbox-box {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
-  border: 1px solid var(--color-table-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
   flex: 0 0 auto;
 }
 /* V3.45.6: Sabaq Dhor's own manual-selection row, confirmed in chat --
@@ -399,7 +445,18 @@
   align-items: center;
   gap: var(--space-sm);
 }
-.sabaq-dhor-manual-row .verse-ref-field { flex: 1; min-width: 0; }
+/* V3.45.9: min-height added here, scoped specifically to Sabaq Dhor's
+   own manual field, confirmed in chat as needing to match
+   .sabaq-dhor-row-text's own new min-height (see that rule's own
+   comment for the full reasoning) and .checkbox-box's 44px -- NOT
+   added to the shared .verse-ref-field rule itself, which Sabaq's own
+   From/To fields also use and weren't part of this request; scoping
+   it here avoids any risk of changing those unrelated fields' own
+   sizing. This field's content (the ayah-stepper especially) never
+   wraps the way .sabaq-dhor-row-text's plain text can, so min-height
+   and a hard height produce an identical result here regardless --
+   min-height used only for consistency with that rule. */
+.sabaq-dhor-manual-row .verse-ref-field { flex: 1; min-width: 0; min-height: 44px; }
 /* V3.19.0: rollup control is now a 2-button vertical stepper sitting to
    the left of the section list itself (js/icons.js: rollupMerge/
    rollupSplit), replacing the old full-width row above the list. Each
