@@ -174,6 +174,20 @@ async function renderSabaqDhorScreen(){
   sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
   sabaqDhorPosition = await loadPosition();
+  // V3.45.4: sabaqTo/activeJuz computed fresh from real Sabaq history,
+  // same source js/sabaqPage.js's own screen now uses -- OR
+  // sabaqDhorManualOverride if the student has set one (new this
+  // version), which takes precedence until a new Sabaq entry clears it
+  // (js/position.js's advancePositionAfterSabaq does that clearing).
+  let entriesForFrontier = [];
+  try{ entriesForFrontier = await apiSabaq.get(); } catch(e){ entriesForFrontier = []; }
+  const computedFrontier = computeActualSabaqFrontier(entriesForFrontier, sabaqDhorRef);
+  const effectiveFrontier = sabaqDhorPosition.sabaqDhorManualOverride || computedFrontier;
+  sabaqDhorPosition = Object.assign({}, sabaqDhorPosition, {
+    sabaqTo: effectiveFrontier,
+    activeJuz: effectiveFrontier ? getJuzForPosition(effectiveFrontier.surah, effectiveFrontier.ayah, sabaqDhorRef) : null
+  });
+  renderSabaqDhorManualField(effectiveFrontier);
   // 2026-08-06, confirmed in chat: Maqra is the new base/default level
   // when the Rub'/Hizb model is active -- Waterval's own default
   // (quarters) is completely unchanged.
@@ -322,5 +336,95 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     await renderSabaqDhorScreen();
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;
+  }
+});
+
+// V3.45.4: manual-select for Sabaq Dhor's own "current" position,
+// confirmed in chat -- exactly like Sabaq's own picker fields, reused
+// here as its own single point rather than a from/to pair. Deliberately
+// its OWN implementation rather than generalizing Sabaq's own
+// openSurahPickerFor/renderVerseRefField (js/sabaqPage.js), which are
+// tightly coupled to that screen's own sabaqValue module state --
+// avoids any risk of regressing Sabaq's own, already-working picker to
+// generalize it. Clears automatically the next time a new Sabaq entry
+// is saved (js/position.js's advancePositionAfterSabaq) -- confirmed
+// as the reset mechanism, no separate reset action needed here.
+
+function renderSabaqDhorManualField(value){
+  const surahLabel = document.getElementById('sabaqDhorManual_surah_label');
+  const ayahInput = document.getElementById('sabaqDhorManual_ayah');
+  if(!value){
+    surahLabel.textContent = '—';
+    ayahInput.value = '';
+    ayahInput.min = '';
+    ayahInput.max = '';
+    return;
+  }
+  surahLabel.textContent = `${value.surah} ${surahName(value.surah)}`;
+  ayahInput.min = '1';
+  ayahInput.max = String(maxAyahForSurah(value.surah));
+  ayahInput.value = String(value.ayah);
+}
+
+function readSabaqDhorManualField(){
+  const surahLabel = document.getElementById('sabaqDhorManual_surah_label');
+  const ayahInput = document.getElementById('sabaqDhorManual_ayah');
+  const match = surahLabel.textContent.match(/^(\d+)/);
+  if(!match || !ayahInput.value) return null;
+  const surah = parseInt(match[1], 10);
+  let ayah = parseInt(ayahInput.value, 10);
+  const max = maxAyahForSurah(surah);
+  if(ayah < 1) ayah = 1;
+  if(ayah > max) ayah = max;
+  return { surah, ayah };
+}
+
+function openSurahPickerForSabaqDhorManual(){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay surah-picker-modal';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" id="sabaqDhorManualSurahPickerCloseBtn">&times;</button>
+    <h2>Choose Surah</h2>
+    <div class="surah-picker-list" id="sabaqDhorManualSurahPickerList"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const listEl = document.getElementById('sabaqDhorManualSurahPickerList');
+  listEl.innerHTML = SURAHS.map(([num, name]) => `<button type="button" class="tajweed-tag surah-picker-row" data-surah="${num}">${num}. ${name}</button>`).join('');
+  listEl.querySelectorAll('[data-surah]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const surah = parseInt(btn.dataset.surah, 10);
+      renderSabaqDhorManualField({ surah, ayah: 1 });
+      overlay.remove();
+    });
+  });
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.getElementById('sabaqDhorManualSurahPickerCloseBtn').addEventListener('click', () => overlay.remove());
+}
+document.getElementById('sabaqDhorManual_chevron').addEventListener('click', openSurahPickerForSabaqDhorManual);
+// Ayah up/down steppers already wired app-wide (js/sabaqPage.js's own
+// generic .verse-ref-ayah-up/-down handlers, keyed off data-target, not
+// scoped to Sabaq specifically) -- no separate wiring needed here.
+document.getElementById('sabaqDhorManual_ayah').addEventListener('change', () => {
+  const v = readSabaqDhorManualField();
+  if(v) renderSabaqDhorManualField(v);
+});
+
+document.getElementById('sabaqDhorManualSaveBtn').addEventListener('click', async () => {
+  const value = readSabaqDhorManualField();
+  if(!value) return; // nothing entered, nothing to save
+  try{
+    // savePosition (js/position.js) strips sabaqTo/activeJuz before
+    // persisting regardless -- what actually gets stored here is just
+    // sabaqDhorManualOverride, alongside previousJuz/sabaqDhorRollup
+    // untouched.
+    const toSave = Object.assign({}, sabaqDhorPosition, { sabaqDhorManualOverride: value });
+    await savePosition(toSave);
+    sabaqDhorPosition = Object.assign({}, toSave, {
+      sabaqTo: value,
+      activeJuz: getJuzForPosition(value.surah, value.ayah, sabaqDhorRef)
+    });
+    rebuildRowsFromPosition();
+  } catch(e){
+    alert("Couldn't save: " + e.message);
   }
 });

@@ -1,41 +1,102 @@
 // ============================================================
 // Hifzhelper — client-side position tracking (V3.12.0, rebuilt V3.14.0)
-// Current as of V3.37
+// Current as of V3.45.4
 // The Worker's position.js only stores whatever JSON blob it's given (see
 // that file's own comment) — all the actual progress logic lives here,
 // same "computed client-side" design already documented in SCHEMA.md.
 //
-// V3.14.0 rebuild: Sabaq entries can now span multiple surahs and cross
-// at most one juz' boundary in a single save (confirmed in chat) — the
-// old model (a separately-tracked activeJuz, advanced+juz'-complete-
-// detected ayah by ayah, auto-adding to Hifz Setup's baseline) no longer
-// fits, since a single save can jump straight past a juz' boundary
-// without ever visiting every ayah behind it one at a time. The auto-add-
-// to-baseline behaviour is REMOVED here — that's now Setup's own job
-// (3-way Juz'/Half-juz'/Surah marking, a separate phase), not something
-// Sabaq does as a side effect.
+// V3.45.4: architectural rebuild of how the Sabaq frontier itself works,
+// confirmed in chat after a real bug -- a Sabaq entry saved correctly but
+// the separately-stored position.sabaqTo silently failed to advance
+// alongside it (a savePosition() call swallowed by an empty catch),
+// leaving prepopulation and Sabaq Dhor's "current" quarter both stuck on
+// stale data with zero visible trace anything had gone wrong. sabaqTo/
+// activeJuz are no longer stored at all -- computeActualSabaqFrontier
+// (below) computes them FRESH every time, directly from real Sabaq
+// history, so there's nothing left to silently desync from what actually
+// happened. Confirmed explicitly: the default frontier is simply
+// whichever Sabaq entry is most recently dated -- NOT an attempt to
+// algorithmically determine which juz' is "further along" across a
+// student's whole history. That was this rebuild's first draft and the
+// user caught a real flaw in it: study order is only fixed through juz'
+// 30 then 29 (backwards from surah 114, then forward from 29's start) --
+// after that, students genuinely diverge (some continue backwards, some
+// jump to juz' 1), "there isn't a system to code against" for that
+// branching. Comparing across juz' with one hardcoded order would
+// silently misjudge "further along" for any student whose real path
+// doesn't match it. The simpler "most recent entry wins" rule sidesteps
+// that entirely -- no cross-juz' comparison anywhere in this file
+// anymore. Sabaq Dhor also gets a genuinely new capability out of this
+// same conversation: position.sabaqDhorManualOverride, a direct manual
+// override Sabaq Dhor didn't have before (Sabaq itself never needed
+// this -- its own From/To fields are already freely editable). No
+// separate "reset" needed for it either -- logging a new Sabaq entry IS
+// the reset (advancePositionAfterSabaq, below, clears it automatically).
 //
-// Shape used: { sabaqTo: {surah, ayah} | null, activeJuz }. sabaqTo is the
-// single source of truth — the actual last point Sabaq reached. activeJuz
-// is a DERIVED value (which juz' sabaqTo currently falls in), recomputed
-// and stored alongside it purely so the still-live V3.13.0 Sabaq Dhor
-// card (not yet rebuilt — separate phase) keeps working against this same
-// position shape without its own changes; nothing here treats activeJuz
-// as independently meaningful data.
+// Everything below computeActualSabaqFrontier/advancePositionAfterSabaq
+// -- computeLingeringRows, computeSabaqDhorRows, computeCurrentJuzRows,
+// computeSabaqDhorSections, etc. -- is UNCHANGED from before this
+// version. They still just read .sabaqTo/.activeJuz/.previousJuz off
+// whatever position-shaped object they're given; what changed is only
+// WHO constructs that object and HOW (js/sabaqPage.js and
+// js/sabaqDhorPage.js now compute sabaqTo/activeJuz fresh before calling
+// into any of this, rather than reading a stored value).
 // ============================================================
 
 async function loadPosition(){
   const row = await apiGetPosition();
   let position = null;
   try{ position = row && row.position_json ? JSON.parse(row.position_json) : null; } catch(e){ position = null; }
-  if(!position){
-    position = { sabaqTo: null, activeJuz: SABAQ_STUDY_ORDER[0] }; // brand new student — juz' 30 first
-  }
+  // V3.45.4: sabaqTo/activeJuz removed from the stored/default shape --
+  // no longer persisted at all, computed fresh instead (see file header).
+  // previousJuz/sabaqDhorRollup/sabaqDhorManualOverride are still the
+  // genuinely stateful fields this object carries.
+  if(!position) position = {};
   return position;
 }
 
+// V3.45.4: strips sabaqTo/activeJuz before persisting, regardless of
+// what's on the object passed in -- both js/sabaqPage.js and
+// js/sabaqDhorPage.js now carry these IN MEMORY on their own position
+// objects (for computeSabaqDhorRows/etc. to read, unchanged from
+// before), but neither should ever be written to storage -- they're
+// computed fresh every load now, not read from what's stored (see this
+// file's header). Centralizing the strip here means every savePosition
+// call site is automatically protected, rather than needing each one to
+// remember to strip these itself.
 function savePosition(position){
-  return apiSavePosition(JSON.stringify(position), null);
+  const toStore = Object.assign({}, position);
+  delete toStore.sabaqTo;
+  delete toStore.activeJuz;
+  return apiSavePosition(JSON.stringify(toStore), null);
+}
+
+// V3.45.4: the new source of truth for where Sabaq actually is, computed
+// fresh from real history every time rather than trusting a separately-
+// stored value -- see file header for why. Deliberately simple: no
+// cross-juz' comparison at all, confirmed in chat -- just whichever
+// entry is most recently dated (same sort renderRecentEntries already
+// uses elsewhere: date descending, id as tiebreaker), then that ONE
+// entry's own frontier via the existing, still-reliable within-entry
+// compareVerseKey check (comparing 2 endpoints of the SAME entry stays
+// correct regardless of the cross-juz' branching problem this sidesteps
+// entirely). Returns null if there's no usable Sabaq history at all.
+function computeActualSabaqFrontier(allEntries, ref){
+  const parseVerseRef = (raw) => {
+    const parts = String(raw || '').split(':').map(Number);
+    return (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) ? { surah: parts[0], ayah: parts[1] } : null;
+  };
+  const parsed = (allEntries || [])
+    .map(e => ({ date: e.date, id: e.id, from: parseVerseRef(e.sabaq_from), to: parseVerseRef(e.sabaq_to) }))
+    .filter(p => p.from && p.to);
+  if(parsed.length === 0) return null;
+  parsed.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id||0) - (a.id||0));
+  const latest = parsed[0];
+  const juz = getJuzForPosition(latest.from.surah, latest.from.ayah, ref);
+  const cmp = compareVerseKey(latest.from.surah, latest.from.ayah, latest.to.surah, latest.to.ayah);
+  const fromIsFrontier = juz === 30 ? cmp <= 0 : cmp >= 0;
+  const frontier = fromIsFrontier ? latest.from : latest.to;
+  return { surah: frontier.surah, ayah: frontier.ayah };
 }
 
 // Any Dhor history at all (not just recent) — used by Sabaq's prepopulation
@@ -68,12 +129,16 @@ async function hasDhorHistory(){
 // Umme) got nothing prepopulated even though there's a perfectly good
 // Sabaq frontier to continue from. Confirmed in chat: the no-prepopulate
 // rule was only ever meant for the no-Sabaq-history case.
-function nextSabaqDefaults(position, ref, hasDhor){
-  if(!position.sabaqTo){
+// V3.45.4: takes `frontier` directly now (the result of
+// computeActualSabaqFrontier), not the whole position object -- this
+// function only ever used position.sabaqTo anyway, and that's no longer
+// something stored on position at all.
+function nextSabaqDefaults(frontier, ref, hasDhor){
+  if(!frontier){
     if(hasDhor) return { from: null, to: null };
     return { from: { surah: 114, ayah: 1 }, to: { surah: 114, ayah: 6 } };
   }
-  const next = nextSabaqPosition(position.sabaqTo.surah, position.sabaqTo.ayah, ref);
+  const next = nextSabaqPosition(frontier.surah, frontier.ayah, ref);
   if(next.juzComplete) return { from: null, to: null };
   // 2026-08-04, confirmed in chat: both From and To now prepopulate with
   // the same starting ayah -- previously only one field got a value
@@ -318,44 +383,26 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
 // continues from. For every other (forward-studied) juz', the frontier
 // is the numerically HIGHER endpoint instead. Found live (confirmed in
 // chat) after V3.19.0 still got a bulk-entry student's frontier wrong.
-function advancePositionAfterSabaq(position, fromSurah, fromAyah, toSurah, toAyah, ref){
-  const juz = getJuzForPosition(fromSurah, fromAyah, ref); // both endpoints share one juz' -- enforced at save time
-  const cmp = compareVerseKey(fromSurah, fromAyah, toSurah, toAyah);
-  const fromIsFrontier = juz === 30 ? cmp <= 0 : cmp >= 0;
-  const frontier = fromIsFrontier ? { surah: fromSurah, ayah: fromAyah } : { surah: toSurah, ayah: toAyah };
-  const newActiveJuz = getJuzForPosition(frontier.surah, frontier.ayah, ref);
-  // Bug fix (2026-08-06, found by the user): this used to overwrite
-  // sabaqTo unconditionally with whatever this one entry's own frontier
-  // was -- correct for the normal case, where each new entry naturally
-  // continues from the last, but wrong for a genuinely new entry
-  // covering an already-passed range (a backfill, or splitting a
-  // previously-logged range into two separate entries) -- confirmed
-  // in chat as what actually happened. That entry's own save still
-  // goes through this same unconditional path (it IS a new entry, not
-  // an edit), silently dragging the real frontier backward to match
-  // it even though nothing about genuine progress moved. Now compares
-  // the newly-computed frontier against the position already stored,
-  // using SABAQ_STUDY_ORDER for a different Juz' (later in study order
-  // = genuinely further along) and the same study-direction-aware
-  // compareVerseKey already used above for the same Juz' -- only
-  // updates when the new frontier is genuinely further along than what
-  // was already there. position.activeJuz == null (no prior position
-  // at all yet) always accepts the new frontier, same as before.
-  let isGenuineAdvance = true;
-  if(position.activeJuz != null && newActiveJuz !== position.activeJuz){
-    const oldStudyIndex = SABAQ_STUDY_ORDER.indexOf(position.activeJuz);
-    const newStudyIndex = SABAQ_STUDY_ORDER.indexOf(newActiveJuz);
-    isGenuineAdvance = oldStudyIndex === -1 || newStudyIndex === -1 || newStudyIndex > oldStudyIndex;
-  } else if(position.activeJuz != null && position.sabaqTo){
-    const withinJuzCmp = compareVerseKey(frontier.surah, frontier.ayah, position.sabaqTo.surah, position.sabaqTo.ayah);
-    isGenuineAdvance = newActiveJuz === 30 ? withinJuzCmp <= 0 : withinJuzCmp >= 0;
-  }
-  if(!isGenuineAdvance) return position;
-  const crossedIntoNewJuz = position.activeJuz != null && newActiveJuz !== position.activeJuz;
+// V3.45.4: substantially simplified -- no longer computes or stores
+// sabaqTo/activeJuz at all (see file header), so the old "is this
+// genuinely further along" cross-juz' comparison this used to need is
+// gone entirely, along with its SABAQ_STUDY_ORDER dependency. Takes
+// oldFrontier/newFrontier directly -- the result of
+// computeActualSabaqFrontier computed by the caller BEFORE and AFTER
+// this save respectively. Still needs to detect a juz'-crossing for
+// previousJuz's own "lingering juz'" tracking (genuinely stateful,
+// unrelated to the frontier-storage problem this rebuild fixes) --
+// and now also clears sabaqDhorManualOverride on every save, confirmed
+// in chat as the reset mechanism: logging a new Sabaq entry IS the
+// reset, no separate action needed.
+function advancePositionAfterSabaq(position, oldFrontier, newFrontier, ref){
+  if(!newFrontier) return Object.assign({}, position, { sabaqDhorManualOverride: null });
+  const newActiveJuz = getJuzForPosition(newFrontier.surah, newFrontier.ayah, ref);
+  const oldActiveJuz = oldFrontier ? getJuzForPosition(oldFrontier.surah, oldFrontier.ayah, ref) : null;
+  const crossedIntoNewJuz = oldActiveJuz != null && newActiveJuz !== oldActiveJuz;
   return Object.assign({}, position, {
-    sabaqTo: frontier,
-    activeJuz: newActiveJuz,
-    previousJuz: crossedIntoNewJuz ? position.activeJuz : (position.previousJuz || null)
+    previousJuz: crossedIntoNewJuz ? oldActiveJuz : (position.previousJuz || null),
+    sabaqDhorManualOverride: null
   });
 }
 

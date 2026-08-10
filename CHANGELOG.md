@@ -7,6 +7,22 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.4 — Sabaq/Sabaq Dhor position rebuilt around real history (2026-08-10)
+
+**Files touched:** `js/position.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The prepopulation bug from earlier — Sabaq showing 3:160 instead of the expected 3:166, Sabaq Dhor's "current" quarter stuck a full entry behind — got the architectural fix it needed rather than a patch on top of the mechanism that broke. `position.sabaqTo` and `position.activeJuz` are no longer stored anywhere at all. `computeActualSabaqFrontier` (new, `js/position.js`) computes the frontier fresh every time, directly from actual Sabaq history, so there's nothing left to silently desync from what genuinely happened — which is exactly what broke originally, a `savePosition()` call failing silently with zero trace while the Sabaq entry itself saved correctly.
+
+The algorithm went through a real correction mid-design. The first draft tried to determine which juz' was "further along" across a student's whole history, using the same `SABAQ_STUDY_ORDER`-based comparison `advancePositionAfterSabaq` already trusted elsewhere. The user caught a genuine flaw in that: study order is only actually fixed through juz' 30 then 29 — after that, students genuinely diverge, with no single system to code against. The final design sidesteps this entirely rather than trying to solve it: the default frontier is simply whichever Sabaq entry is most recently dated, full stop, no cross-juz' comparison anywhere.
+
+Sabaq Dhor gains a capability it never had before: a manual override, confirmed to visually and structurally match Sabaq's own picker fields exactly, though implemented as its own dedicated set of functions rather than generalizing Sabaq's tightly-coupled existing ones — deliberately, to avoid any risk of regressing Sabaq's own already-working picker in the process. No separate "reset" action exists anywhere for this override — logging a new Sabaq entry clears it automatically, confirmed directly as the intended mechanism.
+
+A real bug in this delivery's own first draft got caught and fixed before it shipped: with `sabaqTo`/`activeJuz` now living only in memory (for the existing row-computation functions, entirely unchanged, to keep reading), naively passing that same in-memory object to `savePosition` at any of several call sites would have accidentally persisted them right back into storage — quietly recreating the exact class of bug this version exists to eliminate. Fixed centrally instead: `savePosition` itself now strips both fields before every write, regardless of what it's handed, so no individual call site needs to remember to do this correctly on its own.
+
+Every row-computation function downstream — `computeLingeringRows`, `computeSabaqDhorRows`, `computeCurrentJuzRows`, `computeSabaqDhorSections`, `computeSabaqDhorSectionsMaqra`, `maybeAutoMoveToDhor` — is completely unchanged. All of it verified directly against the real production code before writing any of this delivery: the actual `shared/data.js` and `js/position.js` loaded into Node, run through the exact originally-reported scenario end-to-end (both Sabaq's prepopulation and Sabaq Dhor's own display independently landing on the correct 3:166/3:165), plus 6 further frontier scenarios and the `savePosition` stripping fix itself.
+
+---
+
 ## V3.45.3 — Native confirm() + Settings link to the Juz Tracker (2026-08-09)
 
 **Files touched:** `index.html`, `css/settings.css`, `js/juzTrackerScreen.js`, `js/settingsScreen.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

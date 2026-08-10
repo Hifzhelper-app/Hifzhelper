@@ -27,6 +27,12 @@
 
 let sabaqSelectedTags = [];
 let sabaqPosition = null;
+// V3.45.4: the computed frontier itself, separate from sabaqPosition --
+// sabaqPosition now only carries the genuinely stateful fields
+// (previousJuz, sabaqDhorRollup, sabaqDhorManualOverride); sabaqTo/
+// activeJuz aren't stored anywhere anymore, computed fresh into this
+// variable instead (see js/position.js's file header for why).
+let sabaqFrontier = null;
 let sabaqRef = 'waterval';
 // { from: {surah, ayah} | null, to: {surah, ayah} | null } — the two
 // combined fields' current values, kept here since the DOM only shows a
@@ -174,9 +180,14 @@ async function renderSabaqScreen(){
   try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
   sabaqRef = refForMushafSabaq(profile && profile.mushaf);
   sabaqPosition = await loadPosition();
+  // V3.45.4: computed fresh from real history every time, not read from
+  // a stored value -- see js/position.js's file header.
+  let entriesForFrontier = [];
+  try{ entriesForFrontier = await apiSabaq.get(); } catch(e){ entriesForFrontier = []; }
+  sabaqFrontier = computeActualSabaqFrontier(entriesForFrontier, sabaqRef);
   const dhorExists = await hasDhorHistory();
 
-  const defaults = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
+  const defaults = nextSabaqDefaults(sabaqFrontier, sabaqRef, dhorExists);
   sabaqValue = { from: defaults.from, to: defaults.to };
   renderVerseRefField('from');
   renderVerseRefField('to');
@@ -254,7 +265,7 @@ function cancelSabaqEdit(){
 }
 async function resetSabaqFormAfterEdit(){
   const dhorExists = await hasDhorHistory();
-  const next = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
+  const next = nextSabaqDefaults(sabaqFrontier, sabaqRef, dhorExists);
   sabaqValue = { from: next.from, to: next.to };
   renderVerseRefField('from');
   renderVerseRefField('to');
@@ -334,9 +345,25 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     // (sabaqEditingIsFrontier, set when the entry was loaded -- see
     // loadSabaqEntryForEdit). Editing an older entry must never touch
     // position, regardless of what changed in it.
+    // V3.45.4: re-fetches Sabaq history fresh (now including the entry
+    // just saved above) and recomputes the frontier from it, rather than
+    // trusting whatever sabaqFrontier already held -- this is the fix
+    // itself: even if something in this block fails, prepopulation and
+    // Sabaq Dhor's own "current" display are NEVER affected, since both
+    // now always recompute independently from real history on their own
+    // next load, not from anything this block writes. What CAN still be
+    // lost on a failure here is narrower than before: only previousJuz
+    // (the lingering-juz' tracking) and sabaqDhorManualOverride's clear
+    // -- both real but genuinely lower-stakes than the original bug,
+    // which could stick prepopulation itself. Kept as a best-effort
+    // catch for that reason, flagged here rather than silently assumed
+    // fine -- not separately re-confirmed with the user.
     if(!sabaqEditingId || sabaqEditingIsFrontier){
       try{
-        sabaqPosition = advancePositionAfterSabaq(sabaqPosition, from.surah, from.ayah, to.surah, to.ayah, sabaqRef);
+        const freshEntries = await apiSabaq.get();
+        const newFrontier = computeActualSabaqFrontier(freshEntries, sabaqRef);
+        sabaqPosition = advancePositionAfterSabaq(sabaqPosition, sabaqFrontier, newFrontier, sabaqRef);
+        sabaqFrontier = newFrontier;
         await savePosition(sabaqPosition);
         // Phase 2b (V3.17.0): the automatic half of the move-to-Dhor
         // transition -- if a previous juz' is lingering and this save just
@@ -357,7 +384,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     if(sabaqEditingId) cancelSabaqEdit();
     await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
     const dhorExists = await hasDhorHistory();
-    const next = nextSabaqDefaults(sabaqPosition, sabaqRef, dhorExists);
+    const next = nextSabaqDefaults(sabaqFrontier, sabaqRef, dhorExists);
     sabaqValue = { from: next.from, to: next.to };
     renderVerseRefField('from');
     renderVerseRefField('to');
