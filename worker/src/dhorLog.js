@@ -51,14 +51,20 @@ export async function handleSaveDhor(request, env, auth) {
     body.duration_seconds ?? null,
     body.lap_times != null ? JSON.stringify(body.lap_times) : null
   ];
-  const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values);
+  const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values, body.force);
 
-  if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
+  // V3.45.15: guarded on result.id -- see sabaqLog.js's own identical
+  // comment for the full reasoning (a duplicate found with body.force
+  // not set means insertLog returned early, nothing to link/mark
+  // attendance for yet).
+  if (result.id) {
+    if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
-  await env.DB.prepare(
-    `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
-     ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
-  ).bind(studentId, body.date).run();
+    await env.DB.prepare(
+      `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
+       ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
+    ).bind(studentId, body.date).run();
+  }
 
   return { data: result };
 }

@@ -34,16 +34,22 @@ export async function handleSaveSabaqDhor(request, env, auth) {
     body.zone ?? null, body.tajweed_tags ?? null, body.mistakes ?? null,
     body.from_surah ?? null, body.from_ayah ?? null, body.to_surah ?? null, body.to_ayah ?? null
   ];
-  const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values);
+  const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values, body.force);
 
-  if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
+  // V3.45.15: guarded on result.id -- see sabaqLog.js's own identical
+  // comment for the full reasoning (a duplicate found with body.force
+  // not set means insertLog returned early, nothing to link/mark
+  // attendance for yet).
+  if (result.id) {
+    if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
-  // Sabaq Dhor also counts as recorded activity for attendance — same rule
-  // as Sabaq and Dhor (see SCHEMA.md / the original attendance decision).
-  await env.DB.prepare(
-    `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
-     ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
-  ).bind(studentId, body.date).run();
+    // Sabaq Dhor also counts as recorded activity for attendance — same rule
+    // as Sabaq and Dhor (see SCHEMA.md / the original attendance decision).
+    await env.DB.prepare(
+      `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
+       ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
+    ).bind(studentId, body.date).run();
+  }
 
   return { data: result };
 }

@@ -37,14 +37,24 @@ export async function handleSaveSabaq(request, env, auth) {
 
   const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
   const values = [body.sabaq_from ?? null, body.sabaq_to ?? null, body.tajweed_tags ?? null, body.line_count ?? null, body.page_count ?? null];
-  const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values);
+  const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values, body.force);
 
-  if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
+  // V3.45.15: guarded on result.id now -- when insertLog returns early
+  // (a duplicate found, body.force not set), there's no row to link a
+  // plan against or mark attendance for; both would be acting on an
+  // entry that doesn't actually exist yet. Confirming with the student
+  // first (the whole point of this feature) happens entirely on the
+  // frontend, which re-calls this same endpoint with force:true once
+  // they've confirmed -- this function runs again from the top then,
+  // this time actually inserting and correctly reaching these steps.
+  if (result.id) {
+    if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
-  await env.DB.prepare(
-    `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
-     ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
-  ).bind(studentId, body.date).run();
+    await env.DB.prepare(
+      `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
+       ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
+    ).bind(studentId, body.date).run();
+  }
 
   return { data: result };
 }
