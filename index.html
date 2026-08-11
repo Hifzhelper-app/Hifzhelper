@@ -22,18 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.45.15"></script>
+<script src="js/pwaManifest.js?v=3.46.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.45.15">
-<link rel="stylesheet" href="css/base.css?v=3.45.15">
-<link rel="stylesheet" href="css/nav.css?v=3.45.15">
-<link rel="stylesheet" href="css/journal-table.css?v=3.45.15">
-<link rel="stylesheet" href="css/components.css?v=3.45.15">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.45.15">
-<link rel="stylesheet" href="css/settings.css?v=3.45.15">
-<link rel="stylesheet" href="css/admin.css?v=3.45.15">
-<link rel="stylesheet" href="css/haidh.css?v=3.45.15">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.45.15">
+<link rel="stylesheet" href="css/tokens.css?v=3.46.0">
+<link rel="stylesheet" href="css/base.css?v=3.46.0">
+<link rel="stylesheet" href="css/nav.css?v=3.46.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.46.0">
+<link rel="stylesheet" href="css/components.css?v=3.46.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.46.0">
+<link rel="stylesheet" href="css/settings.css?v=3.46.0">
+<link rel="stylesheet" href="css/admin.css?v=3.46.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.46.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.46.0">
+<link rel="stylesheet" href="css/sih.css?v=3.46.0">
 </head>
 <body>
 
@@ -605,6 +606,73 @@
       </div>
     </section>
 
+    <!-- Surahs in my Heart (V3.46.0) — colouring activity, deliberately
+         NOT connected to any progress tracking (confirmed in chat).
+         All behavior in js/sihScreen.js; layout in css/sih.css:
+         large screens = canvas up to 75% with the LHS panel expanded,
+         mobile = slim toolbar + the two .sih-sec sections becoming
+         roll-up bottom sheets. Close button wired centrally in app.js
+         like every other screen's. -->
+    <section class="screen hidden" id="screen-sih">
+      <div class="card-header-row sih-header-row">
+        <span class="card-header-icon" id="sihHeaderIcon"></span>
+        <h2>Surahs in my Heart</h2>
+        <div class="card-header-save-wrap">
+          <span class="save-status" id="sihSaveStatus">saved ✓</span>
+          <button type="button" class="card-header-save-btn" id="sihSaveBtn"><span class="btn-icon" id="sihSaveIcon"></span><span class="save-btn-text">Save</span></button>
+        </div>
+        <button type="button" class="screen-close-btn" id="sihCloseBtn" aria-label="Exit to Home"></button>
+      </div>
+      <div class="sih-layout">
+        <div class="sih-panel">
+          <div class="sih-sec sih-sec-colour" id="sihColourSec">
+            <div class="sih-sheet-head">
+              <span>Colour</span>
+              <button type="button" class="sih-sheet-close" data-sih-close="sihColourSec" aria-label="Close"></button>
+            </div>
+            <div class="sih-mode-toggle">
+              <button type="button" data-sih-mode="solid" class="active">Solid</button>
+              <button type="button" data-sih-mode="gradient">Gradient</button>
+            </div>
+            <div class="sih-swatch-row">
+              <button type="button" class="sih-swatch active" id="sihSwatch1" aria-label="Colour 1"></button>
+              <button type="button" class="sih-swatch hidden" id="sihSwatch2" aria-label="Colour 2"></button>
+            </div>
+            <canvas id="sihWheel" width="440" height="440"></canvas>
+            <input type="range" id="sihLightness" min="0" max="100" value="60" aria-label="Lightness">
+          </div>
+          <div class="sih-sec sih-sec-view">
+            <button type="button" class="secondary" data-sih-act="undo"><span class="btn-icon"></span>Undo</button>
+            <button type="button" class="secondary" data-sih-act="zoomfit"><span class="btn-icon"></span>Zoom to fit</button>
+          </div>
+          <div class="sih-sec sih-sec-actions" id="sihActionsSec">
+            <div class="sih-sheet-head">
+              <span>Picture</span>
+              <button type="button" class="sih-sheet-close" data-sih-close="sihActionsSec" aria-label="Close"></button>
+            </div>
+            <button type="button" class="secondary" id="sihBgBtn">Add background image</button>
+            <button type="button" class="secondary hidden" id="sihBgRemoveBtn">Remove background</button>
+            <button type="button" class="secondary" id="sihExportBtn">Save as PNG</button>
+            <button type="button" class="secondary" id="sihResetBtn">Reset colours</button>
+            <input type="file" id="sihBgInput" accept="image/*" class="hidden">
+          </div>
+        </div>
+        <div class="sih-viewport" id="sihViewport">
+          <canvas id="sihCanvas"></canvas>
+        </div>
+        <div class="sih-toolbar">
+          <button type="button" class="sih-swatch sih-toolbar-swatch" id="sihToolbarSwatch" aria-label="Colour"></button>
+          <button type="button" class="sih-toolbar-btn" data-sih-act="undo" aria-label="Undo"></button>
+          <button type="button" class="sih-toolbar-btn" data-sih-act="zoomfit" aria-label="Zoom to fit"></button>
+          <div class="sih-mode-toggle">
+            <button type="button" data-sih-mode="solid" class="active">Solid</button>
+            <button type="button" data-sih-mode="gradient">Gradient</button>
+          </div>
+          <button type="button" class="sih-toolbar-btn" id="sihToolbarMenuBtn" aria-label="More options"></button>
+        </div>
+      </div>
+    </section>
+
     <!-- Admin screen -->
     <section class="screen hidden" id="screen-admin">
       <div class="card-header-row">
@@ -878,29 +946,30 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.45.15"></script>
-<script src="shared/haidhRules.js?v=3.45.15"></script>
-<script src="js/icons.js?v=3.45.15"></script>
-<script src="js/customDate.js?v=3.45.15"></script>
-<script src="js/api.js?v=3.45.15"></script>
-<script src="js/uiSwitch.js?v=3.45.15"></script>
-<script src="js/position.js?v=3.45.15"></script>
-<script src="js/auth.js?v=3.45.15"></script>
-<script src="js/home.js?v=3.45.15"></script>
-<script src="js/tajweed.js?v=3.45.15"></script>
-<script src="js/commentPrivacy.js?v=3.45.15"></script>
-<script src="js/session-timer.js?v=3.45.15"></script>
-<script src="js/journal.js?v=3.45.15"></script>
-<script src="js/dhorPage.js?v=3.45.15"></script>
-<script src="js/sabaqPage.js?v=3.45.15"></script>
-<script src="js/sabaqDhorPage.js?v=3.45.15"></script>
-<script src="js/reflectionCard.js?v=3.45.15"></script>
-<script src="js/logDetailScreen.js?v=3.45.15"></script>
-<script src="js/haidhDetailScreen.js?v=3.45.15"></script>
-<script src="js/kaabaTracker.js?v=3.45.15"></script>
-<script src="js/juzTrackerScreen.js?v=3.45.15"></script>
-<script src="js/settingsScreen.js?v=3.45.15"></script>
-<script src="js/adminPage.js?v=3.45.15"></script>
-<script src="js/app.js?v=3.45.15"></script>
+<script src="shared/data.js?v=3.46.0"></script>
+<script src="shared/haidhRules.js?v=3.46.0"></script>
+<script src="js/icons.js?v=3.46.0"></script>
+<script src="js/customDate.js?v=3.46.0"></script>
+<script src="js/api.js?v=3.46.0"></script>
+<script src="js/uiSwitch.js?v=3.46.0"></script>
+<script src="js/position.js?v=3.46.0"></script>
+<script src="js/auth.js?v=3.46.0"></script>
+<script src="js/home.js?v=3.46.0"></script>
+<script src="js/tajweed.js?v=3.46.0"></script>
+<script src="js/commentPrivacy.js?v=3.46.0"></script>
+<script src="js/session-timer.js?v=3.46.0"></script>
+<script src="js/journal.js?v=3.46.0"></script>
+<script src="js/dhorPage.js?v=3.46.0"></script>
+<script src="js/sabaqPage.js?v=3.46.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.46.0"></script>
+<script src="js/reflectionCard.js?v=3.46.0"></script>
+<script src="js/logDetailScreen.js?v=3.46.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.46.0"></script>
+<script src="js/kaabaTracker.js?v=3.46.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.46.0"></script>
+<script src="js/sihScreen.js?v=3.46.0"></script>
+<script src="js/settingsScreen.js?v=3.46.0"></script>
+<script src="js/adminPage.js?v=3.46.0"></script>
+<script src="js/app.js?v=3.46.0"></script>
 </body>
 </html>
