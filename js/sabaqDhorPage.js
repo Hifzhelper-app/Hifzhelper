@@ -77,8 +77,11 @@ function renderSabaqDhorRows(){
   // preserve then, which correctly means it starts blank on a fresh
   // screen load, same as the section checkboxes always start
   // unchecked).
+  // V3.45.14: preserves BOTH From and To now, not one point -- the
+  // manual field became a genuine range.
   const existingManualCb = document.getElementById('sabaqDhorManual_cb');
-  const preservedManualValue = existingManualCb ? readSabaqDhorManualField() : null;
+  const preservedManualFrom = existingManualCb ? readSabaqDhorManualField('from') : null;
+  const preservedManualTo = existingManualCb ? readSabaqDhorManualField('to') : null;
   const preservedManualChecked = existingManualCb ? existingManualCb.checked : false;
 
   // V3.21.2: sabaqDhor_sections is now ITSELF the grid (css/detail-pages.css),
@@ -98,32 +101,43 @@ function renderSabaqDhorRows(){
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
   `).join('');
 
-  // V3.45.11: "Set Sabaq Dhor"'s own heading is REMOVED entirely,
-  // confirmed in chat -- one shared border now wraps all 3 rows as a
-  // single visual group (css/detail-pages.css), making clear on its
-  // own they're all the same "Confirm Sabaq Dhor" action, without
-  // needing a 2nd heading to say so. This also resolves the previously
-  // inconsistent row-to-row spacing as a side effect -- that heading's
-  // own inherited margin-top was the specific cause of the larger gap
-  // before this row; with the label gone, every row transition now has
-  // nothing but the grid's own row-gap between it, matching "Quarter
-  // 2"-to-"Quarter 1"'s own spacing exactly. "Set Sabaq Dhor" itself
-  // still emits the same 3 grid children every section row does
-  // (picker field / empty placeholder, since it never has a
-  // Move-to-Dhor action / checkbox-box) -- always rendered,
-  // independent of whether there are any section rows to revise at
-  // all.
+  // V3.45.14: "Set Sabaq Dhor" is now a genuine From/To range, confirmed
+  // in chat -- "exactly like the Sabaq card," which already has this
+  // exact shape (2 separate labeled picker fields). Emits 2 grid
+  // "rows" instead of 1 -- From gets an empty placeholder in the
+  // checkbox column (same pattern "Quarter 2"/"Quarter 1" already use
+  // when they have no Move-to-Dhor button), the ONE shared checkbox
+  // sits beside To specifically, confirmed directly: "the user chooses
+  // from and to and then confirms." compositeCheckedSabaqDhorRows
+  // (below) reads both sides into a genuine 2-point range now, not the
+  // zero-length single-point range it used to fold in.
   const manualHtml = `
+    <label class="sabaq-dhor-sections-header">From</label>
     <div class="verse-ref-field">
-      <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_chevron">&#x25B2;&#x25BC;</button>
-      <span class="verse-ref-surah-label" id="sabaqDhorManual_surah_label">—</span>
+      <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_from_chevron">&#x25B2;&#x25BC;</button>
+      <span class="verse-ref-surah-label" id="sabaqDhorManual_from_surah_label">—</span>
       <span class="verse-ref-ayah-cell">
         <span class="verse-ref-sep">:</span>
-        <input type="number" inputmode="numeric" class="verse-ref-ayah" id="sabaqDhorManual_ayah">
+        <input type="number" inputmode="numeric" class="verse-ref-ayah" id="sabaqDhorManual_from_ayah">
       </span>
       <span class="verse-ref-ayah-stepper">
-        <button type="button" class="verse-ref-ayah-up" data-target="sabaqDhorManual_ayah">&#x25B2;</button>
-        <button type="button" class="verse-ref-ayah-down" data-target="sabaqDhorManual_ayah">&#x25BC;</button>
+        <button type="button" class="verse-ref-ayah-up" data-target="sabaqDhorManual_from_ayah">&#x25B2;</button>
+        <button type="button" class="verse-ref-ayah-down" data-target="sabaqDhorManual_from_ayah">&#x25BC;</button>
+      </span>
+    </div>
+    <span></span>
+    <span></span>
+    <label class="sabaq-dhor-sections-header">To</label>
+    <div class="verse-ref-field">
+      <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_to_chevron">&#x25B2;&#x25BC;</button>
+      <span class="verse-ref-surah-label" id="sabaqDhorManual_to_surah_label">—</span>
+      <span class="verse-ref-ayah-cell">
+        <span class="verse-ref-sep">:</span>
+        <input type="number" inputmode="numeric" class="verse-ref-ayah" id="sabaqDhorManual_to_ayah">
+      </span>
+      <span class="verse-ref-ayah-stepper">
+        <button type="button" class="verse-ref-ayah-up" data-target="sabaqDhorManual_to_ayah">&#x25B2;</button>
+        <button type="button" class="verse-ref-ayah-down" data-target="sabaqDhorManual_to_ayah">&#x25BC;</button>
       </span>
     </div>
     <span></span>
@@ -139,12 +153,18 @@ function renderSabaqDhorRows(){
   // Reapply preserved manual-field state to the freshly-created nodes,
   // then re-wire this row's own listeners fresh -- the previous nodes
   // (and whatever was attached to them) are gone now.
-  renderSabaqDhorManualField(preservedManualValue);
+  renderSabaqDhorManualField('from', preservedManualFrom);
+  renderSabaqDhorManualField('to', preservedManualTo);
   document.getElementById('sabaqDhorManual_cb').checked = preservedManualChecked;
-  document.getElementById('sabaqDhorManual_chevron').addEventListener('click', openSurahPickerForSabaqDhorManual);
-  document.getElementById('sabaqDhorManual_ayah').addEventListener('change', () => {
-    const v = readSabaqDhorManualField();
-    if(v) renderSabaqDhorManualField(v);
+  document.getElementById('sabaqDhorManual_from_chevron').addEventListener('click', () => openSurahPickerForSabaqDhorManual('from'));
+  document.getElementById('sabaqDhorManual_to_chevron').addEventListener('click', () => openSurahPickerForSabaqDhorManual('to'));
+  document.getElementById('sabaqDhorManual_from_ayah').addEventListener('change', () => {
+    const v = readSabaqDhorManualField('from');
+    if(v) renderSabaqDhorManualField('from', v);
+  });
+  document.getElementById('sabaqDhorManual_to_ayah').addEventListener('change', () => {
+    const v = readSabaqDhorManualField('to');
+    if(v) renderSabaqDhorManualField('to', v);
   });
 }
 
@@ -312,9 +332,17 @@ function compositeCheckedSabaqDhorRows(){
   const checkedIds = Array.from(document.querySelectorAll('.sabaqDhor-row-cb:checked')).map(cb => cb.dataset.id);
   const checked = sabaqDhorRows.filter(r => checkedIds.includes(r.id));
   const manualChecked = document.getElementById('sabaqDhorManual_cb').checked;
-  const manualValue = manualChecked ? readSabaqDhorManualField() : null;
-  if(manualValue){
-    checked.push({ fromSurah: manualValue.surah, fromAyah: manualValue.ayah, toSurah: manualValue.surah, toAyah: manualValue.ayah });
+  // V3.45.14: reads BOTH From and To now, folding in a genuine 2-point
+  // range instead of duplicating a single value into a zero-length one
+  // -- the manual field became a real From/To pair, "exactly like the
+  // Sabaq card." If either side is missing (e.g. checked before both
+  // are actually filled in), the manual entry is left out entirely
+  // rather than folding in a partial/nonsensical range -- same
+  // graceful-fallback principle the single-point version already had.
+  const manualFrom = manualChecked ? readSabaqDhorManualField('from') : null;
+  const manualTo = manualChecked ? readSabaqDhorManualField('to') : null;
+  if(manualFrom && manualTo){
+    checked.push({ fromSurah: manualFrom.surah, fromAyah: manualFrom.ayah, toSurah: manualTo.surah, toAyah: manualTo.ayah });
   }
   if(checked.length === 0) return null;
   let from = checked[0], to = checked[0];
@@ -451,9 +479,15 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
 // is saved (js/position.js's advancePositionAfterSabaq) -- confirmed
 // as the reset mechanism, no separate reset action needed here.
 
-function renderSabaqDhorManualField(value){
-  const surahLabel = document.getElementById('sabaqDhorManual_surah_label');
-  const ayahInput = document.getElementById('sabaqDhorManual_ayah');
+// V3.45.14: generalized to take a `side` parameter ('from'/'to'),
+// confirmed in chat -- the manual field became a genuine From/To range
+// instead of a single point, "exactly like the Sabaq card." Same
+// pattern Sabaq's own renderVerseRefField(side) (js/sabaqPage.js)
+// already established for this exact shape of problem -- not invented
+// fresh.
+function renderSabaqDhorManualField(side, value){
+  const surahLabel = document.getElementById(`sabaqDhorManual_${side}_surah_label`);
+  const ayahInput = document.getElementById(`sabaqDhorManual_${side}_ayah`);
   if(!value){
     surahLabel.textContent = '—';
     ayahInput.value = '';
@@ -467,9 +501,9 @@ function renderSabaqDhorManualField(value){
   ayahInput.value = String(value.ayah);
 }
 
-function readSabaqDhorManualField(){
-  const surahLabel = document.getElementById('sabaqDhorManual_surah_label');
-  const ayahInput = document.getElementById('sabaqDhorManual_ayah');
+function readSabaqDhorManualField(side){
+  const surahLabel = document.getElementById(`sabaqDhorManual_${side}_surah_label`);
+  const ayahInput = document.getElementById(`sabaqDhorManual_${side}_ayah`);
   const match = surahLabel.textContent.match(/^(\d+)/);
   if(!match || !ayahInput.value) return null;
   const surah = parseInt(match[1], 10);
@@ -480,7 +514,7 @@ function readSabaqDhorManualField(){
   return { surah, ayah };
 }
 
-function openSurahPickerForSabaqDhorManual(){
+function openSurahPickerForSabaqDhorManual(side){
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay surah-picker-modal';
   overlay.innerHTML = `<div class="modal-card">
@@ -494,7 +528,7 @@ function openSurahPickerForSabaqDhorManual(){
   listEl.querySelectorAll('[data-surah]').forEach(btn => {
     btn.addEventListener('click', () => {
       const surah = parseInt(btn.dataset.surah, 10);
-      renderSabaqDhorManualField({ surah, ayah: 1 });
+      renderSabaqDhorManualField(side, { surah, ayah: 1 });
       overlay.remove();
     });
   });

@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.14 — Bigger checkboxes on medium/large, manual field becomes a real From/To range (2026-08-11)
+
+**Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Two independent changes to Sabaq Dhor. The checkbox itself is genuinely bigger now on medium and large screens — `transform: scale(1.8)` on the native input, deliberately not its own width/height, since that specific approach was already found unreliable across browsers earlier in this app's own history. The requested space reduction came along with it: the container itself narrows, and the outer group's own right-edge padding trims down too, together covering both readings of "the space to the right of the checkbox" an annotated screenshot confirmed were meant together, not separately. Mobile is untouched throughout.
+
+The bigger piece: "Set Sabaq Dhor" is no longer a single ayah — it's a real From/To range now, matching the exact shape Sabaq's own card already has. Rather than inventing a new pattern, the 3 functions driving this field were generalized to take the same `side` parameter Sabaq's own picker fields have used since early in this project. The one shared confirmation checkbox sits next to "To" specifically, with "From" getting the same empty placeholder the section rows already use when they have no Move-to-Dhor action of their own — so the grid's shared column structure holds without needing a special case. `compositeCheckedSabaqDhorRows` folds in a genuine 2-point range from this now, rather than the zero-length single-point range it used to build, falling back cleanly (not crashing) if only one side happens to be filled in when the box is checked.
+
+The state-preservation mechanism this screen already depends on — reading the manual field's live values before every rebuild and writing them back after, since this grid's content gets rebuilt from scratch several times during ordinary use — was extended to carry both sides through together rather than just one point. Verified directly against the real function bodies before shipping: 7 checks on the actual generated markup, plus 5 scenarios run against the real composite-range logic itself.
+
+---
+
 ## V3.45.13 — Sabaq Dhor large/mobile breakpoint refinement (2026-08-10)
 
 **Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

@@ -4,6 +4,49 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.14 (2026-08-11)
+
+Two changes: Sabaq Dhor's checkboxes made genuinely bigger on medium/large
+screens (plus the requested space reduction), and its manual field
+rebuilt as a real From/To range instead of a single ayah.
+
+- [x] **Checkbox size, medium/large only** — `transform: scale(1.8)` on
+  the native checkbox input itself, not width/height directly (that
+  approach doesn't reliably hold up across browsers, per this app's
+  own V3.45.5 history). `.checkbox-box`'s own container width shrinks
+  from 44px to 36px at the same breakpoint (height stays 44px,
+  matching the other 44px elements on the row), and the outer group's
+  right-edge padding trims down too — confirmed via an annotated
+  screenshot as covering both readings of "the space to the right of
+  the checkbox" together, not one or the other. Mobile completely
+  untouched.
+- [x] **Manual field rebuilt as a genuine From/To range** — "exactly
+  like the Sabaq card," which already has this exact shape. 3 core
+  functions generalized to take a `side` parameter (`'from'`/`'to'`),
+  the same established pattern Sabaq's own `renderVerseRefField(side)`
+  already uses, not invented fresh. The one shared confirmation
+  checkbox sits beside "To" specifically, confirmed directly ("the
+  user chooses from and to and then confirms") — "From"'s own row gets
+  an empty placeholder in that column instead, same pattern "Quarter
+  2"/"Quarter 1" already use when they have no Move-to-Dhor button.
+  `.sabaq-dhor-sections-header` (removed entirely in V3.45.11) is
+  re-added for a different purpose this time — From/To's own labels,
+  not "Set Sabaq Dhor"'s old single heading — now including a
+  `margin: 0` reset from the start, since V3.45.12's own margin
+  discovery came after this class was first removed.
+  `compositeCheckedSabaqDhorRows` reads both sides into a genuine
+  2-point range now, falling back gracefully (excluding the manual
+  entry entirely, not crashing) if only one side is filled in.
+- [x] State preservation across re-renders (the mechanism V3.45.10
+  first built) extended to cover both From and To together, not just
+  one point — verified directly against the real function body: 7
+  structural checks on the actual generated markup plus 5 scenarios
+  run against the real `compositeCheckedSabaqDhorRows` body (genuine
+  range preserved, graceful fallback when one side is empty, a range
+  correctly spanning a different surah, an unchecked manual value
+  correctly ignored, nothing checked at all) — all pass.
+- [x] All syntax/CSS balance checked before delivery.
+
 ## Done — V3.45.13 (2026-08-10)
 
 Sabaq Dhor's large- and mobile-screen layouts refined after live checks;
