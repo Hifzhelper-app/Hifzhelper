@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.47.0 — Surahs in my Heart: vector-region engine, letter specks fixed at the root (2026-08-11)
+
+**Files touched:** `index.html`, `js/sihScreen.js` (rewritten), `css/sih.css`, `assets/quran-heart-regions.json` (new), `assets/quran-heart-lines.svg` (new), `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+The white specks inside letter counters (the loops of ة، م، ص and so on staying white when their surah was coloured) are gone — not patched, but removed at the root by replacing the pixel flood-fill engine with a vector one ("Option C", chosen in chat over two alternatives after inspecting the master archive and the reference implementation). The scene is now three layers in one SVG: the optional background photo at the bottom; 115 closed region shapes in the middle (one per surah, Ash-Shu'ara in two parts) that are what actually get coloured and tapped; and the original artwork on top, untouched, with its names now sitting *above* the colour so their counters show the region colour through. Two behaviour upgrades came confirmed with the rewrite: tapping a printed surah name now fills its region (names are big natural tap targets), and a small chip appears after each fill naming the surah in Arabic and English, then fades — helpful when zoomed out. Taps landing exactly on boundary lines stay ignored as before, via the new text-free lines asset, which is precisely why the names themselves remain tappable. Zoom is now genuinely vector-crisp at every level: the SVG re-renders at its true size after each gesture instead of scaling a fixed-resolution bitmap.
+
+The region shapes were not taken from the reference site — its tracing measurably wanders around the original lines — but traced from this artwork's own verified segmentation, in its own coordinate frame, dilated to tuck under the linework so adjacent shapes meet beneath the lines. Audited at export resolution with a real SVG rasterizer under the criterion users actually experience: every region 100% covered by its shape, zero foreign colour visible anywhere the artwork's ink doesn't cover, with one documented sub-perceptual anti-aliased pixel at the image's left edge where the artwork itself is clipped by the viewBox. Surah identities were transferred spatially from the reference data as a clean 115-for-115 match and independently confirmed by three glyph anchors (the ص of Sad, the طه of Ta-Ha, and the hyphen of "Al-Anfal"), full surah-number coverage, and a name cross-check against the app's own surah list — the chip uses the app's `surahName(n)` as the single source of truth.
+
+Saved pictures are safe: the save format moves from tap coordinates to region keys, and any picture saved under V3.46.0 migrates silently on first load — the migration was tested against real old-format data, with every action landing on its independently-computed region. Export stays at 1191x1684 as confirmed. A Node harness ran the actual shipped engine against the actual shipped assets: 28/28 checks passed. No worker or migration changes; frontend-only deploy, no ordering constraints — note the two new files land in the existing `assets/` folder.
+
+---
+
 ## V3.46.0 — "Surahs in my Heart": the colouring activity (2026-08-11)
 
 **Files touched:** `index.html`, `js/sihScreen.js` (new), `css/sih.css` (new), `assets/quran-heart.svg` (new — **note: new `assets/` folder**), `js/icons.js`, `js/auth.js`, `js/app.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

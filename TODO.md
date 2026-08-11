@@ -4,6 +4,69 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.47.0 (2026-08-11): SIH vector-region engine ("Option C") — built to the spec below
+
+Replaces the pixel flood-fill engine to fix the white specks inside
+letter counters at the root, chosen over two alternatives (owner-region
+hole painting; adopting the reference site's traced geometry wholesale):
+
+**Architecture (3 layers).** Bottom: optional background photo. Middle:
+one closed vector shape per region (115: all 114 surahs, Ash-Shu'ara in
+2 parts) — white by default, these are what get coloured AND what catch
+taps. Top: the original artwork unchanged (lines + names, transparent
+elsewhere), pointer-events off. Names sit ABOVE the colour, so letter
+counters colour correctly by construction.
+
+**Region shapes: generated offline by Claude** from the verified
+segmentation of the ORIGINAL artwork's text-free lines layer, in the
+artwork's own coordinate frame, dilated to tuck under the linework
+(adjacent shapes overlap beneath lines — no seam gaps, no bleed past
+lines; verified by rendering fills under the real artwork). NOT the
+reference site's geometry — that tracing deviates mean ~1.6 / 95th ~5
+viewBox units from the original lines (measured), too far to sit under
+the original art. Surah identity ({n, ar, en}) per shape transferred
+spatially from the reference site's tagged data, cross-checked. Ships
+as assets/quran-heart-regions.json.
+
+**Confirmed decisions:**
+- Export: keep 1191x1684 (offered higher — declined).
+- Taps exactly on boundary lines: keep ignored (as today) — via the
+  text-free lines layer as a hit-test mask, so this does NOT re-ignore
+  the names.
+- Taps on printed surah names: fill their region (recommended option,
+  confirmed) — names become natural big tap targets.
+- Chip: brief transient popup after each fill naming the surah
+  ("الرحمن · Ar-Rahman"), fades — useful zoomed out where printed
+  labels are unreadable.
+- Save format moves from tap-coordinates to region ids; silent
+  one-time migration converts any V3.46.0-saved picture on first load.
+- Everything else carries over unchanged: colour picker, solid/vertical-
+  gradient modes (gradient = per-region SVG linearGradient), undo,
+  save-per-user semantics + wording, reset wording, background
+  add/remove (never persisted, around the heart only via the white
+  default fills), export with/without-background prompt only when a
+  background is loaded, desktop panel + mobile toolbar/sheets, zoom/pan
+  gestures (now vector-crisp at every zoom level).
+
+**As built (V3.47.0), verified end to end:** region shapes traced from
+the artwork's own text-free segmentation at 4x, audited at export
+resolution with a real SVG rasterizer under the composite-visibility
+criterion: 100% coverage of every region, 0 foreign-colour pixels
+visible in the exterior or inside any region (one sub-perceptual
+anti-aliased seam pixel at x=0 where the artwork itself is clipped by
+the viewBox — unavoidable in principle, documented). Surah identity
+transferred spatially from the reference site's tagged data as a clean
+115/115 bijection and independently verified by three glyph anchors
+(ص→Sad, طه→Ta-Ha, the "Al-Anfal" hyphen→Al-Anfal), full 1–114 n
+coverage, and name cross-check against shared/data.js (2 diffs, both
+transliteration variants — chip uses the app's surahName(n)). A Node
+harness executed the real shipped js/sihScreen.js against the real
+shipped assets: 28/28 checks, including label-tap fills, boundary-line
+taps ignored via the text-free mask, gradient defs, undo/save/restore,
+per-user key, the v1→v2 migration mapping every old-format tap to its
+independently-computed region, transform commit, and a self-contained
+export SVG.
+
 ## Done — V3.46.0 (2026-08-11): "Surahs in my Heart" (SIH) — built to the spec below, agreed 2026-08-11
 
 A relaxation/connection activity: the user colours in a heart artwork

@@ -1,6 +1,7 @@
 /* ============================================================
    Hifzhelper — "Surahs in my Heart" screen (V3.46.0)
 
+   V3.47.0: canvas replaced by the runtime-built #sihSvg vector scene.
    Layout, confirmed in chat:
    - Large screens: image takes up to 75% of the screen with the
      controls in a fully-expanded panel on the LEFT-hand side.
@@ -42,16 +43,37 @@
   height: calc(100dvh - var(--auth-band-height, 56px) - 190px);
   min-height: 320px;
 }
-#sihCanvas {
+#sihSvg {
   position: absolute;
   top: 0; left: 0;
   transform-origin: 0 0;
-  /* width/height attributes are the internal resolution; the CSS size
-     matches so 1 canvas px = 1 CSS px at scale 1, then the transform
-     does the rest. */
+  /* Base CSS size matches the old canvas box so the fit/zoom math is
+     unchanged; JS re-lays the SVG out at the committed zoom scale so
+     the vector art stays crisp at rest at every zoom level. */
   width: 1191px;
   height: 1684px;
+  display: block;
 }
+
+/* Transient surah chip (V3.47.0, confirmed in chat): appears over the
+   canvas after each fill, names the surah, fades out. */
+.sih-chip {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: var(--palette-evergreen, #344C3D);
+  color: #FFFFFF;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.sih-chip.show { opacity: 1; }
 
 /* ---------------- controls panel ---------------- */
 
