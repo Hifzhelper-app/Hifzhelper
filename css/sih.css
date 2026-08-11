@@ -1,0 +1,192 @@
+/* ============================================================
+   Hifzhelper — "Surahs in my Heart" screen (V3.46.0)
+
+   Layout, confirmed in chat:
+   - Large screens: image takes up to 75% of the screen with the
+     controls in a fully-expanded panel on the LEFT-hand side.
+   - Mobile: controls roll up — a slim always-visible toolbar
+     (colour swatch, solid/gradient toggle, undo, zoom-to-fit,
+     menu), with the colour picker and the remaining actions each
+     opening as a bottom sheet over the lower canvas. Tapping the
+     canvas (or the sheet's chevron) rolls them back down.
+   Breakpoint: 768px, matching the app-wide unification (V3.44).
+   ============================================================ */
+
+/* The screen keeps the standard container look; the layout inside is
+   its own thing (canvas viewport + controls), so no .screen-content
+   width cap — same standing-exception category as Juz Tracker. */
+#screen-sih .sih-header-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: #FFFFFF;
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+#screen-sih .sih-header-row h2 { margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.sih-layout {
+  position: relative;   /* the mobile sheets anchor to this */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sih-viewport {
+  position: relative;
+  overflow: hidden;
+  background: #FFFFFF;
+  border-radius: var(--radius-md, 8px);
+  touch-action: none;        /* all pan/zoom/tap handled in JS */
+  height: calc(100dvh - var(--auth-band-height, 56px) - 190px);
+  min-height: 320px;
+}
+#sihCanvas {
+  position: absolute;
+  top: 0; left: 0;
+  transform-origin: 0 0;
+  /* width/height attributes are the internal resolution; the CSS size
+     matches so 1 canvas px = 1 CSS px at scale 1, then the transform
+     does the rest. */
+  width: 1191px;
+  height: 1684px;
+}
+
+/* ---------------- controls panel ---------------- */
+
+.sih-panel { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+.sih-sec {
+  background: #FFFFFF;
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.sih-sheet-head {
+  display: none;             /* mobile-sheet furniture; hidden on desktop */
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+}
+.sih-sheet-close {
+  border: none; background: none; padding: 4px; cursor: pointer;
+  color: inherit; line-height: 0;
+}
+.sih-sheet-close svg { width: 22px; height: 22px; }
+
+.sih-mode-toggle { display: flex; gap: 0; border: 1px solid var(--color-table-border); border-radius: var(--radius-md, 8px); overflow: hidden; width: max-content; }
+.sih-mode-toggle button {
+  border: none; background: #FFFFFF; padding: 6px 14px; cursor: pointer;
+  font: inherit; font-size: 0.9rem;
+}
+.sih-mode-toggle button.active { background: var(--palette-sage, #829672); color: #FFFFFF; }
+
+.sih-swatch-row { display: flex; gap: var(--space-sm); align-items: center; }
+.sih-swatch {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--color-table-border);
+  cursor: pointer;
+  padding: 0;
+}
+.sih-swatch.active { border-color: var(--palette-evergreen, #344C3D); box-shadow: 0 0 0 2px rgba(52, 76, 61, 0.25); }
+
+#sihWheel {
+  width: 220px; height: 220px;
+  align-self: center;
+  touch-action: none;
+  cursor: crosshair;
+}
+#sihLightness {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  border-radius: 7px;
+  border: 1px solid var(--color-table-border);
+  outline: none;
+}
+#sihLightness::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid var(--palette-evergreen, #344C3D);
+  cursor: pointer;
+}
+#sihLightness::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid var(--palette-evergreen, #344C3D);
+  cursor: pointer;
+}
+
+.sih-sec-actions button, .sih-sec-view button { width: 100%; }
+.sih-sec-view { flex-direction: row; }
+.sih-sec-view button {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.sih-sec-view button svg { width: 18px; height: 18px; }
+
+/* ---------------- mobile toolbar + sheets (below 768px) ------------- */
+
+.sih-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: #FFFFFF;
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-sm);
+}
+.sih-toolbar .sih-toolbar-btn {
+  border: 1px solid var(--color-table-border);
+  background: #FFFFFF;
+  border-radius: var(--radius-md, 8px);
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; line-height: 0;
+}
+.sih-toolbar .sih-toolbar-btn svg { width: 20px; height: 20px; }
+.sih-toolbar .sih-toolbar-btn:disabled { opacity: 0.4; }
+.sih-toolbar .sih-mode-toggle { margin-left: auto; }
+.sih-toolbar-swatch { flex: none; }
+
+@media (max-width: 767px){
+  .sih-panel { display: contents; }   /* sections position themselves */
+  .sih-sec-view { display: none; }    /* undo/zoom-fit live in the toolbar */
+  .sih-sec-colour, .sih-sec-actions {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    border-radius: var(--radius-md, 8px) var(--radius-md, 8px) 0 0;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.25);
+    transform: translateY(105%);
+    transition: transform 0.25s ease;
+    max-height: 70dvh;
+    overflow-y: auto;
+    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+  }
+  .sih-sec-colour.open, .sih-sec-actions.open { transform: translateY(0); }
+  .sih-sheet-head { display: flex; }
+  /* the sheet has its own mode toggle context — the toolbar's stays */
+}
+
+@media (min-width: 768px){
+  .sih-toolbar { display: none; }
+  .sih-layout {
+    display: grid;
+    /* controls ~25% capped, image column takes the rest (up to 75%) */
+    grid-template-columns: minmax(230px, 25%) 1fr;
+    align-items: start;
+  }
+  .sih-viewport {
+    height: calc(100dvh - var(--auth-band-height, 56px) - 150px);
+    min-height: 420px;
+  }
+}

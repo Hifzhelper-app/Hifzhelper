@@ -27,6 +27,10 @@ const NAV_ITEMS = [
   // yet (confirmed in chat -- the whole app is personal-to-user today, the
   // Maktab/teacher phase hasn't started), so there's nothing to gate on.
   { id: 'juzTracker', label: 'Juz Tracker', icon: 'juzTracker' },
+  // V3.46.0: Surahs in my Heart — the colouring activity (js/sihScreen.js),
+  // confirmed in chat. Same unconditional visibility as every other item;
+  // deliberately NOT connected to any progress tracking.
+  { id: 'sih', label: 'Surahs in my Heart', icon: 'sih' },
   { id: 'settings', label: 'Settings', icon: 'settings' }
 ];
 // Admin-only destination — appended conditionally, not shown to students/

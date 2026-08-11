@@ -4,6 +4,91 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.46.0 (2026-08-11): "Surahs in my Heart" (SIH) — built to the spec below, agreed 2026-08-11
+
+A relaxation/connection activity: the user colours in a heart artwork
+divided into all 114 surah regions as they memorise them. Deliberately
+NOT connected to any progress marking anywhere in the app — purely a
+creative space.
+
+**Artwork.** User-supplied `Quran_Heart_-SVG4.svg` (anatomical heart,
+viewBox 595×842, all 114 surahs as labelled regions, Arabic + English).
+Inspected directly: no per-region ids — the 1,603 paths are the black
+outlines and outlined label text; regions are the white space between
+lines. Therefore the implementation is canvas-based flood fill, not
+per-path SVG fills. The artwork file itself needs no changes.
+
+**Colouring interaction.**
+- Tap a region → fill it. Two fill types: solid colour, and
+  colour-gradient fill (two-colour gradient within the region).
+  No freehand brush (explicitly decided against after sizing it —
+  the contained-brush masking work roughly doubles the build).
+- Multi-step undo.
+- Surah labels/outlines stay black on top of fills (natural
+  consequence of flood-fill bounded by the black line art).
+
+**Palette.** Full free colour picker: hue wheel + lightness slider
+(explicitly chosen over a fixed swatch set) — the "tones and shades"
+requirement, enabling genuinely rich images.
+
+**Background image.**
+- User can upload a background image; it sits only AROUND the heart —
+  heart regions stay opaque (white or coloured), never see-through.
+- Background can be changed/deleted separately at any time.
+- The uploaded image itself is NOT persisted — re-uploaded per session
+  if wanted. Only the colouring state is saved.
+
+**Persistence.**
+- Explicit Save button. Saved to LOCAL DEVICE only for now (no D1
+  table, no Worker routes, no server work in this phase).
+- App remembers the last saved picture and restores it on entry.
+- One picture per user.
+- Reset clears colours only (background handled separately, above).
+
+**Canvas resolution.** Fixed internal resolution (~2× viewBox ≈
+1190×1684) regardless of device, displayed scaled to fit the screen —
+so exports are always crisp and identical across devices. This
+decision replaced the "full vs screen resolution" question entirely.
+
+**Export.** Save as PNG; at export time the user chooses with or
+without the background image. Exports at the fixed internal
+resolution.
+
+**Layout & zoom.**
+- Large screens: the heart image takes up to 75% of the screen, with
+  the controls (palette, fill type, undo, background, save/reset/
+  export) in a fully-expanded panel on the left-hand side.
+- Mobile: controls roll up. A slim always-visible toolbar (current
+  colour swatch, solid/gradient toggle, undo, Zoom to fit, menu
+  button); tapping the swatch slides the hue wheel + lightness
+  slider up as a bottom sheet over the lower canvas, and the menu
+  button does the same for background/save/reset/export. Tap the
+  canvas or a close chevron to roll back down — the heart stays
+  maximally visible while colouring.
+- Zoom: pinch/scroll zoom + pan on the canvas (several of the 114
+  regions are small — zooming makes tapping them precise). The
+  "Zoom to fit" button resets the view so the whole heart fits on
+  screen again (confirmed reading).
+
+**Navigation.** New NAV_ITEMS entry + auto-mirrored Home tile, label
+"Surahs in my Heart", icon = a simple heart glyph in the existing
+icon style (`js/icons.js`).
+
+**As built (V3.46.0), verified against the real artwork + real code, not assumed:**
+the artwork rendered at the fixed internal resolution segments into
+exactly 115 fillable regions (114 surahs + one small unlabelled vessel
+shape) with zero leaks between neighbours at every alpha threshold
+tried; the exterior is detected as the CORNER-connected region, because
+two real surah regions on the artwork's left edge are clipped by the
+viewBox and genuinely touch the border. A Node harness executed the
+real js/sihScreen.js against the real pixels: 21/21 checks passed
+(region count, containment/no-leak on fill, dilation staying within
+bbox+2 and never touching another region, exterior/text-hole/line taps
+ignored, gradient orientation, undo as a pure function of remaining
+actions, save/restore round-trip byte-identical, per-user storage key,
+reset correctness). Visual composition also inspected directly: no
+white halos at fill edges, labels stay crisp on top.
+
 ## Done — V3.45.15 (2026-08-11)
 
 3 items: fixed a real V3.45.10 regression, added a genuinely-abortable

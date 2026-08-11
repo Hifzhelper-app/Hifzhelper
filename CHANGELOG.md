@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.46.0 — "Surahs in my Heart": the colouring activity (2026-08-11)
+
+**Files touched:** `index.html`, `js/sihScreen.js` (new), `css/sih.css` (new), `assets/quran-heart.svg` (new — **note: new `assets/` folder**), `js/icons.js`, `js/auth.js`, `js/app.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+A whole new screen: the user's uploaded anatomical-heart artwork, divided into all 114 labelled surah regions, coloured in by tapping — a relaxation/connection activity as surahs are memorised, deliberately connected to no progress tracking anywhere in the app. Solid fills and two-colour vertical gradients, chosen from a full free colour picker (hue/saturation wheel + lightness slider), with multi-step undo. Pinch/scroll zoom and pan with a Zoom-to-fit reset, since several regions are small. A background image can be added that sits only around the heart (the regions themselves stay opaque), changed or removed separately, and is never persisted. Explicit Save keeps one picture per user on the local device only (no backend involvement at all), restored on the next visit; Reset clears the colours while the last saved picture survives until the next Save — the confirmation says so. Save as PNG exports at the full fixed internal resolution, asking with-or-without background only when a background is actually loaded.
+
+On large screens the heart takes up to 75% of the width with the controls fully expanded in a left-hand panel; on mobile the controls roll up — a slim always-visible toolbar (colour swatch, solid/gradient toggle, undo, zoom-to-fit, menu), with the colour picker and the picture actions each sliding up as a bottom sheet, dismissed by tapping the canvas or the sheet's chevron. New nav entry + Home tile ("Surahs in my Heart", a simple heart glyph in the existing icon style), with undo and zoom-to-fit icons added to the shared set alongside it.
+
+Under the hood, since the artwork's 1,603 paths carry no per-region ids: the SVG is rasterized once at a fixed 1191x1684 internal resolution (the same on every device, so exports are always crisp), every open pixel is labelled into connected regions at load, and a tap paints its whole region into a fill layer, dilated a couple of pixels under the line art so anti-aliased edges never show a white halo. The exterior is the corner-connected region rather than anything touching the border — two real surah regions on the artwork's left edge are clipped by the viewBox and genuinely touch it. All of this was verified directly against the real artwork and the real shipped code (a Node harness ran `js/sihScreen.js` itself against the true rasterized pixels: 21/21 checks — no leaks between surahs, taps on line art / the exterior / text-glyph holes correctly ignored, undo and save/restore byte-identical round-trips), plus a visually inspected composed render. The only change to the artwork file itself is added `width`/`height` attributes on the SVG root, which Safari requires to size an SVG drawn onto a canvas.
+
+---
+
 ## V3.45.15 — Genuinely-abortable duplicate confirmation, a real regression fixed, checkbox refined (2026-08-11)
 
 **Files touched:** `worker/src/logHelpers.js`, `worker/src/sabaqLog.js`, `worker/src/dhorLog.js`, `worker/src/sabaqDhorLog.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
