@@ -4,6 +4,61 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.45.15 (2026-08-11)
+
+3 items: fixed a real V3.45.10 regression, added a genuinely-abortable
+duplicate-save confirmation across all 3 log cards, and refined Sabaq
+Dhor's own checkbox sizing further.
+
+- [x] **Manual field now correctly clears after a Sabaq Dhor save** —
+  the save handler already re-rendered the whole screen after success
+  (an earlier, separate fix), but V3.45.10's state-preservation logic
+  couldn't tell that re-render apart from an in-progress rollup-toggle
+  one, so it was preserving the just-saved values right back onto the
+  "fresh" screen. Fixed by explicitly clearing the manual field's own
+  DOM state immediately before the re-render runs, rather than
+  threading a distinguishing parameter through multiple functions —
+  verified directly against the real file that this clear sits after
+  the save call and before the re-render, exactly where it needs to.
+- [x] **Duplicate-save confirmation, all 3 log cards, genuinely
+  abortable this time** — the real architectural piece: `insertLog`
+  (`worker/src/logHelpers.js`) previously always inserted regardless
+  of duplicate status. It now takes a `force` parameter — when a
+  duplicate is found and `force` isn't set, it returns
+  `{ isDuplicate: true }` WITHOUT inserting anything at all, so a
+  student can genuinely cancel before anything is written. Verified
+  directly against the real function with a simulated database across
+  5 scenarios (first entry inserts normally, an identical repeat is
+  correctly blocked with nothing actually written, the same content
+  forced through afterward inserts and is correctly flagged,
+  genuinely different content isn't blocked, the same content from a
+  different student isn't blocked either) — all pass. Each of the 3
+  worker handlers (`sabaqLog.js`/`sabaqDhorLog.js`/`dhorLog.js`) passes
+  `body.force` through and now guards its own plan-linking/attendance-
+  marking steps on `result.id`, since neither should run against an
+  entry that wasn't actually inserted yet. Frontend: each of the 3
+  save handlers shows the exact specified native message
+  ("This entry has already been saved. Select OK to continue with
+  saving or CANCEL to abort") when a save comes back duplicate-
+  flagged-without-an-id, OK re-sends the same payload with
+  `force: true`, Cancel leaves the form untouched with nothing sent.
+  Dhor's own save handler needed particular care here — it has a
+  pool-update step after the save that must not run at all until a
+  genuine save has actually happened, not just on the first,
+  possibly-duplicate attempt.
+- [x] **Checkbox refined further** — scale reduced from 1.8 to 1.5
+  ("a little smaller"), plus a new left margin on `.checkbox-box`
+  separating it from the range/picker box beside it — the grid's own
+  3rd column grown from 36px to 40px to correctly accommodate the
+  checkbox-box's width plus this new margin together, avoiding an
+  overflow that would have resulted from adding a margin to an element
+  already exactly matching its own column's width. Same medium/large-
+  only scope as V3.45.14; this is a different edge (left) than that
+  version's own right-edge space reduction, not a reversal of it.
+- [x] All syntax checked (frontend via Node, worker files via Node's
+  own module-syntax checking) and CSS balance verified before
+  delivery.
+
 ## Done — V3.45.14 (2026-08-11)
 
 Two changes: Sabaq Dhor's checkboxes made genuinely bigger on medium/large

@@ -334,7 +334,25 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     if(sabaqEditingId){
       await apiSabaq.update(sabaqEditingId, payload);
     } else {
-      await apiSabaq.save(payload);
+      // V3.45.15: duplicate-save confirmation, confirmed in chat --
+      // insertLog (worker/src/logHelpers.js) now returns
+      // { isDuplicate: true } WITHOUT actually inserting when it finds
+      // an identical entry already logged for this student/date and
+      // the payload doesn't already carry force:true. That's exactly
+      // the signal checked for here: no result.id means nothing was
+      // saved yet, genuinely still abortable. Native confirm(), same
+      // established pattern already used elsewhere in this app (Juz
+      // Tracker/Settings) rather than a custom modal -- OK re-sends
+      // the exact same payload with force:true added, which
+      // insertLog then honors by inserting regardless (still correctly
+      // flagged is_duplicate on the row either way); Cancel leaves the
+      // form exactly as it was, nothing sent, nothing saved.
+      const result = await apiSabaq.save(payload);
+      if(result && result.isDuplicate && !result.id){
+        const proceed = confirm('This entry has already been saved. Select OK to continue with saving or CANCEL to abort');
+        if(!proceed) return;
+        await apiSabaq.save(Object.assign({}, payload, { force: true }));
+      }
     }
     document.getElementById('sabaqSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqSaveStatus').classList.remove('show'), 1800);

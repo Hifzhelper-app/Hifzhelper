@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.45.15 — Genuinely-abortable duplicate confirmation, a real regression fixed, checkbox refined (2026-08-11)
+
+**Files touched:** `worker/src/logHelpers.js`, `worker/src/sabaqLog.js`, `worker/src/dhorLog.js`, `worker/src/sabaqDhorLog.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+Sabaq Dhor's manual field — the checkbox and its From/To ayahs — now correctly clears after a successful save. It was a real regression from V3.45.10: that version's state-preservation logic, built specifically to protect a student's in-progress manual entry across an incidental re-render like a rollup-toggle tap, had no way to tell that case apart from a save just having genuinely completed — so it was faithfully restoring the just-saved values right back onto what should have been a fresh screen. Fixed by explicitly clearing those 3 elements immediately before the post-save re-render runs, so the preservation logic finds nothing left to preserve.
+
+The bigger piece: a duplicate-save confirmation across all 3 log cards that can genuinely be cancelled, not just a warning shown after the fact. The previous shape of duplicate detection always inserted the row regardless, only flagging it afterward — which meant there was never actually anything to abort, since the entry already existed by the time any response reached the browser. `insertLog` now takes a `force` parameter: when it finds a duplicate and isn't told to force through, it returns without touching the database at all. Each of the 3 save handlers checks for exactly that response, shows the specified native confirmation, and either re-sends the same payload with `force: true` or leaves the form untouched if the student cancels. Dhor's own handler needed particular care, since it has a pool-update step that follows the save and must not run until a save has actually happened.
+
+A smaller, more mechanical piece: each of the 3 worker handlers now guards its plan-linking and attendance-marking steps on the insert having actually produced a row — both would otherwise fire against an entry that was never written, since the previous code assumed `insertLog` always returned one.
+
+Verified directly rather than assumed correct: the `insertLog` change against a simulated database covering 5 scenarios (a first entry, a genuinely-blocked duplicate with nothing written, that same content forced through afterward, distinct content passing through unblocked, and the same content from a different student — since the duplicate scope is per-student). And Sabaq Dhor's checkbox gets one further pass on top of V3.45.14's own work — a touch smaller, with breathing room added on its left this time rather than its right.
+
+---
+
 ## V3.45.14 — Bigger checkboxes on medium/large, manual field becomes a real From/To range (2026-08-11)
 
 **Files touched:** `css/detail-pages.css`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.

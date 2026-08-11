@@ -447,7 +447,19 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     ...readCommentBlock('sabaqDhorCommentBlock')
   };
   try{
-    await apiSabaqDhor.save(payload);
+    // V3.45.15: duplicate-save confirmation, confirmed in chat -- same
+    // mechanism as Sabaq's own version (js/sabaqPage.js), see that
+    // file's own comment for the full reasoning. Checked here before
+    // any of the success-only steps below (save-status, manual-field
+    // clearing) run -- those should only happen once a genuine save
+    // has actually occurred, not on the first, duplicate-detected
+    // attempt that didn't insert anything yet.
+    const saveResult = await apiSabaqDhor.save(payload);
+    if(saveResult && saveResult.isDuplicate && !saveResult.id){
+      const proceed = confirm('This entry has already been saved. Select OK to continue with saving or CANCEL to abort');
+      if(!proceed) return;
+      await apiSabaqDhor.save(Object.assign({}, payload, { force: true }));
+    }
     document.getElementById('sabaqDhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqDhorSaveStatus').classList.remove('show'), 1800);
     // Bug fix (2026-08-04, found by the user): the checkboxes never got
@@ -462,6 +474,23 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     // consequence, not a separate manual reset that could drift out of
     // sync with what a fresh open actually does. Also handles updating
     // History, so the separate renderRecentEntries call below is gone.
+    // V3.45.15: the manual field's own From/To/checkbox are now explicitly
+    // cleared HERE, before renderSabaqDhorScreen() runs -- confirmed as a
+    // real regression the state-preservation logic added in V3.45.10
+    // introduced. That logic reads whatever's currently in these 3
+    // elements BEFORE clearing/rebuilding the grid, specifically so a
+    // student's in-progress manual entry survives an incidental re-render
+    // (a rollup-toggle tap, Move to Dhor). It has no way to tell that
+    // re-render apart from this one, where the entry was just actually
+    // saved and should genuinely reset -- so it was preserving the
+    // just-saved values right back into the newly "blank" screen. Setting
+    // these to blank/unchecked immediately before the re-render means the
+    // preservation logic reads already-blank state and correctly
+    // reapplies that, rather than needing to distinguish the 2 cases with
+    // a new parameter threaded through multiple functions.
+    renderSabaqDhorManualField('from', null);
+    renderSabaqDhorManualField('to', null);
+    document.getElementById('sabaqDhorManual_cb').checked = false;
     await renderSabaqDhorScreen();
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;

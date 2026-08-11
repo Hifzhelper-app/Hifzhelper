@@ -21,8 +21,22 @@ async function isDuplicate(env, table, studentId, date, fields, values) {
 // is a new row, not an update to an existing one (a real behavior change
 // from V1.x, where entries were capped and saving meant upsert-by-date).
 // Returns { id, isDuplicate }.
-async function insertLog(env, table, studentId, date, enteredBy, fields, values) {
+// V3.45.15: new `force` parameter, confirmed in chat -- previously this
+// always inserted regardless of duplicate status, just setting the flag
+// afterward, which meant a caller could never actually offer "confirm
+// before saving, cancel to abort" -- by the time any response reached the
+// frontend, the row already existed. Now, when a duplicate is found and
+// `force` isn't set, this returns `{ isDuplicate: true }` WITHOUT
+// inserting at all -- id is deliberately absent (not null) so callers can
+// tell "nothing was inserted" apart from "inserted, and it happened to be
+// flagged as a duplicate" (the old, still-supported behavior when force
+// is explicitly true). `force` only ever skips the frontend's own
+// confirmation step; is_duplicate is still correctly recorded on the row
+// exactly as before either way, since that's a fact about the content,
+// not about whether the user was asked about it.
+async function insertLog(env, table, studentId, date, enteredBy, fields, values, force = false) {
   const dup = await isDuplicate(env, table, studentId, date, fields, values);
+  if(dup && !force) return { isDuplicate: true };
   const now = new Date().toISOString();
   const columns = ['student_id', 'date', 'entered_by', ...fields, 'is_duplicate', 'created_at'];
   const placeholders = columns.map(() => '?').join(',');
