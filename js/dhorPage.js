@@ -1287,7 +1287,19 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   if(dhorActivePlanId) payload.plan_id = dhorActivePlanId;
 
   try{
-    await apiDhor.save(payload);
+    // V3.45.15: duplicate-save confirmation, confirmed in chat -- same
+    // mechanism as Sabaq's/Sabaq Dhor's own versions, see
+    // js/sabaqPage.js's own comment for the full reasoning. Checked
+    // carefully here before the pool-update step below, which must not
+    // run at all until a genuine save has actually happened -- if the
+    // student cancels, nothing was saved and the pool must stay
+    // untouched too.
+    const saveResult = await apiDhor.save(payload);
+    if(saveResult && saveResult.isDuplicate && !saveResult.id){
+      const proceed = confirm('This entry has already been saved. Select OK to continue with saving or CANCEL to abort');
+      if(!proceed) return;
+      await apiDhor.save(Object.assign({}, payload, { force: true }));
+    }
     // Pool update, moved here from Plan Dhor's own Save (2026-08-03,
     // confirmed in chat): "logged entries go into history and add to
     // the dhor pool... any save from the dhor card should add to the

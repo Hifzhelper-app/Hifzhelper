@@ -463,16 +463,34 @@
    between the 44px box and the group's outer edge"). Height stays 44px
    throughout -- unchanged, for vertical alignment with the other 44px
    elements on this same row. Mobile (<768px) is completely untouched,
-   confirmed as in scope. */
+   confirmed as in scope.
+   V3.45.15: 2 refinements on top of the above, same scope (medium/large
+   only) -- scale reduced from 1.8 to 1.5 ("a little smaller," no
+   specific value given), and a new left margin added on .checkbox-box
+   itself, separating it from the range/picker box beside it. This is a
+   different edge than V3.45.14's own right-edge reduction above -- not
+   a reversal of it, since that fix targeted the space AFTER the
+   checkbox (toward the group's outer edge), while this one is
+   specifically about the space BEFORE it. Stacks with the grid's own
+   existing column-gap rather than replacing it, adding a bit more
+   separation specifically on this one edge. */
 @media (min-width: 768px) {
   .checkbox-box input[type="checkbox"] {
-    transform: scale(1.8);
+    transform: scale(1.5);
   }
   .checkbox-box {
     width: 36px;
+    margin-left: var(--space-xs);
   }
+  /* 3rd column grown from 36px to 40px here, confirmed necessary --
+     .checkbox-box's own 36px width plus its new 4px left margin
+     (var(--space-xs)) together need 40px of room; leaving the column
+     at exactly 36px (matching width alone, the way it did before this
+     margin existed) would have left no space for the margin to
+     actually create, risking the box overflowing its own cell instead
+     of the intended gap appearing. */
   .sabaq-dhor-sections-list {
-    grid-template-columns: 1fr auto 36px;
+    grid-template-columns: 1fr auto 40px;
     padding-right: var(--space-xs);
   }
 }
