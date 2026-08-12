@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.49.0 — Juz Tracker: Free play mode (2026-08-12)
+
+**Files touched:** `index.html`, `js/kaabaTracker.js`, `js/juzTrackerScreen.js`, `css/juzTracker.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
+
+A fidget-toy mode for the Kaaba. A "Free play" pill sits in the tracker's header row; the screen always opens in normal tracker mode, and free play is opt-in each visit — nothing about it persists. Selecting it swaps in a blank, unnumbered Kaaba: no juz numbers, nothing pre-marked, and every tile is now tappable — the 30 juz tiles plus the two upper wall rows on both sides — each toggling dark and light on its own. The gold kiswah band becomes its own toy, separately on each side: one tap turns the strip black, a second brings up the gold, a third clears it. The door works the same way as one unit — tap anywhere on it to darken its tiles, again to reveal the gold door, again to clear — whether the tap lands on the tiles or the door graphic itself. While playing, the Save button, saved-status, and the count/progress/Reset bar step aside, since there is nothing to save or count; switching back re-renders the real tracker exactly as it was, because the play state is deliberately kept in throwaway DOM classes and never touches the tracker's own state or the Dhor pool wiring.
+
+Implementation-wise this is a `mode="freeplay"` attribute on the `<kaaba-juz-tracker>` component riding its existing rebuild path, with tracker mode regression-checked as byte-for-byte unchanged. Verified by driving the real custom element in a jsdom harness — real shadow DOM, real click events — through 36 checks covering the markup of both modes, independent tile toggles, both bands' independent 3-state cycles, the door cycling as one unit from either entry point, zero storage writes, and the tracker surviving a full free-play round-trip untouched, plus a rendered visual inspection of all three states. Frontend-only deploy, no ordering constraints.
+
+---
+
 ## V3.48.0 — Surahs in my Heart: Eraser (2026-08-11)
 
 **Files touched:** `index.html`, `js/sihScreen.js`, `css/sih.css`, `js/icons.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
