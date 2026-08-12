@@ -43,3 +43,22 @@
 }
 .juz-tracker-header-row h2 { margin: 0; }
 .juz-tracker-header-row .screen-close-btn { margin-left: auto; }
+
+/* V3.49.0 Free play toggle (confirmed in chat: lives inside the header
+   row, between the heading and the Save group). Pill button; active
+   state uses the same sage treatment SIH's mode toggle uses. */
+.juz-freeplay-toggle {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-table-border);
+  background: #FFFFFF;
+  color: inherit;
+  cursor: pointer;
+}
+.juz-freeplay-toggle.active {
+  background: var(--palette-sage, #829672);
+  border-color: var(--palette-sage, #829672);
+  color: #FFFFFF;
+}

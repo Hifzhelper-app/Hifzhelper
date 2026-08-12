@@ -4,6 +4,68 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.49.0 (2026-08-12): Juz Tracker "Free play" mode — built to the spec below
+
+A fidget-toy mode for the Kaaba tracker. Grounded in direct inspection
+of js/kaabaTracker.js: 48 tiles total (16 roof + 16 per side wall); 30
+carry juz numbers (roof + the two lower wall rows); the two upper wall
+rows (8/side, where the gold kiswah band polygons sit), and the 2 door
+tiles (gold door drawn on top in .door-grp) are currently inert
+structure, always dark. The component's existing `labels` option
+already removes the "Juz N" numbers.
+
+**Confirmed decisions:**
+- Toggle lives INSIDE the tracker header row on the Juz Tracker
+  screen. Screen ALWAYS opens in normal tracker mode; free play is
+  opt-in per visit and never persists ("always defaults to juz
+  tracker").
+- Selecting free play shows a blank, unnumbered Kaaba: all tiles
+  light, band hidden, gold door hidden, nothing pre-marked from real
+  progress ("untiled image").
+- Every tile tappable: all 30 former juz tiles + the upper two rows on
+  both sides, each toggling dark/light individually.
+- Band strip separately active per side (left/right independent),
+  3-state cycle: blank → strip black → black + yellow/gold band → back
+  to blank.
+- Door: same pattern as the band ("like the band", confirmed) — its
+  two tiles act as one door unit, 3-state cycle: blank → tiles dark →
+  dark + gold door graphic appears → back to blank.
+- No saving of any kind: leaving the screen discards free-play state;
+  the real tracker state (and its backend pool wiring) is never
+  touched while playing.
+
+**Assumptions Claude is making (flagging, not asking further):**
+- While free play is active, the header's Save button and saved-status
+  text hide (nothing to save), and the component's own completed-count
+  display hides too; all restored on switching back.
+- Taps landing on the band strip polygons drive the band cycle; taps
+  on the rest of those upper-row tiles toggle that tile individually.
+- Settings' embedded tracker is unaffected — free play exists only on
+  the Juz Tracker screen.
+- The band's "black" state colours the strip region itself (the
+  polygons), matching the kiswah-cloth look, not the whole row.
+
+**As built (V3.49.0), verified end to end:** free play lives in the
+component itself (js/kaabaTracker.js) as a `mode="freeplay"` attribute
+riding the existing attributeChangedCallback→_build() rebuild path —
+tracker mode's markup and behaviour are byte-for-byte unchanged
+(regression-checked). Free-play state is DOM classes + two tiny
+in-memory counters only, discarded on every rebuild, so re-entering
+free play always starts blank and the real tracker state (this._set)
+is never touched while playing. The screen's toggle (juzTrackerScreen)
+unconditionally resets to tracker mode on every entry and hides the
+save-wrap and count/progress/Reset bar while playing. Verified with a
+jsdom harness driving the REAL custom element — real shadow DOM, real
+click events — 36/36 checks: tracker markup/behaviour unchanged,
+free-play markup (46 individual tiles + 2 door tiles + door graphic as
+one data-fpdoor unit + 2 per-side band groups, no juz data, no labels,
+nothing pre-marked), tile toggles independent, band 3-state cycles per
+side independent and never toggling underlying tiles, door cycling as
+one unit from taps on either tile or the graphic, zero localStorage
+writes, tracker state identical after a full free-play round-trip, and
+blank-on-re-entry. Visual QA: all three states rendered and inspected
+(blank / black-band+dark-door mid state / gold band+gold door).
+
 ## Done — V3.48.0 (2026-08-11): SIH Eraser — built to the spec below
 
 Removes the colour from one specific surah region, distinct from the

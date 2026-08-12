@@ -154,4 +154,26 @@ async function renderJuzTrackerScreen(){
       alert("Couldn't save: " + e.message);
     }
   };
+
+  // V3.49.0 Free play (confirmed in chat). The screen ALWAYS opens in
+  // tracker mode -- free play is opt-in per visit and never persists,
+  // so entry unconditionally resets the toggle and its hidden UI.
+  // While playing, the save-wrap and the count/progress/Reset bar hide
+  // (nothing to save or count); the component itself renders the blank
+  // fidget Kaaba and keeps the real tracker state untouched throughout,
+  // so switching back re-renders exactly what was there.
+  const fpBtn = document.getElementById('juzFreeplayToggle');
+  const saveWrap = document.querySelector('#screen-juzTracker .card-header-save-wrap');
+  const barEl = document.querySelector('#screen-juzTracker .juz-tracker-bar');
+  function setFreeplay(on){
+    if(on) el.setAttribute('mode', 'freeplay');
+    else el.removeAttribute('mode');            // component re-renders tracker from its untouched state
+    fpBtn.classList.toggle('active', on);
+    fpBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    saveWrap.classList.toggle('hidden', on);
+    barEl.classList.toggle('hidden', on);
+    if(!on) sync();
+  }
+  setFreeplay(false);                            // "always defaults to juz tracker"
+  fpBtn.onclick = () => setFreeplay(el.getAttribute('mode') !== 'freeplay');
 }
