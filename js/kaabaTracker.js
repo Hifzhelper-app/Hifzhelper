@@ -7,6 +7,12 @@
  *   persist="key"      save/restore from localStorage under `key`
  *   controls="none"    hide the built-in progress bar + buttons (default "full")
  *   labels="off"       hide the "Juz n" captions
+ *   mode="freeplay"    V3.49.0 fidget-toy mode (confirmed in chat): blank
+ *                      unnumbered Kaaba, every tile tappable dark/light,
+ *                      band strips (per side) and the door as separate
+ *                      3-state cycles (blank → black/dark → gold → blank).
+ *                      Nothing saved; the real tracker state is untouched
+ *                      and re-renders exactly as it was on switching back.
  * Properties / methods
  *   el.value -> [1,2,...]        el.value = [...]
  *   el.toggle(n) / el.setJuz(n, true|false) / el.reset() / el.markNext()
@@ -106,38 +112,67 @@
 .band.left{fill:#eb9c14}
 .band.right{fill:#f8b93a}
 .outline{fill:none;stroke:#0c0a14;stroke-width:1.6;opacity:.5;pointer-events:none}
-.door{fill:#e9990f}.door-hi{fill:#ffc94d}`;
+.door{fill:#e9990f}.door-hi{fill:#ffc94d}
+/* V3.49.0 free play (confirmed in chat): every tile tappable (they all
+   carry .act, so the existing cursor/hover rules apply); the band strip
+   per side and the door are separate 3-state units — blank → black →
+   gold visible → blank. Hidden elements (opacity 0) still receive
+   taps, which is exactly what drives states 0 → 1. */
+.fp .fp-band{cursor:pointer}
+.fp .fp-band .band{opacity:0;transition:opacity .4s ease,fill .4s ease}
+.fp .fp-band.s1 .band{opacity:1;fill:#141220}
+.fp .fp-band.s2 .band{opacity:1}
+.fp .door-grp{cursor:pointer;opacity:0;transition:opacity .4s ease}
+.fp .door-grp.s2{opacity:1}`;
 
   /* ---- markup --------------------------------------------------------- */
   function buildSVG(completed, opts) {
     opts = opts || {};
     const done = new Set((completed || []).map(Number));
     const labels = opts.labels !== false;
+    const freeplay = !!opts.freeplay; // V3.49.0: fidget-toy mode (confirmed in chat)
     const vb = [(-N * W - PAD).toFixed(1), (-N * S - PAD).toFixed(1),
       (2 * N * W + 2 * PAD).toFixed(1), (2 * N * H + N * S + 2 * PAD).toFixed(1)].join(' ');
 
-    let tileSvg = '', bandSvg = '';
-    tiles.forEach((t) => {
-      const isDone = !t.juz || done.has(t.juz); // roof + door read as structure: always dark
-      const cls = ['t', t.face, isDone ? 'done' : '', t.juz ? 'act' : ''].filter(Boolean).join(' ');
-      let g = '<g class="' + cls + '"' + (t.juz ? ' data-juz="' + t.juz + '"' : '') + '>';
+    let tileSvg = '', bandSvg = '', bandL = '', bandR = '';
+    tiles.forEach((t, idx) => {
+      // Free play: blank slate — nothing pre-marked, no structural darks,
+      // every tile individually tappable (door tiles cycle as one door
+      // unit instead, via data-fpdoor). Tracker mode: unchanged.
+      const isDone = freeplay ? false : (!t.juz || done.has(t.juz));
+      const act = freeplay ? true : !!t.juz;
+      const cls = ['t', t.face, isDone ? 'done' : '', act ? 'act' : ''].filter(Boolean).join(' ');
+      let g = '<g class="' + cls + '"';
+      if (freeplay) g += t.door ? ' data-fpdoor=""' : ' data-fp="' + idx + '"';
+      else if (t.juz) g += ' data-juz="' + t.juz + '"';
+      g += '>';
       g += '<polygon class="f" points="' + ptsOf(t.poly) + '"/>';
       const bands = bandPieces(t);
       const underBand = bands.reduce((a, b) => a + b.h, 0) > 0.15; // the 8 kiswah tiles: gold, no calligraphy
       if (!t.door && !underBand) {
         const m = mat(t.face, t.c);
         g += '<text class="ar" transform="' + m + '" text-anchor="middle" dominant-baseline="central" y="' +
-          (t.juz && labels ? -8 : 0) + '" font-size="46">' + AR + '</text>';
-        if (t.juz && labels)
+          (t.juz && labels && !freeplay ? -8 : 0) + '" font-size="46">' + AR + '</text>';
+        if (t.juz && labels && !freeplay)
           g += '<text class="lb" transform="' + m + '" text-anchor="middle" dominant-baseline="central" y="28">Juz ' + t.juz + '</text>';
       }
       g += '</g>';
       tileSvg += g;
       bands.forEach((b) => {
-        bandSvg += '<polygon class="band ' + b.cls + ' ' + t.face + (isDone ? ' done' : '') + '"' +
-          (t.juz ? ' data-juz="' + t.juz + '"' : '') + ' points="' + ptsOf(b.poly) + '"/>';
+        if (freeplay) {
+          // collected per side into one tappable 3-state group below
+          const piece = '<polygon class="band ' + b.cls + ' ' + t.face + '" points="' + ptsOf(b.poly) + '"/>';
+          if (t.face === 'left') bandL += piece; else bandR += piece;
+        } else {
+          bandSvg += '<polygon class="band ' + b.cls + ' ' + t.face + (isDone ? ' done' : '') + '"' +
+            (t.juz ? ' data-juz="' + t.juz + '"' : '') + ' points="' + ptsOf(b.poly) + '"/>';
+        }
       });
     });
+    if (freeplay) {
+      bandSvg = '<g class="fp-band" data-fpband="left">' + bandL + '</g>' +
+        '<g class="fp-band" data-fpband="right">' + bandR + '</g>';
+    }
 
     const door = '<polygon class="door" points="' + ptsOf([[1.12, N, 0], [1.9, N, 0], [1.9, N, 1.92], [1.12, N, 1.92]]) + '"/>' +
       '<polygon class="door-hi" points="' + ptsOf([[1.56, N, 0], [1.8, N, 0], [1.8, N, 1.92], [1.56, N, 1.92]]) + '"/>';
@@ -145,9 +180,11 @@
     const outline = '<polygon class="outline" points="' +
       ptsOf([[0, 0, N], [N, 0, N], [N, 0, 0], [N, N, 0], [0, N, 0], [0, N, N]]) + '"/>';
 
-    return '<svg class="kt-svg" xmlns="http://www.w3.org/2000/svg" viewBox="' + vb + '" role="img" aria-label="Kaaba juz tracker">' +
+    return '<svg class="kt-svg' + (freeplay ? ' fp' : '') + '" xmlns="http://www.w3.org/2000/svg" viewBox="' + vb + '" role="img" aria-label="' +
+      (freeplay ? 'Kaaba free play' : 'Kaaba juz tracker') + '">' +
       (opts.embedStyle ? '<defs><style>@import url(' + FONT_URL + ');' + CSS + '</style></defs>' : '') +
-      '<g class="tiles">' + tileSvg + '</g><g class="bands">' + bandSvg + '</g><g class="door-grp">' + door + '</g>' +
+      '<g class="tiles">' + tileSvg + '</g><g class="bands">' + bandSvg + '</g>' +
+      '<g class="door-grp"' + (freeplay ? ' data-fpdoor=""' : '') + '>' + door + '</g>' +
       outline + '</svg>';
   }
 
@@ -161,12 +198,18 @@
   }
 
   class KaabaJuzTracker extends HTMLElement {
-    static get observedAttributes() { return ['value', 'persist', 'labels', 'controls']; }
+    static get observedAttributes() { return ['value', 'persist', 'labels', 'controls', 'mode']; }
     constructor() { super(); this._set = new Set(); this._built = false; }
 
     get total() { return TOTAL; }
     get value() { return [...this._set].sort((a, b) => a - b); }
     set value(v) { this._set = new Set((v || []).map(Number).filter((n) => n >= 1 && n <= TOTAL)); this._sync(); this._save(); }
+
+    // V3.49.0: 'freeplay' (fidget toy, confirmed in chat) or 'tracker'.
+    // Free-play state is in-memory DOM classes only — nothing is ever
+    // saved, and the real tracker state (this._set) is never touched
+    // while playing, so switching back re-renders it exactly as it was.
+    _mode() { return this.getAttribute('mode') === 'freeplay' ? 'freeplay' : 'tracker'; }
 
     connectedCallback() {
       ensureFont();
@@ -184,7 +227,13 @@
 
     _build() {
       const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
-      const controls = (this.getAttribute('controls') || 'full') !== 'none';
+      const freeplay = this._mode() === 'freeplay';
+      const controls = !freeplay && (this.getAttribute('controls') || 'full') !== 'none';
+      // Entering free play always starts blank ("untiled image",
+      // confirmed in chat) — 3-state cycles for the two band sides and
+      // the door, tracked here, discarded on every rebuild.
+      this._fpBand = { left: 0, right: 0 };
+      this._fpDoor = 0;
       root.innerHTML =
         '<style>:host{display:block}' + CSS + `
 .kt-wrap{display:flex;flex-direction:column;gap:18px;align-items:stretch}
@@ -199,7 +248,9 @@
 .kt-btn.primary:hover{background:#2b2740}
 .kt-btn:disabled{opacity:.4;cursor:default}
 </style><div class="kt-wrap">` +
-        buildSVG(this.value, { labels: this.getAttribute('labels') !== 'off' }) +
+        (freeplay
+          ? buildSVG([], { labels: false, freeplay: true })
+          : buildSVG(this.value, { labels: this.getAttribute('labels') !== 'off' })) +
         (controls ? '<div class="kt-bar"><div class="kt-count"><b class="kt-n">0</b> / ' + TOTAL + ' juz</div>' +
           '<div class="kt-track"><div class="kt-fill"></div></div>' +
           '<button class="kt-btn primary" data-act="next">Mark next juz</button>' +
@@ -208,6 +259,7 @@
         '</div>';
       this._svg = root.querySelector('svg');
       this._svg.addEventListener('click', (e) => {
+        if (this._mode() === 'freeplay') { this._fpClick(e); return; }
         const g = e.target.closest('g.act');
         if (g) this.toggle(Number(g.dataset.juz));
       });
@@ -218,7 +270,33 @@
         else this.downloadSVG();
       }));
       this._built = true;
-      this._sync();
+      if (!freeplay) this._sync();
+    }
+
+    // Free-play tap dispatch (V3.49.0). Bands are drawn above tiles and
+    // checked first; the door graphic and both door tiles share
+    // data-fpdoor so a tap anywhere on the door cycles it as one unit;
+    // everything else toggles its own tile dark/light.
+    _fpClick(e) {
+      const band = e.target.closest('[data-fpband]');
+      if (band) {
+        const side = band.getAttribute('data-fpband');
+        const s = (this._fpBand[side] + 1) % 3;   // blank → black → gold → blank
+        this._fpBand[side] = s;
+        band.classList.toggle('s1', s === 1);
+        band.classList.toggle('s2', s === 2);
+        return;
+      }
+      const doorHit = e.target.closest('[data-fpdoor]');
+      if (doorHit) {
+        const s = (this._fpDoor + 1) % 3;         // blank → tiles dark → dark + gold door → blank
+        this._fpDoor = s;
+        this._svg.querySelectorAll('g.t[data-fpdoor]').forEach((t) => t.classList.toggle('done', s >= 1));
+        this._svg.querySelector('.door-grp').classList.toggle('s2', s === 2);
+        return;
+      }
+      const g = e.target.closest('g.t[data-fp]');
+      if (g) g.classList.toggle('done');
     }
 
     _sync() {
