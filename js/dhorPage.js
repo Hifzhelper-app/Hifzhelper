@@ -749,11 +749,33 @@ function planDhorCanSplitDown(juzNum){
 // more than one juz). Only ever entered/exited by Plan Dhor's save
 // step below; nothing else in this file toggles it directly.
 let dhorRawRange = null; // { units, fromLabel, toLabel } or null
+
+// V3.50.0 (confirmed in chat): the confirm checkbox is ONE element
+// (#dhorConfirmBox) that follows the user across the three Dhor modes,
+// because the hard-block applies to every save path while the box's
+// normal home (the Juz/portion row inside dhorSegmentPicker) hides in
+// two of them. 'picker' = normal mode (third column of the Juz row);
+// 'raw' = plan-range mode (third column of dhorRawRangeRow); 'park' =
+// edit mode (its own right-aligned holder in the picker's flow
+// position). Moving the DOM node preserves its checked state; the
+// with-confirm class widens whichever picker-row currently hosts it.
+function placeDhorConfirmBox(where){
+  const box = document.getElementById('dhorConfirmBox');
+  const juzRow = document.getElementById('dhorJuzPositionRow');
+  const rawRow = document.getElementById('dhorRawRangeRow');
+  const park = document.getElementById('dhorConfirmParkRow');
+  juzRow.classList.toggle('picker-row-with-confirm', where === 'picker');
+  rawRow.classList.toggle('picker-row-with-confirm', where === 'raw');
+  park.classList.toggle('hidden', where !== 'park');
+  (where === 'picker' ? juzRow : where === 'raw' ? rawRow : park).appendChild(box);
+}
+
 function enterDhorRawRangeMode(range){
   dhorRawRange = range;
   document.getElementById('dhorSegmentPicker').classList.add('hidden');
   document.getElementById('dhorAmountRow').classList.add('hidden');
   document.getElementById('dhorRawRangeRow').classList.remove('hidden');
+  placeDhorConfirmBox('raw');   // V3.50.0: keep the confirm reachable here
   document.getElementById('dhorRawFromBtn').textContent = range.fromLabel;
   document.getElementById('dhorRawToBtn').textContent = range.toLabel;
   document.getElementById('dhor_mistakes').disabled = true;
@@ -768,6 +790,7 @@ function exitDhorRawRangeMode(){
   document.getElementById('dhorRawRangeRow').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
+  placeDhorConfirmBox('picker');   // V3.50.0: back to the Juz row
   document.getElementById('dhor_mistakes').disabled = false;
   document.getElementById('dhor_duration_min').disabled = false;
   document.getElementById('dhor_duration_sec').disabled = false;
@@ -1156,6 +1179,7 @@ function loadDhorEntryForEdit(entry){
   document.getElementById('dhorEditBottombar').classList.remove('hidden');
   document.getElementById('dhorSegmentPicker').classList.add('hidden');
   document.getElementById('dhorAmountRow').classList.add('hidden');
+  placeDhorConfirmBox('park');   // V3.50.0: picker hides, edit save still needs the confirm
   enterEditScreenMode('card-dhor');
 }
 function cancelDhorEdit(){
@@ -1164,6 +1188,7 @@ function cancelDhorEdit(){
   document.getElementById('dhorEditBottombar').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
+  placeDhorConfirmBox('picker');   // V3.50.0: back to the Juz row
   exitEditScreenMode('card-dhor');
 }
 function resetDhorFormAfterEdit(){

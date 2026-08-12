@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.50.0 — Confirm-selection checkboxes joined to the Sabaq Dhor pattern (2026-08-12)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/dhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos** — upload this same zip to the original and the personal repo.
+
+Sabaq's and Dhor's "Confirm selection" checkboxes now look and sit the way Sabaq Dhor's always have, using the same classes rather than lookalikes. On Sabaq, the standalone labelled checkbox above the fields is gone: "Sabaq from" and "Sabaq to" now live inside one bordered group styled identically to Sabaq Dhor's section group, with a bare checkbox in a `.checkbox-box` beside the To field — same position, same size, same ≥768px enlargement, and mobile keeping the native checkbox size automatically, all inherited from the one shared class (confirmed in chat). The From row keeps the established empty-placeholder column. On Dhor, the checkbox joins the Juz/portion row at its right end. The words "Confirm selection" are dropped on both cards (confirmed in chat); the text survives as each checkbox's aria-label. Behaviour is untouched everywhere: the same hard-block until checked, the same auto-clear after saving, the same ids read by the same save handlers.
+
+One traced subtlety drove the Dhor implementation: the confirm requirement applies to every save path, but the Juz row's whole container hides in plan-range mode (V3.24.0) and edit mode — so the checkbox is one element that relocates through the four existing mode-transition functions: onto the plan-range row's own right end in raw mode, into a small right-aligned holder in the picker's flow position while editing, and back to the Juz row on every exit — carrying its checked state with it, since it's the same DOM node moving. Verified with a jsdom harness loading the real `index.html` and executing the real functions extracted verbatim from the shipped `dhorPage.js`: 28/28 checks, covering placement in all three modes, both round-trips, the checked state surviving relocation, Sabaq's grid landing the checkbox on the To row, and both save handlers' unchanged contracts. Frontend-only deploy, no ordering constraints.
+
+---
+
 ## V3.49.0 — Juz Tracker: Free play mode (2026-08-12)
 
 **Files touched:** `index.html`, `js/kaabaTracker.js`, `js/juzTrackerScreen.js`, `css/juzTracker.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`.
