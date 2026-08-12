@@ -1,5 +1,7 @@
 # Hifzhelper — Data Schema
 
+Reset admin pin : npx wrangler d1 execute hifzhelper-personal-db --remote --command="UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL WHERE id = 'ABCDEFG';"
+
 One Cloudflare D1 database per maktab (max ~100 students each). These are the
 canonical table names and column names — the Worker and frontend must use
 these exact field names (see CONVENTIONS.md, principle 5). If a name needs
