@@ -4,6 +4,75 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.50.0 (2026-08-12): Confirm-selection checkboxes restyled to the Sabaq Dhor pattern — built to the spec below
+
+Both Sabaq's and Dhor's "Confirm selection" checkboxes restyled to
+match Sabaq Dhor's established group/checkbox pattern (V3.45.6-.15:
+one shared outer border, .checkbox-box 44x44 containers, scale-1.5
+enlargement at >=768px). Reuses the IDENTICAL classes/tokens, not
+approximations — per this project's own V3.45.6-.11 lesson.
+Confirmed decisions (2026-08-12): bare checkbox, "Confirm selection"
+text dropped on both cards (aria-label retained for accessibility);
+checkbox SIZE enlargement applies to medium/large screens only —
+mobile (<768px) keeps the native checkbox size, inherited automatically
+from .checkbox-box's existing media query (V3.45.14-.15), same as
+Sabaq Dhor today (confirmed 2026-08-12);
+change ships to BOTH repos (original + personal) as two separate
+builds — the repos diverged at V3.49.0 (original-only), so index.html
+differs and one shared zip cannot serve both.
+
+**Sabaq.** The standalone .cb-private-row confirm label goes away.
+"Sabaq from" + "Sabaq to" (labels and verse-ref fields) wrap in one
+visible bordered group styled identically to .sabaq-dhor-sections-list
+(same border/background/radius/padding tokens). The confirm checkbox
+(#sabaq_confirm, same id so sabaqPage.js logic is untouched) sits
+INSIDE the group in a .checkbox-box to the right of the "Sabaq to"
+field — same placement and size as Sabaq Dhor's manual To-row
+checkbox; the From row gets the established empty-placeholder
+treatment in that column. Grid: 1fr 44px (40px at >=768px, matching
+Sabaq Dhor's own breakpoint adjustments).
+
+**Dhor.** The standalone confirm label goes away. In the normal mode
+the checkbox (#dhor_confirm, id unchanged) joins the Juz + portion
+picker-row as a third grid column (1fr 1fr auto; the
+.picker-row-single collapse becomes 1fr auto), right-aligned, in a
+.checkbox-box. CRITICAL, traced in dhorPage.js: the confirm hard-block
+applies to every save path, but dhorSegmentPicker (which contains that
+row) is HIDDEN in two modes — plan-range mode (enterDhorRawRangeMode,
+V3.24.0) and edit mode (loadDhorEntryForEdit) — so the checkbox cannot
+live only there. It is ONE element relocated by the four existing
+mode-transition functions (enter/exitDhorRawRangeMode,
+loadDhorEntryForEdit/cancelDhorEdit): normal mode = in the Juz row as
+above; plan-range mode = right end of dhorRawRangeRow (assumption,
+flagged); edit mode = its own right-aligned slim row where the picker
+would sit (assumption, flagged). Behaviour unchanged everywhere: same
+hard-block until checked, same auto-clear after save.
+
+**Versioning note (flagged):** ships as V3.50.0 in BOTH repos; the
+personal repo's history will show a documented gap (V3.49.0 = Juz
+Tracker Free play, original repo only, never ported).
+
+**As built (V3.50.0), verified end to end:** one changed-file set,
+identical in both repos (verified by diff — after the user uploaded
+V3.49.0 to both, the repos differ only in the intentional personal-only
+files: appicons, js/api.js, worker/*), so ONE zip serves both uploads.
+The versioning-gap note in the earlier spec draft is obsolete — V3.49.0
+went to both repos after all. Sabaq's group reuses .checkbox-box and
+the group-border tokens verbatim (mobile keeps native checkbox size
+automatically via the existing >=768px media query, confirmed
+2026-08-12). Dhor's box is one element relocated by the four existing
+mode-transition functions; the with-confirm picker-row variant composes
+with V3.26.1's picker-row-single collapse. Verified via a jsdom harness
+loading the REAL index.html and executing the REAL functions extracted
+verbatim from the shipped dhorPage.js: 28/28 checks — initial placement,
+raw-mode round-trip (checked state surviving the move), edit-mode
+parking and restore, all four transition call sites present in the
+shipped file, Sabaq's 8-child grid landing the checkbox on the To row,
+aria-labels, and both save handlers still reading their unchanged ids.
+Both stale 2026-08-05 comments describing the removed label rows were
+cleaned out; .cb-private-row survives untouched for the Private
+checkboxes that still use it.
+
 ## Done — V3.49.0 (2026-08-12): Juz Tracker "Free play" mode — built to the spec below
 
 A fidget-toy mode for the Kaaba tracker. Grounded in direct inspection
