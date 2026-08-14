@@ -249,14 +249,30 @@ function loadSabaqEntryForEdit(entry, isLatest){
   sabaqSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', entry);
-  document.getElementById('sabaqEditTopbarDate').textContent = entry.date;
+  // V3.51.0: heading date is the card's own control, relocated into the
+  // edit heading -- entry's real date, fully editable (worker accepts
+  // 'date' on update now).
   document.getElementById('sabaqEditTopbar').classList.remove('hidden');
   document.getElementById('sabaqEditBottombar').classList.remove('hidden');
   const deleteBtn = document.getElementById('sabaqEditDeleteBtn');
   deleteBtn.style.display = isLatest ? 'none' : '';
   enterEditScreenMode('card-sabaq');
+  moveDateIntoEditSlot('sabaq');
+  initEditFlow('sabaq', collectSabaqEditState, () => document.getElementById('sabaqSaveBtn').click());
+}
+function collectSabaqEditState(){
+  return JSON.stringify({
+    date: document.getElementById('sabaq_date').value,
+    from: sabaqValue.from, to: sabaqValue.to,
+    lines: document.getElementById('sabaq_line_count').value,
+    pages: document.getElementById('sabaq_page_count').value,
+    tags: sabaqSelectedTags.join(','),
+    notes: readCommentBlock('sabaqCommentBlock')
+  });
 }
 function cancelSabaqEdit(){
+  teardownEditFlow('sabaq');
+  restoreDateFromEditSlot('sabaq', 'card-sabaq');
   sabaqEditingId = null;
   sabaqEditingIsFrontier = false;
   document.getElementById('sabaqEditTopbar').classList.add('hidden');
@@ -276,12 +292,10 @@ async function resetSabaqFormAfterEdit(){
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', null);
 }
-document.getElementById('sabaqEditCancelBtn2').addEventListener('click', async () => {
+// V3.51.0: the X in the edit heading is Cancel (abandon changes).
+document.getElementById('sabaqEditCloseBtn').addEventListener('click', async () => {
   cancelSabaqEdit();
   await resetSabaqFormAfterEdit();
-});
-document.getElementById('sabaqEditUpdateBtn').addEventListener('click', () => {
-  document.getElementById('sabaqSaveBtn').click();
 });
 document.getElementById('sabaqEditDeleteBtn').addEventListener('click', async () => {
   if(!sabaqEditingId || sabaqEditingIsFrontier) return;
@@ -317,7 +331,11 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
   // check it replaces, which only applied to new entries, this is about
   // confirming whatever the current selection actually is, which
   // matters just as much when editing.
-  if(!document.getElementById('sabaq_confirm').checked){
+  if(sabaqEditingId){
+    // V3.51.0: editing is gated by Confirm changes (the flow), not the
+    // checkbox -- which is hidden in edit mode.
+    if(!isEditConfirmed('sabaq')) return;
+  } else if(!document.getElementById('sabaq_confirm').checked){
     errEl.textContent = 'Please confirm the selection before saving.';
     return;
   }

@@ -37,14 +37,80 @@ document.getElementById('dhorTimerBtnIcon').innerHTML = iconHtml('timer');
 document.getElementById('logDetailClose').innerHTML = iconHtml('close');
 document.getElementById('logDetailClose').addEventListener('click', () => showScreen('home'));
 
-// V3.22.0: edit screen bottom-bar icons (Sabaq/Sabaq Dhor/Dhor), injected
-// once here like the rest of this file's icons. Update reuses the exact
-// same 'save' icon as the normal Save button, per the confirmed design.
+// V3.51.0 (confirmed in chat): the icon bottombar (Cancel/Delete/Update)
+// is gone -- Cancel is the X in each edit topbar now, and the button flow
+// below (Confirm changes -> Save, red Delete) replaced the rest.
 ['sabaq', 'sabaqDhor', 'dhor'].forEach(prefix => {
-  document.getElementById(`${prefix}EditCancelIcon`).innerHTML = iconHtml('close');
-  document.getElementById(`${prefix}EditDeleteIcon`).innerHTML = iconHtml('trash');
-  document.getElementById(`${prefix}EditUpdateIcon`).innerHTML = iconHtml('save');
+  document.getElementById(`${prefix}EditCloseBtn`).innerHTML = iconHtml('close');
 });
+
+// ---- V3.51.0 shared edit flow (confirmed in chat) ----------------------
+// Dirty tracking + the Confirm-changes -> Save gate, one instance per
+// card. collect() serializes every editable field; a 300ms poll compares
+// it to the snapshot taken at load -- polling deliberately, because
+// several fields change via JS writes (surah pickers, tajweed picker)
+// that fire no input/change events, and a poll catches every path by
+// construction instead of needing a notify call at each write site.
+// Any change AFTER confirming drops back to unconfirmed, so Save always
+// saves exactly what was confirmed.
+const EDIT_FLOW = {};
+function initEditFlow(prefix, collect, onSave){
+  teardownEditFlow(prefix);
+  const flow = { collect, snapshot: collect(), confirmed: false, dirty: false };
+  EDIT_FLOW[prefix] = flow;
+  const confirmBtn = document.getElementById(`${prefix}EditConfirmBtn`);
+  const saveBtn = document.getElementById(`${prefix}EditSaveBtn`);
+  const sync = () => {
+    confirmBtn.disabled = !flow.dirty;
+    confirmBtn.classList.toggle('ready', flow.dirty && !flow.confirmed);
+    confirmBtn.classList.toggle('confirmed', flow.confirmed);
+    confirmBtn.textContent = flow.confirmed ? 'Changes confirmed' : 'Confirm changes';
+    saveBtn.disabled = !flow.confirmed;
+  };
+  flow.timer = setInterval(() => {
+    const nowDirty = flow.collect() !== flow.snapshot;
+    if(nowDirty !== flow.dirty){
+      flow.dirty = nowDirty;
+      if(flow.confirmed) flow.confirmed = false; // re-dirty (or revert) resets
+      sync();
+    } else if(nowDirty && flow.confirmed && flow.collect() !== flow.confirmedState){
+      flow.confirmed = false; // changed again while staying dirty
+      sync();
+    }
+  }, 300);
+  confirmBtn.onclick = () => {
+    if(!flow.dirty) return;
+    flow.confirmed = true;
+    flow.confirmedState = flow.collect();
+    sync();
+  };
+  saveBtn.onclick = () => { if(flow.confirmed) onSave(); };
+  sync();
+}
+function teardownEditFlow(prefix){
+  const flow = EDIT_FLOW[prefix];
+  if(flow && flow.timer) clearInterval(flow.timer);
+  delete EDIT_FLOW[prefix];
+}
+function isEditConfirmed(prefix){
+  return !!(EDIT_FLOW[prefix] && EDIT_FLOW[prefix].confirmed);
+}
+
+// The card's own date control (its .custom-date-wrap) physically moves
+// into the edit heading's slot while editing -- entry's real date,
+// fully editable -- and returns to its .card-date-row on exit. Same
+// one-element relocation pattern as V3.50.0's confirm box.
+function moveDateIntoEditSlot(prefix){
+  const input = document.getElementById(`${prefix}_date`);
+  const wrap = input.closest('.custom-date-wrap') || input;
+  document.getElementById(`${prefix}EditDateSlot`).appendChild(wrap);
+}
+function restoreDateFromEditSlot(prefix, cardId){
+  const input = document.getElementById(`${prefix}_date`);
+  const wrap = input.closest('.custom-date-wrap') || input;
+  const row = document.getElementById(cardId).querySelector('.card-date-row');
+  if(row) row.insertBefore(wrap, row.firstChild);
+}
 
 // V3.22.0: the edit "screen" is a full takeover of THIS screen rather
 // than a new entry in js/app.js's router -- reuses each card's existing
@@ -52,37 +118,40 @@ document.getElementById('logDetailClose').addEventListener('click', () => showSc
 // row and every card except the one being edited; within that card, its
 // own loadXEntryForEdit (js/sabaqPage.js etc.) hides the normal header/
 // History and shows the grey top/bottom bars in their place.
+// V3.51.0 (confirmed in chat): editing is a POPUP now, not the V3.22.0
+// full-screen takeover -- the card element physically MOVES into a
+// body-level .modal-overlay (other screens stay visible beneath), and
+// moves back on exit. Same relocation pattern as V3.50.0's confirm box,
+// deliberately instead of CSS-elevating the card inside the
+// horizontally-scrolling rail (the position-fixed-inside-scroller
+// Safari trap from the V3.34.x era). A same-class placeholder keeps the
+// card's rail slot, so layout and scroll never shift. Tap-outside does
+// NOT close this popup (unlike History) -- unsaved changes deserve an
+// explicit X, not an accidental dismissal.
 function enterEditScreenMode(cardId){
-  document.getElementById('screen-logDetail').classList.add('log-detail-editing');
-  document.getElementById(cardId).classList.add('editing-active');
+  const card = document.getElementById(cardId);
+  if(document.getElementById('editPopupOverlay')) return;
+  const ph = document.createElement('div');
+  ph.id = 'editPopupPlaceholder';
+  ph.className = card.className;             // keeps the rail slot's size
+  card.parentNode.insertBefore(ph, card);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay edit-popup-modal';
+  overlay.id = 'editPopupOverlay';
+  const inner = document.createElement('div');
+  inner.className = 'modal-card edit-popup-card';
+  inner.appendChild(card);
+  overlay.appendChild(inner);
+  document.body.appendChild(overlay);
+  card.classList.add('editing-active');
 }
 function exitEditScreenMode(cardId){
-  const screen = document.getElementById('screen-logDetail');
-  // Bug fix (2026-08-05, found by the user): this used to unconditionally
-  // restore rail.scrollLeft every time it ran -- but it's called both for
-  // a genuine edit-exit AND, separately, as part of each of the 3 cards'
-  // own "fresh open" reset (renderSabaqScreen/renderSabaqDhorScreen/
-  // renderDhorScreen each call this at the top of their own function,
-  // every single time the detail screen opens, whether or not anything
-  // was actually being edited). All 3 running back to back meant
-  // whichever finished last always won, silently overriding wherever a
-  // column-header tap was actually trying to scroll to -- explaining
-  // why every column appeared to land on Sabaq specifically (the tap's
-  // own intended scroll position was being stomped on immediately
-  // after). Checking BEFORE removing the class means this only restores
-  // scroll when a real edit was actually in progress -- a normal fresh
-  // open never had a corrupted scroll position to begin with, so it's
-  // left alone entirely, and renderLogDetailScreen's own scroll-to-card
-  // logic is what actually wins for every entry point (dot taps, column
-  // header taps, timer minimise/maximise) now.
-  const wasEditing = screen.classList.contains('log-detail-editing');
-  screen.classList.remove('log-detail-editing');
-  document.getElementById(cardId).classList.remove('editing-active');
-  if(wasEditing){
-    const rail = document.getElementById('logDetailRail');
-    const card = document.getElementById(cardId);
-    rail.scrollLeft = card.offsetLeft;
-  }
+  const card = document.getElementById(cardId);
+  card.classList.remove('editing-active');
+  const ph = document.getElementById('editPopupPlaceholder');
+  if(ph){ ph.parentNode.insertBefore(card, ph); ph.remove(); }
+  const overlay = document.getElementById('editPopupOverlay');
+  if(overlay) overlay.remove();
   updateLogDetailDots();
 }
 
