@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.51.0 — Edit screens become popups; dates and portions editable; Confirm-changes flow (2026-08-14)
+
+**Files touched:** `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `index.html`, `css/detail-pages.css`, `js/logDetailScreen.js`, `js/dhorPage.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos. DEPLOY ORDER MATTERS: upload the three worker files first (or everything together) — the old worker silently drops the new `date` field, so deploying the frontend alone would make date edits look like they worked while saving nothing.**
+
+Editing an entry now opens as a popup over the app, History-style, instead of taking over the whole screen — the card itself moves into the overlay and back, so every live field keeps working, and a placeholder keeps its slot so nothing shifts beneath. Tapping outside deliberately does not close it; the X in the heading is Cancel. The heading reads "Editing <type> entry for" followed by the entry's real date in the card's own date control — fully editable at last, on all three cards (previously Dhor showed the wrong date entirely, and Sabaq/Sabaq Dhor silently discarded date changes on save; the worker now accepts date on update, via a separate whitelist so the create path's positional field mapping stays untouched).
+
+Portions are editable too. Dhor shows its real Quarter/Half/Juz pill, Juz picker and position switch, prepopulated from the stored segment — decomposed into the label triple and re-emitted in your current mushaf's system (they map one-to-one across systems, per the design discussion; saving re-stamps the entry's ref accordingly). Only plan-path raw ranges that don't reduce to a clean quarter/half/juz remain view-only, in a greyed box. Sabaq Dhor's range edits through its manual From/To pickers, prepopulated — ayah-level, so reference systems don't come into it. Sabaq's range was always in its form.
+
+The old icon bar (Cancel/Delete/Update) and the edit-mode confirm checkboxes are gone, replaced by the confirmed flow: **Confirm changes** stays grey until anything differs from the loaded entry, turns green when something does, and goes solid green with reversed text once tapped — at which point **Save** activates. Any further change drops back to unconfirmed, so Save always saves exactly what was confirmed. The red **Delete** below keeps its existing pop-up confirmation. History popups are now titled per card ("Sabaq History", "Dhor History", …). The Quarter/Half/Juz pill also regained its breathing room above the Juz row (a V3.50.2 side-effect).
+
+Verified with 37 new checks — the decompose maths including a cross-system round-trip, the popup enter/exit cycle, the full Confirm/Save state machine, and every markup, CSS and worker contract — plus all three earlier harnesses re-run green against the changed files: 119/119 in total.
+
+---
+
 ## V3.50.2 — Tadabbur header rework; Dhor and Sabaq UI adjustments (2026-08-14)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/dhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.**

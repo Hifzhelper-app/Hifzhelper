@@ -4,6 +4,124 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.51.0 (2026-08-14): Edit screens redesigned as popups, editable dates/portions, new confirm flow — built to the spec below
+
+**Main Dhor page (small fix):** the Quarter/Half/Juz pill touches the
+Juz/portion row below — V3.50.2's label removal took the spacing those
+labels provided. Fix: margin-top var(--space-sm) on
+#dhorJuzPositionRow (Claude's value).
+
+**Date editing, ALL THREE log cards (confirmed):** Dhor's loader never
+sets dhor_date (display bug); Sabaq and Sabaq Dhor display correctly
+but silently DROP a changed date on save — 'date' is in none of the
+three workers' update whitelists (updateLog filters unknown fields
+silently). Fix: 'date' added to FIELDS in sabaqLog.js /
+sabaqDhorLog.js / dhorLog.js; each edit form sends it. DEPLOY ORDER:
+worker first or together. Documented limitations (not solved): no
+duplicate re-check on update (insert-only by design); attendance is
+not re-evaluated when an entry moves dates.
+
+**Edit screens become popups (confirmed):** instead of the V3.22.0
+full-screen takeover, editing opens like the History popup — a
+body-level .modal-overlay with the other screens visible beneath.
+Mechanism: the card element itself is MOVED into the overlay's
+modal-card on edit enter and moved back on exit (the V3.50.0
+relocation pattern scaled up — reuses every live field/listener,
+and avoids CSS-elevating inside the horizontally-scrolling rail,
+the position-fixed-inside-scroller Safari trap from V3.34.x).
+Claude's flagged call: tap-outside does NOT close the edit popup
+(unlike History) — unsaved changes deserve an explicit X, not an
+accidental dismissal.
+
+**Shared edit redesign, ALL THREE cards (confirmed — Dhor's earlier
+spec extended to Sabaq and Sabaq Dhor):**
+- X-close icon top-right of the popup = Cancel (abandon changes).
+- Heading row: "Editing <type> entry for [date selector]" — the
+  selector shows the entry's real date, fully editable.
+- The confirm checkbox, Plan button (Dhor), and the icon bottombar
+  (CANCEL/DELETE/UPDATE) all removed while editing.
+- "Confirm changes" button: greyed/disabled until any field differs
+  from the loaded entry (dirty snapshot: date, range/portion,
+  mistakes, tags, duration, lines/pages, notes+private as each card
+  has them); active green when dirty; tapped = confirmed, solid green
+  reversed text. "Save" text button to its right: greyed until
+  confirmed, then active green; performs the update. Any change after
+  confirming drops back to unconfirmed (flagged rule).
+- Red Delete below, same pop-up confirmation as the existing delete.
+
+**Portions become editable (confirmed):**
+- Dhor: the Juz picker + portion switch + Quarter/Half/Juz pill appear
+  in the edit popup exactly as on the log detail (same elements — the
+  card moves whole, so edit mode simply stops hiding
+  dhorAmountRow/dhorSegmentPicker and prepopulates them from the
+  entry). Claude's flagged approach for the unrepresentable case:
+  entries whose segment reduces cleanly to amount+juz+position get the
+  live picker; plan-path raw-range entries keep a greyed READ-ONLY
+  portion box instead (the picker physically cannot express them —
+  the original reason for the old exclusion, now scoped to only the
+  entries it truly applies to). REVISED 2026-08-14 (user, confirmed
+  against shared/data.js): the edit picker runs in the student's
+  CURRENT mushaf ref, and ref conversion is trivial at Dhor
+  granularity — Dhor's vocabulary is the LABEL triple (juz, unit,
+  position), which maps 1:1 across systems by construction
+  (unitMarkerCount already normalizes: 'quarter' = exactly 1/4 juz in
+  either ref — 1 waterval marker, 2 uthmani). Mismatched-ref entries
+  just decompose in the stored ref and re-emit the same triple in the
+  current ref via the existing segmentsPerJuz/unitMarkerCount math —
+  no boundary data involved, no failure mode. Saving re-stamps ref to
+  current (worker FIELDS accepts 'ref' — checked). The ONLY read-only
+  fallback is ref-independent: plan-path raw ranges that don't reduce
+  to a clean triple at all. (Sabaq Dhor needs none of this — its
+  ayah-level From/To is physical-coordinate, ref-independent, per the
+  user's point.)
+- Sabaq Dhor: the manual From/To surah:ayah pickers (V3.45.14) show
+  in the edit popup prepopulated from the entry's range; the two
+  quarter-section rows and the manual row's own checkbox hide while
+  editing (Confirm changes replaces the checkbox role) — flagged
+  layout call. Worker already accepts the range fields.
+- Sabaq: range fields (sabaq_from/sabaq_to) already editable via its
+  normal form; gains the new confirm flow + popup + editable date.
+
+**History popups titled (confirmed):** the hardcoded <h2>History</h2>
+becomes the per-type label already computed for the button — "Sabaq
+History", "Sabaq Dhor History", "Dhor History", "Tadabbur History".
+
+Scope: worker-touching (3 files, one-line each). One zip both repos
+(worker files identical across repos apart from wrangler config —
+verify at build).
+**As built (V3.51.0), verified end to end — DEPLOY ORDER: worker files
+FIRST (or together): the old worker silently drops the new 'date'
+field, so frontend-alone would make date edits silently no-op.** Worker:
+each of the 3 log files gained `const UPDATE_FIELDS = [...FIELDS,
+'date']` (the V3.44.1 reflections.js pattern — NOT added to FIELDS,
+which insertLog consumes positionally) and updateLog switched to it;
+inserts untouched. Popup: enterEditScreenMode/exitEditScreenMode
+rewritten — the card MOVES into a body-level overlay (same-class
+placeholder keeps the rail slot, so layout/scroll never shift), no
+tap-outside close; the three takeover CSS rules deleted; the card's
+takeover-era viewport-height formula overridden to popup sizing.
+Shared flow (logDetailScreen.js): initEditFlow polls collect() vs a
+load-time snapshot every 300ms — polling deliberately, since surah/
+tajweed pickers write via JS with no events — driving Confirm changes
+(disabled → .ready → .confirmed with re-dirty reset) and gating Save;
+moveDateIntoEditSlot/restoreDateFromEditSlot relocate each card's own
+date control into the heading. Dhor: strict segmentRangeToTriple
+(returns null for raw ranges — spans-juz/odd/misaligned; the old
+segmentRangeToPicker deliberately never rejects and stays for display)
++ tripleToPositionInJuz; the edit picker prepopulates via decompose-in-
+stored-ref → re-emit-in-current-ref and saves re-stamp ref (verified by
+unit tests incl. a cross-ref uthmani→waterval round-trip);
+saveDhorEdit() extracted; 'park' relocation deleted everywhere (box
+CSS-hides in edit). Sabaq/Sabaq Dhor edit saves gated by the flow (new-
+entry checkboxes untouched); Sabaq's Save button drives the existing
+full handler (its frontier-position logic rides along); Sabaq Dhor's
+payload gained date + the range from the prepopulated manual From/To
+(both-sides validation), cancel clears them. History h2 → per-type
+label. Verified: 37 new checks (decompose math, popup round-trip, flow
+state machine, markup/wiring/CSS/worker contracts) + all three prior
+harnesses re-run green against the changed files (24 updated + 31 + 27)
+= 119/119.
+
 ## Done — V3.50.2 (2026-08-14): Tadabbur header rework + Dhor/Sabaq UI set — built to the spec below
 
 Reported via screenshot: Tadabbur's Save and X-close overlap on mobile.

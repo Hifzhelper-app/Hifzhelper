@@ -1,21 +1,21 @@
-// Current as of V3.50.2
-const CACHE_NAME = 'hifzhelper-v3.50.2'; // bumped for the V3.50.2 release
+// Current as of V3.51.0
+const CACHE_NAME = 'hifzhelper-v3.51.0'; // bumped for the V3.51.0 release
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=3.50.2', 'shared/data.js?v=3.50.2', 'shared/haidhRules.js?v=3.50.2', './appicons/logo.png',
-  './css/tokens.css?v=3.50.2', './css/base.css?v=3.50.2', './css/nav.css?v=3.50.2', './css/journal-table.css?v=3.50.2',
-  './css/components.css?v=3.50.2', './css/detail-pages.css?v=3.50.2', './css/settings.css?v=3.50.2', './css/admin.css?v=3.50.2',
-  './css/haidh.css?v=3.50.2', './css/juzTracker.css?v=3.50.2', './css/sih.css?v=3.50.2',
-  './js/icons.js?v=3.50.2', './js/customDate.js?v=3.50.2', './js/api.js?v=3.50.2', './js/uiSwitch.js?v=3.50.2', './js/position.js?v=3.50.2',
-  './js/auth.js?v=3.50.2', './js/home.js?v=3.50.2', './js/tajweed.js?v=3.50.2',
-  './js/commentPrivacy.js?v=3.50.2', './js/session-timer.js?v=3.50.2', './js/journal.js?v=3.50.2', './js/dhorPage.js?v=3.50.2',
-  './js/sabaqPage.js?v=3.50.2', './js/sabaqDhorPage.js?v=3.50.2', './js/reflectionCard.js?v=3.50.2',
-  './js/logDetailScreen.js?v=3.50.2', './js/haidhDetailScreen.js?v=3.50.2', './js/kaabaTracker.js?v=3.50.2',
-  './js/juzTrackerScreen.js?v=3.50.2', './js/sihScreen.js?v=3.50.2', './assets/quran-heart.svg?v=3.50.2', './assets/quran-heart-regions.json?v=3.50.2', './assets/quran-heart-lines.svg?v=3.50.2',
-  './js/settingsScreen.js?v=3.50.2', './js/adminPage.js?v=3.50.2', './js/app.js?v=3.50.2'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=3.51.0', 'shared/data.js?v=3.51.0', 'shared/haidhRules.js?v=3.51.0', './appicons/logo.png',
+  './css/tokens.css?v=3.51.0', './css/base.css?v=3.51.0', './css/nav.css?v=3.51.0', './css/journal-table.css?v=3.51.0',
+  './css/components.css?v=3.51.0', './css/detail-pages.css?v=3.51.0', './css/settings.css?v=3.51.0', './css/admin.css?v=3.51.0',
+  './css/haidh.css?v=3.51.0', './css/juzTracker.css?v=3.51.0', './css/sih.css?v=3.51.0',
+  './js/icons.js?v=3.51.0', './js/customDate.js?v=3.51.0', './js/api.js?v=3.51.0', './js/uiSwitch.js?v=3.51.0', './js/position.js?v=3.51.0',
+  './js/auth.js?v=3.51.0', './js/home.js?v=3.51.0', './js/tajweed.js?v=3.51.0',
+  './js/commentPrivacy.js?v=3.51.0', './js/session-timer.js?v=3.51.0', './js/journal.js?v=3.51.0', './js/dhorPage.js?v=3.51.0',
+  './js/sabaqPage.js?v=3.51.0', './js/sabaqDhorPage.js?v=3.51.0', './js/reflectionCard.js?v=3.51.0',
+  './js/logDetailScreen.js?v=3.51.0', './js/haidhDetailScreen.js?v=3.51.0', './js/kaabaTracker.js?v=3.51.0',
+  './js/juzTrackerScreen.js?v=3.51.0', './js/sihScreen.js?v=3.51.0', './assets/quran-heart.svg?v=3.51.0', './assets/quran-heart-regions.json?v=3.51.0', './assets/quran-heart-lines.svg?v=3.51.0',
+  './js/settingsScreen.js?v=3.51.0', './js/adminPage.js?v=3.51.0', './js/app.js?v=3.51.0'
 ];
 
 self.addEventListener('install', (event) => {

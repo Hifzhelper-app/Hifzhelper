@@ -134,6 +134,36 @@ function describeDhorSegment(segment_from, segment_to, ref){
 // whole juz' — which is all the schedule generator (or this page itself)
 // ever produces — so an unrecognized span falls back to 'quarter' with
 // the raw start position rather than guessing further.
+// V3.51.0 (confirmed in chat): STRICT decompose for editing -- returns
+// the ref-agnostic label triple { juz, unit, slot } (slot = which
+// quarter/half within the juz, 1-based) or null when the range doesn't
+// reduce cleanly (plan-path raw ranges: spans juz, odd length, or
+// misaligned start). segmentRangeToPicker above deliberately never
+// rejects (it labels whatever it's given for display); editing needs
+// the honest answer. The triple maps 1:1 across ref systems by
+// construction (unitMarkerCount normalizes 'quarter' = exactly 1/4 juz
+// in either ref), so cross-ref conversion is decompose in the entry's
+// stored ref, re-emit in the current ref -- pure arithmetic, no
+// boundary data (user's insight, verified against shared/data.js).
+function segmentRangeToTriple(segment_from, segment_to, ref){
+  if(segment_from == null || segment_to == null || segment_to < segment_from) return null;
+  const perJuz = segmentsPerJuz(ref);
+  const juz = Math.floor((segment_from - 1) / perJuz) + 1;
+  if(Math.floor((segment_to - 1) / perJuz) + 1 !== juz) return null;   // spans juz
+  const posInJuz = ((segment_from - 1) % perJuz) + 1;
+  const span = segment_to - segment_from + 1;
+  for(const unit of ['quarter', 'half', 'full']){
+    const m = unitMarkerCount(ref, unit);
+    if(span === m && (posInJuz - 1) % m === 0){
+      return { juz, unit, slot: (posInJuz - 1) / m + 1 };
+    }
+  }
+  return null;
+}
+function tripleToPositionInJuz(triple, ref){
+  return (triple.slot - 1) * unitMarkerCount(ref, triple.unit) + 1;
+}
+
 function segmentRangeToPicker(segment_from, segment_to, ref){
   const perJuz = segmentsPerJuz(ref);
   const juz = Math.floor((segment_from - 1) / perJuz) + 1;
@@ -760,14 +790,14 @@ let dhorRawRange = null; // { units, fromLabel, toLabel } or null
 // position). Moving the DOM node preserves its checked state; the
 // with-confirm class widens whichever picker-row currently hosts it.
 function placeDhorConfirmBox(where){
+  // V3.51.0: 'park' removed -- editing no longer uses the checkbox at
+  // all (Confirm changes replaced it; the box CSS-hides in edit mode).
   const box = document.getElementById('dhorConfirmBox');
   const juzRow = document.getElementById('dhorJuzPositionRow');
   const rawRow = document.getElementById('dhorRawRangeRow');
-  const park = document.getElementById('dhorConfirmParkRow');
   juzRow.classList.toggle('picker-row-with-confirm', where === 'picker');
   rawRow.classList.toggle('picker-row-with-confirm', where === 'raw');
-  park.classList.toggle('hidden', where !== 'park');
-  (where === 'picker' ? juzRow : where === 'raw' ? rawRow : park).appendChild(box);
+  (where === 'picker' ? juzRow : rawRow).appendChild(box);
 }
 
 function enterDhorRawRangeMode(range){
@@ -1160,36 +1190,77 @@ function planDhorHandleQueueRowTap(rowIndex){
   });
 });
 
+// V3.51.0 (confirmed in chat): full redesign. Date loads into the
+// card's own control (which relocates into the edit heading) and is
+// fully editable; the PORTION is editable too, via the same live
+// amount pill + Juz picker + position switch the card already has --
+// prepopulated by decomposing the stored segment into the ref-agnostic
+// label triple and re-emitting it in the CURRENT mushaf ref. Only
+// plan-path raw ranges that don't reduce to a clean triple fall back
+// to a read-only greyed box (the picker can't express them). Dirty
+// tracking + Confirm changes -> Save replace the old checkbox.
+let dhorEditPortionEditable = false;
 function loadDhorEntryForEdit(entry){
   exitDhorRawRangeMode();
   dhorEditingId = entry.id;
+  document.getElementById('dhor_date').value = entry.date;
   document.getElementById('dhor_mistakes').value = entry.mistakes || 0;
   dhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', entry);
-  // V3.21.1: duration/lap times are no longer excluded from editing.
-  // V3.24.0: mm:ss is lossless, so this is just a direct format now --
-  // no more "trust as exact until touched" bookkeeping needed.
   dhorLapTimes = entry.lap_times || null;
   renderDhorLapRollup();
   setDhorDurationFields(entry.duration_seconds);
-  document.getElementById('dhorEditTopbarDate').textContent =
-    `${entry.date} (${describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef)} — not editable here)`;
+  const triple = segmentRangeToTriple(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef);
+  dhorEditPortionEditable = !!triple;
+  const roBox = document.getElementById('dhorEditPortionRO');
+  if(triple){
+    document.getElementById('dhorSegmentPicker').classList.remove('hidden');
+    document.getElementById('dhorAmountRow').classList.remove('hidden');
+    document.getElementById('dhor_juz').value = String(triple.juz);
+    document.getElementById('dhor_position').value = String(tripleToPositionInJuz(triple, dhorCurrentRef));
+    setDhorUnit(triple.unit);
+    roBox.classList.add('hidden');
+  } else {
+    document.getElementById('dhorSegmentPicker').classList.add('hidden');
+    document.getElementById('dhorAmountRow').classList.add('hidden');
+    roBox.textContent = describeDhorSegment(entry.segment_from, entry.segment_to, entry.ref || dhorCurrentRef) + ' (view only)';
+    roBox.classList.remove('hidden');
+  }
   document.getElementById('dhorEditTopbar').classList.remove('hidden');
   document.getElementById('dhorEditBottombar').classList.remove('hidden');
-  document.getElementById('dhorSegmentPicker').classList.add('hidden');
-  document.getElementById('dhorAmountRow').classList.add('hidden');
-  placeDhorConfirmBox('park');   // V3.50.0: picker hides, edit save still needs the confirm
   enterEditScreenMode('card-dhor');
+  moveDateIntoEditSlot('dhor');
+  initEditFlow('dhor', collectDhorEditState, saveDhorEdit);
+}
+function collectDhorEditState(){
+  return JSON.stringify({
+    date: document.getElementById('dhor_date').value,
+    seg: dhorEditPortionEditable ? [
+      document.getElementById('dhor_juz').value,
+      document.getElementById('dhor_unit').value,
+      document.getElementById('dhor_position').value] : null,
+    mistakes: document.getElementById('dhor_mistakes').value,
+    tags: dhorSelectedTags.join(','),
+    dur: [document.getElementById('dhor_duration_min').value, document.getElementById('dhor_duration_sec').value],
+    notes: readCommentBlock('dhorCommentBlock')
+  });
 }
 function cancelDhorEdit(){
   dhorEditingId = null;
+  teardownEditFlow('dhor');
+  restoreDateFromEditSlot('dhor', 'card-dhor');
+  document.getElementById('dhor_date').value = todayISO();
   document.getElementById('dhorEditTopbar').classList.add('hidden');
   document.getElementById('dhorEditBottombar').classList.add('hidden');
+  document.getElementById('dhorEditPortionRO').classList.add('hidden');
   document.getElementById('dhorSegmentPicker').classList.remove('hidden');
   document.getElementById('dhorAmountRow').classList.remove('hidden');
-  placeDhorConfirmBox('picker');   // V3.50.0: back to the Juz row
+  placeDhorConfirmBox('picker');
   exitEditScreenMode('card-dhor');
+  // the picker was repurposed for the edited entry -- re-run the normal
+  // screen prepopulation so new-entry mode reflects the queue again
+  renderDhorScreen();
 }
 function resetDhorFormAfterEdit(){
   document.getElementById('dhor_mistakes').value = 0;
@@ -1200,12 +1271,10 @@ function resetDhorFormAfterEdit(){
   renderDhorLapRollup();
   setDhorDurationFields(null);
 }
-document.getElementById('dhorEditCancelBtn2').addEventListener('click', () => {
+// V3.51.0: the X in the edit heading is Cancel (abandon changes).
+document.getElementById('dhorEditCloseBtn').addEventListener('click', () => {
   cancelDhorEdit();
   resetDhorFormAfterEdit();
-});
-document.getElementById('dhorEditUpdateBtn').addEventListener('click', () => {
-  document.getElementById('dhorSaveBtn').click();
 });
 document.getElementById('dhorEditDeleteBtn').addEventListener('click', async () => {
   if(!dhorEditingId) return;
@@ -1229,39 +1298,51 @@ function computeDhorDuration(){
   return { duration_seconds: getDhorDurationSeconds(), lap_times: dhorLapTimes };
 }
 
+// V3.51.0 (confirmed in chat): the edit save, extracted -- called by
+// the new Save button (which only enables once Confirm changes was
+// tapped) and defensively by the header Save (hidden while editing).
+// The old checkbox hard-block is replaced by the confirm-flow gate.
+// Payload gains 'date' (fully editable now -- worker UPDATE_FIELDS
+// accepts it, deploy worker first) and, when the portion was
+// representable, the segment recomputed from the live picker in the
+// CURRENT ref, re-stamping 'ref' accordingly.
+async function saveDhorEdit(){
+  const errEl = document.getElementById('dhorError');
+  errEl.textContent = '';
+  if(!isEditConfirmed('dhor')) return;
+  const payload = {
+    date: document.getElementById('dhor_date').value || todayISO(),
+    mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
+    tajweed_tags: dhorSelectedTags.join(','),
+    ...computeDhorDuration(),
+    ...readCommentBlock('dhorCommentBlock')
+  };
+  if(dhorEditPortionEditable){
+    const juz = parseInt(document.getElementById('dhor_juz').value);
+    const position = parseInt(document.getElementById('dhor_position').value);
+    const unit = document.getElementById('dhor_unit').value;
+    const seg = computeSegmentRange(juz, position, dhorCurrentRef, unit);
+    payload.segment_from = seg.segment_from;
+    payload.segment_to = seg.segment_to;
+    payload.ref = dhorCurrentRef;
+  }
+  try{
+    await apiDhor.update(dhorEditingId, payload);
+    document.getElementById('dhorSaveStatus').classList.add('show');
+    setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
+    cancelDhorEdit();
+    resetDhorFormAfterEdit();
+    await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+  } catch(e){
+    errEl.textContent = "Couldn't save: " + e.message;
+  }
+}
+
 document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('dhorError');
   errEl.textContent = '';
 
-  if(dhorEditingId){
-    // 2026-08-05, confirmed in chat: same hard-block as the new-entry
-    // path below -- applies to edits too, not just new entries.
-    if(!document.getElementById('dhor_confirm').checked){
-      errEl.textContent = 'Please confirm the selection before saving.';
-      return;
-    }
-    // segment fields deliberately omitted -- see loadDhorEntryForEdit.
-    // duration/lap_times ARE included now (V3.21.1) -- there's a real
-    // field for them, unlike segment which still isn't reconstructable.
-    const payload = {
-      mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
-      tajweed_tags: dhorSelectedTags.join(','),
-      ...computeDhorDuration(),
-      ...readCommentBlock('dhorCommentBlock')
-    };
-    try{
-      await apiDhor.update(dhorEditingId, payload);
-      document.getElementById('dhorSaveStatus').classList.add('show');
-      setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
-      document.getElementById('dhor_confirm').checked = false;
-      cancelDhorEdit();
-      resetDhorFormAfterEdit();
-      await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
-    } catch(e){
-      errEl.textContent = "Couldn't save: " + e.message;
-    }
-    return;
-  }
+  if(dhorEditingId) return saveDhorEdit();
 
   // 2026-08-05, confirmed in chat: replaces the earlier "nothing
   // entered" confirm() entirely -- a real, dedicated confirmation
@@ -1407,7 +1488,7 @@ async function renderRecentEntries(type, client, railId, onRowClick){
     overlay.className = 'modal-overlay history-popup-modal';
     overlay.innerHTML = `<div class="modal-card">
       <button type="button" class="close-btn" id="historyPopupCloseBtn">&times;</button>
-      <h2>History</h2>
+      <h2>${label}</h2>
       <div class="history-full-list">
         ${rows.slice(0, 50).map((r, i) => `<div class="history-entry-row">
           <div class="history-entry-content"${onRowClick ? ` data-index="${i}"` : ''}>

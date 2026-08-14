@@ -494,6 +494,9 @@
    (V3.26.1) composes with it. align-self:end + the 42px height match
    the row's own explicit control height (2026-08-03) so the checkbox
    centres on the control line, not the label line. */
+/* V3.51.0 (confirmed in chat): V3.50.2's label removal took away the
+   spacing between the amount pill and this row -- restored explicitly. */
+#dhorJuzPositionRow { margin-top: var(--space-sm); }
 .picker-row.picker-row-with-confirm { grid-template-columns: 1fr 1fr auto; }
 .picker-row.picker-row-with-confirm.picker-row-single { grid-template-columns: 1fr auto; }
 .picker-row .checkbox-box {
@@ -504,11 +507,9 @@
      box relocates there). */
   margin-left: var(--space-sm);
 }
-/* V3.50.0: edit-mode holder for Dhor's confirm box -- the segment
-   picker (the box's normal home) hides entirely while editing, but the
-   confirm hard-block still applies to edit saves, so the box parks
-   here, right-aligned in the picker's flow position. */
-.dhor-confirm-park { display: flex; justify-content: flex-end; }
+/* V3.51.0: the V3.50.0 'park' relocation is gone -- editing no longer
+   uses the confirm checkbox at all (Confirm changes replaced it), so
+   the box simply hides in edit mode (rule above). */
 /* V3.50.2 (confirmed in chat): Tadabbur's header only -- the icon
    column becomes max-content so the heading sits directly beside the
    icon (the shared 10% column held it at a fixed distance), the middle
@@ -951,8 +952,6 @@
    being edited hide, and within the editing card the normal header/
    History are replaced by this grey top/bottom chrome, confirmed in
    chat specifically so it can't be confused with the normal screen. */
-#screen-logDetail.log-detail-editing .log-detail-dots { display: none; }
-#screen-logDetail.log-detail-editing .log-detail-card:not(.editing-active) { display: none; }
 /* Bug fix (2026-08-05, found by the user): #dhorTimerHost was never a
    .log-detail-card -- it's a separate custom element, targeted
    everywhere else in this file by its own id, not this class -- so the
@@ -964,7 +963,6 @@
    its own spot in the layout), and could land on the wrong one --
    explaining "editing an entry lands on the Timer" regardless of which
    path opened editing, since this same gap sat underneath all of them. */
-#screen-logDetail.log-detail-editing #dhorTimerHost { display: none; }
 .log-detail-card.editing-active .card-header-row,
 .log-detail-card.editing-active .history-container { display: none; }
 .edit-topbar {
@@ -986,36 +984,100 @@
   color: var(--color-ink-soft);
   cursor: pointer;
 }
+/* V3.51.0: the card's own date control relocates here while editing --
+   the wrap sizes to 100% of its parent, so the slot supplies the box. */
+.edit-date-slot { width: 132px; height: var(--dhor-row2-h); flex: 0 0 auto; }
+.edit-topbar-text { flex: 0 1 auto; }
+.edit-close-btn { margin-left: auto; }
+.edit-close-btn svg { width: 20px; height: 20px; }
+/* V3.51.0: read-only portion box, edit mode only, for plan-path
+   raw-range Dhor entries the picker can't express. */
+.edit-portion-ro {
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-page-bg);
+  color: var(--color-ink-soft);
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-top: var(--space-sm);
+}
+/* V3.51.0: hidden while editing -- their roles are replaced by the new
+   flow (checkboxes -> Confirm changes; Plan/quarter rows aren't part of
+   an edit; the manual checkbox likewise). */
+.log-detail-card.editing-active #dhorViewPlanBtn,
+.log-detail-card.editing-active #dhorConfirmBox,
+.log-detail-card.editing-active .confirm-field-group .checkbox-box,
+.log-detail-card.editing-active .sabaq-dhor-row-text,
+.log-detail-card.editing-active #sabaqDhor_sections .checkbox-box { display: none; }
+/* V3.51.0: the edit popup -- other screens visible beneath; the card
+   swaps its takeover-era viewport-height formula for popup sizing. */
+.edit-popup-modal { z-index: 60; }
+.edit-popup-card {
+  width: min(560px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: var(--space-sm);
+}
+.edit-popup-card .log-detail-card.editing-active {
+  height: auto;
+  max-height: calc(88vh - (var(--space-sm) * 2));
+  flex: 1 1 auto;
+  min-height: 0;
+}
+/* V3.51.0 (confirmed in chat): the icon bottombar is gone. Confirm
+   changes gates Save -- disabled grey until anything differs from the
+   loaded entry, green (ready) when dirty, solid green with reversed
+   text once tapped (confirmed); Save greyed until confirmed, then solid
+   green. Red Delete below keeps the existing pop-up confirmation. */
 .edit-bottombar {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  justify-items: center;
-  align-items: center;
   background: var(--color-page-bg);
   border-radius: var(--radius-sm);
   padding: var(--space-sm) var(--space-md);
   margin-top: var(--space-md);
 }
-.edit-bottombar button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  border: none;
-  background: none;
-  padding: 4px;
-  font-size: 10px;
-  font-weight: normal;
-  text-transform: uppercase;
-  color: var(--color-ink);
+.edit-actions-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-sm);
+}
+.edit-confirm-btn, .edit-save-btn, .edit-delete-btn {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
   cursor: pointer;
 }
-.edit-bottombar button svg { width: 22px; height: 22px; }
-.edit-bottombar-delete {
-  background: var(--color-error) !important;
-  color: #fff !important;
-  border-radius: var(--radius-sm);
-  padding: 6px 4px !important;
+.edit-confirm-btn:disabled, .edit-save-btn:disabled {
+  background: var(--color-page-bg);
+  border-color: var(--color-table-border);
+  color: var(--color-ink-soft);
+  cursor: default;
+}
+.edit-confirm-btn.ready {
+  background: #FFFFFF;
+  border-color: var(--palette-evergreen);
+  color: var(--palette-evergreen);
+}
+.edit-confirm-btn.confirmed {
+  background: var(--palette-evergreen);
+  border-color: var(--palette-evergreen);
+  color: #FFFFFF;
+}
+.edit-save-btn:not(:disabled) {
+  background: var(--palette-evergreen);
+  border-color: var(--palette-evergreen);
+  color: #FFFFFF;
+}
+.edit-delete-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-sm);
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: #FFFFFF;
 }
 
 /* Dhor's timer (2026-08-04, confirmed in chat) -- now a permanent rail

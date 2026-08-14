@@ -7,6 +7,10 @@ const TABLE = 'sabaq_log';
 // letting one entry span multiple surahs directly, which the old single
 // surah column (shared by both ayah numbers) couldn't represent.
 const FIELDS = ['sabaq_from', 'sabaq_to', 'tajweed_tags', 'line_count', 'page_count'];
+// V3.51.0 (confirmed in chat): 'date' is editable on update only -- a
+// separate whitelist, NOT added to FIELDS, which insertLog consumes
+// positionally (the V3.44.1 reflections.js lesson).
+const UPDATE_FIELDS = [...FIELDS, 'date'];
 
 function validateBody(body) {
   if (!body || typeof body !== 'object') return 'Body must be a JSON object';
@@ -68,7 +72,7 @@ export async function handleUpdateSabaq(request, env, auth) {
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.id) return { error: 'id is required', status: 400 };
   const { id, ...updates } = body;
-  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, FIELDS);
+  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, UPDATE_FIELDS);
 }
 
 export async function handleDeleteSabaq(request, env, auth) {

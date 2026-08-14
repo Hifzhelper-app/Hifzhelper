@@ -360,17 +360,39 @@ function loadSabaqDhorEntryForEdit(entry){
   sabaqDhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', entry);
-  document.getElementById('sabaqDhorEditTopbarDate').textContent =
-    `${entry.date} (${entry.from_surah}:${entry.from_ayah} - ${entry.to_surah}:${entry.to_ayah} — range isn't editable here)`;
+  // V3.51.0 (confirmed in chat): the RANGE is editable now -- ayah-level
+  // From/To is ref-independent (physical Quran coordinates, the user's
+  // own point), so the manual pickers show prepopulated from the entry;
+  // the quarter-section rows and the manual row's own checkbox hide via
+  // CSS while editing (Confirm changes replaced the checkbox's role).
   document.getElementById('sabaqDhorEditTopbar').classList.remove('hidden');
   document.getElementById('sabaqDhorEditBottombar').classList.remove('hidden');
   document.getElementById('sabaqDhor_rollup_up').style.display = 'none';
   document.getElementById('sabaqDhor_rollup_down').style.display = 'none';
-  document.getElementById('sabaqDhor_sections').classList.add('hidden');
+  renderSabaqDhorManualField('from', (entry.from_surah && entry.from_ayah) ? { surah: entry.from_surah, ayah: entry.from_ayah } : null);
+  renderSabaqDhorManualField('to', (entry.to_surah && entry.to_ayah) ? { surah: entry.to_surah, ayah: entry.to_ayah } : null);
   enterEditScreenMode('card-sabaqDhor');
+  moveDateIntoEditSlot('sabaqDhor');
+  initEditFlow('sabaqDhor', collectSabaqDhorEditState, () => document.getElementById('sabaqDhorSaveBtn').click());
+}
+function collectSabaqDhorEditState(){
+  return JSON.stringify({
+    date: document.getElementById('sabaqDhor_date').value,
+    from: readSabaqDhorManualField('from'),
+    to: readSabaqDhorManualField('to'),
+    mistakes: document.getElementById('sabaqDhor_mistakes').value,
+    tags: sabaqDhorSelectedTags.join(','),
+    notes: readCommentBlock('sabaqDhorCommentBlock')
+  });
 }
 function cancelSabaqDhorEdit(){
+  teardownEditFlow('sabaqDhor');
+  restoreDateFromEditSlot('sabaqDhor', 'card-sabaqDhor');
   sabaqDhorEditingId = null;
+  // edit repurposed the manual From/To for the entry's range -- clear
+  // them so normal mode starts clean (same V3.45.15 principle)
+  renderSabaqDhorManualField('from', null);
+  renderSabaqDhorManualField('to', null);
   document.getElementById('sabaqDhorEditTopbar').classList.add('hidden');
   document.getElementById('sabaqDhorEditBottombar').classList.add('hidden');
   document.getElementById('sabaqDhor_sections').classList.remove('hidden');
@@ -384,12 +406,10 @@ function resetSabaqDhorFormAfterEdit(){
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', null);
 }
-document.getElementById('sabaqDhorEditCancelBtn2').addEventListener('click', () => {
+// V3.51.0: the X in the edit heading is Cancel (abandon changes).
+document.getElementById('sabaqDhorEditCloseBtn').addEventListener('click', () => {
   cancelSabaqDhorEdit();
   resetSabaqDhorFormAfterEdit();
-});
-document.getElementById('sabaqDhorEditUpdateBtn').addEventListener('click', () => {
-  document.getElementById('sabaqDhorSaveBtn').click();
 });
 document.getElementById('sabaqDhorEditDeleteBtn').addEventListener('click', async () => {
   if(!sabaqDhorEditingId) return;
@@ -410,8 +430,20 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
   errEl.textContent = '';
 
   if(sabaqDhorEditingId){
-    // Range fields deliberately omitted -- see loadSabaqDhorEntryForEdit.
+    // V3.51.0 (confirmed in chat): gated by Confirm changes, and the
+    // range IS editable now -- sent from the manual From/To pickers,
+    // with 'date' included too (worker UPDATE_FIELDS accepts both).
+    if(!isEditConfirmed('sabaqDhor')) return;
+    const editFrom = readSabaqDhorManualField('from');
+    const editTo = readSabaqDhorManualField('to');
+    if(!editFrom || !editTo){
+      errEl.textContent = 'Please set both From and To before saving.';
+      return;
+    }
     const payload = {
+      date: document.getElementById('sabaqDhor_date').value || todayISO(),
+      from_surah: editFrom.surah, from_ayah: editFrom.ayah,
+      to_surah: editTo.surah, to_ayah: editTo.ayah,
       mistakes: parseInt(document.getElementById('sabaqDhor_mistakes').value) || 0,
       tajweed_tags: sabaqDhorSelectedTags.join(','),
       ...readCommentBlock('sabaqDhorCommentBlock')

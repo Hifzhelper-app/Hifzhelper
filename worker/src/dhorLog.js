@@ -7,6 +7,10 @@ const TABLE = 'dhor_log';
 // the same "variable-length list as one column" pattern as tajweed_tags,
 // not numbered columns or a separate table.
 const FIELDS = ['segment_from', 'segment_to', 'ref', 'tajweed_tags', 'mistakes', 'duration_seconds', 'lap_times'];
+// V3.51.0 (confirmed in chat): 'date' is editable on update only -- a
+// separate whitelist, NOT added to FIELDS, which insertLog consumes
+// positionally (the V3.44.1 reflections.js lesson).
+const UPDATE_FIELDS = [...FIELDS, 'date'];
 
 function validateBody(body) {
   if (!body || typeof body !== 'object') return 'Body must be a JSON object';
@@ -77,7 +81,7 @@ export async function handleUpdateDhor(request, env, auth) {
   if (body.lap_times != null && !Array.isArray(body.lap_times)) return { error: 'lap_times must be an array', status: 400 };
   const { id, ...updates } = body;
   if (updates.lap_times != null) updates.lap_times = JSON.stringify(updates.lap_times);
-  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, FIELDS);
+  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, UPDATE_FIELDS);
 }
 
 export async function handleDeleteDhor(request, env, auth) {
