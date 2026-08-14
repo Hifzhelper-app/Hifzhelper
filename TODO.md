@@ -4,6 +4,73 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.50.1 (2026-08-14): BUG, log detail cards' date selector not opening on iOS — fixed to the spec below
+
+Symptom: tapping the date display on Sabaq / Sabaq Dhor / Dhor does not
+open the date picker. Root cause is NOT in this codebase's logic — it
+is WebKit bug 268114 (open since 2023, still unresolved): showPicker()
+for date inputs has NEVER been implemented on iOS, where native pickers
+are tied to element focus. js/customDate.js's tap handler (2026-08-03)
+only falls back to focus()+click() when showPicker is ABSENT or THROWS
+— but on current iOS the method exists and silently does nothing, so
+the catch never fires, the fallback never runs, and nothing opens. An
+iOS update changing what showPicker exposes flips this overnight with
+zero code change on our side, which matches "suddenly, all cards at
+once". A jsdom test against the real shipped files confirmed the
+wiring itself is intact (tap reaches showPicker on all 3 cards).
+
+Why Tadabbur alone still works (confirmed 2026-08-14, and it seals
+the diagnosis): its date input was never wired into customDate.js —
+the wiring list predates Tadabbur's date field (V3.44.1, six days
+after customDate shipped) and was never updated — so it's a bare
+native input, i.e. already the direct-tap pattern the fix uses.
+
+Fix (updated 2026-08-14 with the user's styling direction from the
+Tadabbur screenshot): drop the showPicker dependency entirely. The
+native date input becomes the tap target — .native-date-hidden loses
+pointer-events:none and gains z-index above the display, so a tap is
+a DIRECT user tap on a real date input, which iOS opens reliably and
+always has. The display becomes purely visual (aria-hidden, not a
+button — avoids a double tab stop; the input keeps an aria-label),
+the click handler + showPicker branch in customDate.js is deleted
+outright, and the value-override re-render mechanism stays untouched.
+Identical behaviour on desktop.
+- ALL FOUR cards, Tadabbur included: 'tadabbur_date' joins the wiring
+  list, so it gains the custom format too ("change all to ddd DD-mmm",
+  confirmed — e.g. "Thu 14-Aug"; the native display it currently shows
+  can't be reformatted, which is the whole reason customDate exists).
+- PILL styling, all four ("change all to pills", confirmed — user
+  prefers Tadabbur's iOS-native pill look over the current bordered
+  box): .custom-date-display drops its border + --radius-sm box for a
+  fully-rounded pill (border-radius 999px, borderless light-neutral
+  background echoing the iOS pill, centred text, comfortable
+  horizontal padding). Dhor's --dhor-row2-h height coupling checked at
+  build so the pill height stays consistent with its row.
+Files: js/customDate.js, css/detail-pages.css, index.html (version
+bumps), js/sw.js. One zip for both repos.
+
+**As built (V3.50.1), verified end to end:** js/customDate.js rewritten
+— the display is now an aria-hidden <span> (not a button: no second tab
+stop), the input gains aria-label="Date", the click handler and every
+showPicker code path are deleted outright (showPicker survives only in
+comments explaining the WebKit bug), and 'tadabbur_date' joined the
+wiring list, so all four cards share both the working direct-tap picker
+and the "DDD dd-MMM" format. CSS: .native-date-hidden trades
+pointer-events:none for z-index:2 + cursor:pointer (the input IS the
+tap target now); a :focus-visible sibling rule rings the pill when the
+invisible input has keyboard focus; .custom-date-display became the
+pill (border-radius 999px, borderless, #E9E9EB iOS-native neutral,
+flex-centred since a span has no button layout of its own).
+.card-header-date's own padding rule loses to the pill's later
+equal-specificity rule — checked, not assumed. Verified via jsdom on
+the REAL index.html + REAL rewritten customDate.js: 31/31 — all four
+inputs wired/wrapped, span+aria contract, input-first sibling order,
+programmatic value sets re-rendering (the reflectionCard.js path
+Tadabbur relies on), change-event re-renders, and the CSS contract
+(tap-target inversion, pill, focus ring). One note: the date shown
+today reads "Fri 14-Aug" — an earlier chat message said "Thu 14-Aug"
+in passing; the formatter was always right.
+
 ## Done — V3.50.0 (2026-08-12): Confirm-selection checkboxes restyled to the Sabaq Dhor pattern — built to the spec below
 
 Both Sabaq's and Dhor's "Confirm selection" checkboxes restyled to
