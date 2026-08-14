@@ -1377,7 +1377,9 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
 // confirmed scope -- button alone is enough for now. Button text is now
 // type-specific ("Sabaq History", "Dhor History", etc.) instead of a
 // generic "History".
-const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'History', reflections: 'Tadabbur History' };
+// V3.50.2 (confirmed in chat): Dhor was the only card whose History
+// button lacked its own name.
+const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor History', dhor: 'Dhor History', reflections: 'Tadabbur History' };
 // V3.21.0: each row now gets an edit (pencil) icon. Editing loads the
 // entry into that card's own form (loadXForEdit, defined per-card) rather
 // than a separate edit form -- reuses all the existing validation/

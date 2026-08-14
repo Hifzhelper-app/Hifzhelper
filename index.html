@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.50.1"></script>
+<script src="js/pwaManifest.js?v=3.50.2"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.50.1">
-<link rel="stylesheet" href="css/base.css?v=3.50.1">
-<link rel="stylesheet" href="css/nav.css?v=3.50.1">
-<link rel="stylesheet" href="css/journal-table.css?v=3.50.1">
-<link rel="stylesheet" href="css/components.css?v=3.50.1">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.50.1">
-<link rel="stylesheet" href="css/settings.css?v=3.50.1">
-<link rel="stylesheet" href="css/admin.css?v=3.50.1">
-<link rel="stylesheet" href="css/haidh.css?v=3.50.1">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.50.1">
-<link rel="stylesheet" href="css/sih.css?v=3.50.1">
+<link rel="stylesheet" href="css/tokens.css?v=3.50.2">
+<link rel="stylesheet" href="css/base.css?v=3.50.2">
+<link rel="stylesheet" href="css/nav.css?v=3.50.2">
+<link rel="stylesheet" href="css/journal-table.css?v=3.50.2">
+<link rel="stylesheet" href="css/components.css?v=3.50.2">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.50.2">
+<link rel="stylesheet" href="css/settings.css?v=3.50.2">
+<link rel="stylesheet" href="css/admin.css?v=3.50.2">
+<link rel="stylesheet" href="css/haidh.css?v=3.50.2">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.50.2">
+<link rel="stylesheet" href="css/sih.css?v=3.50.2">
 </head>
 <body>
 
@@ -379,18 +379,14 @@
             <div class="edit-topbar hidden" id="dhorEditTopbar">
               <span>Editing Dhor from <span id="dhorEditTopbarDate"></span></span>
             </div>
-            <!-- V3.24.0: Row 2 combines Date/Plan Dhor/History into one
-                 40:30:30 grid (was Date+History on one row, Amount+View
-                 Plan on a second row below it). Both buttons get a fixed
-                 size with wrapping (not truncating) labels via the
-                 scoped .dhor-row2-btn/.dhor-row2 .history-btn rules
-                 below, rather than reusing the general .history-btn
-                 sizing used elsewhere (Sabaq/Sabaq Dhor keep that). -->
-            <div class="dhor-row2" id="dhorRow2">
-              <input type="date" id="dhor_date" class="card-header-date">
-              <button type="button" class="dhor-row2-btn" id="dhorViewPlanBtn">Plan</button>
-              <div id="dhorRecentRail"></div>
-            </div>
+            <!-- V3.50.2 (confirmed in chat): Row 2 now FOLLOWS SABAQ /
+                 SABAQ DHOR'S OWN DATE-ROW LAYOUT -- date pill left,
+                 History right -- replacing V3.24.0's bespoke 40:30:30
+                 Date/Plan/History grid. The Plan button moved to the
+                 bottom of the card, below Notes; the History button here
+                 picks up the same general .history-btn sizing the other
+                 two cards use. -->
+            <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"><div class="history-container" id="dhorRecentRail"></div></div>
             <!-- Row 3: Amount as a 3-way switch (was a dropdown), reusing
                  the same .switch-track/.switch-option pattern already
                  used elsewhere (e.g. Dhor Schedule's own granularity
@@ -408,7 +404,10 @@
                 <div class="switch-thumb"></div>
                 <button type="button" class="switch-option" data-value="quarter">Quarter</button>
                 <button type="button" class="switch-option" data-value="half">Half</button>
-                <button type="button" class="switch-option" data-value="full">Full</button>
+                <!-- V3.50.2 (confirmed in chat): display text "Full" ->
+                     "Juz"; data-value stays 'full' -- every piece of
+                     dhorPage.js logic keys off the value, untouched. -->
+                <button type="button" class="switch-option" data-value="full">Juz</button>
               </div>
             </div>
             <!-- V3.50.0 (confirmed in chat): the standalone "Confirm
@@ -428,10 +427,15 @@
                    (Setup), same rule for everyone (13-line/15-line/Hybrid
                    all resolve consistently), not a separate per-device pick
                    living only on this one page. -->
+              <!-- V3.50.2 (confirmed in chat): the "Juz" label text above
+                   the picker is removed -- and with it the invisible
+                   &nbsp; placeholder label beside it, which only existed
+                   to match its height, so both controls rise together.
+                   The confirm checkbox's alignment is unaffected
+                   (align-self:end + its 42px control-line height). -->
               <div class="picker-row picker-row-with-confirm" id="dhorJuzPositionRow">
-                <div><label>Juz</label><select id="dhor_juz"></select></div>
+                <div><select id="dhor_juz" aria-label="Juz"></select></div>
                 <div id="dhorPositionField">
-                  <label>&nbsp;</label>
                   <input type="hidden" id="dhor_position" value="1">
                   <div class="switch-track" id="dhor_position_switch">
                     <div class="switch-thumb"></div>
@@ -491,6 +495,13 @@
               <div id="dhorLapRollupList" class="hidden"></div>
             </div>
             <div id="dhorCommentBlock"></div>
+            <!-- V3.50.2 (confirmed in chat): the Plan button's new home --
+                 moved out of Row 2 to the bottom of the card, below
+                 Notes, at 30% width left-aligned. Same id, so
+                 js/dhorPage.js's wiring is untouched; keeps its
+                 .dhor-row2-btn styling (that class's rules stand alone
+                 in css/detail-pages.css and don't require the old row). -->
+            <button type="button" class="dhor-row2-btn" id="dhorViewPlanBtn">Plan</button>
             <div class="form-error" id="dhorError"></div>
             <div class="edit-bottombar hidden" id="dhorEditBottombar">
               <button type="button" id="dhorEditCancelBtn2"><span class="btn-icon" id="dhorEditCancelIcon"></span><span>Cancel</span></button>
@@ -514,13 +525,27 @@
     <section class="screen hidden" id="screen-reflections">
       <div class="screen-content" id="tadabburCard">
         <button type="button" class="screen-close-btn tadabbur-close-btn" id="tadabburCloseBtn" aria-label="Exit to Home"></button>
-        <div class="card-header-row">
+        <!-- V3.50.2 (confirmed in chat): Save and the floating X-close
+             were overlapping on mobile -- the X is absolutely positioned
+             at the card's top-right (V3.45.1) and the save-wrap's old
+             rightmost grid column sat directly under it. Save now sits
+             inside a .card-header-title-group right after the heading
+             (the V3.45.9 pattern -- "save replaces the timer", since
+             Tadabbur has no timer), following wherever the text ends;
+             the row's last column is an empty spacer reserving the X's
+             corner. The icon column is max-content (see the scoped rule
+             in css/detail-pages.css) so the heading sits directly
+             beside the icon instead of a fixed 10% away. -->
+        <div class="card-header-row tadabbur-header-row">
           <span class="card-header-icon" id="tadabburHeaderIcon"></span>
-          <h2>Tadabbur</h2>
-          <div class="card-header-save-wrap">
-            <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
-            <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span><span class="save-btn-text">Save</span></button>
+          <div class="card-header-title-group">
+            <h2>Tadabbur</h2>
+            <div class="card-header-save-wrap">
+              <span class="save-status" id="tadabburSaveStatus">saved ✓</span>
+              <button type="button" class="card-header-save-btn" id="tadabburSaveBtn"><span class="btn-icon" id="tadabburSaveIcon"></span><span class="save-btn-text">Save</span></button>
+            </div>
           </div>
+          <span></span>
         </div>
         <div class="card-date-row">
           <input type="date" id="tadabbur_date" class="card-header-date">
@@ -958,30 +983,30 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.50.1"></script>
-<script src="shared/haidhRules.js?v=3.50.1"></script>
-<script src="js/icons.js?v=3.50.1"></script>
-<script src="js/customDate.js?v=3.50.1"></script>
-<script src="js/api.js?v=3.50.1"></script>
-<script src="js/uiSwitch.js?v=3.50.1"></script>
-<script src="js/position.js?v=3.50.1"></script>
-<script src="js/auth.js?v=3.50.1"></script>
-<script src="js/home.js?v=3.50.1"></script>
-<script src="js/tajweed.js?v=3.50.1"></script>
-<script src="js/commentPrivacy.js?v=3.50.1"></script>
-<script src="js/session-timer.js?v=3.50.1"></script>
-<script src="js/journal.js?v=3.50.1"></script>
-<script src="js/dhorPage.js?v=3.50.1"></script>
-<script src="js/sabaqPage.js?v=3.50.1"></script>
-<script src="js/sabaqDhorPage.js?v=3.50.1"></script>
-<script src="js/reflectionCard.js?v=3.50.1"></script>
-<script src="js/logDetailScreen.js?v=3.50.1"></script>
-<script src="js/haidhDetailScreen.js?v=3.50.1"></script>
-<script src="js/kaabaTracker.js?v=3.50.1"></script>
-<script src="js/juzTrackerScreen.js?v=3.50.1"></script>
-<script src="js/sihScreen.js?v=3.50.1"></script>
-<script src="js/settingsScreen.js?v=3.50.1"></script>
-<script src="js/adminPage.js?v=3.50.1"></script>
-<script src="js/app.js?v=3.50.1"></script>
+<script src="shared/data.js?v=3.50.2"></script>
+<script src="shared/haidhRules.js?v=3.50.2"></script>
+<script src="js/icons.js?v=3.50.2"></script>
+<script src="js/customDate.js?v=3.50.2"></script>
+<script src="js/api.js?v=3.50.2"></script>
+<script src="js/uiSwitch.js?v=3.50.2"></script>
+<script src="js/position.js?v=3.50.2"></script>
+<script src="js/auth.js?v=3.50.2"></script>
+<script src="js/home.js?v=3.50.2"></script>
+<script src="js/tajweed.js?v=3.50.2"></script>
+<script src="js/commentPrivacy.js?v=3.50.2"></script>
+<script src="js/session-timer.js?v=3.50.2"></script>
+<script src="js/journal.js?v=3.50.2"></script>
+<script src="js/dhorPage.js?v=3.50.2"></script>
+<script src="js/sabaqPage.js?v=3.50.2"></script>
+<script src="js/sabaqDhorPage.js?v=3.50.2"></script>
+<script src="js/reflectionCard.js?v=3.50.2"></script>
+<script src="js/logDetailScreen.js?v=3.50.2"></script>
+<script src="js/haidhDetailScreen.js?v=3.50.2"></script>
+<script src="js/kaabaTracker.js?v=3.50.2"></script>
+<script src="js/juzTrackerScreen.js?v=3.50.2"></script>
+<script src="js/sihScreen.js?v=3.50.2"></script>
+<script src="js/settingsScreen.js?v=3.50.2"></script>
+<script src="js/adminPage.js?v=3.50.2"></script>
+<script src="js/app.js?v=3.50.2"></script>
 </body>
 </html>
