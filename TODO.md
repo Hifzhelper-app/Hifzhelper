@@ -4,6 +4,90 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.50.2 (2026-08-14): Tadabbur header rework + Dhor/Sabaq UI set — built to the spec below
+
+Reported via screenshot: Tadabbur's Save and X-close overlap on mobile.
+Root cause traced: the X-to-Home is absolutely positioned at the card's
+top-right corner (V3.45.1), independent of the header grid, while the
+header's 10/70/20 grid puts .card-header-save-wrap in the rightmost 20%
+column — directly under the floating X on narrow screens.
+
+**Confirmed decisions (2026-08-14):**
+- Tadabbur adopts the V3.45.9 title-group pattern, with Save taking
+  the position the timer occupies on the other cards ("save will
+  replace the timer" — Tadabbur has no timer): the existing
+  .card-header-save-wrap (status + button, internal layout untouched)
+  moves inside a .card-header-title-group next to the "Tadabbur"
+  heading, following wherever the text ends. Grid stays 10/70/20; the
+  3rd column is left empty, giving the floating X clear space —
+  overlap resolved at the root, not nudged.
+- Log detail cards (Sabaq / Sabaq Dhor / Dhor): timer icon slightly
+  bigger and slightly right. Claude's chosen values (user explicitly
+  deferred values): svg 20px -> 24px, plus margin-left var(--space-xs)
+  on the timer button inside the title group (doubling the effective
+  heading-to-timer gap to 8px).
+
+- Dhor UI set (2026-08-14, folded in per the include-in-this-revision
+  decision):
+  1. The Plan button leaves row 2 and moves to the bottom of the card,
+     below Notes ("botes" read as Notes). The vacated row then FOLLOWS
+     SABAQ/SABAQ DHOR'S OWN DATE-ROW LAYOUT (confirmed): date pill
+     left, History button right — Dhor's bespoke 40:30:30
+     date:Plan:History row (V3.24.0) is replaced by the same
+     .card-date-row pattern the other two cards use. At build: trace
+     every --dhor-row2-h / .dhor-row2 dependency before removing.
+     Plan keeps its styling; placed below Notes at 30% width,
+     left-aligned (confirmed 2026-08-14, replacing Claude's earlier
+     flagged full-width guess).
+  2. Quarter/Half/Full pill moves slightly lower (more gap above it).
+  3. Pill text "Full" -> "Juz" — DISPLAY TEXT ONLY; the internal
+     data-value 'full' and all dhorPage.js logic untouched.
+  4. The "Juz" label text above the juz picker removed — and with it
+     the invisible &nbsp; placeholder label beside it that only
+     existed to match its height, so the controls rise together
+     (checkbox alignment unaffected: align-self:end + 42px height).
+  5. Dhor confirm checkbox nudged right — gap from the 1|2 portion
+     switch widens (Claude's value: margin-left var(--space-sm)).
+  6. Sabaq confirm checkbox likewise nudged right within its group
+     (Claude's value, same treatment).
+  7. Dhor's History button label "History" -> "Dhor History"
+     (confirmed 2026-08-14) — one word in dhorPage.js's
+     HISTORY_BTN_LABEL map, matching the naming every other card
+     already uses (Sabaq History / Sabaq Dhor History / Tadabbur
+     History).
+- Tadabbur icon-to-heading gap reduced by moving the text left
+  (confirmed 2026-08-14, and likely what the earlier cut-off "Also the
+  Icon- Tabsabbir" line meant): the header grid's fixed 10% icon
+  column holds the heading at a set distance regardless of the icon's
+  actual width — the icon column becomes max-content (auto-sized to
+  the icon) for Tadabbur so the heading sits directly beside it. Can
+  extend to the other cards later if wanted; scoped to Tadabbur per
+  the request's wording for now.
+
+**As built (V3.50.2), verified end to end:** one identical file set for
+both repos (index.html, css/detail-pages.css, js/dhorPage.js, js/sw.js
++ docs). Tadabbur: save-wrap moved inside .card-header-title-group
+after the h2 (V3.45.9 pattern), row gained .tadabbur-header-row with
+grid max-content 1fr 32px — icon column hugs the icon, empty 32px
+spacer reserves the floating X's corner. Timer icon 20→24px +
+margin-left --space-xs (three log cards). Dhor: .dhor-row2 markup and
+ALL its scoped CSS rules deleted; row 2 now literally the same
+.card-date-row structure Sabaq uses (rail gained .history-container,
+History button picks up the general .history-btn sizing; the
+--dhor-row2-h property kept — .card-date-row, the amount switch, and
+Tadabbur's date row still size from it). Plan button relocated after
+#dhorCommentBlock at 30% width left-aligned, id and .dhor-row2-btn
+styling preserved (that rule now stands alone). Amount pill margin
+--space-sm→--space-md. Pill text Full→Juz, data-value untouched
+(verified no 'Full' string dependency in dhorPage.js). Both labels
+removed from the Juz row (select gained aria-label="Juz");
+renderDhorPositionOptions traced — toggles classes by id only, labels
+never referenced. Dhor checkbox margin-left --space-sm; Sabaq group
+columns 1fr 44px/40px → 1fr auto with the same margin. HISTORY_BTN_LABEL
+dhor → 'Dhor History'. Verified via jsdom on the real files: 27/27 new
+checks, PLUS both prior harnesses re-run green against the changed
+markup (28/28 confirm-box relocation, 31/31 date wiring) = 86/86.
+
 ## Done — V3.50.1 (2026-08-14): BUG, log detail cards' date selector not opening on iOS — fixed to the spec below
 
 Symptom: tapping the date display on Sabaq / Sabaq Dhor / Dhor does not

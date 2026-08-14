@@ -107,7 +107,11 @@
    no longer a direct grid child of .card-header-row at all, now a
    flex child of .card-header-title-group instead (see that rule's
    own comment above for why). */
-.card-header-timer-btn svg { width: 20px; height: 20px; }
+/* V3.50.2 (confirmed in chat): timer icon slightly bigger (20 -> 24px)
+   and slightly right of the heading (margin doubles the title-group's
+   own 4px gap to 8px) on the three log detail cards. */
+.card-header-timer-btn svg { width: 24px; height: 24px; }
+.card-header-title-group .card-header-timer-btn { margin-left: var(--space-xs); }
 .card-header-row h2 { margin: 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-header-icon { width: 22px; height: 22px; color: var(--color-ink-soft); justify-self: center; }
 .card-header-icon svg { width: 100%; height: 100%; }
@@ -247,24 +251,16 @@
    auto-sized) instead of being stretched to fill a fixed share of the
    row regardless of its content. Plan and History split whatever's left
    evenly. */
-.dhor-row2 {
-  display: grid;
-  grid-template-columns: auto 1fr 1fr;
-  align-items: stretch;
-  gap: var(--space-sm);
-  margin-top: 4px;
-}
-/* 2026-08-03: grid items default to min-width:auto, which refuses to
-   shrink a child below its own content's natural size even when the
-   column is narrower -- on a wide card this goes unnoticed, but on a
-   narrow mobile width it can push a button past its assigned column and
-   touch the card's edge. min-width:0 on all 3 columns forces each to
-   actually respect its assigned share instead. */
-.dhor-row2 > * { min-width: 0; }
-.dhor-row2 .card-header-date { height: var(--dhor-row2-h); }
-.dhor-row2-btn,
-.dhor-row2 #dhorRecentRail .history-btn {
-  width: 100%;
+/* V3.50.2 (confirmed in chat): the bespoke .dhor-row2 40:30:30 grid is
+   GONE -- Dhor's row 2 now uses the same .card-date-row markup and
+   rules Sabaq/Sabaq Dhor always have (date pill left, History right,
+   the general .history-btn sizing). Only the Plan button's own styling
+   survives from that block, standalone: it moved to the bottom of the
+   card, below Notes, at 30% width -- left-aligned by normal flow. The
+   --dhor-row2-h custom property stays: .card-date-row, the amount
+   switch, and Tadabbur's own date row all still size from it. */
+.dhor-row2-btn {
+  width: 30%;
   height: var(--dhor-row2-h);
   box-sizing: border-box;
   display: flex;
@@ -280,13 +276,13 @@
   color: #fff;
   font-size: 12px;
   line-height: 1.15;
-}
-/* 2026-08-04: was sitting directly under Row 2 with no breathing room --
-   confirmed in chat. Matches the margin-top every other row in this card
-   already uses (.card-date-row, .dhor-row2, .picker-row's own natural
-   label spacing) for consistency. */
-#dhorAmountRow {
   margin-top: var(--space-sm);
+}
+/* 2026-08-04: was sitting directly under Row 2 with no breathing room.
+   V3.50.2 (confirmed in chat): bumped from --space-sm to --space-md --
+   the pill sits slightly lower, per the Dhor UI adjustment set. */
+#dhorAmountRow {
+  margin-top: var(--space-md);
 }
 /* Row 3: Amount as a 3-way switch (reusing js/uiSwitch.js's shared
    component, same one Setup's Dhor Schedule granularity switch already
@@ -474,7 +470,11 @@
    visual separation above "Sabaq to" deliberately instead. */
 .confirm-field-group {
   display: grid;
-  grid-template-columns: 1fr 44px;
+  /* V3.50.2 (confirmed in chat): 2nd column was a fixed 44px, leaving
+     no room to nudge -- now auto, with the box carrying a left margin,
+     so the checkbox sits further right with a wider gap from the To
+     field. The >=768px override below follows the same change. */
+  grid-template-columns: 1fr auto;
   align-items: center;
   column-gap: var(--space-sm);
   row-gap: var(--space-xs);
@@ -485,6 +485,7 @@
   margin-top: var(--space-md);
 }
 .confirm-field-group > label { margin: 0; }
+.confirm-field-group .checkbox-box { margin-left: var(--space-sm); }
 .confirm-field-group > label.confirm-group-gap { margin-top: var(--space-sm); }
 /* V3.50.0: Dhor's confirm checkbox rides the Juz/portion picker-row as
    a third column in normal mode (and dhorRawRangeRow's third column in
@@ -495,12 +496,26 @@
    centres on the control line, not the label line. */
 .picker-row.picker-row-with-confirm { grid-template-columns: 1fr 1fr auto; }
 .picker-row.picker-row-with-confirm.picker-row-single { grid-template-columns: 1fr auto; }
-.picker-row .checkbox-box { align-self: end; height: 42px; }
+.picker-row .checkbox-box {
+  align-self: end;
+  height: 42px;
+  /* V3.50.2 (confirmed in chat): nudged right -- widens the gap from
+     the 1|2 portion switch (and from the plan-range buttons when the
+     box relocates there). */
+  margin-left: var(--space-sm);
+}
 /* V3.50.0: edit-mode holder for Dhor's confirm box -- the segment
    picker (the box's normal home) hides entirely while editing, but the
    confirm hard-block still applies to edit saves, so the box parks
    here, right-aligned in the picker's flow position. */
 .dhor-confirm-park { display: flex; justify-content: flex-end; }
+/* V3.50.2 (confirmed in chat): Tadabbur's header only -- the icon
+   column becomes max-content so the heading sits directly beside the
+   icon (the shared 10% column held it at a fixed distance), the middle
+   holds the title-group (heading + Save, V3.45.9 pattern), and a small
+   fixed spacer reserves the corner where the absolutely-positioned
+   X-to-Home floats (V3.45.1), which is what was overlapping Save. */
+.tadabbur-header-row { grid-template-columns: max-content 1fr 32px; }
 /* V3.45.14: checkbox made genuinely bigger on medium/large screens only,
    confirmed in chat -- transform:scale() on the native input itself
    rather than trying to set its own width/height directly, since a
@@ -550,7 +565,7 @@
      confirm group, for the same reason (the 36px box + 4px left margin
      above need exactly 40px of room). */
   .confirm-field-group {
-    grid-template-columns: 1fr 40px;
+    grid-template-columns: 1fr auto;
     padding-right: var(--space-xs);
   }
 }

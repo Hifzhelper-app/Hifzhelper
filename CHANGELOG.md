@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.50.2 — Tadabbur header rework; Dhor and Sabaq UI adjustments (2026-08-14)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/dhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.**
+
+Tadabbur's Save and the floating X-to-Home stopped competing for the same corner: Save now sits in a title group directly after the heading — the position the timer occupies on the other cards — and the heading itself moved left, with the icon column now hugging the icon instead of holding a fixed 10% width. The header's right side keeps a small spacer reserving the X's corner. On the three log cards, the timer icon grew slightly (20→24px) and sits slightly further right of the heading.
+
+The Dhor card got its confirmed adjustment set: the Plan button moved to the bottom of the card below Notes, at 30% width, left-aligned, keeping its look; the vacated row now follows Sabaq and Sabaq Dhor's own date-row layout exactly — date pill left, History button right, same sizing — replacing the bespoke three-column row, with its History button finally named "Dhor History" like every other card's. The Quarter/Half pill sits slightly lower, its third option now reads "Juz" instead of "Full" (display only — the internal value and all logic are untouched, verified), and the "Juz" label above the picker is gone along with the invisible placeholder that existed only to match its height, so both controls rise together. The confirm checkboxes on both Dhor and Sabaq nudged right, widening their gap from the controls beside them.
+
+Verified with jsdom against the real files — 27 new checks — and, since this touched markup the two previous releases depend on, both earlier harnesses were re-run green against the changed files: the confirm-checkbox relocation suite (28/28) and the date-wiring suite (31/31), 86/86 in all. Frontend-only deploy; upload the same zip to both repos.
+
+---
+
 ## V3.50.1 — Date pickers fixed on iOS; date displays unified as pills (2026-08-14)
 
 **Files touched:** `js/customDate.js`, `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.**
