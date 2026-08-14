@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.50.1 — Date pickers fixed on iOS; date displays unified as pills (2026-08-14)
+
+**Files touched:** `js/customDate.js`, `css/detail-pages.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.**
+
+The date selector on Sabaq, Sabaq Dhor, and Dhor stopped opening on iOS — root cause outside this codebase: `showPicker()` for date inputs has never been implemented on iOS (WebKit bug 268114, still open), and the method *exists but silently does nothing*, so the code's focus-and-click fallback — which only ran when `showPicker` was missing or threw — never fired. Tadabbur alone kept working by accident: its date field arrived six days after the custom date display was written and was never wired into it, leaving a bare native input — which is precisely the pattern that works. The fix makes that the design: the invisible native input now sits on top as the actual tap target, so every tap is a direct tap on a real date input, which iOS opens reliably and always has. The visible display underneath is purely visual — an aria-hidden span rather than a button, with the input carrying the accessible label and a keyboard-focus ring drawn on the pill beside it. The click handler and every `showPicker` path are deleted outright, not kept as a fallback.
+
+Two styling directions confirmed from the Tadabbur screenshot ship with it: all four cards' date displays are now pills (fully rounded, borderless, the iOS-native neutral grey the user preferred over the bordered box), and all four show the app's own "Fri 14-Aug" format — Tadabbur included, now that it's wired in, trading its browser-native "14 Aug 2026" wording for consistency with the rest. Verified with a jsdom harness running the real rewritten `customDate.js` against the real `index.html`: 31/31 checks across wiring, accessibility contract, programmatic-set and change-event re-rendering, and the CSS tap-target inversion. Frontend-only deploy; upload the same zip to both repos.
+
+---
+
 ## V3.50.0 — Confirm-selection checkboxes joined to the Sabaq Dhor pattern (2026-08-12)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/dhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos** — upload this same zip to the original and the personal repo.

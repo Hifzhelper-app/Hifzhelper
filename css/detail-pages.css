@@ -184,12 +184,14 @@
    controlled -- no CSS can reformat it, which is why desktop Chrome and
    mobile Safari were showing 2 different formats for the same date.
    wireCustomDateDisplay (js/customDate.js) wraps each date input in
-   .custom-date-wrap, hides the input itself (still fully functional,
-   just invisible) and adds this visible button in its place, showing a
-   consistent "DDD dd-MMM" format everywhere. Clicking it calls the
-   input's own .showPicker() -- same native picker as before, just a
-   different visible face on top of it. Padding/font-size reduced here
-   too, per the earlier separate request. */
+   .custom-date-wrap and shows this visible pill in its place.
+   V3.50.1 (confirmed in chat): the tap path is inverted -- the NATIVE
+   INPUT sits invisibly ON TOP (z-index below) and is what the user
+   actually taps, because showPicker() for date inputs was never
+   implemented on iOS (WebKit bug 268114) and a direct tap on a real
+   date input is the one thing iOS opens reliably. The pill is purely
+   visual, styled to the iOS-native pill look the user preferred from
+   Tadabbur's then-unwired bare input (screenshot, 2026-08-14). */
 .custom-date-wrap {
   position: relative;
   width: 100%;
@@ -199,19 +201,28 @@
   position: absolute;
   inset: 0;
   opacity: 0;
-  pointer-events: none;
+  z-index: 2;         /* the real tap target, over the pill */
+  cursor: pointer;
+}
+/* Keyboard affordance: the invisible input has focus, so ring the
+   visible pill beside it instead (input is the wrap's first child). */
+.native-date-hidden:focus-visible + .custom-date-display {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 .custom-date-display {
   width: 100%;
   height: 100%;
   box-sizing: border-box;
-  padding: 4px 4px;
-  border: 1px solid var(--color-table-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  display: flex;               /* span now, not a button -- needs its own layout */
+  align-items: center;
+  justify-content: center;
+  padding: 4px 14px;
+  border: none;
+  border-radius: 999px;
+  background: #E9E9EB;         /* the iOS-native date-pill neutral */
   font-family: inherit;
   font-size: 13px;
-  text-align: left;
   cursor: pointer;
   color: var(--color-ink);
 }

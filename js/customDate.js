@@ -1,13 +1,27 @@
 // Hifzhelper -- shared custom date display (2026-08-03, confirmed in
-// chat). A native <input type="date">'s own displayed text is entirely
-// browser/OS-controlled -- no amount of CSS can reformat it, which is
-// exactly why desktop Chrome and mobile Safari were showing 2 different
-// formats for the identical date. This wraps each date input with a
-// visible button showing a consistent "DDD dd-MMM" format everywhere,
-// while leaving the input itself fully intact underneath -- same id,
-// same .value, same change event -- so every existing read/write against
-// it (payload construction, etc.) keeps working completely unchanged.
-// Only how it's DISPLAYED changes.
+// chat; reworked V3.50.1). A native <input type="date">'s own displayed
+// text is entirely browser/OS-controlled -- no amount of CSS can
+// reformat it, which is exactly why desktop Chrome and mobile Safari
+// were showing 2 different formats for the identical date. This wraps
+// each date input with a visible pill showing a consistent "DDD dd-MMM"
+// format everywhere, while leaving the input itself fully intact --
+// same id, same .value, same change event -- so every existing
+// read/write against it keeps working completely unchanged.
+//
+// V3.50.1 (confirmed in chat): the tap path is inverted. The original
+// design put a button on top and called input.showPicker() from its
+// click handler -- but showPicker() for date inputs has NEVER been
+// implemented on iOS (WebKit bug 268114, still open): the method
+// exists and silently does nothing, so the focus+click fallback (which
+// only ran when showPicker was absent or threw) never fired, and the
+// picker never opened on iOS. Now the NATIVE INPUT itself is the tap
+// target -- invisible but sitting on top of the pill
+// (css/detail-pages.css: .native-date-hidden) -- so every tap is a
+// direct user tap on a real date input, which iOS opens reliably and
+// always has (Tadabbur's then-unwired bare input proved it on the
+// affected device). The pill underneath is purely visual
+// (aria-hidden), there is no click handler and no showPicker anywhere,
+// and the input carries an aria-label since no visible text labels it.
 
 function formatCustomDate(iso){
   if(!iso) return 'Select date';
@@ -40,9 +54,13 @@ function wireCustomDateDisplay(inputId){
   input.parentNode.insertBefore(wrap, input);
   wrap.appendChild(input);
   input.classList.add('native-date-hidden');
+  input.setAttribute('aria-label', 'Date');
 
-  const display = document.createElement('button');
-  display.type = 'button';
+  // Purely visual (V3.50.1): a span, not a button -- the input above it
+  // is the real, tappable, focusable control, and a button here would
+  // add a second pointless tab stop announcing nothing.
+  const display = document.createElement('span');
+  display.setAttribute('aria-hidden', 'true');
   display.className = ('custom-date-display ' + originalClasses).trim();
   wrap.appendChild(display);
 
@@ -69,23 +87,16 @@ function wireCustomDateDisplay(inputId){
 
   render();
 
-  display.addEventListener('click', () => {
-    // showPicker() is the direct, modern way to open a date input's
-    // native picker programmatically; not every browser has it yet, so
-    // focus()+click() is the fallback -- most browsers already open the
-    // native picker on a plain click/focus of a date input.
-    if(typeof input.showPicker === 'function'){
-      try{ input.showPicker(); } catch(e){ input.focus(); input.click(); }
-    } else {
-      input.focus();
-      input.click();
-    }
-  });
   input.addEventListener('change', render);
 }
 
-// All 3 date inputs are static HTML, already in the DOM by the time this
+// All 4 date inputs are static HTML, already in the DOM by the time this
 // script runs (scripts load at the end of the page) -- wiring them here,
 // once, covers every card without needing a call from each page's own
-// script. Tadabbur has no date field of its own to wire.
-['sabaq_date', 'sabaqDhor_date', 'dhor_date'].forEach(wireCustomDateDisplay);
+// script. tadabbur_date joined in V3.50.1 (confirmed in chat): its date
+// field arrived in V3.44.1, six days after this file was written, and
+// was never added -- which accidentally left it the one WORKING card on
+// iOS (bare native input = the direct-tap pattern this file now uses),
+// but also the one card showing the browser-native format instead of
+// the app's own. Now all four both work and match.
+['sabaq_date', 'sabaqDhor_date', 'dhor_date', 'tadabbur_date'].forEach(wireCustomDateDisplay);
