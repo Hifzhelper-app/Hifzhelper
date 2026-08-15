@@ -122,6 +122,21 @@ redacted, the entry itself still shows.
 | `is_private` | INTEGER | `1` = hidden from teachers. Same idea as `student_comment_private`, but reflections have no teacher-feedback concept, so no visibility tiers needed. |
 | `created_at` | TEXT | |
 
+## Tables: `maktab_sabaq_log`, `maktab_sabaq_dhor_log`, `maktab_dhor_log` (migration 0019 — Maktab Phase 2)
+
+The Maktab's own record of a Hifz day, completely independent of the PJ logs above — a teacher confirming and saving what they actually listened to. Created in migration 0019 (V3.57.0, maktab delivery (c)); endpoints arrive in delivery (d), so until then nothing reads or writes them.
+
+Each mirrors its PJ counterpart's full current column set (the rule: ALL PJ columns), plus two provenance columns, with one default divergence:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| *(every column of the PJ counterpart)* | — | Identical names, types, and CHECKs — including `entered_by` (who made the API call; equals `teacher_id` on a normal save, but they're different facts) and the full student-comment set (`student_comment` + `_by`/`_at` + `_private` — the landing spot for a PJ non-private note at prepop-confirm time). |
+| `teacher_id` | TEXT (FK) NOT NULL | The confirming teacher — teachers are `students` rows, no separate table. The no-self-recitation rule (`teacher_id != student_id`) is enforced server-side in the endpoints, deliberately NOT as a CHECK (it's an auth rule about who confirms, and a CHECK would block a legitimate future admin data-correction path). |
+| `teacher_name` | TEXT NOT NULL | Snapshot at save time, deliberately denormalized — provenance reads as it was when confirmed, even if the teacher's row is later renamed or deactivated. |
+| `teacher_feedback_visibility` | TEXT | Same enum and semantics as the PJ, but DEFAULT **`'teachers_only'`** here (PJ default is `'all'`) — the one agreed divergence. |
+
+Maktab attendance is NOT a table — it's derived at read time (delivery (f)): present assumed, haidh from the PJ's `attendance`, absent when no maktab log exists on a maktab day (≥N distinct students logged; N is a worker env var). A teacher's save overwrites a haidh mark — log always wins, same as the PJ.
+
 ## Table: `plans`
 
 A plan is an intention, not a record of something that happened — genuinely

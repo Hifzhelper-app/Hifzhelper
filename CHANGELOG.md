@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.57.0 — Maktab delivery (c): migration 0019, the three maktab tables (2026-08-15)
+
+**Files touched:** `worker/migrations/0019_maktab_tables.sql` (new), `SCHEMA.md`, `TODO.md`, `CHANGELOG.md`. **Migration + docs only — no worker code, no frontend, nothing to cache-bust or deploy. BUT: the migration must be RUN, one statement at a time in the D1 console, on BOTH DBs (maktab1 + personal) — a delivered migration file is not a run migration. It's purely additive (three CREATE TABLEs, nothing existing touched, nothing reads them until delivery (d)), so it's safe to run any time — but (d) will fail against a DB where it hasn't been run.**
+
+The first maktab-specific schema — where the PJ and the Maktab start differentiating. `maktab_sabaq_log`, `maktab_sabaq_dhor_log`, `maktab_dhor_log`: each mirrors its PJ counterpart's full current column set (assembled from the real migration history, not the stale 0005 snapshot), plus `teacher_id` (the confirming teacher — a students-table row) and `teacher_name` (a deliberate snapshot: provenance reads as it was when confirmed). One agreed default divergence: `teacher_feedback_visibility` defaults to `'teachers_only'` here versus the PJ's `'all'`. The no-self-recitation rule is deliberately NOT a CHECK — it's an auth rule for the endpoints (delivery (d)).
+
+Verified in node:sqlite with the comparison side built by replaying the actual migration files: 26/26 — every PJ column present with matching type on all three tables, exactly the two agreed extras (both NOT NULL), the `teachers_only` default proven by insertion (PJ's `all` confirmed untouched), all CHECKs enforced, and the file confirmed to split into exactly three statements for the console process.
+
+---
+
 ## V3.56.0 — Lost-note bug fix + Maktab delivery (b): PJ notes private by default (2026-08-15)
 
 **Files touched:** `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `js/commentPrivacy.js`, `SCHEMA.md`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **Mixed delivery: worker AND frontend. Deploy worker first — the fix is pure addition and safe against the old frontend, but old worker + new frontend would keep dropping notes on fresh saves.**
