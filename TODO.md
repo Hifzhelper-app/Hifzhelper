@@ -156,7 +156,9 @@ building" + zip:**
       Genuinely a PJ change. **DONE — V3.56.0, 2026-08-15, bundled
       with the lost-note bug fix.**
   (c) Migration + three maktab_* tables (all PJ columns + teacher
-      notes + teacher_id + teacher_name).
+      notes + teacher_id + teacher_name). **DONE — V3.57.0,
+      2026-08-15. Migration file delivered; MUST BE RUN on both DBs
+      before (d) deploys.**
   (d) Worker endpoints (save/update/delete/get for all three) —
       near-clones of the PJ modules via logHelpers.js.
   (e) Maktab summary screen (teacher) + the student read-only view
@@ -165,8 +167,83 @@ building" + zip:**
       log-wins overwrite).
   (a) and (b) touch already-live code and are correct on their own —
   worth landing and confirming before (c)–(f) start. (a) and (b)
-  are both DONE. NEXT STEP: a build-ready spec for (c) — migration +
-  three maktab_* tables — then "start building".
+  are both DONE, and (c)'s migration file is delivered (run it!).
+  NEXT STEP: a build-ready spec for (d) — the worker endpoints —
+  then "start building".
+
+## Done — V3.57.0 (2026-08-15): Maktab delivery (c) — migration 0019, three maktab_* tables — built to the spec below. MIGRATION NOT YET RUN — run on BOTH DBs before delivery (d) deploys
+
+The first maktab-specific artifact — where the PJ and the Maktab
+start differentiating (user's words). Migration file + docs ONLY: no
+worker code reads these tables yet (that's delivery (d)), no frontend
+change, nothing to cache-bust. Purely additive — three CREATE TABLEs,
+no existing table touched — so running it carries no risk to the
+live app.
+
+**Tables:** `maktab_sabaq_log`, `maktab_sabaq_dhor_log`,
+`maktab_dhor_log`. Per the agreed rule ("ALL PJ columns, plus teacher
+notes, teacher_id and teacher_name"), each mirrors its PJ
+counterpart's CURRENT live shape — assembled from the full migration
+history (0005 base, 0006 privacy + dhor rename/lap_times, 0013
+line/page counts, 0014 sabaq-dhor ayah range, 0015 sabaq_from/to),
+not from the stale 0005 snapshot — plus:
+- `teacher_id TEXT NOT NULL REFERENCES students(id)` — the confirming
+  teacher (teachers are students-table rows; no separate table).
+- `teacher_name TEXT NOT NULL` — a SNAPSHOT at save time, deliberately
+  denormalized: provenance should read as it was when confirmed, even
+  if the teacher's row is later renamed/deactivated.
+- `teacher_feedback_visibility` DEFAULT **'teachers_only'** — the one
+  agreed default divergence from the PJ (whose default is 'all').
+  Same CHECK enum, same applyPrivacy semantics, different default.
+- Everything else identical, including `entered_by` (who made the API
+  call — kept per the ALL-columns rule; will equal teacher_id on a
+  normal save, but they're different facts), `student_comment` +
+  `_by`/`_at` + `student_comment_private` (the landing spot for the
+  PJ's non-private note flow at prepop-confirm time, delivery (e)),
+  `is_duplicate`, and dhor's `ref` CHECK.
+
+**Deliberately NOT in this migration:** no ≥N env var (worker config,
+delivery (f)); no endpoints (d); no self-recitation CHECK
+(teacher_id != student_id is enforced server-side in (d) — a CHECK
+would also block a legitimate future admin data-correction path and
+the rule is about who CONFIRMS, an auth concern not a data-integrity
+one); no indexes beyond the PKs (the PJ tables have none either —
+same query shapes, same scale ceiling of ~100 students/maktab).
+
+**Build:**
+- `worker/migrations/0019_maktab_tables.sql` — three CREATE TABLEs,
+  no inline trailing comments on statement lines (the 0010/0011
+  runner lesson), apply ONE STATEMENT AT A TIME in the D1 console
+  (standing rule since 0003/0007).
+- `SCHEMA.md` — new Maktab tables section.
+- `TODO.md`/`CHANGELOG.md`.
+- **RUN THE MIGRATION on BOTH DBs (maktab1 + personal) — a delivered
+  migration file is NOT a run migration (the standing lesson). Safe
+  to run any time: purely additive, nothing reads the tables yet.**
+
+**Verification:** node:sqlite executes the migration file's
+statements one at a time (mirroring the D1 console process);
+programmatic PRAGMA table_info comparison proving every current PJ
+column exists on its maktab counterpart with matching type; the two
+extra columns present and NOT NULL; an insert without
+teacher_feedback_visibility lands as 'teachers_only' (the default
+divergence, proven not asserted); dhor's ref CHECK and the visibility
+CHECK enforced; teacher_id NOT NULL enforced.
+
+**Built + verified:** migration + SCHEMA.md section written as
+spec'd. Harness 26/26 — and the "carries all PJ columns" checks
+compare against PJ tables built by REPLAYING the actual migration
+files (0005+0006+0013+0014+0015), so the mirror is proven against
+the real history, not a hand-typed copy: every PJ column present
+with matching type on all three; exactly the 2 agreed extras, both
+NOT NULL; the 'teachers_only' default proven by inserting without
+the column (and the PJ's own 'all' default confirmed untouched);
+dhor's ref CHECK, the visibility CHECK, and teacher_id NOT NULL all
+enforced; the file splits into exactly 3 statements for the
+one-at-a-time console process. One harness-side lesson (harness bug,
+not migration bug): comment prose containing semicolons is fine —
+0011/0017 already do it in production — the first splitter draft cut
+inside the header comment before stripping comments.
 
 ## Done — V3.56.0 (2026-08-15): lost-note bug fix + Maktab delivery (b) PJ notes private-by-default — built to the spec below
 
