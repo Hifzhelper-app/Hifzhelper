@@ -47,6 +47,15 @@ export async function handleSaveSabaqDhor(request, env, auth) {
   if (result.id) {
     if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
+    // V3.56.0: fresh-save note fix -- see sabaqLog.js's identical block
+    // for the full reasoning (why NOT via FIELDS).
+    if (body.student_comment != null && body.student_comment !== '') {
+      await updateLog(env, TABLE, result.id, studentId, {
+        student_comment: body.student_comment,
+        student_comment_private: body.student_comment_private ?? false,
+      }, auth.id, UPDATE_FIELDS);
+    }
+
     // Sabaq Dhor also counts as recorded activity for attendance — same rule
     // as Sabaq and Dhor (see SCHEMA.md / the original attendance decision).
     await env.DB.prepare(

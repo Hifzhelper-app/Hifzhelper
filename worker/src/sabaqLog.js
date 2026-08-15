@@ -54,6 +54,22 @@ export async function handleSaveSabaq(request, env, auth) {
   if (result.id) {
     if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
+    // V3.56.0 (2026-08-15, confirmed in chat): the fresh-save path used
+    // to DROP notes -- the frontend payload has always carried
+    // student_comment + student_comment_private, but nothing here read
+    // them (insertLog writes only FIELDS, which rightly excludes them:
+    // FIELDS also drives isDuplicate, and identical content with a
+    // different note is still the same recitation logged twice).
+    // Deliberately NOT fixed by adding them to FIELDS -- written onto
+    // the just-inserted row via updateLog's existing student_comment
+    // branch instead (text + _by/_at stamps + flag normalization).
+    if (body.student_comment != null && body.student_comment !== '') {
+      await updateLog(env, TABLE, result.id, studentId, {
+        student_comment: body.student_comment,
+        student_comment_private: body.student_comment_private ?? false,
+      }, auth.id, UPDATE_FIELDS);
+    }
+
     await env.DB.prepare(
       `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
        ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`

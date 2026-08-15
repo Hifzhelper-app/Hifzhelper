@@ -15,12 +15,18 @@
 // toggle.
 // V3.18.0: the checkbox+label move up onto the same row as the "Notes"
 // label itself, instead of sitting on their own row below the textarea.
+// V3.56.0 (2026-08-15, confirmed in chat -- maktab delivery (b)): default
+// flipped to PRIVATE for NEW entries -- a fresh form renders the checkbox
+// checked; an existing entry still shows its own stored value exactly as
+// before. Paired with the worker-side fresh-save note fix (the same
+// delivery): before it, this checkbox's value was silently dropped on new
+// saves anyway.
 // ============================================================
 
 function renderCommentBlock(containerId, existingEntry){
   const el = document.getElementById(containerId);
   const feedback = existingEntry && existingEntry.teacher_feedback;
-  const isPrivate = !!(existingEntry && existingEntry.student_comment_private);
+  const isPrivate = existingEntry ? !!existingEntry.student_comment_private : true;
   el.innerHTML = `
     <div class="notes-header-row">
       <label>Notes</label>

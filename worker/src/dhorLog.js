@@ -64,6 +64,15 @@ export async function handleSaveDhor(request, env, auth) {
   if (result.id) {
     if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
+    // V3.56.0: fresh-save note fix -- see sabaqLog.js's identical block
+    // for the full reasoning (why NOT via FIELDS).
+    if (body.student_comment != null && body.student_comment !== '') {
+      await updateLog(env, TABLE, result.id, studentId, {
+        student_comment: body.student_comment,
+        student_comment_private: body.student_comment_private ?? false,
+      }, auth.id, UPDATE_FIELDS);
+    }
+
     await env.DB.prepare(
       `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
        ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
