@@ -146,6 +146,17 @@ That's why it stays its own small delivery — a permission change is
 easier to reason about, test, and roll back alone — not because it
 belongs to the PJ.
 
+**DEPLOYMENT FORK (2026-08-15, stated after (d) was built):** the
+personal deployment (hifzhelper-personal-db + its own worker) is for
+students NOT connected to a maktab. It was updated through V3.56.0
+and stops there — every delivery from V3.57.0 onward is for the
+MAKTAB deployment only: zips upload to the maktab repo only, the
+worker deploys to the maktab worker only, migrations run on
+hifzhelper-maktab1 only (one DB holding both the PJ and maktab
+tables). "One zip both repos" ended at V3.56.0. This also dissolves
+the personal-deployment maktab-UI question for (e): personal never
+receives the maktab frontend at all.
+
 **Delivery split, in this order, each its own spec + "start
 building" + zip:**
   (a) `isTeacherOrAbove` refactor — 12 call sites, utils.js helper.
@@ -157,21 +168,131 @@ building" + zip:**
       with the lost-note bug fix.**
   (c) Migration + three maktab_* tables (all PJ columns + teacher
       notes + teacher_id + teacher_name). **DONE — V3.57.0,
-      2026-08-15. Migration file delivered; MUST BE RUN on both DBs
-      before (d) deploys.**
+      2026-08-15. Migration file delivered; MUST BE RUN on
+      hifzhelper-maktab1 (ONLY — see fork note above) before (d)
+      deploys.**
   (d) Worker endpoints (save/update/delete/get for all three) —
-      near-clones of the PJ modules via logHelpers.js.
+      via logHelpers.js. **DONE — V3.58.0, 2026-08-15 (one module +
+      config map, not three clones — see its entry). Deploy after
+      0019 is run.**
   (e) Maktab summary screen (teacher) + the student read-only view
       + prepop reusing the PJ calcs against maktab tables.
   (f) Derived attendance (env-var N, 3-table UNION, haidh from PJ,
       log-wins overwrite).
   (a) and (b) touch already-live code and are correct on their own —
   worth landing and confirming before (c)–(f) start. (a) and (b)
-  are both DONE, and (c)'s migration file is delivered (run it!).
-  NEXT STEP: a build-ready spec for (d) — the worker endpoints —
-  then "start building".
+  are both DONE; (c)'s migration file is delivered (RUN IT before
+  deploying (d)); (d) is DONE. NEXT STEP: a build-ready spec for
+  (e) — the maktab summary screen + student read-only view +
+  prepop — then "start building". (e) is the big frontend one.
 
-## Done — V3.57.0 (2026-08-15): Maktab delivery (c) — migration 0019, three maktab_* tables — built to the spec below. MIGRATION NOT YET RUN — run on BOTH DBs before delivery (d) deploys
+## Done — V3.58.0 (2026-08-15): Maktab delivery (d) — worker endpoints for the three maktab logs — built to the spec below. MAKTAB DEPLOYMENT ONLY; deploy AFTER migration 0019 is run on hifzhelper-maktab1
+
+Worker-only. **Requires migration 0019 already RUN on the target DB —
+these endpoints 500 against a DB without the maktab tables.**
+
+**Module shape — ONE file, `worker/src/maktabLog.js`, not three:** the
+three PJ modules exist separately because their field lists and
+validations differ; the maktab versions share ALL of that per table
+via a config map (table name, content fields, per-type validation),
+so three near-identical files would be pure duplication
+(CONVENTIONS.md principle 2). Exports 12 handlers (get/save/update/
+delete × 3), wired in index.js as `/maktab/sabaq`, `/maktab/
+sabaq-dhor`, `/maktab/dhor` — same GET/POST/PATCH/DELETE per path
+pattern as the PJ routes.
+
+**Auth rules (all confirmed in the design entry above):**
+- Save/update/delete: `isTeacherOrAbove` required — 403 otherwise.
+- Save: `body.student_id` REQUIRED (a teacher logs FOR a student —
+  no defaulting to auth.id like the PJ). No self-recitation:
+  `body.student_id === auth.id` → 403, admins included (the rule is
+  about who confirms, another teacher must).
+- Update/delete: ANY teacher (+admin), not just the saving teacher —
+  teacher_id/teacher_name are provenance (who confirmed), NOT an
+  ownership lock, so they're immutable on edit (not in the update
+  whitelist; the original confirmer stays on the row; note edits are
+  tracked by teacher_feedback_by/_at as usual).
+- GET: teacher+ reads anyone's; a student reads their OWN only
+  (`student_id !== auth.id` → 403 for non-teachers) — the read-only
+  "my maktab journal" view in (e). getLogs' existing applyPrivacy
+  rides along unchanged: with the maktab's 'teachers_only' default a
+  student doesn't see teacher notes unless a teacher explicitly set
+  'all'.
+
+**Save mechanics:**
+- teacher_id = auth.id; teacher_name = looked up from students at
+  save time (the agreed snapshot). Direct INSERT, not insertLog —
+  same precedent as reflections (V3.51.2): insertLog can't write the
+  two NOT NULL provenance columns. Duplicate detection kept by
+  calling the exported isDuplicate directly on the CONTENT fields
+  only (teacher_id/name deliberately excluded from comparison — the
+  same recitation confirmed twice is a duplicate regardless of which
+  teacher pressed save), with the same abortable force flow as the
+  PJ.
+- Accepts optional student_comment + student_comment_private (the
+  PJ note flow lands here at prepop-confirm, delivery (e)) — written
+  inline, stamped _by = the STUDENT (it's their note, flowed from
+  their PJ), _at = now. Claude's call, stated: the teacher pressing
+  save is not the note's author. Note-only trigger, same as V3.56.0.
+- Accepts optional teacher_feedback (+ visibility, defaulting
+  'teachers_only') — stamped _by = auth.id (the teacher IS this
+  author), _at = now.
+- **Haidh overwrite (confirmed in chat: "the save overwrites the
+  haidh mark"):** after a successful insert, a targeted
+  `UPDATE attendance SET status='present' WHERE student_id=? AND
+  date=? AND status IN ('haidh','predicted-haidh')`. Targeted, not
+  the PJ's unconditional upsert, deliberately: it implements "haidh
+  and a log cannot co-exist, log wins" WITHOUT writing new 'present'
+  rows into the PJ's attendance for every maktab save — PJ
+  attendance keeps reflecting PJ activity; only a haidh conflict is
+  resolved.
+- NO trackAttendance anywhere — maktab attendance is derived at
+  read time (delivery (f)), nothing to sync.
+
+**Update:** module fetches the row first (needed anyway for the
+teacher gate — updateLog's own ownership check expects the student),
+then calls updateLog with the row's own student_id. Whitelist: the
+type's content fields + date (+ the comment/feedback special fields
+updateLog already handles). Delete: same fetch-then-deleteLog shape.
+
+**Build:** `worker/src/maktabLog.js` (new), `worker/src/index.js`
+(12 routes + import), TODO.md, CHANGELOG.md. **Worker-only delivery;
+deploy AFTER running migration 0019 on hifzhelper-maktab1.
+Maktab deployment ONLY — see the fork note in the design entry.**
+
+**Verification:** node:sqlite (real 0019 tables via the migration
+file) driving the real handlers: role matrix on all 4 ops (student
+403 on writes + foreign reads, own-read allowed; teacher/admin
+allowed); self-recitation 403 (teacher AND admin); teacher_name
+snapshot lands; duplicate flow (same content two different teachers
+→ still duplicate; force honoured); haidh overwrite (haidh →
+present on save; a present/absent row untouched; no attendance row
+created when none existed); student note stamped to the student,
+teacher note to the teacher; visibility defaults teachers_only;
+teacher_id immutable via PATCH; any-teacher edit allowed; applyPrivacy
+hiding teacher notes from the student on GET.
+
+**Built + verified:** built exactly as spec'd — one module
+(worker/src/maktabLog.js, config map for the three tables, 12
+handlers), 12 routes + import wired into index.js. Harness 36/36
+against the REAL 0019 tables (created by executing the actual
+migration file) and the real handlers: the full role matrix on all
+four ops; self-recitation 403 for teacher AND admin while another
+teacher logging a teacher-as-student is allowed; save without
+student_id → 400 (never defaults to auth.id); teacher_name snapshot;
+same-content-different-teacher still flagged duplicate + force flow;
+haidh→present overwrite with an absent row untouched AND no PJ
+attendance row created by a maktab save (targeted, not the PJ
+upsert); student note stamped to the student / teacher note to the
+teacher / note-less rows clean; teachers_only default landing and
+applyPrivacy proving the student can't see teachers_only feedback
+that another teacher CAN; provenance immutable through a PATCH that
+explicitly tried to overwrite teacher_id/teacher_name; date editable;
+delete by a different teacher allowed, by a student 403; dhor
+lap_times JSON round-trip + validation. All four prior worker
+harnesses re-run green (22+45+18+26) — 147 total this round.
+
+## Done — V3.57.0 (2026-08-15): Maktab delivery (c) — migration 0019, three maktab_* tables — built to the spec below. MIGRATION NOT YET RUN — run on hifzhelper-maktab1 (ONLY) before delivery (d) deploys
 
 The first maktab-specific artifact — where the PJ and the Maktab
 start differentiating (user's words). Migration file + docs ONLY: no
@@ -217,9 +338,13 @@ same query shapes, same scale ceiling of ~100 students/maktab).
   (standing rule since 0003/0007).
 - `SCHEMA.md` — new Maktab tables section.
 - `TODO.md`/`CHANGELOG.md`.
-- **RUN THE MIGRATION on BOTH DBs (maktab1 + personal) — a delivered
-  migration file is NOT a run migration (the standing lesson). Safe
-  to run any time: purely additive, nothing reads the tables yet.**
+- **RUN THE MIGRATION on hifzhelper-maktab1 ONLY — corrected
+  2026-08-15, same day, after the deployment-fork clarification (the
+  original spec said both DBs): the personal deployment is for
+  students NOT connected to a maktab, stopped at V3.56.0, and never
+  gets maktab tables, code, or zips. A delivered migration file is
+  still NOT a run migration (the standing lesson). Safe to run any
+  time: purely additive, nothing reads the tables yet.**
 
 **Verification:** node:sqlite executes the migration file's
 statements one at a time (mirroring the D1 console process);
