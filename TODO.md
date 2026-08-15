@@ -4,6 +4,55 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.53.2 (2026-08-15): lap list moved down + taller (fits ~10 rows) — built to the spec below
+
+Confirmed by screenshot: V3.53.1's fixes all landed correctly (ring
+genuinely centred now, Lap-to-time gap tight, controls no longer
+clustered at the top). New ask from the same screenshot: the list
+only shows 6 laps before needing to scroll; wants ~10 visible, and
+the container moved down slightly first -- specifically so that
+extending its height doesn't just make it creep upward into the icon
+row (it's currently `top:50%;transform:translateY(-50%)`, centred on
+`.dial`, so a taller box would grow equally in both directions).
+
+Row height calibrated from the screenshot itself, not guessed: 6 full
+rows visible in the current 168px `max-height` -> ~24px/row
+(6*24 + 5*4px row-gap + 4px container padding = 168, checks out
+exactly against what's actually on screen). Ten rows at the same
+rate: 10*24 + 9*4 + 4 = 280px.
+
+Fix: `.laps` moves off centring entirely -- fixed `top:24px` (a small,
+deliberate step down from the ring's own 12px inset) instead of
+`top:50%` + translateY. This is a stable anchor, not just "start
+lower": the list now always begins from the same point and only grows
+downward as laps are added, rather than re-centring (and therefore
+shifting both edges) on every new lap. `max-height` (still
+shrink-to-fit for few laps, not a rigid box that's mostly empty early
+in a session) goes from `min(168px, 20vh)` to `280px`.
+
+Room check, not just assumed: `.top`+`.dial`+`.lapwrap`+`.ctrls`'s own
+approximate heights (~55+184+72+113px) leave roughly 119px of
+leftover space that V3.53.1's `margin-top:auto` already pushes
+`.lapwrap`/`.ctrls` down by -- so `.laps` reaching 280px (96px past
+`.dial`'s own 184px box) has comfortable room before the now-lower LAP
+button, with margin to spare. These are still estimates against this
+file's own documented numbers, not live-rendered measurements -- if
+the fit's off in the next screenshot, it's a one-line number to
+adjust, not a redesign.
+
+**Build:**
+- `js/session-timer.js` — CSS only, `.laps`: `top`/`max-height` per
+  above. No JS/markup changes.
+- `index.html`/`js/sw.js` — version bump only, same as every delivery.
+
+**Built + verified:** built exactly as spec'd — `.laps`'s `top`/
+`max-height` only, no JS/markup touched. jsdom harness re-run against
+the real file: 29/29, unchanged since none of the wake-lock/lap-
+recording logic moved this round either. Not harness-checkable, same
+caveat as V3.53.1: the actual fit on-device — whether 280px really
+reads as ~10 rows and clears the LAP button with the margin this file
+estimates — is worth confirming with a screenshot.
+
 ## Done — V3.53.1 (2026-08-15): maximised-timer layout fixes from a device screenshot — built to the spec below
 
 Follow-up on V3.53.0's lap-list-beside-the-ring layout — a real device
