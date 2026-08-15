@@ -148,8 +148,23 @@
    stay aligned row-to-row even once lap counts run to two digits
    (independent per-row grids wouldn't), and the container naturally
    shrinks to hug its content instead of a hardcoded width, which is
-   what gives the re-centred ring room to breathe on its left. */
-.laps{position:absolute;left:0;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:auto auto;column-gap:10px;row-gap:4px;max-height:min(168px, 20vh);overflow-y:auto;align-content:start;padding:2px}
+   what gives the re-centred ring room to breathe on its left.
+   2026-08-15, same day, confirmed by screenshot then adjusted again:
+   only 6 rows were visible before scrolling, and the fix isn't just
+   "make it taller" -- top:50% + translateY(-50%) centres .laps on
+   .dial, so growing its height would have pushed it upward into the
+   icon row just as much as down. Row height back-calculated from
+   what was actually on screen (6 full rows in 168px -> 24px/row,
+   6*24 + 5*4 row-gap + 4 padding = 168 exactly), then re-applied for
+   10 rows: 10*24 + 9*4 + 4 = 280px. top switches to a fixed 24px (a
+   small, deliberate step down from the ring's own 12px inset) so the
+   list is a stable anchor that only grows downward as laps are
+   added, never re-centring (and therefore never shifting its top
+   edge) on every new lap. Room checked against .full's own section
+   heights (.top/.dial/.lapwrap/.ctrls) and the .lapwrap
+   margin-top:auto added the same day -- comfortable clearance before
+   the LAP button, not just assumed. */
+.laps{position:absolute;left:0;top:24px;display:grid;grid-template-columns:auto auto;column-gap:10px;row-gap:4px;max-height:280px;overflow-y:auto;align-content:start;padding:2px}
 .laprow{display:contents;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#8e8e93}
 .laprow.last{color:#fff}
 .ctrls{display:flex;justify-content:center;gap:44px;padding-top:18px}

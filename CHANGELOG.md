@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.53.2 — Lap list moved down + taller, fits ~10 rows (2026-08-15)
+
+**Files touched:** `js/session-timer.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy. CSS only — no JS/markup changes.
+
+Follow-up on V3.53.1's centring fix, from a second screenshot: only 6 laps were visible before scrolling, and simply growing `.laps` taller wasn't the whole fix — it was `top:50%` + `translateY(-50%)`, centred on `.dial`, so a taller box would have grown upward into the icon row just as much as down.
+
+Row height back-calculated from what was actually on screen (6 full rows in 168px → 24px/row, confirmed exactly: 6×24 + 5×4px row-gap + 4px padding = 168), then reapplied for 10 rows: 280px. `.laps` now anchors at a fixed `top:24px` instead of centring — a small, deliberate step down from the ring's own inset, and a stable point that only grows downward as laps are recorded rather than re-centring (and shifting) on every new lap.
+
+Re-verified against the real `session-timer.js` in jsdom: 29/29, unchanged since this round is CSS-only too. The 280px figure and the room-to-grow-into below it are traced against this file's own documented section heights, not live-rendered — worth a look to confirm the fit lands as intended.
+
+---
+
 ## V3.53.1 — Maximised-timer layout fixes from a device screenshot (2026-08-15)
 
 **Files touched:** `js/session-timer.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy. CSS only — no JS/markup changes.
