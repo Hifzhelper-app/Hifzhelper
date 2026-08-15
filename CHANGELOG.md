@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.56.0 — Lost-note bug fix + Maktab delivery (b): PJ notes private by default (2026-08-15)
+
+**Files touched:** `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `js/commentPrivacy.js`, `SCHEMA.md`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **Mixed delivery: worker AND frontend. Deploy worker first — the fix is pure addition and safe against the old frontend, but old worker + new frontend would keep dropping notes on fresh saves.**
+
+The bug, pre-existing on all three activity logs: a note typed on a brand-new entry was silently lost. The frontend payload has always carried `student_comment` + `student_comment_private`, but the save handlers never read either — `insertLog` writes only `FIELDS`, which rightly excludes them. Notes only survived when added by editing an existing entry. Fixed by having each save handler, after a successful insert, write the note + flag onto the fresh row via `updateLog`'s existing special-case branch. Deliberately NOT fixed by adding the columns to `FIELDS` — that list also drives duplicate detection, and identical content with a different note is still the same recitation logged twice (verified: such saves still trigger the duplicate confirm). Note-only trigger: a flag with no note protects nothing, so note-less rows stay completely clean, no stamp noise.
+
+Delivery (b): the Private checkbox on the note block now defaults to CHECKED for new entries; existing entries keep their stored value untouched, and existing rows in the DB are left exactly as-is (confirmed). The `DEFAULT 0` in the DDL was deliberately not changed — SQLite would need a full rebuild of all three log tables for a default no code path reaches now — documented as dead in SCHEMA.md instead.
+
+Verified against the real handlers (node:sqlite) + the real `commentPrivacy.js` (jsdom): 18/18 — notes/flags/stamps landing on fresh saves for all three logs, explicit-false flag as 0, clean note-less rows, duplicate detection proven unaffected, forced duplicates keep their note, edit path regression, and the three frontend default states. V3.54.0 (22) and V3.55.0 (45) harnesses re-run green on the same worker files.
+
+---
+
 ## V3.55.0 — Maktab delivery (a): `isTeacherOrAbove` refactor (2026-08-15)
 
 **Files touched:** `worker/src/utils.js`, `worker/src/attendance.js`, `worker/src/dhorLog.js`, `worker/src/plans.js`, `worker/src/position.js`, `worker/src/reflections.js`, `worker/src/sabaqDhorLog.js`, `worker/src/sabaqLog.js`, `TODO.md`, `CHANGELOG.md`. **Worker-only — no frontend changes, nothing to bump on that side. Deploy the worker files; same manual, non-atomic, file-by-file process as always. Deploy `utils.js` FIRST or together — every other touched file imports the new helper from it and would fail to load against an old `utils.js`.**

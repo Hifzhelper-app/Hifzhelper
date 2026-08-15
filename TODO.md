@@ -151,8 +151,10 @@ building" + zip:**
   (a) `isTeacherOrAbove` refactor — 12 call sites, utils.js helper.
       Auth change with live blast radius (see correction above).
       **DONE — V3.55.0, 2026-08-15.**
-  (b) PJ notes private-by-default — migration + frontend default.
-      Genuinely a PJ change. **NEXT.**
+  (b) PJ notes private-by-default — frontend default + worker
+      explicit write (migration skipped, confirmed — see V3.56.0).
+      Genuinely a PJ change. **DONE — V3.56.0, 2026-08-15, bundled
+      with the lost-note bug fix.**
   (c) Migration + three maktab_* tables (all PJ columns + teacher
       notes + teacher_id + teacher_name).
   (d) Worker endpoints (save/update/delete/get for all three) —
@@ -162,8 +164,97 @@ building" + zip:**
   (f) Derived attendance (env-var N, 3-table UNION, haidh from PJ,
       log-wins overwrite).
   (a) and (b) touch already-live code and are correct on their own —
-  worth landing and confirming before (c)–(f) start. NEXT STEP: a
-  build-ready spec for (b) alone, then "start building".
+  worth landing and confirming before (c)–(f) start. (a) and (b)
+  are both DONE. NEXT STEP: a build-ready spec for (c) — migration +
+  three maktab_* tables — then "start building".
+
+## Done — V3.56.0 (2026-08-15): lost-note bug fix + Maktab delivery (b) PJ notes private-by-default — built to the spec below
+
+Two halves, same lines of code, confirmed in chat to ship together.
+
+**The bug (pre-existing, all 3 activity logs):** the fresh-save path
+drops notes. The frontend payload carries `student_comment` +
+`student_comment_private` (readCommentBlock spread into every save
+payload), but `handleSaveSabaq`/`handleSaveSabaqDhor`/`handleSaveDhor`
+never read either field — `insertLog` writes only FIELDS, which
+rightly excludes them. Notes only ever survived via the EDIT path
+(updateLog's special student_comment branch). A note typed on a
+brand-new entry silently vanished. Clear mistake (frontend half wired,
+worker half never done), confirmed in chat.
+
+**The fix — deliberately NOT "add them to FIELDS":** FIELDS does
+double duty (insertLog's positional column list AND isDuplicate's
+comparison set — the V3.44.1/V3.51.0 lesson). Notes don't belong in
+duplicate comparison: identical content with different notes is still
+the same recitation logged twice. Instead, each handleSave*, right
+after a successful insert (inside the existing `if (result.id)`
+block), when the body carries a non-empty `student_comment`, calls
+the existing `updateLog` on the fresh row's id with the note + the
+flag (flag defaulting false if absent) — reusing the proven
+special-case branch (text + _by/_at stamps + flag normalization), no
+positional risk, duplicate detection untouched. Note-ONLY trigger,
+deliberately: the frontend always sends the flag, and a flag with no
+note protects nothing — triggering on the flag alone would stamp
+student_comment_by/_at noise onto every note-less row. trackAttendance NOT
+passed (the row was just inserted on this date; attendance already
+handled by the save itself).
+
+**(b) private-by-default:** `js/commentPrivacy.js` renderCommentBlock
+— a NEW entry (existingEntry null) renders the Private checkbox
+CHECKED; an existing entry keeps its own stored value exactly as now.
+Combined with the fix, every fresh save now writes the flag
+explicitly whenever a note exists.
+
+**Migration: SKIPPED, confirmed in chat.** SQLite can't change a
+column DEFAULT in place — it'd be a full rebuild of all 3 log tables
+(0003/0007 pattern) with real production data, statement-by-statement
+in the D1 console, for a default that no code path reaches once the
+fix is in (any insert carrying a note writes the flag explicitly; a
+row without a note has nothing for the flag to protect). Existing
+rows: left exactly as-is, also confirmed. The one cost: the schema
+as documentation still reads DEFAULT 0 — countered with a note in
+SCHEMA.md's student_comment_private row, not a risky rebuild.
+
+**Deliberately unchanged:** Tadabbur (`reflections.is_private`) — its
+own flag, own card, not part of "PJ notes" here; teacher_feedback_
+visibility default 'all' in the PJ (the maktab's 'teachers_only'
+default belongs to delivery (c)'s new tables, not the PJ's).
+
+**Build:**
+- `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`,
+  `worker/src/dhorLog.js` — the post-insert note write in each
+  handleSave*.
+- `js/commentPrivacy.js` — new-entry default checked.
+- `SCHEMA.md` — note on the dead DEFAULT 0.
+- `index.html`/`js/sw.js` — frontend version bump (commentPrivacy.js
+  is cache-busted).
+- **Mixed delivery: worker files AND frontend files. Deploy worker
+  first (the fix is pure addition, safe against the old frontend);
+  old worker + new frontend would still drop notes on fresh saves.**
+
+**Verification:** extend the node:sqlite harness — fresh save WITH a
+note → note+flag land on the row (stamped); fresh save WITHOUT a note
+→ row clean, no bogus stamps; two identical-content saves with
+DIFFERENT notes → still flagged duplicate (FIELDS untouched proof);
+edit path regression (V3.54.0 harness re-run). Frontend: jsdom check
+that a new-entry render has the checkbox checked and an existing
+unchecked entry stays unchecked.
+
+**Built + verified:** built as spec'd, with one tightening made
+DURING the build and folded back into the spec text above: the
+follow-up write triggers on a non-empty note ONLY (the first draft
+also triggered on an explicit flag, which — since the frontend always
+sends the flag — would have stamped student_comment_by/_at noise onto
+every note-less row; harness check B2 now proves no-note rows stay
+completely clean). Harness 18/18 against the real handlers: note+
+flag+stamps land on fresh saves for all 3 logs; explicit false flag
+lands as 0; no-note rows untouched; identical-content-different-note
+saves STILL flagged duplicate (FIELDS untouched, the whole point of
+the design); forced duplicates get their note; edit path regression;
+jsdom on the real commentPrivacy.js — new entry checked, existing
+public entry stays unchecked, existing private stays checked.
+V3.54.0 (22) + V3.55.0 (45) harnesses re-run green on the same
+worker files — 85 total this round.
 
 ## Done — V3.55.0 (2026-08-15): Maktab delivery (a) — `isTeacherOrAbove` refactor — built to the spec below
 

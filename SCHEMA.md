@@ -80,7 +80,7 @@ redacted, the entry itself still shows.
 | `page_count` | INTEGER | Added in migration 0013, same computation/editability as `line_count`. |
 | `tajweed_tags` | TEXT | Comma-separated tags, e.g. `Ghunnah,Madd`. |
 | `student_comment` / `_by` / `_at` | TEXT / TEXT (FK) / TEXT | |
-| `student_comment_private` | INTEGER | `1` = hidden from teachers, visible only to the student themself. |
+| `student_comment_private` | INTEGER | `1` = hidden from teachers, visible only to the student themself. NOTE (V3.56.0): the column's `DEFAULT 0` (migration 0006) is dead code — every code path that writes a note writes this flag explicitly alongside it, and the UI defaults NEW entries to private (checked). The DDL default was deliberately NOT changed (a full 3-table rebuild for a default nothing reaches); don't read `DEFAULT 0` as the app's actual behaviour. Rows with no note keep flag 0, which is meaningless without a note. |
 | `teacher_feedback` / `_by` / `_at` | TEXT / TEXT (FK) / TEXT | |
 | `teacher_feedback_visibility` | TEXT | `all` / `teachers_only` / `private`. Default `all`. |
 | `is_duplicate` | INTEGER | `1` if it exactly matches an existing entry for this student/date. |
