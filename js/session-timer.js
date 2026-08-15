@@ -117,25 +117,42 @@
    tall, but shrinks further on anything shorter, rather than a single
    hardcoded value that only happens to work for one specific device.
    2026-08-15, confirmed in chat: ring shrunk a further ~20%
-   (210->168, 25vh->20vh, user's figure) and .dial switched from a
-   centered column to a row -- the freed width is what the full
-   (uncapped) lap list sits in, to its left. Same viewport reference
-   as above still holds: 140px for .laps + 14px gap + 168px ring =
-   322px, comfortably under the ~350px of content width .full's own
-   padding leaves on a 390px-wide phone. */
-.dial{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 4px 4px}
-.dial-in{position:relative;width:min(168px, 20vh);height:min(168px, 20vh);flex:none}
+   (210->168, 25vh->20vh, user's figure) to leave room for a lap list
+   beside it.
+   2026-08-15, same day, corrected from a device screenshot: the
+   first attempt made .dial a flex row with .laps as a sibling --
+   justify-content:center then centred the [laps+ring] GROUP, not the
+   ring alone, so with a 140px column attached to its left the ring's
+   true centre sat well right of the card's actual centre. Corrected:
+   .dial goes back to centring .dial-in alone, its only normal-flow
+   child again; .laps is pulled out of flow entirely
+   (position:absolute, pinned to .dial's left edge, vertically
+   centred against the ring) so it sits beside the ring WITHOUT being
+   part of what gets centred. */
+.dial{position:relative;display:flex;justify-content:center;padding:12px 4px 4px}
+.dial-in{position:relative;width:min(168px, 20vh);height:min(168px, 20vh)}
 .dial svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
 .read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .time{font-size:44px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
 .of{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8e8e93}
-.lapwrap{display:flex;justify-content:center;padding:14px 0 10px}
+.lapwrap{display:flex;justify-content:center;padding:14px 0 10px;margin-top:auto}
 .lapbtn{min-width:160px;padding:12px 30px;border-radius:999px;border:0;background:#fff;color:#000;font:inherit;font-size:17px;font-weight:700;letter-spacing:.06em;cursor:pointer}
 .lapbtn:hover{background:#e6e6e6}
-.laps{width:140px;height:min(168px, 20vh);flex:none;display:flex;flex-direction:column;gap:6px;overflow-y:auto;padding-right:2px}
-.laprow{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#8e8e93}
+/* 2026-08-15, same day, corrected alongside the centring fix above:
+   grid-template-columns:1fr auto inside a fixed 140px container let
+   the 1fr column stretch to fill all 140px regardless of how short
+   "Lap 7" actually is, which is what shoved the time to the far
+   right in the screenshot. .laps is now the grid itself (columns
+   auto auto, sized to content) and each .laprow is display:contents
+   so its two spans join that ONE shared grid directly -- columns
+   stay aligned row-to-row even once lap counts run to two digits
+   (independent per-row grids wouldn't), and the container naturally
+   shrinks to hug its content instead of a hardcoded width, which is
+   what gives the re-centred ring room to breathe on its left. */
+.laps{position:absolute;left:0;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:auto auto;column-gap:10px;row-gap:4px;max-height:min(168px, 20vh);overflow-y:auto;align-content:start;padding:2px}
+.laprow{display:contents;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#8e8e93}
 .laprow.last{color:#fff}
-.ctrls{display:flex;justify-content:center;gap:44px;padding-top:6px}
+.ctrls{display:flex;justify-content:center;gap:44px;padding-top:18px}
 .ctrl-col{display:flex;flex-direction:column;align-items:center;gap:8px}
 .ctrl-label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#8e8e93}
 .rnd{width:72px;height:72px;border-radius:50%;border:0;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;cursor:pointer}

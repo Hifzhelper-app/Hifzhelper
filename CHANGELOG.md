@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.53.1 — Maximised-timer layout fixes from a device screenshot (2026-08-15)
+
+**Files touched:** `js/session-timer.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy. CSS only — no JS/markup changes.
+
+Follow-up on V3.53.0's lap-list-beside-the-ring layout, from a real device screenshot showing four issues. The ring wasn't actually centred — `.dial`'s `justify-content:center` was centring the laps+ring group as a unit, not the ring alone, so the ring's true centre sat well right of the card's centre once a 140px column was attached to its left. Fixed by pulling `.laps` out of the flex flow entirely (`position:absolute`, pinned left, vertically centred against the ring) so the ring goes back to being the only thing that gets centred.
+
+The gap between "Lap N" and its time was too wide — a `1fr` grid column was stretching to fill the full 140px regardless of how short the label text is. `.laps` is now the grid itself, with content-sized columns, and each row is `display:contents` so it joins that one shared grid directly — tighter, and columns stay aligned even once lap counts run to two digits.
+
+The Start/Stop and LAP controls were clustered near the top with dead space below — `margin-top:auto` on the LAP button now pushes it and Start/Stop down to fill the leftover height, while the ring and icon row stay where they were. The gap between LAP and Start/Stop was widened (`padding-top` 6px → 18px).
+
+Re-verified against the real `session-timer.js` in jsdom (wake-lock state machine + all-laps rendering, unaffected since this round is CSS-only): 29/29, unchanged from V3.53.0. Layout itself isn't harness-checkable — worth a fresh screenshot to confirm the centring and spacing actually land as intended.
+
+---
+
 ## V3.53.0 — Journal→Summary rename, timer wake lock, full lap list (2026-08-15)
 
 **Files touched:** `js/auth.js`, `js/session-timer.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy.
