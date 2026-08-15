@@ -4,6 +4,65 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.53.1 (2026-08-15): maximised-timer layout fixes from a device screenshot — built to the spec below
+
+Follow-up on V3.53.0's lap-list-beside-the-ring layout — a real device
+screenshot showed four issues; root cause traced for each before
+proposing a fix (none of these are guesses).
+
+**(1) Ring not actually centred:** `.dial{display:flex;justify-content:
+center}` centres the LAPS+RING as one group, not the ring alone — with
+a 140px laps column attached, the ring's true centre sits well right
+of the card's actual centre (confirmed in the screenshot: the ring
+sits noticeably closer to the right edge than the left). Fix: take
+`.laps` out of normal flow entirely (`position:absolute`, pinned left,
+vertically centred against the ring, via `.dial{position:relative}`)
+so `.dial-in` goes back to being the ONLY flex child
+`justify-content:center` has to centre — genuinely full-width-centred
+again, same as before the laps list existed.
+
+**(2) Big gap between "Lap N" and the time:** `.laprow`'s
+`grid-template-columns:1fr auto` inside a fixed 140px `.laps` lets the
+`1fr` column stretch to fill all 140px regardless of how short "Lap 7"
+actually is, shoving the time to the far right. Fix, and it doubles as
+groundwork for (1): make `.laps` itself the shared grid
+(`grid-template-columns:auto auto`, small explicit gap) and `.laprow`
+`display:contents` so its two spans join that shared grid directly —
+columns tighten to content width AND stay aligned row-to-row even once
+lap counts go from one digit to two (independent per-row grids
+wouldn't stay aligned), and `.laps` naturally shrinks to hug its
+content instead of a hardcoded 140px — which is also what gives (1)'s
+re-centred ring room to breathe on its left.
+
+**(3) Dead space below Start/Stop:** `.full` is a flex column with
+`height:100%`, but none of its children have flex-grow, so everything
+clusters at its natural size near the top and the leftover height just
+sits empty below. Fix: `margin-top:auto` on `.lapwrap` — in a flex
+column that pushes `.lapwrap` AND everything after it (`.ctrls`) down
+to consume the leftover space, while the icon row/ring stay exactly
+where they are (matches what was actually asked: "the stop/start and
+lap controls," not the ring).
+
+**(4) Gap between LAP and Start/Stop:** straightforward — `.ctrls`'s
+`padding-top` goes from `6px` to `18px`. Claude's own figure for
+"slightly higher," not a user-specified number.
+
+**Build:**
+- `js/session-timer.js` — CSS only: `.dial`/`.dial-in`/`.laps`/
+  `.laprow` per (1)+(2) above, `.lapwrap` margin-top:auto per (3),
+  `.ctrls` padding-top per (4). No JS/markup changes — the lap-row
+  HTML `_paint()` already generates is unchanged; only how it's laid
+  out shifts.
+- `index.html`/`js/sw.js` — version bump only, same as every delivery.
+
+**Built + verified:** all four built exactly as spec'd above — CSS
+only, no JS/markup touched. Re-ran the full jsdom harness against the
+real file (wake-lock state machine + all-laps rendering): 29/29,
+identical to V3.53.0 since none of that logic changed this round. Not
+harness-checkable: actual on-device layout — the ring's centring and
+the new spacing are worth a fresh screenshot to confirm before this
+one's considered closed.
+
 ## Done — V3.53.0 (2026-08-15): Journal→Summary rename + timer wake lock + full lap list — built to the spec below
 
 Three small items bundled together, all confirmed 2026-08-15.
