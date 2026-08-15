@@ -32,6 +32,18 @@ export function isInRange(n, min, max) {
   return Number.isFinite(v) && v >= min && v <= max;
 }
 
+// V3.55.0 (2026-08-15, confirmed in chat — maktab delivery (a)):
+// roles are a strict hierarchy, student < teacher < admin, NOT
+// independent flags — an admin is a teacher with additional authority.
+// Every "teacher-only" permission gate in the worker goes through this
+// helper rather than a literal role === 'teacher' check, so an admin
+// passes them all. The one thing this is NOT for: admin-only gates
+// (admin.js's requireAdmin) — the hierarchy runs one way, and those
+// stay a literal role === 'admin'.
+export function isTeacherOrAbove(auth) {
+  return !!auth && (auth.role === 'teacher' || auth.role === 'admin');
+}
+
 export function validateAttendanceBody(body) {
   if (!body || typeof body !== 'object') return 'Body must be a JSON object';
   if (!isValidDate(body.date)) return 'date must be YYYY-MM-DD';

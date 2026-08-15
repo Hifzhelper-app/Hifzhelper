@@ -4,7 +4,7 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
-## Design — Maktab records (Phase 2): design agreed 2026-08-15, NOT yet build-ready — open items below need pinning first
+## Design — Maktab records (Phase 2): design COMPLETE 2026-08-15 — splits into deliveries (a)–(f) below, each still needs its own build-ready spec + "start building"
 
 Much bigger than anything else on this file (new tables, new
 endpoints, a new screen, a role-hierarchy change, derived attendance)
@@ -64,36 +64,167 @@ stands between this and "start building".
   deleting a maktab log needs NO attendance-sync counterpart at all —
   it just falls out.
 
-**Still open — needs pinning before "start building":**
-1. Data model: one `maktab_log` table with a `type` column
-   (sabaq/sabaq_dhor/dhor) vs three tables mirroring the PJ's own
-   split. One table + type column fits the derived-attendance query
-   far better ("any log for student+date"); three would mirror the
-   PJ's proven `logHelpers.js` shape. Lean: ONE table — Claude's
-   suggestion, not yet confirmed.
-2. Which PJ fields prepopulate into each column, and does the maktab
-   log carry the same fields as the PJ row or a subset?
-3. Notes: "if not private" — the PJ already has a per-entry privacy
-   flag (migration 0006 plans_timer_privacy) or does this need one?
-   Traced only that the migration exists; the exact column/semantics
-   still to be confirmed against it.
-4. Where in the app the maktab screen lives (nav item for teacher+
-   admin only? and does a student see a read-only "my maktab
-   journal" view — "each student will see the PJ and the maktab
-   journal separately" says yes) and its route/URL.
-5. Edit permissions: any teacher can edit any maktab log, or only
-   the teacher who saved it (+ admin)?
-6. The ≥N-students config: per-maktab DB setting (a settings row) vs
-   a worker env var. Lean: DB row, so it's changeable without a
-   worker redeploy — Claude's suggestion, not yet confirmed.
-7. Whether "log wins over haidh" in the maktab means the summary
-   shows present-with-a-haidh-badge, or plain present with haidh
-   hidden.
+**Agreed 2026-08-15 (second round):**
+- Storage: THREE tables mirroring the PJ's own split
+  (maktab_sabaq_log / maktab_sabaq_dhor_log / maktab_dhor_log —
+  naming TBC), not one table + type column. Chosen over Claude's
+  one-table lean. Upside: the maktab modules become near-clones of
+  the PJ's proven `logHelpers.js`/`dhorLog.js` shape, each with its
+  own field list. Cost: the derived-attendance "any log for
+  student+date" query is a 3-table UNION, exactly the shape
+  `releaseAttendanceIfNoActivity` (V3.54.0) already uses — so it's a
+  known, tested pattern, not new ground.
+- Edit permissions: ANY teacher (+admin) can edit any maktab log,
+  not just the saving teacher. So the saved teacher_id/teacher_name
+  is provenance (who confirmed it), not an ownership lock.
+- The ≥N-students threshold lives in a worker env var (redeploy to
+  change), chosen over Claude's DB-row lean.
 
-Once these are answered this splits into at least: (a) the
-isTeacherOrAbove refactor, (b) migration + tables, (c) worker
-endpoints, (d) maktab summary screen + prepop, (e) derived
-attendance. Each its own delivery, in that order.
+**Agreed 2026-08-15 (third round):**
+- **No requirement for every student to have a PJ.** The maktab is
+  therefore genuinely independent of it — a PJ-less student is fully
+  loggable in the maktab. Students WITH a PJ additionally get: prepop
+  into the teacher's form, haidh flowing across, and non-private notes
+  flowing across. That's the complete list of what the PJ contributes.
+- **Prepop is an independent CALCULATION, not a copy** — and it
+  calculates from the MAKTAB'S OWN history, copying the PJ's logic.
+  Confirmed against how the PJ works today (traced 2026-08-15): PJ
+  prepop is already a per-page calc, not a stored value — Sabaq from
+  the last reached point in sabaq history (js/sabaqPage.js), Dhor
+  from computeDefaultDhorEntry / the dhor schedule queue
+  (worker/src/dhorSchedule.js), etc. So the maktab reuses those same
+  calcs pointed at the maktab_* tables instead of the PJ ones. A
+  student's first-ever maktab entry with no maktab history gets the
+  same cold-start defaults the PJ uses (e.g. sabaq's 114:1/114:6).
+- **"Haidh and a log cannot co-exist — one or the other."** Resolved
+  the same way as the PJ's "sabaq always wins": a teacher's save
+  OVERWRITES the haidh mark. Not a reject, not a priority-to-haidh —
+  the log lands and the haidh mark is gone for that student/day. So
+  the earlier open item 4 (badge vs hidden) is moot: there's never a
+  present-with-haidh state to display, the summary just shows the
+  log.
+- **Student notes:** a non-private PJ `student_comment` flows into
+  the maktab log; private ones don't. Uses the PJ's existing
+  `student_comment_private` flag — no new column. AND: **PJ notes
+  change to PRIVATE by default** — today `student_comment_private`
+  is `NOT NULL DEFAULT 0` (open) per migration 0006. This is a
+  change to the LIVE PJ, not maktab work: a migration flipping the
+  column default + the frontend's own default on the comment field.
+  Own small delivery, ahead of the maktab build, same as the
+  isTeacherOrAbove refactor.
+- **Teacher notes:** three visibility options — private / open /
+  teachers-only — DEFAULT teachers-only. Reuses the PJ's existing
+  `teacher_feedback_visibility` enum EXACTLY: `('all','teachers_only',
+  'private')` with `applyPrivacy` in logHelpers.js already
+  implementing the semantics (teachers_only visible to any teacher;
+  private only to its author) — no new enum, no new logic. One real
+  difference to note: the PJ's default is `'all'`, the maktab's is
+  `'teachers_only'`. Admins are teachers with additional authority
+  for all of this — nothing admin-specific in note visibility.
+- **Where it lives:** maktab summary visible ONLY to teachers
+  (+admin). Students see the maktab summary AND their personal
+  summary as two separate views — a possible "combine views" option
+  was floated, NOT decided; parked as a later enhancement, not part
+  of the first build.
+
+**Agreed 2026-08-15 (fourth round — design now COMPLETE):**
+- Fields: each maktab table carries ALL its PJ counterpart's columns
+  (Claude's lean to trim student_comment_by/_at was NOT taken —
+  keep them), PLUS teacher notes (the `teacher_feedback` +
+  `teacher_feedback_visibility` pair, reused as-is per the third
+  round), PLUS `teacher_id` + `teacher_name`. "All PJ columns" is
+  the rule — no per-column trimming.
+
+**Correction, same day:** (a) below was mislabelled as "PJ work" in
+chat. It isn't — `isTeacherOrAbove` is an AUTH/permission change,
+and its REASON is the maktab ("teacher level or higher"). What's
+true is that its blast radius is the LIVE app: those 12 checks gate
+the PJ's existing endpoints today (a teacher saving into a student's
+PJ, reading their logs/plans/position/attendance), and an admin
+currently fails all of them. After the refactor an admin passes.
+That's why it stays its own small delivery — a permission change is
+easier to reason about, test, and roll back alone — not because it
+belongs to the PJ.
+
+**Delivery split, in this order, each its own spec + "start
+building" + zip:**
+  (a) `isTeacherOrAbove` refactor — 12 call sites, utils.js helper.
+      Auth change with live blast radius (see correction above).
+      **DONE — V3.55.0, 2026-08-15.**
+  (b) PJ notes private-by-default — migration + frontend default.
+      Genuinely a PJ change. **NEXT.**
+  (c) Migration + three maktab_* tables (all PJ columns + teacher
+      notes + teacher_id + teacher_name).
+  (d) Worker endpoints (save/update/delete/get for all three) —
+      near-clones of the PJ modules via logHelpers.js.
+  (e) Maktab summary screen (teacher) + the student read-only view
+      + prepop reusing the PJ calcs against maktab tables.
+  (f) Derived attendance (env-var N, 3-table UNION, haidh from PJ,
+      log-wins overwrite).
+  (a) and (b) touch already-live code and are correct on their own —
+  worth landing and confirming before (c)–(f) start. NEXT STEP: a
+  build-ready spec for (b) alone, then "start building".
+
+## Done — V3.55.0 (2026-08-15): Maktab delivery (a) — `isTeacherOrAbove` refactor — built to the spec below
+
+First of the six maktab deliveries (see the design entry above).
+Auth/permission change with LIVE blast radius, deliberately its own
+delivery. Worker-only.
+
+**What:** `auth.role === 'teacher'` / `!== 'teacher'` currently gates
+12 sites across 7 worker files; an admin fails every one of them
+today. Agreed rule: admin counts as teacher EVERYWHERE — roles are a
+strict hierarchy (student < teacher < admin), not independent flags.
+
+**How:** one helper in `worker/src/utils.js`:
+```
+export function isTeacherOrAbove(auth) {
+  return !!auth && (auth.role === 'teacher' || auth.role === 'admin');
+}
+```
+Every one of the 12 sites switched to it (`!isTeacherOrAbove(auth)`
+where the check was `!== 'teacher'`; `isTeacherOrAbove(auth)` where
+it was `=== 'teacher'`). Enumerated against the actual sandbox, not
+memory: attendance.js ×2 (lines 10, 36), dhorLog.js ×2 (32, 51),
+plans.js ×1 (21), position.js ×1 (18), reflections.js ×2 (21, 35),
+sabaqDhorLog.js ×2 (20, 36), sabaqLog.js ×2 (24, 42). plans.js and
+position.js have no utils.js import today — both gain one; the other
+five extend their existing import line.
+
+**Deliberately NOT changed:**
+- `admin.js`'s `requireAdmin` (role === 'admin' — admin-only screens
+  stay admin-only, hierarchy runs one way) and its line-52 role-value
+  validator (`['student','teacher','admin'].includes(body.role)` — a
+  data check, not a permission gate).
+- `js/auth.js` line 50 (`role === 'admin'` → admin nav item) — same
+  reason; a frontend gate for an admin-only screen. Refactor is
+  worker-only as a result.
+
+**Behaviour change, stated plainly:** after this, an admin logging in
+can do everything a teacher can against the existing app — save into
+another student's PJ, read their logs/plans/position/attendance. Not
+a no-op. Low risk today (ADMIN-01 bootstrap account, no real users)
+but real.
+
+**Verification:** node:sqlite simulation driving the actual handlers
+with three auth objects (student, teacher, admin) against another
+student's id: student → 403 everywhere it should; teacher → allowed;
+admin → NOW allowed, identical to teacher. Plus the helper itself
+(null/undefined auth, unknown role → false).
+
+**Built + verified:** built exactly as spec'd — helper in utils.js,
+all 12 sites swapped (verified by grep: zero literal teacher-role
+checks remain outside the helper's own body; exactly 12 helper uses
++ 1 definition), 5 import lines extended, plans.js/position.js gained
+a fresh import. Every touched module confirmed to import cleanly
+(would have caught a missing import that only shows at runtime).
+Behavioural harness against the real handlers: 45/45 — all 7 GET
+gates and all 5 POST gates (the 4 logs + attendance) exercised with
+each of the three roles; the POST side checks WHICH student_id the
+row actually lands on (student's foreign student_id silently ignored
+→ own id; teacher's honoured; admin's NOW honoured); a student's own-
+data access confirmed unchanged. V3.54.0's 22-check attendance-sync
+harness (same worker files) re-run green, no regression. 96 total.
 
 ## Flagged — updateLog writes an unvalidated date straight to the row (2026-08-15)
 

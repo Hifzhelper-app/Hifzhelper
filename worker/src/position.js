@@ -9,13 +9,15 @@
 // doing eventually if this needs to be hardened against a malicious client,
 // but for a maktab's own students that's not the current threat model.
 
+import { isTeacherOrAbove } from './utils.js';
+
 const MAX_BLOB_SIZE = 50_000; // bytes — generous for 30 juz' of state, guards against abuse
 
 export async function handleGetPosition(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
 
-  if (auth.role !== 'teacher' && studentId !== auth.id) {
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) {
     return { error: 'Not authorized to view this student', status: 403 };
   }
 

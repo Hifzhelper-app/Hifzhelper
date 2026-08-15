@@ -15,10 +15,12 @@
 // GET /plans?date=X (plans for one specific day — the primary use case:
 // "what's planned for today, to show as the default Dhor input") or
 // ?since=X (a range, for a planning/calendar view) or neither (all plans).
+import { isTeacherOrAbove } from './utils.js';
+
 export async function handleGetPlans(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
-  if (auth.role !== 'teacher' && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
 
   const date = url.searchParams.get('date');
   const since = url.searchParams.get('since');
