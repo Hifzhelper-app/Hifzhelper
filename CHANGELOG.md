@@ -7,9 +7,21 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.58.0 — Maktab delivery (d): worker endpoints for the three maktab logs (2026-08-15)
+
+**Files touched:** `worker/src/maktabLog.js` (new), `worker/src/index.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY — from V3.57.0 onward, deliveries go to the maktab repo/worker/DB alone; the personal deployment stopped at V3.56.0 (see TODO.md's fork note). Worker-only — no frontend changes. DEPLOY ORDER: migration 0019 must be RUN on hifzhelper-maktab1 first; these endpoints 500 against a DB without the maktab tables. Deploy maktabLog.js and index.js together — index.js imports from the new file.**
+
+Twelve endpoints — GET/POST/PATCH/DELETE for `/maktab/sabaq`, `/maktab/sabaq-dhor`, `/maktab/dhor` — in one module with a per-table config map rather than three near-clone files (the PJ modules differ in fields/validation; the maktab versions share everything else, so three files would be pure duplication).
+
+The rules as agreed: all writes require teacher-or-above; a save requires an explicit `student_id` and rejects self-recitation for everyone including admins (another teacher must confirm); any teacher can edit or delete any maktab log — `teacher_id`/`teacher_name` are provenance (snapshot at save), not an ownership lock, and are immutable on edit; a student can GET their own maktab logs only, with the existing privacy layer hiding `teachers_only` teacher notes from them. Saves are a direct INSERT (the reflections V3.51.2 precedent — `insertLog` can't write the NOT NULL provenance pair) with duplicate detection on content fields only, so the same recitation confirmed by two different teachers still triggers the duplicate confirm. A save resolves a haidh conflict with a *targeted* update (haidh/predicted-haidh → present) — it never writes new rows into the PJ's attendance, which keeps reflecting PJ activity; maktab attendance itself is derived at read time (delivery (f)).
+
+Verified against the real 0019 tables (created by executing the actual migration file) and real handlers: 36/36 — the full role matrix, self-recitation edges, the snapshot, cross-teacher duplicates + force, the targeted haidh overwrite (absent rows untouched, no rows created), note stamping (student's note to the student, teacher's to the teacher), privacy on GET proven from both sides, provenance surviving a PATCH that explicitly tried to overwrite it, and the dhor lap_times round-trip. All four prior worker harnesses re-run green — 147 checks this round.
+
+---
+
 ## V3.57.0 — Maktab delivery (c): migration 0019, the three maktab tables (2026-08-15)
 
-**Files touched:** `worker/migrations/0019_maktab_tables.sql` (new), `SCHEMA.md`, `TODO.md`, `CHANGELOG.md`. **Migration + docs only — no worker code, no frontend, nothing to cache-bust or deploy. BUT: the migration must be RUN, one statement at a time in the D1 console, on BOTH DBs (maktab1 + personal) — a delivered migration file is not a run migration. It's purely additive (three CREATE TABLEs, nothing existing touched, nothing reads them until delivery (d)), so it's safe to run any time — but (d) will fail against a DB where it hasn't been run.**
+**Files touched:** `worker/migrations/0019_maktab_tables.sql` (new), `SCHEMA.md`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY (corrected same day — originally said both DBs; the personal deployment stopped at V3.56.0 and never gets maktab tables or code). Migration + docs only. The migration must be RUN, one statement at a time in the D1 console, on hifzhelper-maktab1 — a delivered migration file is not a run migration. Purely additive (three CREATE TABLEs, nothing existing touched, nothing reads them until delivery (d)), safe to run any time — but (d) will fail against a DB where it hasn't been run.**
 
 The first maktab-specific schema — where the PJ and the Maktab start differentiating. `maktab_sabaq_log`, `maktab_sabaq_dhor_log`, `maktab_dhor_log`: each mirrors its PJ counterpart's full current column set (assembled from the real migration history, not the stale 0005 snapshot), plus `teacher_id` (the confirming teacher — a students-table row) and `teacher_name` (a deliberate snapshot: provenance reads as it was when confirmed). One agreed default divergence: `teacher_feedback_visibility` defaults to `'teachers_only'` here versus the PJ's `'all'`. The no-self-recitation rule is deliberately NOT a CHECK — it's an auth rule for the endpoints (delivery (d)).
 

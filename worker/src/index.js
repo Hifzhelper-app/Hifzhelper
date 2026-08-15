@@ -4,6 +4,11 @@ import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq }
 import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
 import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
 import { handleGetReflections, handleSaveReflection, handleUpdateReflection, handleDeleteReflection } from './reflections.js';
+import {
+  handleGetMaktabSabaq, handleSaveMaktabSabaq, handleUpdateMaktabSabaq, handleDeleteMaktabSabaq,
+  handleGetMaktabSabaqDhor, handleSaveMaktabSabaqDhor, handleUpdateMaktabSabaqDhor, handleDeleteMaktabSabaqDhor,
+  handleGetMaktabDhor, handleSaveMaktabDhor, handleUpdateMaktabDhor, handleDeleteMaktabDhor,
+} from './maktabLog.js';
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
@@ -75,6 +80,24 @@ export default {
       if (path === '/reflections' && request.method === 'POST') return respond(await handleSaveReflection(request, env, auth));
       if (path === '/reflections' && request.method === 'PATCH') return respond(await handleUpdateReflection(request, env, auth));
       if (path === '/reflections' && request.method === 'DELETE') return respond(await handleDeleteReflection(request, env, auth));
+
+      // Maktab logs (V3.58.0, maktab delivery (d)) — teacher-confirmed
+      // records, independent of the PJ routes above. Requires migration
+      // 0019 to have been run; see worker/src/maktabLog.js.
+      if (path === '/maktab/sabaq' && request.method === 'GET') return respond(await handleGetMaktabSabaq(request, env, auth));
+      if (path === '/maktab/sabaq' && request.method === 'POST') return respond(await handleSaveMaktabSabaq(request, env, auth));
+      if (path === '/maktab/sabaq' && request.method === 'PATCH') return respond(await handleUpdateMaktabSabaq(request, env, auth));
+      if (path === '/maktab/sabaq' && request.method === 'DELETE') return respond(await handleDeleteMaktabSabaq(request, env, auth));
+
+      if (path === '/maktab/sabaq-dhor' && request.method === 'GET') return respond(await handleGetMaktabSabaqDhor(request, env, auth));
+      if (path === '/maktab/sabaq-dhor' && request.method === 'POST') return respond(await handleSaveMaktabSabaqDhor(request, env, auth));
+      if (path === '/maktab/sabaq-dhor' && request.method === 'PATCH') return respond(await handleUpdateMaktabSabaqDhor(request, env, auth));
+      if (path === '/maktab/sabaq-dhor' && request.method === 'DELETE') return respond(await handleDeleteMaktabSabaqDhor(request, env, auth));
+
+      if (path === '/maktab/dhor' && request.method === 'GET') return respond(await handleGetMaktabDhor(request, env, auth));
+      if (path === '/maktab/dhor' && request.method === 'POST') return respond(await handleSaveMaktabDhor(request, env, auth));
+      if (path === '/maktab/dhor' && request.method === 'PATCH') return respond(await handleUpdateMaktabDhor(request, env, auth));
+      if (path === '/maktab/dhor' && request.method === 'DELETE') return respond(await handleDeleteMaktabDhor(request, env, auth));
 
       if (path === '/plans' && request.method === 'GET') return respond(await handleGetPlans(request, env, auth));
 

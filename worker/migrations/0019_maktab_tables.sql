@@ -23,10 +23,12 @@
 --
 -- Apply ONE STATEMENT AT A TIME in the D1 console — the console only
 -- executes the first statement of a multi-statement paste (see
--- TESTING.md / the migration 0003 saga). Run on BOTH DBs (maktab1 +
--- personal). No inline trailing comments on any statement line below,
--- on purpose — that exact pattern broke migration 0010's and 0011's
--- runners before.
+-- TESTING.md / the migration 0003 saga). Run on hifzhelper-maktab1
+-- ONLY: the personal deployment (hifzhelper-personal-db) is for
+-- students not connected to a maktab, stopped at V3.56.0, and never
+-- gets maktab tables or code. No inline trailing comments on any
+-- statement line below, on purpose — that exact pattern broke
+-- migration 0010's and 0011's runners before.
 
 CREATE TABLE maktab_sabaq_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
