@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.52.0 — Tadabbur gets the popup editor (2026-08-15)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/reflectionCard.js`, `js/logDetailScreen.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy.
+
+The pencil in Tadabbur History now opens the same edit popup the three log cards use, instead of the original silent behaviour (quietly loading the entry into the main form — which read as "nothing happens"). Same experience throughout: "Edit Tadabbur" beside the editable date pill, the X as Cancel, Confirm changes gating Save, and a red Delete with the usual warning — deletion included, which Tadabbur's editor never offered before. The main form's quick today-flow and the tap-to-read view are untouched.
+
+Under the hood, the edit-mode styling was generalized so it covers Tadabbur's different card type — and the test suite caught a subtle specificity regression that generalization initially introduced (log cards in the popup would have regained their full-screen height formula), fixed before shipping with explicitly-ranked selectors. Verified by driving the real Tadabbur card through the full load → edit → confirm → cancel cycle plus all five earlier harnesses: 153 checks this round.
+
+---
+
 ## V3.51.2 — Tadabbur saves fixed; two companion regressions repaired (2026-08-15)
 
 **Files touched:** `worker/src/reflections.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos. DEPLOY ORDER: worker file first (or everything together) — the 500 lives server-side.**

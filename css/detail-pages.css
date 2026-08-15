@@ -963,8 +963,12 @@
    its own spot in the layout), and could land on the wrong one --
    explaining "editing an entry lands on the Timer" regardless of which
    path opened editing, since this same gap sat underneath all of them. */
-.log-detail-card.editing-active .card-header-row,
-.log-detail-card.editing-active .history-container { display: none; }
+/* V3.52.0: selectors generalized from .log-detail-card.editing-active
+   to .editing-active -- Tadabbur's card is a .screen-content, not a
+   .log-detail-card, and editing-active only ever exists during edit,
+   so the broader scope is safe by construction. */
+.editing-active .card-header-row,
+.editing-active .history-container { display: none; }
 /* V3.51.1 (confirmed in chat): grey background gone -- the popup reads
    as one clean card; the X is pinned to the popup's own top-right
    corner (absolute, rule below), so the heading row is just the title
@@ -1011,12 +1015,13 @@
 /* V3.51.0: hidden while editing -- their roles are replaced by the new
    flow (checkboxes -> Confirm changes; Plan/quarter rows aren't part of
    an edit; the manual checkbox likewise). */
-.log-detail-card.editing-active #dhorViewPlanBtn,
-.log-detail-card.editing-active #dhorConfirmBox,
-.log-detail-card.editing-active .confirm-field-group .checkbox-box,
-.log-detail-card.editing-active .card-date-row,          /* V3.51.1: empty 44px row once its date control relocates */
-.log-detail-card.editing-active .sabaq-dhor-group-label, /* V3.51.1: "Confirm Sabaq Dhor" -- meaningless in edit */
-.log-detail-card.editing-active #sabaqDhor_sections .checkbox-box { display: none; }
+.editing-active #dhorViewPlanBtn,
+.editing-active #dhorConfirmBox,
+.editing-active .confirm-field-group .checkbox-box,
+.editing-active .card-date-row,          /* V3.51.1: empty 44px row once its date control relocates */
+.editing-active .sabaq-dhor-group-label, /* V3.51.1: "Confirm Sabaq Dhor" -- meaningless in edit */
+.editing-active .tadabbur-close-btn,     /* V3.52.0: the X-to-Home would float inside the popup */
+.editing-active #sabaqDhor_sections .checkbox-box { display: none; }
 /* V3.51.1: the quarter rows themselves are no longer RENDERED while
    editing (js/sabaqDhorPage.js keys the section render off the editing
    id) -- the old CSS-hide of .sabaq-dhor-row-text lost a specificity
@@ -1035,7 +1040,13 @@
   overflow: hidden;
   padding: var(--space-sm);
 }
-.edit-popup-card .log-detail-card.editing-active {
+/* V3.52.0: two explicit selectors, deliberately -- the log-detail one
+   keeps (0,3,0) so it still BEATS the later equal-specificity
+   takeover-height rule (.log-detail-card.editing-active) that a
+   generic .editing-active selector would lose to on source order; the
+   #tadabburCard one covers the screen-content card at (1,2,0). */
+.edit-popup-card .log-detail-card.editing-active,
+.edit-popup-card #tadabburCard.editing-active {
   height: auto;
   max-height: calc(75vh - (var(--space-sm) * 2));
   flex: 1 1 auto;
