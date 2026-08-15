@@ -4,6 +4,79 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.53.0 (2026-08-15): Journal→Summary rename + timer wake lock + full lap list — built to the spec below
+
+Three small items bundled together, all confirmed 2026-08-15.
+
+**(1) "Journal" → "Summary":** Display-text only, scoped to the nav
+dropdown + Home tiles, both of which already read from the one shared
+`NAV_ITEMS` array (`js/auth.js`) — a single `label` edit covers both.
+`id`/`icon` stay `'journal'`; every other "journal" string in the app
+(Settings' "Journal name" field, the PIN-setup hint, the duplicate-
+account dialogs/emails) is confirmed OUT of scope, stays as-is. Root-
+level `auth.js` (stale, unused — only `js/auth.js` is actually
+`<script>`-loaded) is untouched, same call as the other stale
+duplicate already flagged elsewhere in this file.
+
+**(2) Timer wake lock, running-only:** No wake lock exists today.
+Screen Wake Lock API, requested/released so it's held if and only if
+`mode === 'full' AND _running` — maximising alone doesn't hold it;
+pausing while still maximised releases it; resuming re-acquires it.
+Single `_syncWakeLock()` check called from `start()`/`pause()`/
+`stop()`/`reset()` and the `mode` setter (every path that can change
+either already funnels through these). Close already calls `pause()`
+first, so it's covered without extra wiring. Feature-detected
+(`'wakeLock' in navigator`) + try/catch — silently does nothing on
+unsupported browsers. `visibilitychange` re-acquires it on returning
+to the app, since the OS/browser silently drops the lock whenever the
+screen/tab goes into the background — without this it wouldn't resume
+automatically mid-session.
+
+**(3) All laps, beside the ring:** Confirmed cause of "only one line
+visible" today — `.laps` is a `flex:1` column below the LAP button
+with `overflow:hidden`; between the ring, the LAP button and the
+controls row there's rarely more than one row's worth of leftover
+height, so laps past the first were being silently clipped, not just
+capped (the `.slice(-4)` cap in `_paint()` was masking a layout
+problem, not the only limit in play). Fix: remove the cap (render
+every lap in `this._laps`) AND move the list — `.dial` becomes a row
+with the laps list on the LEFT and the ring on the right, ring resized
+down ~20% (`min(210px,25vh)` → `min(168px,20vh)`, user's figure) to
+make room. `.laps` gets `overflow-y:auto` sized against the (now
+smaller) ring's height instead of `overflow:hidden`, so a long
+session's laps scroll instead of clipping. Claude's own call, stated
+not confirmed: narrowing `.laprow`'s two grid columns slightly so the
+list comfortably fits next to a 168px ring on the file's own 390px-
+wide reference viewport; `.lapwrap` (the LAP button itself) stays
+exactly where it is today — only the results list moves.
+
+**Build:**
+- `js/auth.js` — `NAV_ITEMS[0].label`: `'Journal'` → `'Summary'`.
+- `js/session-timer.js` — wake lock state/methods + `_syncWakeLock()`
+  wired into start/pause/stop/reset/the mode setter + a
+  `visibilitychange` listener; `_paint()`'s laps render loses
+  `.slice(-4)`; CSS: `.dial` → row layout, `.dial-in` ~20% smaller,
+  `.laps` repositioned + scrollable, `.laprow` narrowed.
+- `index.html`/`js/sw.js` — version bump only, same as every delivery.
+
+**Built + verified:** all built as spec'd above. One real bug caught by
+the harness, not by inspection: `_requestWakeLock` originally kept
+whatever sentinel came back unconditionally, but `mode`/`_running` can
+change while the platform is still responding to the request (e.g.
+pause landing before it resolves) — fixed to re-check both right after
+the await and release immediately if they no longer hold, instead of
+keeping a lock that's already stale by the time it arrives. Verified
+against the real `session-timer.js` in jsdom (mocked
+`navigator.wakeLock`): the full request/release matrix across every
+start/pause/stop/reset/mode-change combination, that exact race
+(reproduced, then confirmed fixed), visibilitychange re-acquisition
+after a simulated browser-forced release, silent no-op on a browser
+without the API at all, and the lap list rendering every entry
+(6 recorded → 6 rendered, correctly numbered, no `slice(-4)` left) —
+29/29. Not harness-checkable: the actual on-device layout/scroll feel
+next to the shrunk ring — that's the one part worth confirming on a
+real phone.
+
 ## Done — V3.52.0 (2026-08-15): Tadabbur edit parity — the popup editor, built to the spec below
 
 Reported as "nothing happens when the edit pencil is clicked" — traced:

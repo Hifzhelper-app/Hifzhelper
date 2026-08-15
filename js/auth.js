@@ -9,7 +9,7 @@ let currentUser = { name: '', role: 'student', trackHaidh: false };
 // built yet show a simple "coming soon" placeholder rather than being
 // left broken or absent — see showScreen() in app.js.
 const NAV_ITEMS = [
-  { id: 'journal', label: 'Journal', icon: 'journal' },
+  { id: 'journal', label: 'Summary', icon: 'journal' },
   // 2026-08-05, confirmed in chat: 'sabaq'/'sabaqDhor'/'dhor' removed
   // entirely -- all 3 already live together on the detail screen
   // (logDetail), so 3 separate placeholder entries pointing at the same
