@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.51.2 — Tadabbur saves fixed; two companion regressions repaired (2026-08-15)
+
+**Files touched:** `worker/src/reflections.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos. DEPLOY ORDER: worker file first (or everything together) — the 500 lives server-side.**
+
+Saving a Tadabbur entry has been failing with "Internal error" since V3.45.15: the shared log inserter unconditionally writes an `is_duplicate` column that the three activity logs have and the reflections table never did — reproduced exactly by running the real worker handler against the real production schema in a simulated database, and fixed by giving reflections its own direct insert (the honest design too, since reflections deliberately has no duplicate concept — one per day, updated in place). The same simulation surfaced a second regression: the V3.44.1 update whitelist had been clobbered out of the file by a later delivery, so backdating an existing reflection silently discarded the date change — restored, and the backdate test now proves the row actually moves.
+
+Third, the console TypeError: the haidh ruling hint element was written to by the Settings code since V3.39 but never existed in the markup. The crash it caused was killing the Settings render mid-function — silently leaving the haidh cycle, period and next-expected fields blank instead of loading saved values, which a save could then overwrite. The element now exists, the render completes, and the hint shows the selected ruling's day cap. Verified with the bug-exposing simulation re-run green plus all five earlier harnesses: 143 checks this round.
+
+---
+
 ## V3.51.1 — Edit popup: desktop legibility, cleaner heading, distinct Save (2026-08-15)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only.
