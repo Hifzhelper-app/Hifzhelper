@@ -1,5 +1,5 @@
 import { insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided } from './logHelpers.js';
-import { isValidDate } from './utils.js';
+import { isValidDate, isTeacherOrAbove } from './utils.js';
 
 const TABLE = 'sabaq_log';
 // V3.14.0: sabaq_from/sabaq_to replace the old surah/ayah_from/ayah_to
@@ -21,7 +21,7 @@ function validateBody(body) {
 export async function handleGetSabaq(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
-  if (auth.role !== 'teacher' && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
   return await getLogs(env, TABLE, studentId, url.searchParams.get('since'), auth.id, true);
 }
 
@@ -39,7 +39,7 @@ export async function handleSaveSabaq(request, env, auth) {
   const err = validateBody(body);
   if (err) return { error: err, status: 400 };
 
-  const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
+  const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
   const values = [body.sabaq_from ?? null, body.sabaq_to ?? null, body.tajweed_tags ?? null, body.line_count ?? null, body.page_count ?? null];
   const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values, body.force);
 

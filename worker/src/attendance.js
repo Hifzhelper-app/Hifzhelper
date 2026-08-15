@@ -1,4 +1,4 @@
-import { validateAttendanceBody, isValidDate } from './utils.js';
+import { validateAttendanceBody, isValidDate, isTeacherOrAbove } from './utils.js';
 import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark, evaluateHaidhRange } from '../../shared/haidhRules.js';
 
 // GET /attendance?month=YYYY-MM (or student_id for a teacher)
@@ -7,7 +7,7 @@ export async function handleGetAttendance(request, env, auth) {
   const studentId = url.searchParams.get('student_id') || auth.id;
   const month = url.searchParams.get('month'); // YYYY-MM
 
-  if (auth.role !== 'teacher' && studentId !== auth.id) {
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) {
     return { error: 'Not authorized to view this student', status: 403 };
   }
 
@@ -33,7 +33,7 @@ export async function handleSetAttendance(request, env, auth) {
   const validationError = validateAttendanceBody(body);
   if (validationError) return { error: validationError, status: 400 };
 
-  const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
+  const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
 
   // V3.39: marking a day haidh/predicted-haidh is capped two ways — a
   // continuous run can't exceed the student's ruling's max duration, and

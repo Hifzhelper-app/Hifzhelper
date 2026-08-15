@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.55.0 — Maktab delivery (a): `isTeacherOrAbove` refactor (2026-08-15)
+
+**Files touched:** `worker/src/utils.js`, `worker/src/attendance.js`, `worker/src/dhorLog.js`, `worker/src/plans.js`, `worker/src/position.js`, `worker/src/reflections.js`, `worker/src/sabaqDhorLog.js`, `worker/src/sabaqLog.js`, `TODO.md`, `CHANGELOG.md`. **Worker-only — no frontend changes, nothing to bump on that side. Deploy the worker files; same manual, non-atomic, file-by-file process as always. Deploy `utils.js` FIRST or together — every other touched file imports the new helper from it and would fail to load against an old `utils.js`.**
+
+First of the six maktab deliveries laid out in TODO.md's design entry. Roles are now a strict hierarchy (student < teacher < admin) rather than independent flags: a new `isTeacherOrAbove(auth)` helper in `utils.js` replaces every literal `auth.role === 'teacher'` / `!== 'teacher'` permission gate in the worker — 12 sites across 7 files — so an admin passes all of them. Previously an admin failed every one.
+
+**This is a live behaviour change, not a no-op:** an admin can now do everything a teacher can against the existing app — save into another student's PJ, read their logs/plans/position/attendance. Low risk today (ADMIN-01 bootstrap account, no real users) but real. Deliberately left as-is: `admin.js`'s `requireAdmin` (admin-only screens stay admin-only — the hierarchy runs one way) and its role-value validator, and `js/auth.js`'s admin-nav gate.
+
+Verified with a `node:sqlite` simulation driving the real refactored handlers with student/teacher/admin auth against another student's data: 45/45 — every GET gate returns 403 for a student and passes teacher and admin identically; every POST gate confirms which `student_id` the row actually lands on (student's foreign id silently ignored → own; teacher's honoured; admin's now honoured); a student's own-data access unchanged; helper edge cases (null/undefined/unknown role → false). Every touched module confirmed to import cleanly. V3.54.0's 22-check harness on the same files re-run green.
+
+---
+
 ## V3.54.0 — Attendance stays in sync with edited/deleted log dates (2026-08-15)
 
 **Files touched:** `worker/src/logHelpers.js`, `worker/src/dhorLog.js`, `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `TODO.md`, `CHANGELOG.md`. **Worker-only — no frontend files changed, nothing to bump on that side. Deploy the worker files; same manual, non-atomic, file-by-file process as always.**

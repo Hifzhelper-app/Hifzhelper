@@ -1,5 +1,5 @@
 import { insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided } from './logHelpers.js';
-import { isValidDate, isInRange } from './utils.js';
+import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
 
 const TABLE = 'dhor_log';
 // duration_seconds (renamed from minutes) + lap_times (JSON array of true
@@ -29,7 +29,7 @@ function validateBody(body) {
 export async function handleGetDhor(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
-  if (auth.role !== 'teacher' && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
   const result = await getLogs(env, TABLE, studentId, url.searchParams.get('since'), auth.id, true);
   // lap_times is stored as a JSON string — parse it back for the caller
   if (result.data) {
@@ -48,7 +48,7 @@ export async function handleSaveDhor(request, env, auth) {
   const err = validateBody(body);
   if (err) return { error: err, status: 400 };
 
-  const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
+  const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
   const values = [
     body.segment_from ?? null, body.segment_to ?? null, body.ref ?? null,
     body.tajweed_tags ?? null, body.mistakes ?? null,

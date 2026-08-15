@@ -1,5 +1,5 @@
 import { updateLog, deleteLog, getLogs } from './logHelpers.js';
-import { isValidDate } from './utils.js';
+import { isValidDate, isTeacherOrAbove } from './utils.js';
 
 const TABLE = 'reflections';
 const FIELDS = ['reflection', 'is_private'];
@@ -18,7 +18,7 @@ function validateBody(body) {
 export async function handleGetReflections(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
-  if (auth.role !== 'teacher' && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
   // hasFeedback=false — reflections use is_private, not teacher_feedback_visibility
   return await getLogs(env, TABLE, studentId, url.searchParams.get('since'), auth.id, false);
 }
@@ -32,7 +32,7 @@ export async function handleSaveReflection(request, env, auth) {
   const err = validateBody(body);
   if (err) return { error: err, status: 400 };
 
-  const studentId = auth.role === 'teacher' && body.student_id ? body.student_id : auth.id;
+  const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
   // V3.51.2 (confirmed in chat): direct INSERT, no longer via the shared
   // insertLog -- that helper unconditionally writes is_duplicate, a
   // column the 3 activity logs have and reflections never did, so EVERY
