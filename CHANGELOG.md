@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.53.0 — Journal→Summary rename, timer wake lock, full lap list (2026-08-15)
+
+**Files touched:** `js/auth.js`, `js/session-timer.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy.
+
+Three small, independent items, spec agreed earlier this session (full spec in TODO.md's now-closed V3.53.0 entry). The nav dropdown and Home tiles now read "Summary" instead of "Journal" — a single label edit in the shared `NAV_ITEMS` array, since both surfaces already draw from it; every other "journal" string in the app (Settings, PIN hints, account-duplicate dialogs) was confirmed out of scope and stays as-is.
+
+The maximised timer now holds a screen wake lock — but only while actually running, not just while maximised; pausing releases it even if the timer stays full-screen, and it re-acquires automatically if the OS silently drops it while the app is backgrounded. Feature-detected throughout, so it's a silent no-op on anything that doesn't support the API.
+
+The maximised timer's lap list is no longer capped at 4 — every lap now renders, in a scrollable column beside the ring (ring sized down ~20% to make room) rather than below the LAP button, where in practice there'd rarely been more than one row's worth of space for it anyway.
+
+Verified against the real `session-timer.js` (jsdom, mocked `navigator.wakeLock`): the request/release state machine across every start/pause/stop/reset/mode-change path, a race where pause lands before an in-flight request resolves (caught by the harness, fixed — the late sentinel is now released rather than kept), visibilitychange re-acquisition after a simulated browser-forced release, graceful no-op on a browser without the API, and the lap list rendering all entries with correct numbering — 29/29.
+
+---
+
 ## V3.52.0 — Tadabbur gets the popup editor (2026-08-15)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/reflectionCard.js`, `js/logDetailScreen.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only — no worker deploy.

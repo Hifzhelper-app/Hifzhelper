@@ -30,6 +30,27 @@
  *     (Close/Reset/Note Time, mirroring the full view's top row) above a
  *     second row (elapsed time, Lap, Pause/Restart toggle, Maximise).
  *
+ * Round 3 (2026-08-15, confirmed in chat) -- two independent additions,
+ * bundled together since both landed the same session:
+ *   - Screen Wake Lock: held if and only if mode="full" AND actually
+ *     running -- maximising alone doesn't hold it, pausing while still
+ *     maximised releases it. One _syncWakeLock() check, called from
+ *     every method that can change either of those two things, rather
+ *     than each managing the lock itself. Feature-detected + try/catch:
+ *     silently a no-op on anything without the API, or if the platform
+ *     declines the request (low battery, etc). Re-acquires on
+ *     visibilitychange, since the browser silently drops the
+ *     underlying OS lock whenever the tab/screen goes into the
+ *     background -- without that it wouldn't resume on its own when
+ *     the student comes back mid-session.
+ *   - Lap list: the old .laps was capped to the last 4, and in
+ *     practice had nowhere near enough leftover flex space to show
+ *     even that many (~1 row before overflow:hidden clipped the
+ *     rest) -- cap removed, list moved to sit beside the ring (.dial
+ *     is now a row: laps on the left, ring on the right), ring sized
+ *     down ~20% to make room. Scrolls to the newest lap on Lap; free
+ *     to scroll back up through history the rest of the time.
+ *
  *   <script src="session-timer.js"></script>
  *   <session-timer target="25" accent="#0a84ff"></session-timer>
  *
@@ -94,9 +115,16 @@
    problem -- padding alone couldn't have closed a gap that size).
    min(210px, 25vh) keeps 210px as the max on a screen at least this
    tall, but shrinks further on anything shorter, rather than a single
-   hardcoded value that only happens to work for one specific device. */
-.dial{display:flex;justify-content:center;padding:12px 0 4px}
-.dial-in{position:relative;width:min(210px, 25vh);height:min(210px, 25vh)}
+   hardcoded value that only happens to work for one specific device.
+   2026-08-15, confirmed in chat: ring shrunk a further ~20%
+   (210->168, 25vh->20vh, user's figure) and .dial switched from a
+   centered column to a row -- the freed width is what the full
+   (uncapped) lap list sits in, to its left. Same viewport reference
+   as above still holds: 140px for .laps + 14px gap + 168px ring =
+   322px, comfortably under the ~350px of content width .full's own
+   padding leaves on a 390px-wide phone. */
+.dial{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 4px 4px}
+.dial-in{position:relative;width:min(168px, 20vh);height:min(168px, 20vh);flex:none}
 .dial svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
 .read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
 .time{font-size:44px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
@@ -104,8 +132,8 @@
 .lapwrap{display:flex;justify-content:center;padding:14px 0 10px}
 .lapbtn{min-width:160px;padding:12px 30px;border-radius:999px;border:0;background:#fff;color:#000;font:inherit;font-size:17px;font-weight:700;letter-spacing:.06em;cursor:pointer}
 .lapbtn:hover{background:#e6e6e6}
-.laps{flex:1;display:flex;flex-direction:column;gap:9px;align-items:center;overflow:hidden}
-.laprow{display:grid;grid-template-columns:78px 96px;gap:12px;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;color:#8e8e93}
+.laps{width:140px;height:min(168px, 20vh);flex:none;display:flex;flex-direction:column;gap:6px;overflow-y:auto;padding-right:2px}
+.laprow{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#8e8e93}
 .laprow.last{color:#fff}
 .ctrls{display:flex;justify-content:center;gap:44px;padding-top:6px}
 .ctrl-col{display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -136,14 +164,14 @@
 
   class SessionTimer extends HTMLElement {
     static get observedAttributes() { return ['target', 'accent', 'mode', 'laps']; }
-    constructor() { super(); this._ms = 0; this._laps = []; this._lastLap = 0; this._running = false; }
+    constructor() { super(); this._ms = 0; this._laps = []; this._lastLap = 0; this._running = false; this._wakeLock = null; }
 
     get elapsed() { return this._ms; }
     set elapsed(v) { this._ms = Math.max(0, Number(v) || 0); this._paint(); this._save(); }
     get laps() { return this._laps.slice(); }
     get running() { return this._running; }
     get mode() { return this.getAttribute('mode') || 'full'; }
-    set mode(v) { this.setAttribute('mode', v); }
+    set mode(v) { this.setAttribute('mode', v); this._syncWakeLock(); }
     get target() { return Math.max(1, Number(this.getAttribute('target') || 25)) * 60000; }
     get accent() { return this.getAttribute('accent') || '#e5342a'; }
 
@@ -161,21 +189,32 @@
         this._raf = requestAnimationFrame(this._loop);
       };
       this._raf = requestAnimationFrame(this._loop);
+      // 2026-08-15, confirmed in chat: the Wake Lock API is silently
+      // revoked by the browser whenever the tab/screen goes into the
+      // background, so a maximised, still-running timer needs to
+      // re-request it on coming back -- otherwise it'd just stay
+      // unlocked for the rest of the session with no way back short
+      // of re-maximising.
+      this._onVisibility = () => { if (document.visibilityState === 'visible') this._syncWakeLock(); };
+      document.addEventListener('visibilitychange', this._onVisibility);
     }
-    disconnectedCallback() { cancelAnimationFrame(this._raf); }
+    disconnectedCallback() {
+      cancelAnimationFrame(this._raf);
+      document.removeEventListener('visibilitychange', this._onVisibility);
+      this._releaseWakeLock();
+    }
     attributeChangedCallback() { if (this._built) this._paint(); }
 
     _build() {
       const root = this.shadowRoot || this.attachShadow({ mode: 'open' });
       root.innerHTML = '<style>' + CSS + '</style>' +
         '<div class="full"><div class="top">' + iconBtn('close', 'Close') + iconBtn('reset', 'Reset') + iconBtn('notetime', 'Note Time') + iconBtn('minimize', 'Minimise') + '</div>' +
-        '<div class="dial"><div class="dial-in"><svg viewBox="0 0 300 300">' +
+        '<div class="dial"><div class="laps"></div><div class="dial-in"><svg viewBox="0 0 300 300">' +
         '<circle cx="150" cy="150" r="140" fill="none" stroke="#2a2a2c" stroke-width="10"></circle>' +
         '<circle class="arc" cx="150" cy="150" r="140" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="butt" stroke-dasharray="879.65" stroke-dashoffset="879.65"></circle>' +
         '<g class="dotg" transform="rotate(90 150 150)"><circle class="dot" cx="150" cy="10" r="9"></circle></g></svg>' +
         '<div class="read"><div class="time">00:00</div><div class="of">of 25:00</div></div></div></div>' +
         '<div class="lapwrap"><button class="lapbtn" data-act="lap" type="button">LAP</button></div>' +
-        '<div class="laps"></div>' +
         '<div class="ctrls"><div class="ctrl-col"><button class="rnd" data-act="toggle" type="button"></button><span class="ctrl-label">Start Dhor</span></div>' +
         '<div class="ctrl-col"><button class="rnd" data-act="stop" type="button"><span class="sq"></span></button><span class="ctrl-label">Stop Dhor</span></div></div></div>' +
         '<div class="mini">' +
@@ -310,18 +349,65 @@
       const p = this.getAttribute('persist');
       if (p) { try { localStorage.setItem(p, JSON.stringify({ ms: this._ms, laps: this._laps, lastLap: this._lastLap })); } catch (e) {} }
     }
+    // 2026-08-15, confirmed in chat: held if and only if mode="full" AND
+    // actually running -- maximising alone doesn't hold it, pausing
+    // while still maximised releases it. Every method that can change
+    // either of those two things calls this same check, rather than
+    // each managing the lock itself. Feature-detected + try/catch
+    // throughout: on a browser without the API (or a request the
+    // platform declines -- low battery, etc) this is silently a
+    // permanent no-op, never an error.
+    async _requestWakeLock() {
+      if (this._wakeLock || !('wakeLock' in navigator)) return;
+      try {
+        const sentinel = await navigator.wakeLock.request('screen');
+        // Conditions can change while the request is in flight (e.g.
+        // paused again before the platform responded) -- don't hold
+        // onto a lock that's already stale by the time it arrives.
+        if (this.mode === 'full' && this._running) {
+          this._wakeLock = sentinel;
+          sentinel.addEventListener('release', () => { this._wakeLock = null; });
+        } else {
+          sentinel.release().catch(() => {});
+        }
+      } catch (e) { /* unsupported / declined -- stay unlocked, no error */ }
+    }
+    _releaseWakeLock() {
+      if (!this._wakeLock) return;
+      const wl = this._wakeLock;
+      this._wakeLock = null;
+      wl.release().catch(() => {});
+    }
+    _syncWakeLock() {
+      if (this.mode === 'full' && this._running) this._requestWakeLock();
+      else this._releaseWakeLock();
+    }
 
-    start() { if (this._running) return; this._t0 = performance.now(); this._running = true; this._paint(); this._emit('timer-start'); }
-    pause() { if (!this._running) return; this._running = false; this._paint(); this._save(); this._emit('timer-pause'); }
+    start() { if (this._running) return; this._t0 = performance.now(); this._running = true; this._syncWakeLock(); this._paint(); this._emit('timer-start'); }
+    pause() { if (!this._running) return; this._running = false; this._syncWakeLock(); this._paint(); this._save(); this._emit('timer-pause'); }
     toggle() { this._running ? this.pause() : this.start(); }
-    stop() { this._running = false; this._paint(); this._save(); this._emit('timer-stop'); }
-    lap() { this._laps.push(this._ms - this._lastLap); this._lastLap = this._ms; this._paint(); this._save(); this._emit('timer-lap'); }
+    stop() { this._running = false; this._syncWakeLock(); this._paint(); this._save(); this._emit('timer-stop'); }
+    // Scrolls the (now uncapped) lap list to the newest entry whenever
+    // one is added -- confirmed in chat: showing every lap only helps
+    // if the one you just recorded is actually in view without having
+    // to scroll for it. Free to scroll back up through history the
+    // rest of the time; nothing re-forces the scroll position outside
+    // this one moment.
+    lap() {
+      this._laps.push(this._ms - this._lastLap);
+      this._lastLap = this._ms;
+      this._paint();
+      this._save();
+      this._emit('timer-lap');
+      const laps = this.$('.laps');
+      if (laps) laps.scrollTop = laps.scrollHeight;
+    }
     // Reset now also stops the clock (this._running = false), not just
     // zeros it while leaving it running -- confirmed in chat: "Reset
     // stops and resets," waiting for a deliberate Start rather than
     // continuing to tick from 0. The supplied version left _running
     // untouched here.
-    reset() { this._ms = 0; this._laps = []; this._lastLap = 0; this._running = false; this._t0 = performance.now(); this._paint(); this._save(); this._emit('timer-reset'); }
+    reset() { this._ms = 0; this._laps = []; this._lastLap = 0; this._running = false; this._t0 = performance.now(); this._syncWakeLock(); this._paint(); this._save(); this._emit('timer-reset'); }
 
     _paint() {
       if (!this._built) return;
@@ -346,10 +432,18 @@
       this.$$('[data-act="toggle"]').forEach(el => { el.innerHTML = this._running ? toggleOnHtml : toggleOffHtml; });
       const showLaps = this.getAttribute('laps') !== 'off';
       this.$('.lapwrap').classList.toggle('hide', !showLaps);
+      // 2026-08-15, confirmed in chat: hide the container itself, not
+      // just its contents -- .laps now has a fixed width+height (it
+      // sits beside the ring, not below it), so leaving it empty-but-
+      // present with laps="off" would still leave a blank 140px gap
+      // next to the ring instead of centering it the way it used to.
+      this.$('.laps').classList.toggle('hide', !showLaps);
       this.$$('.mini-lap').forEach(el => el.classList.toggle('hide', !showLaps));
-      this.$('.laps').innerHTML = !showLaps ? '' : this._laps.slice(-4).map((v, i, a) =>
+      // No slice(-4) any more -- every recorded lap renders; .laps
+      // scrolls instead of clipping (see the CSS above).
+      this.$('.laps').innerHTML = !showLaps ? '' : this._laps.map((v, i, a) =>
         '<div class="laprow' + (i === a.length - 1 ? ' last' : '') + '"><span>Lap ' +
-        (this._laps.length - a.length + i + 1) + '</span><span>' + fmt(v) + '</span></div>').join('');
+        (i + 1) + '</span><span>' + fmt(v) + '</span></div>').join('');
       this.$('.mini-time').textContent = fmt(this._ms);
       // Item 8 (2026-08-04, confirmed in chat): one small white dot per
       // recorded lap, right under the Lap button -- at-a-glance
