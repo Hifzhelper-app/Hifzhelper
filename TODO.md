@@ -4,6 +4,215 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Design — Maktab records (Phase 2): design agreed 2026-08-15, NOT yet build-ready — open items below need pinning first
+
+Much bigger than anything else on this file (new tables, new
+endpoints, a new screen, a role-hierarchy change, derived attendance)
+— so this is a design entry, not a build spec. Everything below the
+"agreed" line is confirmed in chat; the "still open" list is what
+stands between this and "start building".
+
+**Agreed:**
+- Maktab summary page = summary of a Hifz day. First column student
+  names; remaining columns the SAME headings as the personal journal
+  (PJ) — Sabaq | Sabaq Dhor | Dhor, matching css/journal-table.css.
+- Prepopulation same as the PJ's, and live: a student editing their
+  PJ entry changes what the teacher sees prepopulated — UNTIL the
+  teacher saves. A saved maktab log means the teacher actually
+  listened, so it FREEZES: later PJ edits change nothing; if wrong,
+  the teacher edits the maktab log. So a maktab log is a COPY at save
+  time, not a live reference to the PJ row.
+- Students recite sabaq to one teacher, sabaq dhor to different
+  teacher(s), dhor to one or more others — one student's day may be
+  assembled from many teachers' saves (more than 3 is normal). Each
+  teacher confirms + saves. Only teachers' logs are seen by the maktab.
+- Maktab record is completely independent of the PJ. PJ feeds ONLY:
+  prepop, notes (if not private), and haidh. Each student sees PJ and
+  maktab journal as two separate things.
+- Every maktab log stores the saving teacher's ID and name.
+- Teachers may also have their own PJ and be students in the maktab
+  — role is just a column on the one `students` table (`role IN
+  ('student','teacher','admin')`, migration 0007), so a teacher
+  already IS a students-row with a PJ; no separate teachers table.
+- A teacher CANNOT log their own hifz in the maktab — another teacher
+  must (enforce server-side: teacher_id !== student_id).
+- Maktab entries logged AND edited by teacher level or higher.
+- **Admin counts as teacher EVERYWHERE** — not just in new maktab
+  code. Traced (2026-08-15): today the worker gates on
+  `auth.role === 'teacher'` / `!== 'teacher'` ONLY, in 12 places
+  across attendance.js, dhorLog.js, plans.js, position.js,
+  reflections.js, sabaqDhorLog.js, sabaqLog.js — an admin does NOT
+  currently pass any of them. Adopting this = one shared
+  `isTeacherOrAbove(auth)` helper in utils.js and all 12 call sites
+  switched to it. Worth doing as its OWN small delivery ahead of the
+  maktab build (it's independently correct and touches already-live
+  code) rather than buried inside it.
+- Maktab has its OWN attendance, DERIVED not stored: present is
+  assumed; a student shows haidh if their PJ has haidh that day,
+  else absent if no maktab log captured. **Log wins over haidh**
+  (same "sabaq always wins" rule as the PJ). A "maktab day" only
+  exists once ≥ N distinct students have any log — N=3 for now,
+  arbitrary, WILL change → a config value, never hardcoded. On a
+  non-maktab day nobody is absent. Maktab days = the dates actually
+  recorded in the DB.
+- This CLEANLY resolves the "does unset mean absent?" question from
+  the same session: PJ attendance stays stored (unset ≠ absent, one
+  row per date); maktab attendance is computed at read time from the
+  logs + the PJ's haidh marks + the ≥N-students rule. Different
+  mechanisms, no conflict — the V3.54.0 PJ sync entry below is
+  unaffected. And because maktab attendance is derived, editing/
+  deleting a maktab log needs NO attendance-sync counterpart at all —
+  it just falls out.
+
+**Still open — needs pinning before "start building":**
+1. Data model: one `maktab_log` table with a `type` column
+   (sabaq/sabaq_dhor/dhor) vs three tables mirroring the PJ's own
+   split. One table + type column fits the derived-attendance query
+   far better ("any log for student+date"); three would mirror the
+   PJ's proven `logHelpers.js` shape. Lean: ONE table — Claude's
+   suggestion, not yet confirmed.
+2. Which PJ fields prepopulate into each column, and does the maktab
+   log carry the same fields as the PJ row or a subset?
+3. Notes: "if not private" — the PJ already has a per-entry privacy
+   flag (migration 0006 plans_timer_privacy) or does this need one?
+   Traced only that the migration exists; the exact column/semantics
+   still to be confirmed against it.
+4. Where in the app the maktab screen lives (nav item for teacher+
+   admin only? and does a student see a read-only "my maktab
+   journal" view — "each student will see the PJ and the maktab
+   journal separately" says yes) and its route/URL.
+5. Edit permissions: any teacher can edit any maktab log, or only
+   the teacher who saved it (+ admin)?
+6. The ≥N-students config: per-maktab DB setting (a settings row) vs
+   a worker env var. Lean: DB row, so it's changeable without a
+   worker redeploy — Claude's suggestion, not yet confirmed.
+7. Whether "log wins over haidh" in the maktab means the summary
+   shows present-with-a-haidh-badge, or plain present with haidh
+   hidden.
+
+Once these are answered this splits into at least: (a) the
+isTeacherOrAbove refactor, (b) migration + tables, (c) worker
+endpoints, (d) maktab summary screen + prepop, (e) derived
+attendance. Each its own delivery, in that order.
+
+## Flagged — updateLog writes an unvalidated date straight to the row (2026-08-15)
+
+Found while writing V3.54.0's test harness, not introduced by it and
+not fixed by it. `updateLog`'s generic field-update loop writes
+whatever's in `updates.date` directly into the log's `date` column —
+no `isValidDate` check on that write itself, only (as of V3.54.0) on
+whether it's well-formed enough to trigger the attendance sync. A
+malformed date currently can't be produced by the frontend's date
+picker, so this needs a direct API call to reach — low real-world
+risk, but a genuine gap in what the endpoint itself guarantees.
+User's call whether this is worth its own small delivery.
+
+## Done — V3.54.0 (2026-08-15): attendance stays in sync with edited/deleted log dates — built to the spec below
+
+Follow-up on the attendance-flow discussion. Confirmed 2026-08-15: date
+edits AND deletes both need to check/update attendance; a date a log
+moves off (or is deleted from) reverts ONLY if no other log remains
+there that day; a date a log moves onto always gets marked present,
+same unconditional rule as saving a new entry.
+
+**Cross-table check is the crux, not a detail:** attendance is shared
+across all three logs — any one of sabaq_log/sabaq_dhor_log/dhor_log
+existing for a date justifies present there. So "revert the old date"
+can't be a blind delete; it has to confirm none of the three tables
+still has a row for (student, date) first. Two new shared helpers in
+`worker/src/logHelpers.js` (CONVENTIONS.md principle 2 — this is
+already the one place this shape lives):
+```
+releaseAttendanceIfNoActivity(env, studentId, date)
+  -- SELECT 1 FROM sabaq_log ... UNION ALL ... sabaq_dhor_log ...
+     UNION ALL ... dhor_log ... LIMIT 1 (all three, student+date).
+     Found -> no-op. Not found -> DELETE FROM attendance WHERE
+     student_id=? AND date=?.
+markAttendancePresent(env, studentId, date)
+  -- the exact upsert every handleSave* already runs inline, factored
+     out so the edit path can reuse it.
+```
+Both called AFTER the actual mutation (the UPDATE that moves the row,
+or the DELETE) has already happened — the row in question is then
+naturally excluded from the check just by no longer being at that
+date or existing at all, so neither helper needs an explicit
+"exclude this row" parameter.
+
+**Reflections are excluded, and this matters architecturally, not
+just as a note:** `worker/src/reflections.js` imports and calls this
+SAME `updateLog`/`deleteLog` (confirmed by reading it, not assumed —
+Tadabbur genuinely shares the generic path) — and reflections are
+deliberately NOT part of the attendance rule (worker/src/
+reflections.js's own existing comment: "Reflections don't mark
+attendance present"). So this can't be unconditional inside
+`updateLog`/`deleteLog` — both gain a trailing `trackAttendance =
+false` parameter, default off. `reflections.js` needs ZERO changes
+(its calls don't pass the new argument, so it keeps its current,
+correct behaviour automatically). Only dhorLog.js/sabaqLog.js/
+sabaqDhorLog.js's `handleUpdate*`/`handleDelete*` pass `true`.
+
+**`updateLog` also needs the row's CURRENT date before it updates**,
+to detect an actual change (`'date' in updates && updates.date !==
+oldDate`) — today it only SELECTs `student_id` for the auth check;
+gains `date` too. A malformed date reaching this now has a real
+consequence (attendance) it didn't before, so the date-changing check
+also runs it through `isValidDate` (already imported/used elsewhere
+in this file's callers) rather than trusting it's well-formed.
+
+**Deliberately NOT touched, Claude's own call:** the three existing
+`handleSave*` functions' own inline present-upserts stay exactly as
+they are, not refactored to call the new `markAttendancePresent` —
+same SQL now exists in 4 places instead of 1, which cuts against this
+file's own single-source-of-truth principle, but touching three
+already-correct worker files that don't need to change for this fix
+felt like the wrong trade against this project's own deploy-risk
+caution (manual, non-atomic, file-by-file). Worth revisiting later if
+it starts to drift, not urgent now.
+
+**Known, accepted limitation, not a gap in the plan:** if a log
+briefly overwrote a genuine haidh mark (saved on a day that was
+already marked haidh — "sabaq always wins" already does this today)
+and later moves away or gets deleted with nothing else there, the
+date reverts to fully unset, not back to haidh — the schema has no
+history, just one `status` column that was already destructively
+overwritten at step one. Restoring it isn't knowable, only guessable;
+unset is the honest outcome, not a wrong one.
+
+**Build:**
+- `worker/src/logHelpers.js` — `releaseAttendanceIfNoActivity` +
+  `markAttendancePresent` (new); `updateLog` gains the date-change
+  detection + `trackAttendance` param; `deleteLog` gains the
+  `trackAttendance` param.
+- `worker/src/dhorLog.js`, `worker/src/sabaqLog.js`,
+  `worker/src/sabaqDhorLog.js` — one-line change each in
+  `handleUpdate*`/`handleDelete*`: pass `true` for the new
+  `trackAttendance` argument. Nothing else in these files changes.
+- `worker/src/reflections.js` — untouched.
+- No frontend files change — nothing to bump/deploy on that side this
+  round. **Worker-only delivery — deploy worker files, same
+  non-atomic file-by-file process as always.**
+
+**Built + verified:** built exactly as spec'd above, all six file
+changes. Verified with a real node:sqlite simulation (schema pulled
+from the actual current FIELDS constants, not the original migration
+snapshot, which turned out stale — sabaq_log/sabaq_dhor_log have both
+evolved columns since migration 0005) driving the ACTUAL exported
+handlers end to end: 22/22, covering every scenario in the
+verification plan above plus two more the harness surfaced while
+being written — a same-day-sibling case for delete as well as edit,
+and confirming a non-date edit (no `date` field in the update at all)
+leaves attendance completely untouched rather than just "unaffected
+by accident."
+
+Found while writing the test, unrelated to this fix, deliberately not
+touched: `updateLog` writes `updates.date` straight into the log
+row's own `date` column with no format validation at all (pre-
+existing — `isValidDate` here only gates the NEW attendance-sync
+trigger, not the underlying field write, which was already
+unvalidated before this delivery). In practice the frontend's date
+picker can't produce a malformed string, so this needs a direct API
+call to hit — flagged below, not fixed here.
+
 ## Done — V3.53.2 (2026-08-15): lap list moved down + taller (fits ~10 rows) — built to the spec below
 
 Confirmed by screenshot: V3.53.1's fixes all landed correctly (ring

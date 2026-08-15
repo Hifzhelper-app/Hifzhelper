@@ -81,12 +81,12 @@ export async function handleUpdateDhor(request, env, auth) {
   if (body.lap_times != null && !Array.isArray(body.lap_times)) return { error: 'lap_times must be an array', status: 400 };
   const { id, ...updates } = body;
   if (updates.lap_times != null) updates.lap_times = JSON.stringify(updates.lap_times);
-  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, UPDATE_FIELDS);
+  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, UPDATE_FIELDS, true);
 }
 
 export async function handleDeleteDhor(request, env, auth) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
   if (!id) return { error: 'id query param is required', status: 400 };
-  return await deleteLog(env, TABLE, id, auth.id);
+  return await deleteLog(env, TABLE, id, auth.id, true);
 }

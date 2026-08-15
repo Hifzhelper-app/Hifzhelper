@@ -5,6 +5,8 @@
 // principle 2), so the four per-table modules stay thin wrappers that just
 // supply their own field list and validation.
 
+import { isValidDate } from './utils.js';
+
 // Checks whether an existing row for this student/date has identical values
 // across `fields` (the table's own content columns, not student_id/date/
 // entered_by/comments/is_duplicate/created_at — those don't count toward
@@ -46,6 +48,59 @@ async function insertLog(env, table, studentId, date, enteredBy, fields, values,
   return { id: result.meta.last_row_id, isDuplicate: dup };
 }
 
+// Attendance is shared across all three activity logs (sabaq_log,
+// sabaq_dhor_log, dhor_log) -- any ONE of them existing for a date is
+// enough to justify 'present' there. So when a log moves off a date
+// (an edit) or is deleted, that date's attendance can only be
+// reverted if none of the three tables still has a row for
+// student+date -- a blind delete would be wrong whenever a student
+// has more than one log on the same day.
+// Called AFTER the triggering mutation (the UPDATE that moved the
+// row, or the DELETE) has already happened, so the row in question
+// is naturally excluded from this check just by no longer being at
+// this date, or no longer existing at all -- no separate "exclude
+// this one" parameter needed.
+// 2026-08-15, confirmed in chat: reverts to no row at all (unset),
+// never to 'absent' -- this function only knows a log stopped being
+// at this date, not that the student was actually absent that day
+// (the log may simply have been a date correction). Unset is also
+// the same state the date would already be in if the log had never
+// landed there. If a log had briefly overwritten a genuine haidh
+// mark ("sabaq always wins" already does this on every save), that
+// haidh mark is NOT restored here -- there's no stored history, just
+// one status column that was already destructively overwritten.
+// Accepted, not a bug: unset is the honest outcome given the schema.
+async function releaseAttendanceIfNoActivity(env, studentId, date) {
+  const stillActive = await env.DB.prepare(
+    `SELECT 1 FROM sabaq_log WHERE student_id = ? AND date = ?
+     UNION ALL SELECT 1 FROM sabaq_dhor_log WHERE student_id = ? AND date = ?
+     UNION ALL SELECT 1 FROM dhor_log WHERE student_id = ? AND date = ?
+     LIMIT 1`
+  ).bind(studentId, date, studentId, date, studentId, date).first();
+  if (stillActive) return; // another log still justifies present here
+  await env.DB.prepare(
+    'DELETE FROM attendance WHERE student_id = ? AND date = ?'
+  ).bind(studentId, date).run();
+}
+
+// The exact upsert every handleSave* (dhorLog.js/sabaqLog.js/
+// sabaqDhorLog.js) already runs inline on a fresh save -- factored out
+// so the edit path (a log's date changing TO here) can reuse the same
+// unconditional "sabaq always wins" rule instead of a 4th copy of the
+// SQL. Deliberately NOT used to replace those three existing inline
+// upserts (2026-08-15, confirmed in chat, Claude's own call) -- same
+// SQL now exists in 4 places instead of 1, which cuts against this
+// file's own single-source-of-truth principle, but touching three
+// already-correct worker files that don't need to change for this fix
+// was judged the wrong trade against this project's deploy-risk
+// caution (manual, non-atomic, file-by-file).
+async function markAttendancePresent(env, studentId, date) {
+  await env.DB.prepare(
+    `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'present')
+     ON CONFLICT(student_id, date) DO UPDATE SET status = 'present'`
+  ).bind(studentId, date).run();
+}
+
 // Generic partial update — updates only whichever fields are present in
 // `updates`, leaving everything else on the row untouched. Handles both
 // correcting a mistake in the entry's own content (surah, mistakes, etc.)
@@ -53,10 +108,19 @@ async function insertLog(env, table, studentId, date, enteredBy, fields, values,
 // mechanism either way. The app can't enforce honesty about whether an
 // edit reflects what actually happened; that's on the user. A confirmation
 // before overwriting existing data is a frontend concern, not enforced here.
-async function updateLog(env, table, id, studentId, updates, authId, contentFields) {
-  const row = await env.DB.prepare(`SELECT student_id FROM ${table} WHERE id = ?`).bind(id).first();
+// 2026-08-15, confirmed in chat: gained `trackAttendance` (default false).
+// reflections.js imports and calls this SAME function for Tadabbur, and
+// reflections are deliberately NOT part of the attendance rule -- so this
+// can't be unconditional. Only dhorLog.js/sabaqLog.js/sabaqDhorLog.js pass
+// true; reflections.js's calls are untouched and keep their current,
+// correct (attendance-blind) behaviour automatically.
+async function updateLog(env, table, id, studentId, updates, authId, contentFields, trackAttendance = false) {
+  const row = await env.DB.prepare(`SELECT student_id, date FROM ${table} WHERE id = ?`).bind(id).first();
   if (!row) return { error: 'Not found', status: 404 };
   if (row.student_id !== studentId) return { error: 'Not authorized', status: 403 };
+
+  const oldDate = row.date;
+  const dateChanging = trackAttendance && 'date' in updates && isValidDate(updates.date) && updates.date !== oldDate;
 
   const setClauses = [];
   const values = [];
@@ -77,14 +141,24 @@ async function updateLog(env, table, id, studentId, updates, authId, contentFiel
   if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };
   values.push(id);
   await env.DB.prepare(`UPDATE ${table} SET ${setClauses.join(', ')} WHERE id = ?`).bind(...values).run();
+
+  if (dateChanging) {
+    await markAttendancePresent(env, studentId, updates.date);
+    await releaseAttendanceIfNoActivity(env, studentId, oldDate);
+  }
+
   return { data: { saved: true } };
 }
 
-async function deleteLog(env, table, id, studentId) {
-  const row = await env.DB.prepare(`SELECT student_id FROM ${table} WHERE id = ?`).bind(id).first();
+// 2026-08-15, confirmed in chat: gained `trackAttendance` (default
+// false), same reasoning and same reflections.js exemption as
+// updateLog above.
+async function deleteLog(env, table, id, studentId, trackAttendance = false) {
+  const row = await env.DB.prepare(`SELECT student_id, date FROM ${table} WHERE id = ?`).bind(id).first();
   if (!row) return { error: 'Not found', status: 404 };
   if (row.student_id !== studentId) return { error: 'Not authorized', status: 403 };
   await env.DB.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(id).run();
+  if (trackAttendance) await releaseAttendanceIfNoActivity(env, studentId, row.date);
   return { data: { deleted: true } };
 }
 
