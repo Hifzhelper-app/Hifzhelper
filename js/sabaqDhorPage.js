@@ -144,7 +144,13 @@ function renderSabaqDhorRows(){
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhorManual_cb"></span>
   `;
 
-  el.innerHTML = rowsHtml + manualHtml;
+  // V3.51.1 (confirmed in chat): while editing, the quarter rows are
+  // not rendered at all -- only the manual From/To remain. Structural
+  // by design: CSS-hiding SOME of a shared grid's children would let
+  // the survivors reflow into the wrong columns (the V3.45.6-.11
+  // lesson: fix the structure, not the symptom). Keyed off the same
+  // sabaqDhorEditingId the rest of edit mode already uses.
+  el.innerHTML = (sabaqDhorEditingId ? '' : rowsHtml) + manualHtml;
 
   el.querySelectorAll('.move-to-dhor-btn').forEach(btn => {
     btn.addEventListener('click', () => moveRowToDhor(btn.dataset.id));
@@ -369,6 +375,7 @@ function loadSabaqDhorEntryForEdit(entry){
   document.getElementById('sabaqDhorEditBottombar').classList.remove('hidden');
   document.getElementById('sabaqDhor_rollup_up').style.display = 'none';
   document.getElementById('sabaqDhor_rollup_down').style.display = 'none';
+  renderSabaqDhorRows();   // V3.51.1: re-render WITHOUT the quarter rows (editing id is set)
   renderSabaqDhorManualField('from', (entry.from_surah && entry.from_ayah) ? { surah: entry.from_surah, ayah: entry.from_ayah } : null);
   renderSabaqDhorManualField('to', (entry.to_surah && entry.to_ayah) ? { surah: entry.to_surah, ayah: entry.to_ayah } : null);
   enterEditScreenMode('card-sabaqDhor');
@@ -389,6 +396,7 @@ function cancelSabaqDhorEdit(){
   teardownEditFlow('sabaqDhor');
   restoreDateFromEditSlot('sabaqDhor', 'card-sabaqDhor');
   sabaqDhorEditingId = null;
+  renderSabaqDhorRows();   // V3.51.1: quarter rows come back (id cleared)
   // edit repurposed the manual From/To for the entry's range -- clear
   // them so normal mode starts clean (same V3.45.15 principle)
   renderSabaqDhorManualField('from', null);
