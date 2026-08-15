@@ -40,7 +40,7 @@ document.getElementById('logDetailClose').addEventListener('click', () => showSc
 // V3.51.0 (confirmed in chat): the icon bottombar (Cancel/Delete/Update)
 // is gone -- Cancel is the X in each edit topbar now, and the button flow
 // below (Confirm changes -> Save, red Delete) replaced the rest.
-['sabaq', 'sabaqDhor', 'dhor'].forEach(prefix => {
+['sabaq', 'sabaqDhor', 'dhor', 'tadabbur'].forEach(prefix => {
   document.getElementById(`${prefix}EditCloseBtn`).innerHTML = iconHtml('close');
 });
 

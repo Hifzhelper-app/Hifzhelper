@@ -40,13 +40,77 @@ let tadabburCurrentId = null;
 document.getElementById('tadabburHeaderIcon').innerHTML = iconHtml('reflections');
 document.getElementById('tadabburSaveIcon').innerHTML = iconHtml('save');
 
+// V3.52.0 (confirmed in chat): the pencil now opens the same popup
+// editor the three log cards got in V3.51.x, replacing the V3.21-era
+// silent form fill that read as "nothing happens". Its own
+// tadabburEditingId -- the main form's today-flow (tadabburCurrentId,
+// auto-load + in-place Save) is untouched, as is the tap-to-read view.
+let tadabburEditingId = null;
 function loadTadabburEntryForEdit(row){
-  tadabburCurrentId = row.id;
+  tadabburEditingId = row.id;
   document.getElementById('tadabbur_text').value = row.reflection || '';
   document.getElementById('tadabbur_private').checked = !!row.is_private;
   document.getElementById('tadabbur_date').value = row.date;
+  document.getElementById('tadabburError').textContent = '';
+  document.getElementById('tadabburEditTopbar').classList.remove('hidden');
+  document.getElementById('tadabburEditBottombar').classList.remove('hidden');
+  enterEditScreenMode('tadabburCard');
+  moveDateIntoEditSlot('tadabbur');
+  initEditFlow('tadabbur', collectTadabburEditState, saveTadabburEdit);
 }
 EDIT_HANDLERS.reflections = loadTadabburEntryForEdit;
+
+function collectTadabburEditState(){
+  return JSON.stringify({
+    date: document.getElementById('tadabbur_date').value,
+    text: document.getElementById('tadabbur_text').value,
+    priv: document.getElementById('tadabbur_private').checked
+  });
+}
+
+function cancelTadabburEdit(){
+  tadabburEditingId = null;
+  teardownEditFlow('tadabbur');
+  restoreDateFromEditSlot('tadabbur', 'tadabburCard');
+  document.getElementById('tadabburEditTopbar').classList.add('hidden');
+  document.getElementById('tadabburEditBottombar').classList.add('hidden');
+  exitEditScreenMode('tadabburCard');
+}
+
+async function saveTadabburEdit(){
+  const errEl = document.getElementById('tadabburError');
+  errEl.textContent = '';
+  if(!isEditConfirmed('tadabbur')) return;
+  const fields = {
+    date: document.getElementById('tadabbur_date').value || todayISO(),
+    reflection: document.getElementById('tadabbur_text').value || null,
+    is_private: document.getElementById('tadabbur_private').checked
+  };
+  try{
+    await apiReflections.update(tadabburEditingId, fields);
+    cancelTadabburEdit();
+    await renderTadabburScreen();   // restores the today-state + rail
+  } catch(e){
+    errEl.textContent = "Couldn't save: " + e.message;
+  }
+}
+
+// V3.52.0: the X in the edit heading is Cancel (abandon changes).
+document.getElementById('tadabburEditCloseBtn').addEventListener('click', async () => {
+  cancelTadabburEdit();
+  await renderTadabburScreen();
+});
+document.getElementById('tadabburEditDeleteBtn').addEventListener('click', async () => {
+  if(!tadabburEditingId) return;
+  if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
+  try{
+    await apiReflections.remove(tadabburEditingId);
+    cancelTadabburEdit();
+    await renderTadabburScreen();
+  } catch(e){
+    document.getElementById('tadabburError').textContent = "Couldn't delete: " + e.message;
+  }
+});
 
 // V3.45.1: read-only view, confirmed in chat -- tapping a history
 // entry's own content (not its edit icon) shows the full reflection

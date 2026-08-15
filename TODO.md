@@ -4,6 +4,66 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.52.0 (2026-08-15): Tadabbur edit parity — the popup editor, built to the spec below
+
+Reported as "nothing happens when the edit pencil is clicked" — traced:
+not a broken path, but the V3.21-era design: Tadabbur's pencil silently
+closes the History popup and loads the entry into the main form (its
+only editor). With an empty/similar entry that legitimately reads as
+nothing happening, and it is now badly out of step with the three log
+cards' V3.51.x popup editors. Confirmed direction: Tadabbur gets the
+same edit popup.
+
+**Confirmed + verified groundwork:** the date input sits in a standard
+.card-date-row (moveDateIntoEditSlot/restoreDateFromEditSlot and the
+.editing-active hides work unchanged); apiReflections is the same
+generic client (.update/.delete present); the worker's PATCH/DELETE
+routes exist — frontend-only change, no worker deploy.
+
+**Build:**
+- index.html: Tadabbur gains the same hidden edit-topbar ("Edit
+  Tadabbur" + .edit-date-slot + X-close) and edit-bottombar (Confirm
+  changes / Save / red Delete), tadabbur-prefixed ids.
+- js/reflectionCard.js: loadTadabburEntryForEdit becomes the popup
+  loader — its own tadabburEditingId (separate from the today-flow's
+  tadabburCurrentId), fills date/text/private, shows the bars,
+  enterEditScreenMode('tadabburCard'), moveDateIntoEditSlot,
+  initEditFlow with a date/text/private collector; saveTadabburEdit
+  gated on isEditConfirmed -> apiReflections.update, then cancel +
+  renderTadabburScreen() (restores the today-state and rail).
+  cancelTadabburEdit = teardown/restore/exit + re-render; X-close =
+  Cancel; Delete = the same confirm() popup pattern ->
+  apiReflections.delete -> cancel + re-render. The main form's
+  today-flow (auto-load + Save updating in place) is UNTOUCHED, and
+  the read-view (tapping a row's content) stays.
+- js/logDetailScreen.js: the X-icon injection loop gains 'tadabbur'.
+- CSS: hide the absolute .tadabbur-close-btn while editing (it would
+  otherwise float inside the popup); the generic .editing-active hides
+  (header row, date row, history rail) already cover the rest.
+
+Flagged: the pencil opens the popup for ANY entry including today's —
+consistency over special-casing; the main form remains the quick path
+for today. Version V3.52.0 (feature). One zip both repos.
+
+**As built (V3.52.0), verified end to end:** exactly per spec, one
+addition worth recording: generalizing the edit-mode CSS from
+.log-detail-card.editing-active to .editing-active initially
+DOWNGRADED the popup sizing rule's specificity to (0,2,0), which loses
+on source order to the later equal-specificity takeover-height rule —
+log cards in the popup would have regained the viewport-height
+formula. Caught by the harness's strict no-stragglers check before
+shipping; fixed with two explicit selectors
+(.edit-popup-card .log-detail-card.editing-active at (0,3,0) +
+.edit-popup-card #tadabburCard.editing-active at (1,2,0)), each
+out-ranking its own competitor regardless of order. The width caps are
+screen-level (#screen-*) and stay behind when the card moves, so the
+popup needs no extra width neutralization for Tadabbur. Verified: 16
+new checks — the REAL loader + cancel + shared machinery driving the
+REAL tadabburCard (a .screen-content, the case the generalization
+exists for) through load → dirty → confirm → cancel, fields, date-slot
+round-trip, delete wording/API, today-flow and read-view untouched —
+plus all five prior harnesses green (37+18+24+31+27) = 153 this round.
+
 ## Done — V3.51.2 (2026-08-15): Tadabbur save 500 + two companion regressions — built to the spec below
 
 **BUG 1 (the reported 500):** every reflections INSERT throws `table
