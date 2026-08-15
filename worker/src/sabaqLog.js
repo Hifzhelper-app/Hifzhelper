@@ -72,12 +72,12 @@ export async function handleUpdateSabaq(request, env, auth) {
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.id) return { error: 'id is required', status: 400 };
   const { id, ...updates } = body;
-  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, UPDATE_FIELDS);
+  return await updateLog(env, TABLE, id, auth.id, updates, auth.id, UPDATE_FIELDS, true);
 }
 
 export async function handleDeleteSabaq(request, env, auth) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
   if (!id) return { error: 'id query param is required', status: 400 };
-  return await deleteLog(env, TABLE, id, auth.id);
+  return await deleteLog(env, TABLE, id, auth.id, true);
 }
