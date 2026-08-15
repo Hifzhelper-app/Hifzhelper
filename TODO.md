@@ -4,6 +4,55 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.51.2 (2026-08-15): Tadabbur save 500 + two companion regressions — built to the spec below
+
+**BUG 1 (the reported 500):** every reflections INSERT throws `table
+reflections has no column named is_duplicate` — reproduced by running
+the REAL worker code against the REAL production schema in a simulated
+D1. The shared insertLog unconditionally writes is_duplicate, which
+the 3 activity logs have and reflections never did; the V3.45.15
+insertLog rewrite was sim-verified against the 3 logs only, and no
+Tadabbur had been saved since. Fix: handleSaveReflection does its own
+direct INSERT (student_id, date, entered_by, reflection, is_private,
+created_at) — honest at the design level too: reflections deliberately
+has no duplicate concept (one-per-day, frontend updates in place), so
+borrowing the activity-log inserter was always a category mismatch.
+No schema change, no shared-helper risk.
+
+**BUG 2 (found by the same simulation):** V3.44.1's separate
+UPDATE_FIELDS whitelist is GONE from worker/src/reflections.js —
+updateLog gets plain FIELDS, so backdating an existing reflection
+silently drops the date change (delivered 2026-08-09, later clobbered
+by a subsequent delivery's copy of the file). Fix: restore
+`const UPDATE_FIELDS = [...FIELDS, 'date'];` and pass it to updateLog.
+
+**BUG 3 (the console TypeError):** #haidhRulingHint does not exist in
+index.html markup at all, yet js/settingsScreen.js writes to it in two
+places (V3.39 shipped the JS; the element never made the markup). The
+async renderSettingsScreen() dies at that line — everything after it
+is silently skipped, INCLUDING populating haidh cycle/period/
+next-expected from the profile, so a haidh-tracking user opening Setup
+sees blanks and could overwrite real values by saving. Fix: add the
+missing hint element after the ruling switch (the hint text is real
+and useful: the ruling's day cap).
+
+Worker-touching (reflections.js) — deploy worker first or together;
+frontend-alone leaves the 500. One zip both repos.
+
+**As built (V3.51.2), verified end to end:** worker/src/reflections.js
+— handleSaveReflection now runs its own direct INSERT (student_id,
+date, entered_by, reflection, is_private, created_at), insertLog
+import removed; UPDATE_FIELDS = [...FIELDS, 'date'] restored and
+passed to updateLog. index.html — <p class="form-hint"
+id="haidhRulingHint"> added after the ruling switch (JS fills it per
+ruling), unblocking renderSettingsScreen's haidh field population.
+Verified by re-running the SAME simulation that exposed the bug (real
+handler + real schema in node:sqlite D1): all four insert shapes
+succeed, and the backdate test proves the update actually MOVES the
+row's date now; markup/worker contracts + all five prior harnesses
+green (37+18+24+31+27) = 143 total this round. DEPLOY ORDER: worker
+first or together — frontend-alone leaves the 500.
+
 ## Done — V3.51.1 (2026-08-15): Edit-popup desktop fixes + heading/button polish — built to the spec below
 
 Round of fixes from desktop testing of V3.51.0 (screenshot), all
