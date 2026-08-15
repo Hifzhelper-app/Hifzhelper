@@ -965,16 +965,18 @@
    path opened editing, since this same gap sat underneath all of them. */
 .log-detail-card.editing-active .card-header-row,
 .log-detail-card.editing-active .history-container { display: none; }
+/* V3.51.1 (confirmed in chat): grey background gone -- the popup reads
+   as one clean card; the X is pinned to the popup's own top-right
+   corner (absolute, rule below), so the heading row is just the title
+   and the date control, with right padding keeping clear of the X. */
 .edit-topbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-sm);
-  background: var(--color-page-bg);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  margin-bottom: var(--space-sm);
+  padding: 0 36px var(--space-xs) 0;
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
 }
 .edit-topbar button {
   flex-shrink: 0;
@@ -988,7 +990,12 @@
    the wrap sizes to 100% of its parent, so the slot supplies the box. */
 .edit-date-slot { width: 132px; height: var(--dhor-row2-h); flex: 0 0 auto; }
 .edit-topbar-text { flex: 0 1 auto; }
-.edit-close-btn { margin-left: auto; }
+.edit-close-btn {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  z-index: 1;
+}
 .edit-close-btn svg { width: 20px; height: 20px; }
 /* V3.51.0: read-only portion box, edit mode only, for plan-path
    raw-range Dhor entries the picker can't express. */
@@ -1007,14 +1014,22 @@
 .log-detail-card.editing-active #dhorViewPlanBtn,
 .log-detail-card.editing-active #dhorConfirmBox,
 .log-detail-card.editing-active .confirm-field-group .checkbox-box,
-.log-detail-card.editing-active .sabaq-dhor-row-text,
+.log-detail-card.editing-active .card-date-row,          /* V3.51.1: empty 44px row once its date control relocates */
+.log-detail-card.editing-active .sabaq-dhor-group-label, /* V3.51.1: "Confirm Sabaq Dhor" -- meaningless in edit */
 .log-detail-card.editing-active #sabaqDhor_sections .checkbox-box { display: none; }
+/* V3.51.1: the quarter rows themselves are no longer RENDERED while
+   editing (js/sabaqDhorPage.js keys the section render off the editing
+   id) -- the old CSS-hide of .sabaq-dhor-row-text lost a specificity
+   fight against #sabaqDhor_sections > .sabaq-dhor-row-text (1,1,0 vs
+   0,3,0) AND would have broken the shared grid's auto-placement for
+   the surviving From/To rows anyway. Structure over symptom. */
 /* V3.51.0: the edit popup -- other screens visible beneath; the card
    swaps its takeover-era viewport-height formula for popup sizing. */
 .edit-popup-modal { z-index: 60; }
 .edit-popup-card {
+  position: relative;              /* V3.51.1: anchors the pinned X */
   width: min(560px, 94vw);
-  max-height: 88vh;
+  max-height: 75vh;                /* V3.51.1: ~75% of the screen (was 88vh) */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1022,19 +1037,24 @@
 }
 .edit-popup-card .log-detail-card.editing-active {
   height: auto;
-  max-height: calc(88vh - (var(--space-sm) * 2));
+  max-height: calc(75vh - (var(--space-sm) * 2));
   flex: 1 1 auto;
   min-height: 0;
+  /* V3.51.1: neutralize the RAIL's own sizing, which was rendering the
+     card at 30% width inside the popup on desktop (>=1180px
+     max-width:30%; >=768px flex-basis 50%) -- the illegible strip. */
+  width: 100%;
+  max-width: none;
+  flex: 1 1 auto;
 }
 /* V3.51.0 (confirmed in chat): the icon bottombar is gone. Confirm
    changes gates Save -- disabled grey until anything differs from the
    loaded entry, green (ready) when dirty, solid green with reversed
    text once tapped (confirmed); Save greyed until confirmed, then solid
    green. Red Delete below keeps the existing pop-up confirmation. */
+/* V3.51.1 (confirmed in chat, merged from the parallel session): grey
+   shading removed here too -- buttons sit directly on the card. */
 .edit-bottombar {
-  background: var(--color-page-bg);
-  border-radius: var(--radius-sm);
-  padding: var(--space-sm) var(--space-md);
   margin-top: var(--space-md);
 }
 .edit-actions-row {
@@ -1066,15 +1086,18 @@
   border-color: var(--palette-evergreen);
   color: #FFFFFF;
 }
+/* V3.51.1 (confirmed in chat): visually DISTINCT from the confirmed
+   button beside it -- green fill removed; solid green stays unique to
+   "Changes confirmed". */
 .edit-save-btn:not(:disabled) {
-  background: var(--palette-evergreen);
+  background: #FFFFFF;
   border-color: var(--palette-evergreen);
-  color: #FFFFFF;
+  color: var(--palette-evergreen);
 }
 .edit-delete-btn {
   display: block;
   width: 100%;
-  margin-top: var(--space-sm);
+  margin-top: var(--space-md);   /* V3.51.1: more room above Delete */
   background: var(--color-error);
   border-color: var(--color-error);
   color: #FFFFFF;

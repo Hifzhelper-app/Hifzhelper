@@ -7,6 +7,16 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.51.1 — Edit popup: desktop legibility, cleaner heading, distinct Save (2026-08-15)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos.** Frontend-only.
+
+Ten fixes from desktop testing of the new edit popup. The illegible narrow strip is gone — the card was keeping its rail sizing (30% max-width on desktop) inside the popup, now neutralized — and the popup caps at about three-quarters of the screen height. The heading is simply "Edit Sabaq" / "Edit Sabaq Dhor" / "Edit Dhor" beside the date control, without the grey band, and the X sits pinned in the popup's top-right corner. The empty row that used to sit under the heading (the card's own date row, dateless once its control relocates) is hidden, closing the gap. The bottombar's grey band is gone too, Delete has more room above it, and an activated Save is now visually distinct from the confirmed button beside it — white with a green border, leaving solid green unique to "Changes confirmed".
+
+The Sabaq Dhor edit now truly shows only From/To: the quarter rows aren't rendered at all while editing (they return on cancel), rather than being CSS-hidden — the original hide had lost a specificity fight, and hiding only some of a shared grid's children would have scrambled the surviving rows' columns anyway. The "Confirm Sabaq Dhor" group label hides in edit too. Verified with 18 new checks — including running the real section renderer through normal → edit → normal and watching the quarter rows leave and return with the manual fields intact — plus all four earlier harnesses re-run green: 137/137.
+
+---
+
 ## V3.51.0 — Edit screens become popups; dates and portions editable; Confirm-changes flow (2026-08-14)
 
 **Files touched:** `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `index.html`, `css/detail-pages.css`, `js/logDetailScreen.js`, `js/dhorPage.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **One identical set for both repos. DEPLOY ORDER MATTERS: upload the three worker files first (or everything together) — the old worker silently drops the new `date` field, so deploying the frontend alone would make date edits look like they worked while saving nothing.**

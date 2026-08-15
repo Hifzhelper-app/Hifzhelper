@@ -4,6 +4,89 @@ Confirmed findings, not yet built (per the standing process rule: document
 first, build only once explicitly told to start). Newest first within each
 section.
 
+## Done — V3.51.1 (2026-08-15): Edit-popup desktop fixes + heading/button polish — built to the spec below
+
+Round of fixes from desktop testing of V3.51.0 (screenshot), all
+root-caused in code:
+
+1. **Popup illegible on desktop (all 3 cards):** the card keeps its
+   RAIL sizing inside the popup — >=768px flex-basis 50%, >=1180px
+   max-width 30% (exactly the narrow strip in the screenshot). Fix:
+   the .edit-popup-card override gains width:100%; max-width:none;
+   flex:none.
+2. **Sabaq Dhor edit still shows the quarter rows:** the V3.51.0 hide
+   (.log-detail-card.editing-active .sabaq-dhor-row-text, specificity
+   0,3,0) LOSES to the existing #sabaqDhor_sections > 
+   .sabaq-dhor-row-text rule (1,1,0) — and the Move-to-Dhor buttons,
+   their empty placeholder spans, and the "Confirm Sabaq Dhor" label
+   above the group were never covered. Fix: ID-scoped edit-mode hides
+   for row-text + move-to-dhor-btn (placeholders are empty spans in a
+   grid — hidden rows collapse), plus the group label; only the
+   From/To rows remain, as requested.
+3. **Big gap between heading and content (all 3):** .card-date-row was
+   never hidden in edit — after its date control relocates to the
+   heading it sits as an empty 44px row. Fix: hide it under
+   .editing-active (restore untouched — the control moves back before
+   the class is removed).
+4. **Heading grey background removed (all 3):** .edit-topbar loses its
+   --color-page-bg fill (transparent, padding trimmed).
+5. **Heading text:** "Editing <type> entry for" → "Edit Sabaq" /
+   "Edit Sabaq Dhor" / "Edit Dhor" followed by the date control (the
+   user's "(Date)" = the selector's position, not literal parens).
+6. **X-close pinned to the popup's top-right corner** (absolute within
+   the popup card), not inline in the heading row.
+7. **Active Save must look different from the confirmed button:** Save
+   enabled = white background, evergreen border + text (the green fill
+   removed), so solid-green remains unique to "Changes confirmed".
+
+8. **Bottombar grey shading removed** (merged from the parallel
+   session's agreed spec, 2026-08-15): .edit-bottombar loses its
+   --color-page-bg background — with the topbar's grey also going
+   (item 4), the popup reads as one clean card.
+9. **More margin above Delete** (same source): --space-sm →
+   --space-md.
+
+10. **Popup card height capped at ~75% of the screen** (confirmed
+   2026-08-15): .edit-popup-card max-height 88vh → 75vh (the card's
+   inner override follows), so the popup sits clear of the screen
+   edges with the app visible around it.
+
+Frontend-only (index.html headings, css/detail-pages.css). One zip
+both repos.
+
+## Open — V3.51.1: edit bottombar styling tweaks — spec agreed 2026-08-15, awaiting "start building"
+
+Two adjustments to the V3.51.0 Confirm/Save/Delete section (both
+confirmed 2026-08-15): (1) remove the grey shading -- .edit-bottombar
+drops its --color-page-bg background (and with it the padding/radius
+that only existed to shape the grey panel, if removing them reads
+cleanly against the card); (2) more separation above Delete --
+.edit-delete-btn margin-top var(--space-sm) -> var(--space-md)
+(Claude's value, user said "increase").
+
+**As built (V3.51.1), verified end to end:** all ten items. The one
+mechanism deviation from the spec draft, deliberate and better: the
+Sabaq Dhor quarter rows are NOT CSS-hidden — renderSabaqDhorRows now
+skips rowsHtml entirely while sabaqDhorEditingId is set (loader
+re-renders before prepopulating the manual fields; cancel clears the
+id and re-renders, quarter rows return). CSS-hiding some of a shared
+grid's children would have let the survivors reflow into the wrong
+columns (auto-placement) — structure over symptom, the V3.45.6-.11
+lesson; the weak .sabaq-dhor-row-text hide was deleted, the manual
+checkbox + new .sabaq-dhor-group-label hides stay (ID-scoped, winning
+specificity). Popup: card's rail sizing neutralized (width:100%,
+max-width:none) — the >=1180px max-width:30% was the illegible strip;
+cap 88vh → 75vh both places; .edit-popup-card position:relative
+anchors the X, now absolute top-right. Headings "Edit Sabaq"/"Edit
+Sabaq Dhor"/"Edit Dhor" + date control; topbar+bottombar grey fills
+removed; .card-date-row hidden in edit (the 44px gap); active Save =
+white/evergreen-border (solid green unique to Changes confirmed);
+Delete margin --space-md. Verified: 18 new checks — including driving
+the REAL renderSabaqDhorRows through normal → edit → normal and
+asserting the quarter rows leave and return with the manual fields
+intact — plus all four prior harnesses re-run green (37+24+31+27,
+two expectations updated to the intended V3.51.1 reality) = 137/137.
+
 ## Done — V3.51.0 (2026-08-14): Edit screens redesigned as popups, editable dates/portions, new confirm flow — built to the spec below
 
 **Main Dhor page (small fix):** the Quarter/Half/Juz pill touches the
