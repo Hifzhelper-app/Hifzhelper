@@ -35,6 +35,7 @@
 
 import { isDuplicate, updateLog, deleteLog, getLogs, applyPrivacy } from './logHelpers.js';
 import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
+import { computeDefaultDhorEntry } from './dhorSchedule.js';
 
 // V3.59.0 (maktab delivery (e1)): one round-trip payload for the maktab
 // summary screen — the active-student roster PLUS all three tables'
@@ -52,8 +53,12 @@ async function handleMaktabSummary(request, env, auth) {
   const date = url.searchParams.get('date');
   if (!isValidDate(date)) return { error: 'date must be YYYY-MM-DD', status: 400 };
 
+  // V3.60.0 ((e2)): + mushaf — the day view needs the STUDENT's ref
+  // (juz'-30 direction, dhor segment naming) and /profile is own-only
+  // by design; the teacher-gated roster is the right carrier, one
+  // column, no new endpoint. Still no whatsapp/pin — see above.
   const students = (await env.DB.prepare(
-    'SELECT id, name FROM students WHERE active = 1 ORDER BY name'
+    'SELECT id, name, mushaf FROM students WHERE active = 1 ORDER BY name'
   ).all()).results;
 
   async function dayRows(table, cfg) {
@@ -65,15 +70,37 @@ async function handleMaktabSummary(request, env, auth) {
     return rows;
   }
 
+  // V3.60.0 ((e2)): the date's haidh marks ride along so the summary can
+  // show "Haidh" in an empty row (PJ journal pattern) and the teacher can
+  // see who's marked before tapping in. haidh/predicted only -- present/
+  // absent are DERIVED for the maktab (delivery (f)), never read from here.
+  const attendance = (await env.DB.prepare(
+    `SELECT student_id, status FROM attendance WHERE date = ? AND status IN ('haidh','predicted-haidh')`
+  ).bind(date).all()).results;
+
   return { data: {
     students,
     sabaq: await dayRows('maktab_sabaq_log', CONFIG.sabaq),
     sabaq_dhor: await dayRows('maktab_sabaq_dhor_log', CONFIG.sabaqDhor),
     dhor: await dayRows('maktab_dhor_log', CONFIG.dhor),
+    attendance,
   } };
 }
 
-export { handleMaktabSummary };
+// V3.60.0 (maktab delivery (e2)): the dhor card's prepop -- the PJ's own
+// computeDefaultDhorEntry pointed at the MAKTAB dhor history, no plans
+// ("copy the PJ logic", confirmed in chat). Teacher+ only, like every
+// maktab read that isn't the student's own.
+async function handleMaktabDhorDefault(request, env, auth) {
+  if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
+  const url = new URL(request.url);
+  const studentId = url.searchParams.get('student_id');
+  if (!studentId) return { error: 'student_id is required', status: 400 };
+  const data = await computeDefaultDhorEntry(env, studentId, { table: 'maktab_dhor_log', includePlans: false });
+  return { data };
+}
+
+export { handleMaktabSummary, handleMaktabDhorDefault };
 
 const CONFIG = {
   sabaq: {

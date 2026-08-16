@@ -128,13 +128,23 @@ function findChunkIndexForSegment(chunks, segment_from, segment_to) {
 // pre-generated with dates attached, which is no longer true. Reuses
 // buildChunks/findChunkIndexForSegment (this file, above) rather than
 // duplicating the gap-aware chunking logic a second time.
-export async function computeDefaultDhorEntry(env, studentId) {
+// V3.60.0 (maktab delivery (e2)): gained opts so the maktab day view can
+// reuse this exact calc against ITS OWN history ("copy the PJ logic",
+// confirmed in chat) -- { table: 'maktab_dhor_log', includePlans: false }
+// (the maktab has no plans concept). PJ callers pass nothing and are
+// byte-for-byte unchanged in behaviour. Only the two reads below are
+// parameterised; the queue/upcoming functions further down stay PJ-only.
+export async function computeDefaultDhorEntry(env, studentId, opts = {}) {
+  const table = opts.table || 'dhor_log';
+  const includePlans = opts.includePlans !== false;
   const today = todayISO();
 
-  const { results: todaysPlans } = await env.DB.prepare(
-    "SELECT * FROM plans WHERE student_id = ? AND plan_type = 'dhor' AND status = 'planned' AND target_date = ? ORDER BY created_at"
-  ).bind(studentId, today).all();
-  if (todaysPlans.length > 0) return { source: 'today_plan', date: today, plans: todaysPlans };
+  if (includePlans) {
+    const { results: todaysPlans } = await env.DB.prepare(
+      "SELECT * FROM plans WHERE student_id = ? AND plan_type = 'dhor' AND status = 'planned' AND target_date = ? ORDER BY created_at"
+    ).bind(studentId, today).all();
+    if (todaysPlans.length > 0) return { source: 'today_plan', date: today, plans: todaysPlans };
+  }
 
   const student = await env.DB.prepare(
     'SELECT mushaf, baseline_selection FROM students WHERE id = ?'
@@ -147,7 +157,7 @@ export async function computeDefaultDhorEntry(env, studentId) {
 
   const ref = student.mushaf === '15line_madani' ? 'uthmani' : 'waterval';
   const lastLog = await env.DB.prepare(
-    'SELECT segment_from, segment_to FROM dhor_log WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1'
+    `SELECT segment_from, segment_to FROM ${table} WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1`
   ).bind(studentId).first();
 
   if (lastLog) {

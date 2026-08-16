@@ -18,6 +18,10 @@ async function renderMaktabJournalScreen(){
   const host = document.getElementById('maktabJournalBody');
   host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
 
+  // V3.59.1: same wire-shape fix as maktabSummary.js -- the GETs resolve
+  // DIRECTLY to the rows array (respond() unwraps); the V3.59.0 cut's
+  // (rows.data || []) silently emptied every response, so this screen
+  // showed "No maktab entries yet" even with entries.
   let sabaq, sabaqDhor, dhor;
   try {
     [sabaq, sabaqDhor, dhor] = await Promise.all([
@@ -29,7 +33,7 @@ async function renderMaktabJournalScreen(){
   }
 
   const days = {};
-  const add = (rows, type) => (rows.data || []).forEach(r => {
+  const add = (rows, type) => (Array.isArray(rows) ? rows : []).forEach(r => {
     (days[r.date] = days[r.date] || { sabaq: [], sabaqDhor: [], dhor: [] })[type].push(r);
   });
   add(sabaq, 'sabaq'); add(sabaqDhor, 'sabaqDhor'); add(dhor, 'dhor');

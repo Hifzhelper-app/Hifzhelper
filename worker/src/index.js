@@ -8,7 +8,7 @@ import {
   handleGetMaktabSabaq, handleSaveMaktabSabaq, handleUpdateMaktabSabaq, handleDeleteMaktabSabaq,
   handleGetMaktabSabaqDhor, handleSaveMaktabSabaqDhor, handleUpdateMaktabSabaqDhor, handleDeleteMaktabSabaqDhor,
   handleGetMaktabDhor, handleSaveMaktabDhor, handleUpdateMaktabDhor, handleDeleteMaktabDhor,
-  handleMaktabSummary,
+  handleMaktabSummary, handleMaktabDhorDefault,
 } from './maktabLog.js';
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
@@ -86,6 +86,7 @@ export default {
       // records, independent of the PJ routes above. Requires migration
       // 0019 to have been run; see worker/src/maktabLog.js.
       if (path === '/maktab/summary' && request.method === 'GET') return respond(await handleMaktabSummary(request, env, auth));
+      if (path === '/maktab/dhor-default-entry' && request.method === 'GET') return respond(await handleMaktabDhorDefault(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'GET') return respond(await handleGetMaktabSabaq(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'POST') return respond(await handleSaveMaktabSabaq(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'PATCH') return respond(await handleUpdateMaktabSabaq(request, env, auth));
