@@ -248,27 +248,35 @@
 .maktab-summary-row { cursor: pointer; }
 .maktab-summary-row:active { background: rgba(130, 150, 114, 0.12); }
 .maktab-student-name { font-weight: 600; }
-.maktab-summary-datebar {
-  padding: 4px 12px 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted, #8e8e93);
-}
-.maktab-day-name { margin: 8px 0 4px; }
 .maktab-day-placeholder { color: var(--muted, #8e8e93); }
+
+/* V3.61.0: summary leading haidh column + top-row date picker */
+.maktab-summary-toprow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.maktab-summary-date-input { font: inherit; font-weight: 600; }
+.col-haidh { width: 34px; flex: none; }
+.maktab-haidh-col { width: 34px; padding: 0 2px; text-align: center; }
+.maktab-haidh-check { font: inherit; padding: 3px; border-radius: 8px; border: 1px solid rgba(196, 108, 122, 0.5); background: #fff; line-height: 0; }
+.maktab-haidh-check svg { width: 16px; height: 16px; }
+.maktab-haidh-check.marked { background: rgba(196, 108, 122, 0.25); }
+
+/* V3.61.0: day view — PJ card chrome + notes block */
+.maktab-day-card { margin: 10px 0; }
+.maktab-card-student-row { font-weight: 700; font-size: 15px; padding: 2px 0 4px; }
+.maktab-field-label { display: block; margin: 6px 0; font-size: 13px; }
+.maktab-day-card input, .maktab-day-card select, .maktab-day-card textarea { font: inherit; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.2); border-radius: 8px; max-width: 100%; }
+.maktab-day-card textarea { width: 100%; min-height: 44px; }
+.maktab-vis-row { display: flex; gap: 10px; align-items: center; font-size: 12px; margin: 6px 0 2px; }
+.maktab-vis-opt { display: inline-flex; gap: 3px; align-items: center; }
+.maktab-vis-opt input { margin: 0; }
+.maktab-student-note { margin: 6px 0; font-size: 13px; }
+.maktab-student-note-label { display: block; font-weight: 600; color: var(--muted, #8e8e93); margin-bottom: 2px; }
+.maktab-student-note-text { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; }
 
 /* (e2) V3.60.0: day view cards + summary haidh control */
 .maktab-day-date { font-size: 13px; font-weight: 600; color: var(--muted, #8e8e93); margin-bottom: 8px; }
 .maktab-haidh-banner { background: rgba(196, 108, 122, 0.15); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
 .maktab-tadabbur-strip { background: rgba(130, 150, 114, 0.12); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
-.maktab-card { border: 1px solid rgba(0,0,0,0.12); border-radius: 12px; padding: 12px; margin: 10px 0; }
-.maktab-card h3 { margin: 0 0 8px; }
-.maktab-card label { display: block; margin: 6px 0; font-size: 13px; }
-.maktab-card input, .maktab-card select, .maktab-card textarea { font: inherit; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.2); border-radius: 8px; max-width: 100%; }
-.maktab-card textarea { width: 100%; min-height: 44px; }
-.maktab-save-btn, .maktab-haidh-btn { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.2); background: #fff; }
 .maktab-existing-row { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; }
 .maktab-existing-meta { color: var(--muted, #8e8e93); }
 .maktab-mini-btn { font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); background: #fff; }
 .maktab-dhor-suggestion { font-size: 13px; color: var(--muted, #8e8e93); margin: 4px 0; }
-.maktab-row-haidh-btn { font: inherit; font-size: 11px; font-weight: 700; margin-left: 6px; padding: 1px 7px; border-radius: 7px; border: 1px solid rgba(196, 108, 122, 0.6); background: rgba(196, 108, 122, 0.12); }
