@@ -264,6 +264,141 @@ building" + zip:**
   attendance (haidh propagation, thereafter-absent, ≥N env-var
   rule, 30-day flag).
 
+## Done — V3.63.0 (2026-08-16): date pill on the PJ's own grid + haidh as a yellow toggle, no banner — device feedback
+
+Three corrections from chat, plus two wrong-row bugs found while
+tracing them.
+
+**1. Date pill, fixed the PJ's way.** User: "the PJ does not have date
+pills that stretch across a screen or the card — if they are 100% they
+are constrained by a grid or something else." Exactly right, and
+V3.61.1 had it backwards. The PJ's .card-date-row is `display: grid;
+grid-template-columns: auto 1fr` — the pill's own width:100% resolves
+to its intrinsic width inside an AUTO column, and the 1fr sibling takes
+the rest. V3.61.1 instead overrode the shared wrap to width:auto AND
+indented the row by `padding-left: 7%`, a number that silently
+duplicated the haidh column's share and would have drifted the moment
+those percentages changed. Both deleted; .maktab-summary-toprow is now
+the same auto/1fr grid with the close button justify-self:end.
+
+**2. No haidh banner.** User: "no haidh strip — just the small haidh
+icon that['s] bright yellow on the summary or in the detail", and then
+"small icon next to the student's name — toggle". The banner (mine,
+never asked for) is gone from all three cards, its CSS deleted. Haidh
+now reads as ONE thing in both places: a small icon, bright yellow
+(#FFD400) when marked. The old summary marked-state was a muted pink
+tint that barely registered across a roster.
+
+**3. The icon is a TOGGLE, both surfaces.** Marking routes through the
+existing shared flow, so the 15-day guard and its exact confirm wording
+apply from either place. Un-ticking CLEARS the day back to unset rather
+than writing 'absent' — Claude's call, stated: 'absent' is a different
+claim ("she wasn't here"), the maktab derives absence anyway (delivery
+(f)), and an untick should just undo the mark.
+
+**Two wrong-row bugs found while tracing the toggle's date/student
+through both paths** — neither would have thrown, both would have
+written the wrong row silently:
+- `handleDeleteAttendance` hardcoded `studentId = auth.id`, so a
+  teacher un-ticking a student's mark would have cleared the TEACHER'S
+  OWN day. Given the same `isTeacherOrAbove` override
+  `handleSetAttendance` has always had (worker change — deploy first).
+- `maktabMarkHaidhFlow` hardcoded today. Harmless while the summary was
+  today-only, but V3.61.0 gave it a date picker, so marking from a
+  past-day summary would have marked TODAY. Now takes the date; both
+  surfaces pass the date on screen.
+
+**Verified:** verify_e2 44/44 (no banner anywhere; toggle beside the
+name on all three cards with the marked/aria-pressed state; toggle-off
+clears the shown date and never writes 'absent'; toggle-on marks the
+SHOWN date, which is the picker regression as a permanent check;
+empty-PJ renders no toggle at all when track_haidh is false) and
+verify_e1 32/32 (the top row is the auto/1fr grid; BOTH V3.61.1 hacks
+asserted absent, not merely overridden; marked state is the yellow).
+Full suite 252 green. Tadabbur strip left alone for now, per chat.
+
+## Done — V3.62.0 (2026-08-16): maktab day view rebuilt as a real COPY of the PJ day view — device feedback
+
+User, after the V3.61.0/.1 screenshots: "the sabaq/sabaq dhor and detail
+log cards are supposed to be copied from the personal journal with
+minimal changes — this means they are supposed to be on a swipe rail on
+mobile, and displayed as a three card grid on the large screen; the
+content should be copied from the student journal". Correct criticism:
+V3.61.0 had borrowed the PJ's card CHROME but kept its own single
+stacked container, so there was no rail, no dots, and no responsive
+grid.
+
+**Built:** the maktab day view is now the PJ day view's own structure —
+static `#maktabDayDots` (Sabaq/SDhor/Dhor + close) and
+`#maktabDayRail` holding three `.log-detail-card` elements, exactly as
+`#screen-logDetail` does. That single change buys every layout
+behaviour for free from detail-pages.css: one card per screen with
+scroll-snap swiping on mobile, two-up between 768 and 1179, and the
+full three-card grid at >=1180 with the dots hidden. Nothing about
+that responsiveness is re-implemented in maktab CSS — the rules were
+already there and now apply because the markup matches.
+
+Dot navigation is copied from logDetailScreen.js verbatim in behaviour,
+INCLUDING its V3.18.0 fix (compare getBoundingClientRect edges, never
+offsetLeft — #appContent's translateZ(0) makes it the offsetParent and
+silently breaks offsetLeft comparisons); wired once behind a dataset
+guard since the rail is static markup. renderMaktabDayScreen now fills
+each card's `.card-scroll[data-body]` instead of writing a container;
+the per-card contents keep every agreed V3.61.0 rule — student name as
+the first row, PJ card-header-row with the header Save button, teacher
+note above a read-only student note, small visibility radios, no
+Tadabbur card, no Mark-haidh control.
+
+Two judgement calls, stated: the haidh banner REPEATS on all three
+cards (each card saves independently, so a teacher who swipes straight
+to Dhor must still see that saving overwrites the mark), while the
+tadabbur strip appears ONCE on the first card (context, not a save
+consequence — tripling it would be noise). Both are asserted in the
+harness so they're visible decisions, not accidents. Also removed: the
+now-dead `.maktab-day-card` wrapper class and its CSS, superseded with
+the old container (no back-compat hoarding).
+
+**Verified:** verify_e2 41/41 — the rail holds exactly three
+.log-detail-card children, every card's first row is the student name
+followed by the PJ header + Save, the three cards map to sabaq/
+sabaqDhor/dhor in PJ order, dot clicks scroll the rail smoothly (the
+active-dot state itself is layout-derived and jsdom computes no
+layout — the wiring is asserted instead, and that limitation is noted
+in the check), banner repeats 3x, strip appears 1x. Full suite 247
+green. On-device: swipe feel and the >=1180 three-up grid are the
+things only a real screen can confirm.
+
+## Done — V3.61.1 (2026-08-16): summary header/column alignment + date pill — device feedback on V3.61.0
+
+Two reported defects, both mine, both in V3.61.0's summary:
+
+1. **Header no longer aligned with the rows.** Root cause: the PJ's
+   header is a flex row and its body is a <table>; they line up only
+   because `.journal-header-row`'s nth-child(1..4) percentages happen
+   to match a 4-column auto-layout table. The maktab grid now has
+   FIVE columns, so those inherited rules mis-assigned everything —
+   the date column's 20% landed on the narrow haidh column and the
+   5th column got no rule at all, pushing the header off the body.
+   Fixed properly, not nudged: ONE set of percentages (7/21/24/24/24,
+   summing to 100) drives BOTH the header cells and the table
+   columns, and the table is `table-layout: fixed` so it obeys them
+   exactly instead of auto-sizing to content. No fixed px anywhere in
+   the set — a px column would overflow a 100%-wide table by exactly
+   that many pixels, which is the same class of bug.
+2. **Date stretched across the screen.** It's
+   wireCustomDateDisplay's own pill span, whose wrap is `width:100%`
+   by design for the PJ cards' full-width slots. Overridden to
+   fit-content here, font/padding reduced, and the top row indented
+   by the haidh column's own 7% so the pill sits over the STUDENT
+   column, with the close icon pushed right — as asked.
+
+**Verified:** the alignment is CSS, which jsdom can't lay out — so
+the harness asserts the thing that actually broke: every one of the
+5 columns has an explicit width on BOTH sides, the two sets match
+column-for-column, they sum to 100%, the table is fixed-layout, and
+the date wrap is fit-content. 6 new checks, verify_e1 30/30, full
+suite 243 green. Still needs an eyeball on device.
+
 ## Done — V3.61.0 (2026-08-16): (e2) UI round from device screenshots — built to the spec below
 
 User feedback on the shipped e2, from two screenshots (summary +

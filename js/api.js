@@ -229,6 +229,9 @@ function apiGetAttendanceFor(studentId){
 // Re-activates the parked POST /attendance (route + handler have been live
 // and teacher-gated since V3.40.2 removed the old caller) for teacher
 // haidh entry — confirmed in chat, delivery (e2).
+function apiClearAttendanceFor(studentId, date){
+  return apiFetch('/attendance?student_id=' + encodeURIComponent(studentId) + '&date=' + encodeURIComponent(date), { method: 'DELETE' });
+}
 function apiSetAttendanceFor(studentId, date, status){
   return apiFetch('/attendance', { method: 'POST', body: JSON.stringify({ student_id: studentId, date, status }) });
 }
