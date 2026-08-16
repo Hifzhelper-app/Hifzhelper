@@ -108,10 +108,13 @@ async function renderMaktabSummaryScreen(){
       btn.type = 'button';
       btn.className = 'maktab-haidh-check' + (haidhByStudent[stu.id] ? ' marked' : '');
       btn.innerHTML = iconHtml('haidh');
-      btn.setAttribute('aria-label', 'Mark haidh for ' + stu.name);
+      btn.setAttribute('aria-pressed', haidhByStudent[stu.id] ? 'true' : 'false');
+      btn.setAttribute('aria-label', (haidhByStudent[stu.id] ? 'Clear haidh mark for ' : 'Mark haidh for ') + stu.name);
+      // V3.63.0: the summary control is the same TOGGLE as the day
+      // view's, and it marks the DATE ON SCREEN, not today.
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        maktabMarkHaidhFlow(stu.id, () => renderMaktabSummaryScreen());
+        maktabToggleHaidh(stu.id, date, !!haidhByStudent[stu.id], () => renderMaktabSummaryScreen());
       });
       haidhTd.appendChild(btn);
     }

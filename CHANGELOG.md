@@ -7,6 +7,44 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.63.0 — Date pill on the PJ's own grid; haidh as a yellow toggle, no banner (2026-08-16)
+
+**Files touched:** `worker/src/attendance.js`, `js/api.js`, `js/maktabSummary.js`, `js/maktabDay.js`, `css/journal-table.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed — deploy the worker first (`attendance.js` gains a teacher override the frontend now relies on).**
+
+The date pill is now constrained the way the PJ constrains its own: `.card-date-row` is a `grid` with `auto 1fr` columns, so a `width: 100%` pill sizes to its content inside the auto column. V3.61.1 had instead overridden the shared wrapper and indented the row by a hardcoded 7% that duplicated the haidh column's share — both hacks deleted in favour of the same grid.
+
+The haidh banner is gone. Haidh now reads as one thing on both surfaces: a small icon, bright yellow when marked, in the summary's leading column and beside the student's name on each day-view card — and it's a toggle in both places. Marking routes through the existing shared flow, so the 15-day guard and its confirmed wording apply wherever it's used; un-ticking clears the day back to unset rather than writing "absent", since absence is a different claim and the maktab derives it anyway.
+
+Tracing that toggle's date and student through both paths surfaced two silent wrong-row bugs, neither of which would have thrown: `handleDeleteAttendance` hardcoded `auth.id`, so a teacher clearing a student's mark would have cleared their own day — it now takes the same teacher override `handleSetAttendance` has always had; and the mark flow hardcoded today, so marking from a past-day summary (possible since the date picker arrived in V3.61.0) would have marked today instead.
+
+Verified 252 across the suite, including the picker regression as a permanent check: toggling on marks the date on screen, toggling off clears that date and never writes "absent", no banner exists anywhere, and both retired CSS hacks are asserted absent rather than merely overridden.
+
+---
+
+## V3.62.0 — Maktab day view rebuilt as a true copy of the PJ day view (2026-08-16)
+
+**Files touched:** `index.html`, `js/maktabDay.js`, `css/journal-table.css`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Frontend-only — no worker change. Ships together with V3.61.1 (summary alignment + date pill), which was built but never delivered.**
+
+V3.61.0 borrowed the PJ's card chrome but kept its own stacked container, so the maktab day view had no swipe rail, no dots, and no responsive grid — not the copy that was asked for. Rebuilt on the PJ's actual structure: a static dots row and `#maktabDayRail` holding three `.log-detail-card` elements, mirroring `#screen-logDetail`. Every layout behaviour then comes free from the existing `detail-pages.css`: one card per screen with scroll-snap swiping on mobile, two-up on tablet, and the full three-card grid at 1180px with the dots hidden — none of it re-implemented in maktab CSS.
+
+Dot navigation is copied from `logDetailScreen.js` in behaviour, including its V3.18.0 fix (compare `getBoundingClientRect` edges, never `offsetLeft`, because `#appContent`'s `translateZ(0)` makes it the offsetParent). The card contents keep every rule agreed in V3.61.0: student name as the first row, PJ header row with the Save button, teacher note above a read-only student note, small visibility radios, no Tadabbur card, no Mark-haidh control. Two stated judgement calls: the haidh banner repeats on all three cards, since each card saves independently and saving overwrites the mark; the tadabbur strip appears once, being context rather than a save consequence. The dead `.maktab-day-card` wrapper and its CSS went with the old container.
+
+Verified 41/41 in the day-view harness — three `.log-detail-card` children of the rail, name-first-row plus PJ header on every card, cards mapping to sabaq/sabaqDhor/dhor in order, dot clicks scrolling the rail (the active-dot state is layout-derived and jsdom computes no layout, so the wiring is asserted and the limitation noted in the check), banner 3x, strip 1x. Full suite 247 green.
+
+---
+
+## V3.61.1 — Maktab summary: header/column alignment + date pill (2026-08-16)
+
+**Files touched:** `css/journal-table.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Frontend-only — no worker change.**
+
+Two defects reported from the device, both introduced by V3.61.0. The summary header stopped lining up with its rows: the PJ's flex header and table body align only because the header's four nth-child percentages happen to match a four-column auto-layout table, and the maktab grid now has five columns — so the date column's 20% landed on the narrow haidh column and the fifth column got no rule at all. Fixed at the cause: one set of percentages (7/21/24/24/24, summing to 100) now drives both the header cells and the table columns, with `table-layout: fixed` so the table obeys them instead of sizing to content.
+
+The date also stretched the full width — it's the shared date pill, whose wrapper is `width: 100%` by design for the PJ cards' full-width slots. Constrained to fit-content here, with the top row indented by the haidh column's own share so the pill sits over the Student column and the close icon stays right.
+
+Alignment is CSS, which the jsdom harness can't lay out, so the checks assert what actually broke: all five columns carry an explicit width on both sides, the two sets match column-for-column, they sum to 100%, the table is fixed-layout, and the date wrapper is fit-content. Suite: 243 green.
+
+---
+
 ## V3.61.0 — Maktab UI round from device screenshots: haidh gating, date picker, PJ-format cards (2026-08-16)
 
 **Files touched:** `worker/src/maktabLog.js`, `js/maktabSummary.js`, `js/maktabDay.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend; deploy worker first (one roster column added). Requires the V3.60.0 worker already deployed and migration 0019 run.**

@@ -131,13 +131,21 @@ export async function handleMarkHaidhRange(request, env, auth) {
   return { data: { saved: true, count: dates.length, status } };
 }
 
-// DELETE /attendance?date=YYYY-MM-DD — clears a day back to "unset".
+// DELETE /attendance?date=YYYY-MM-DD[&student_id=X] — clears a day back
+// to "unset".
+// V3.63.0: gained the teacher-override that handleSetAttendance has had
+// all along (same one-line shape, same isTeacherOrAbove gate) — the
+// maktab day view's haidh icon is a TOGGLE, so a teacher clearing a mark
+// they can already set needs to reach the student's row. Without this
+// the untick silently cleared the TEACHER's own day instead: not a
+// permission error, a wrong-row write, which is worse.
 export async function handleDeleteAttendance(request, env, auth) {
   const url = new URL(request.url);
   const date = url.searchParams.get('date');
   if (!isValidDate(date)) return { error: 'date query param (YYYY-MM-DD) is required', status: 400 };
 
-  const studentId = auth.id;
+  const bodyStudentId = url.searchParams.get('student_id');
+  const studentId = isTeacherOrAbove(auth) && bodyStudentId ? bodyStudentId : auth.id;
   await env.DB.prepare('DELETE FROM attendance WHERE student_id = ? AND date = ?').bind(studentId, date).run();
   return { data: { deleted: true } };
 }

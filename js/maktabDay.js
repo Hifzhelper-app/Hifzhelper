@@ -73,24 +73,51 @@ function maktabHaidhGapDays(attendanceRows, todayIso){
 // Shared haidh-entry flow — since V3.61.0 called ONLY from the summary's
 // leading checkbox column (the day-view button was removed, confirmed),
 // kept in this file because the gap logic belongs with the day machinery.
-async function maktabMarkHaidhFlow(studentId, onDone){
-  const today = maktabTodayISO();
+// V3.63.0: takes the DATE it should mark. It used to hardcode today --
+// harmless when the summary was today-only, but V3.61.0 gave that screen
+// a date picker, so marking from a past-day summary would have written
+// TODAY's row instead of the day on screen. Same class of wrong-row bug
+// as the DELETE handler's hardcoded auth.id, found the same way (tracing
+// the toggle's date through both paths).
+async function maktabMarkHaidhFlow(studentId, onDone, date){
+  const target = date || maktabTodayISO();
   let rows = [];
   try{ rows = await apiGetAttendanceFor(studentId); } catch(e){ rows = []; }
   if(!Array.isArray(rows)) rows = [];
-  const gap = maktabHaidhGapDays(rows, today);
+  const gap = maktabHaidhGapDays(rows, target);
   let status = 'haidh';
   if(gap != null && gap < HAIDH_GAP_OFFICIAL){
     // exact wording confirmed in chat
     status = confirm('15 days has not passed since the last haidh day. Ok to mark as Haidh, cancel to mark absent') ? 'haidh' : 'absent';
   }
   try{
-    await apiSetAttendanceFor(studentId, today, status);
+    await apiSetAttendanceFor(studentId, target, status);
   } catch(e){
     alert('Could not save the attendance mark.');
     return;
   }
   if(onDone) await onDone();
+}
+
+// V3.63.0: the haidh ICON is a toggle (confirmed in chat), on both the
+// summary's leading column and beside the student's name in the day
+// view. Marking runs the shared flow below so the 15-day guard and its
+// exact confirm wording apply wherever the toggle lives. Un-ticking
+// CLEARS the day back to unset rather than writing 'absent' -- 'absent'
+// is a different statement ("she wasn't here"), and the maktab derives
+// absence anyway (delivery (f)); an untick just undoes the mark.
+async function maktabToggleHaidh(studentId, date, currentlyMarked, onDone){
+  if(currentlyMarked){
+    try{
+      await apiClearAttendanceFor(studentId, date);
+    } catch(e){
+      alert('Could not clear the haidh mark.');
+      return;
+    }
+    if(onDone) await onDone();
+    return;
+  }
+  await maktabMarkHaidhFlow(studentId, onDone, date);
 }
 
 // ---- visibility control: 3 small radios on one slim line (confirmed) ----
@@ -106,17 +133,56 @@ function maktabVisibilityValue(idPrefix){
   return el ? el.value : 'teachers_only';
 }
 
+// Dot navigation + rail-scroll sync, copied from the PJ's own
+// logDetailScreen.js (V3.18.0 fix included: compare getBoundingClientRect
+// edges, NOT offsetLeft -- #appContent's translateZ(0) makes it the
+// offsetParent, which silently broke the offsetLeft comparison there).
+// Wired once; the rail and dots are static markup like the PJ's.
+function maktabDayUpdateDots(){
+  const rail = document.getElementById('maktabDayRail');
+  const dots = document.querySelectorAll('#maktabDayDots .dot');
+  if(!rail || !dots.length) return;
+  const cards = Array.from(rail.children);
+  const railLeft = rail.getBoundingClientRect().left;
+  let activeIndex = 0;
+  cards.forEach((card, i) => {
+    if(card.getBoundingClientRect().left <= railLeft + 4) activeIndex = i;
+  });
+  dots.forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
+}
+function maktabDayWireRail(){
+  const rail = document.getElementById('maktabDayRail');
+  if(!rail || rail.dataset.maktabWired) return;
+  rail.dataset.maktabWired = 'true';
+  rail.addEventListener('scroll', () => window.requestAnimationFrame(maktabDayUpdateDots));
+  document.querySelectorAll('#maktabDayDots .dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const card = rail.children[parseInt(dot.dataset.index, 10)];
+      if(card) rail.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    });
+  });
+}
+
 async function renderMaktabDayScreen(param){
-  const el = document.getElementById('maktabDayContent');
+  const rail = document.getElementById('maktabDayRail');
+  const bodyFor = (type) => rail.querySelector(`[data-body="${type}"]`);
   if(param && param.id){
     maktabDayStudent = { id: param.id, name: param.name || param.id, mushaf: param.mushaf || null, track_haidh: !!param.track_haidh };
     maktabDayDate = param.date || maktabTodayISO();
   }
-  if(!maktabDayStudent){ el.innerHTML = '<p class="maktab-day-placeholder">Open a student from the Maktab summary.</p>'; return; }
+  maktabDayWireRail();
+  if(!maktabDayStudent){
+    bodyFor('sabaq').innerHTML = '<p class="maktab-day-placeholder">Open a student from the Maktab summary.</p>';
+    bodyFor('sabaqDhor').innerHTML = '';
+    bodyFor('dhor').innerHTML = '';
+    return;
+  }
   maktabDayEditing = { sabaq: null, sabaqDhor: null, dhor: null };
   const stu = maktabDayStudent;
   const date = maktabDayDate || maktabTodayISO();
-  el.innerHTML = '<p class="maktab-day-placeholder">Loading\u2026</p>';
+  bodyFor('sabaq').innerHTML = '<p class="maktab-day-placeholder">Loading\u2026</p>';
+  bodyFor('sabaqDhor').innerHTML = '';
+  bodyFor('dhor').innerHTML = '';
 
   const settle = (p) => p.then(v => Array.isArray(v) ? v : []).catch(() => []);
   const settleObj = (p) => p.then(v => v || null).catch(() => null);
@@ -156,8 +222,12 @@ async function renderMaktabDayScreen(param){
     dhorSuggestion = { from: dhorDefault.segment_from, to: dhorDefault.segment_to, ref: dhorDefault.ref || '' };
   }
 
-  const haidhBanner = haidhOnDate
-    ? '<div class="maktab-haidh-banner">Marked haidh in her journal for this day \u2014 saving a log will overwrite the haidh mark.</div>'
+  // V3.63.0 (confirmed in chat): NO haidh banner. Haidh shows as one
+  // small icon beside the student's name -- bright yellow when marked --
+  // and that icon is a TOGGLE, so marking works from here as well as
+  // from the summary's leading column.
+  const haidhIcon = stu.track_haidh
+    ? `<button type="button" class="maktab-haidh-check maktab-name-haidh${haidhOnDate ? ' marked' : ''}" data-haidh-toggle aria-pressed="${haidhOnDate ? 'true' : 'false'}" aria-label="${haidhOnDate ? 'Clear haidh mark' : 'Mark haidh'}">${iconHtml('haidh')}</button>`
     : '';
 
   const existingList = (type, rows) => rows.map(r =>
@@ -175,44 +245,39 @@ async function renderMaktabDayScreen(param){
     <label class="maktab-field-label">Teacher note <textarea id="${idPrefix}_tnote"></textarea></label>
     ${studentNote ? `<div class="maktab-student-note"><span class="maktab-student-note-label">Student note</span><div class="maktab-student-note-text">${maktabDayEsc(studentNote)}</div></div>` : ''}`;
 
-  // PJ log-card chrome (user-stated: copy the format exactly):
-  // .log-detail-card > .card-scroll > [name row] + .card-header-row
-  // (icon + title group + header save-wrap), fields below.
-  const card = (type, title, iconName, bodyHtml) => `
-    <div class="log-detail-card maktab-day-card" data-card="${type}">
-      <div class="card-scroll">
-        <div class="maktab-card-student-row">${maktabDayEsc(stu.name)}</div>
-        <div class="card-header-row">
-          <span class="card-header-icon">${iconHtml(iconName)}</span>
-          <div class="card-header-title-group"><h2>${title}</h2></div>
-          <div class="card-header-save-wrap">
-            <button type="button" class="card-header-save-btn" data-save="${type}"><span class="save-btn-text">Save</span></button>
-          </div>
-        </div>
-        ${bodyHtml}
+  // Each card's own contents, in the PJ's card-scroll structure: the
+  // student's NAME as the first row (user-stated), then the PJ
+  // card-header-row (icon + title + header Save), then the date line,
+  // then fields.
+  const cardBody = (type, title, iconName, fieldsHtml, extraTop) => `
+    <div class="maktab-card-student-row"><span>${maktabDayEsc(stu.name)}</span>${haidhIcon}</div>
+    <div class="card-header-row">
+      <span class="card-header-icon">${iconHtml(iconName)}</span>
+      <div class="card-header-title-group"><h2>${title}</h2></div>
+      <div class="card-header-save-wrap">
+        <button type="button" class="card-header-save-btn" data-save="${type}"><span class="save-btn-text">Save</span></button>
       </div>
-    </div>`;
-
-  el.innerHTML = `
+    </div>
     <div class="maktab-day-date">${maktabDayEsc(date)}</div>
-    ${haidhBanner}
-    ${publicTadabbur.length ? `<div class="maktab-tadabbur-strip"><strong>Tadabbur (shared):</strong> ${publicTadabbur.map(r => maktabDayEsc(r.reflection)).join(' \u2022 ')}</div>` : ''}
+    ${extraTop || ''}
+    ${fieldsHtml}`;
 
-    ${card('sabaq', 'Sabaq', 'sabaq', `
+  bodyFor('sabaq').innerHTML = cardBody('sabaq', 'Sabaq', 'sabaq', `
       ${existingList('sabaq', todays.sabaq)}
       <label class="maktab-field-label">From <input id="mk_sabaq_from" placeholder="surah:ayah" value="${maktabDayEsc(fmtRef(sabaqPrepop.from))}"></label>
       <label class="maktab-field-label">To <input id="mk_sabaq_to" placeholder="surah:ayah" value="${maktabDayEsc(fmtRef(sabaqPrepop.to))}"></label>
-      ${notesBlock('mk_sabaq', pjNoteFor(pjSabaq))}`)}
+      ${notesBlock('mk_sabaq', pjNoteFor(pjSabaq))}`,
+    publicTadabbur.length ? `<div class="maktab-tadabbur-strip"><strong>Tadabbur (shared):</strong> ${publicTadabbur.map(r => maktabDayEsc(r.reflection)).join(' \u2022 ')}</div>` : '');
 
-    ${card('sabaqDhor', 'Sabaq Dhor', 'sabaqDhor', `
+  bodyFor('sabaqDhor').innerHTML = cardBody('sabaqDhor', 'Sabaq Dhor', 'sabaqDhor', `
       ${existingList('sabaqDhor', todays.sabaqDhor)}
       <label class="maktab-field-label">Zone <input id="mk_sd_zone" value="${maktabDayEsc(lastSabaqDhor ? (lastSabaqDhor.zone || '') : '')}"></label>
       <label class="maktab-field-label">From <input id="mk_sd_from_surah" placeholder="surah" inputmode="numeric"> : <input id="mk_sd_from_ayah" placeholder="ayah" inputmode="numeric"></label>
       <label class="maktab-field-label">To <input id="mk_sd_to_surah" placeholder="surah" inputmode="numeric"> : <input id="mk_sd_to_ayah" placeholder="ayah" inputmode="numeric"></label>
       <label class="maktab-field-label">Mistakes <input id="mk_sd_mistakes" inputmode="numeric"></label>
-      ${notesBlock('mk_sd', '')}`)}
+      ${notesBlock('mk_sd', '')}`);
 
-    ${card('dhor', 'Dhor', 'dhor', `
+  bodyFor('dhor').innerHTML = cardBody('dhor', 'Dhor', 'dhor', `
       ${existingList('dhor', todays.dhor)}
       ${dhorSuggestion ? `<div class="maktab-dhor-suggestion">Next in cycle: ${maktabDayEsc(describeDhorSegment(dhorSuggestion.from, dhorSuggestion.to, dhorSuggestion.ref || 'waterval'))}</div>` : ''}
       <label class="maktab-field-label">Segment from <input id="mk_dhor_from" inputmode="numeric" value="${dhorSuggestion ? maktabDayEsc(String(dhorSuggestion.from)) : ''}"></label>
@@ -222,29 +287,38 @@ async function renderMaktabDayScreen(param){
         <option value="uthmani"${dhorSuggestion && dhorSuggestion.ref === 'uthmani' ? ' selected' : ''}>Madina</option>
       </select></label>
       <label class="maktab-field-label">Mistakes <input id="mk_dhor_mistakes" inputmode="numeric"></label>
-      ${notesBlock('mk_dhor', '')}`)}`;
+      ${notesBlock('mk_dhor', '')}`);
 
-  // stash the displayed student notes so save can freeze them as-is
-  el.dataset.sabaqStudentNote = pjNoteFor(pjSabaq) || '';
+  // stash the displayed student note so save can freeze it as-is
+  rail.dataset.sabaqStudentNote = pjNoteFor(pjSabaq) || '';
 
-  el.querySelectorAll('.maktab-existing-row [data-del]').forEach(btn => btn.addEventListener('click', async (e) => {
+  rail.querySelectorAll('.maktab-existing-row [data-del]').forEach(btn => btn.addEventListener('click', async (e) => {
     const row = e.target.closest('.maktab-existing-row');
     if(!confirm('Delete this entry?')) return;
     const client = { sabaq: apiMaktabSabaq, sabaqDhor: apiMaktabSabaqDhor, dhor: apiMaktabDhor }[row.dataset.type];
     try{ await client.remove(row.dataset.id); } catch(err){ alert('Could not delete.'); return; }
     renderMaktabDayScreen(null);
   }));
-  el.querySelectorAll('.maktab-existing-row [data-edit]').forEach(btn => btn.addEventListener('click', (e) => {
+  rail.querySelectorAll('.maktab-existing-row [data-edit]').forEach(btn => btn.addEventListener('click', (e) => {
     const row = e.target.closest('.maktab-existing-row');
     const type = row.dataset.type;
     maktabDayEditing[type] = Number(row.dataset.id);
     const all = { sabaq: todays.sabaq, sabaqDhor: todays.sabaqDhor, dhor: todays.dhor }[type];
     const entry = all.find(x => x.id === Number(row.dataset.id));
     if(entry) maktabDayPrefill(type, entry);
-    const saveBtn = el.querySelector(`[data-save="${type}"] .save-btn-text`);
+    const saveBtn = rail.querySelector(`[data-save="${type}"] .save-btn-text`);
     if(saveBtn) saveBtn.textContent = 'Update';
   }));
-  el.querySelectorAll('[data-save]').forEach(btn => btn.addEventListener('click', () => maktabDaySave(btn.dataset.save, stu, date)));
+  rail.querySelectorAll('[data-save]').forEach(btn => btn.addEventListener('click', () => maktabDaySave(btn.dataset.save, stu, date)));
+  // One toggle rendered per card (each card shows the name row); all
+  // three drive the same shared flow, so the 15-day guard applies here
+  // exactly as it does from the summary.
+  rail.querySelectorAll('[data-haidh-toggle]').forEach(btn => btn.addEventListener('click', () =>
+    maktabToggleHaidh(stu.id, date, haidhOnDate, () => renderMaktabDayScreen(null))));
+
+  // open on the first card, no animation (PJ entry behaviour)
+  if(param && param.id) rail.scrollLeft = 0;
+  maktabDayUpdateDots();
 }
 
 function maktabExistingLabel(type, r){
@@ -268,7 +342,7 @@ function maktabDayPrefill(type, e){
 function maktabDayReadPayload(type){
   const val = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const num = (id) => { const v = val(id); return v === '' ? null : Number(v); };
-  const host = document.getElementById('maktabDayContent');
+  const host = document.getElementById('maktabDayRail');
   if(type === 'sabaq'){
     return {
       sabaq_from: val('mk_sabaq_from') || null, sabaq_to: val('mk_sabaq_to') || null,
