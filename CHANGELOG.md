@@ -7,6 +7,18 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.59.0 — Maktab delivery (e1): summary screen, student Maktab Journal, read paths (2026-08-15)
+
+**Files touched:** `worker/src/maktabLog.js`, `worker/src/logHelpers.js`, `worker/src/index.js`, `js/api.js`, `js/auth.js`, `js/app.js`, `js/maktabSummary.js` (new), `js/maktabJournal.js` (new), `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend. Deploy worker first (pure addition — one new GET endpoint, one export); the frontend calls it on the new screens. Requires migration 0019 already run.**
+
+The first visible maktab surface. Teachers (and admins) gain a "Maktab" nav item: today's Hifz day at a glance — one row per active student, Sabaq | Sabaq Dhor | Dhor cells in the same shorthand as the PJ journal, whole row tapping through to the student's day view (a placeholder until (e2) delivers the real 3-card entry screen). Everyone gains "Maktab Journal": a read-only view of their own teacher-confirmed maktab record, separate from the PJ journal by design.
+
+Backend: one new `GET /maktab/summary?date=` (teacher+) returning the active-student roster (id+name only — the admin list stays admin-gated for a reason) plus all three tables' rows for the date in one response; a roster-only endpoint per the original spec would have forced 1+3-per-student requests, so it was folded in (documented deviation). Privacy runs on summary rows exactly as everywhere else — proven in the harness: one teacher's `private` feedback is nulled for another teacher and visible to its author.
+
+Verified 22/22: worker gating/shape/date-filter/privacy plus jsdom over the real new frontend modules (roster rows, PJ cell formats, badge downgrade to non-interactive text, whole-row tap routing with the student's id, XSS-safe name rendering, read-only journal with zero buttons) and the real auth.js nav block across all three roles. Full prior suite re-run green — 198 checks this round.
+
+---
+
 ## V3.58.0 — Maktab delivery (d): worker endpoints for the three maktab logs (2026-08-15)
 
 **Files touched:** `worker/src/maktabLog.js` (new), `worker/src/index.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY — from V3.57.0 onward, deliveries go to the maktab repo/worker/DB alone; the personal deployment stopped at V3.56.0 (see TODO.md's fork note). Worker-only — no frontend changes. DEPLOY ORDER: migration 0019 must be RUN on hifzhelper-maktab1 first; these endpoints 500 against a DB without the maktab tables. Deploy maktabLog.js and index.js together — index.js imports from the new file.**

@@ -191,3 +191,20 @@ function apiAdminChangeRole(id, role){ return apiFetch('/admin/change-role', { m
 function apiAdminRegisterStudent(name, whatsapp_number, force){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force }) }); }
 function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminDeleteUser(id){ return apiFetch('/admin/users?id=' + encodeURIComponent(id), { method: 'DELETE' }); }
+
+// ---------- maktab (V3.59.0, delivery (e1) — read paths only; write fns
+// arrive with (e2)'s day view) ----------
+function apiMaktabSummary(date){
+  return apiFetch('/maktab/summary?date=' + encodeURIComponent(date));
+}
+// student_id optional: omitted = own logs (the student Maktab Journal);
+// passed = a teacher reading a specific student ((e2) day view reuse).
+function apiGetMaktabSabaq(studentId){
+  return apiFetch('/maktab/sabaq' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
+}
+function apiGetMaktabSabaqDhor(studentId){
+  return apiFetch('/maktab/sabaq-dhor' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
+}
+function apiGetMaktabDhor(studentId){
+  return apiFetch('/maktab/dhor' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
+}

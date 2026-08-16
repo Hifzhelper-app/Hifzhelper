@@ -33,8 +33,47 @@
 // abortable force flow as the PJ (V3.45.15).
 // ============================================================
 
-import { isDuplicate, updateLog, deleteLog, getLogs } from './logHelpers.js';
+import { isDuplicate, updateLog, deleteLog, getLogs, applyPrivacy } from './logHelpers.js';
 import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
+
+// V3.59.0 (maktab delivery (e1)): one round-trip payload for the maktab
+// summary screen — the active-student roster PLUS all three tables'
+// entries for one date, across all students. Folds the spec's separate
+// /maktab/roster endpoint in (documented deviation, same info): a
+// roster-only endpoint would force 1 + 3-per-student requests to paint
+// the grid; this is one. Roster is id+name ONLY — the admin list stays
+// admin-gated because it carries whatsapp numbers etc. that a teacher
+// roster shouldn't. applyPrivacy runs per requester exactly as getLogs
+// does per-student, so another teacher's 'private' feedback is nulled
+// here the same as everywhere else.
+async function handleMaktabSummary(request, env, auth) {
+  if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
+  const url = new URL(request.url);
+  const date = url.searchParams.get('date');
+  if (!isValidDate(date)) return { error: 'date must be YYYY-MM-DD', status: 400 };
+
+  const students = (await env.DB.prepare(
+    'SELECT id, name FROM students WHERE active = 1 ORDER BY name'
+  ).all()).results;
+
+  async function dayRows(table, cfg) {
+    const rows = (await env.DB.prepare(
+      `SELECT * FROM ${table} WHERE date = ? ORDER BY created_at DESC`
+    ).bind(date).all()).results;
+    applyPrivacy(rows, null, auth.id, true); // studentId null => requester is never "owner"; correct: the requester here is always a teacher
+    if (cfg && cfg.parseRow) for (const row of rows) cfg.parseRow(row);
+    return rows;
+  }
+
+  return { data: {
+    students,
+    sabaq: await dayRows('maktab_sabaq_log', CONFIG.sabaq),
+    sabaq_dhor: await dayRows('maktab_sabaq_dhor_log', CONFIG.sabaqDhor),
+    dhor: await dayRows('maktab_dhor_log', CONFIG.dhor),
+  } };
+}
+
+export { handleMaktabSummary };
 
 const CONFIG = {
   sabaq: {

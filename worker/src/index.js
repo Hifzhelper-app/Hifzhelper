@@ -8,6 +8,7 @@ import {
   handleGetMaktabSabaq, handleSaveMaktabSabaq, handleUpdateMaktabSabaq, handleDeleteMaktabSabaq,
   handleGetMaktabSabaqDhor, handleSaveMaktabSabaqDhor, handleUpdateMaktabSabaqDhor, handleDeleteMaktabSabaqDhor,
   handleGetMaktabDhor, handleSaveMaktabDhor, handleUpdateMaktabDhor, handleDeleteMaktabDhor,
+  handleMaktabSummary,
 } from './maktabLog.js';
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
@@ -84,6 +85,7 @@ export default {
       // Maktab logs (V3.58.0, maktab delivery (d)) — teacher-confirmed
       // records, independent of the PJ routes above. Requires migration
       // 0019 to have been run; see worker/src/maktabLog.js.
+      if (path === '/maktab/summary' && request.method === 'GET') return respond(await handleMaktabSummary(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'GET') return respond(await handleGetMaktabSabaq(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'POST') return respond(await handleSaveMaktabSabaq(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'PATCH') return respond(await handleUpdateMaktabSabaq(request, env, auth));

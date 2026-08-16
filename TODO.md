@@ -146,6 +146,82 @@ That's why it stays its own small delivery — a permission change is
 easier to reason about, test, and roll back alone — not because it
 belongs to the PJ.
 
+**Agreed 2026-08-15 (seventh round): PJ use is OPTIONAL.** Every
+student registered on the maktab HAS a PJ (registration creates the
+account, and the account IS the PJ) — they just may or may not use
+it. Design consequence, and every prepop/flow line below already
+holds under it: all PJ-sourced inputs are best-effort extras that
+degrade to nothing on an empty PJ — sabaq prepop falls back to pure
+maktab history (the only-increase rule vacuously does nothing), no
+note flows, no tadabbur strip shows, no haidh reads from the
+journal (teacher entry still works — it's the same attendance
+table). Nothing in the maktab may ever REQUIRE a PJ entry to exist.
+This must hold in the (e2) build, not just here: every PJ fetch in
+the day view treats empty results as the normal case, not an error.
+
+**Agreed 2026-08-15 (fifth round — registration, prepop sources, haidh mechanics, absence flag):**
+- **Registration:** the maktab registers students — NO self-
+  registration — and has a pin-reset facility. Both ALREADY EXIST
+  (admin.js: handleRegisterStudent, handleResetPin), admin-gated —
+  and STAY admin-only (confirmed 2026-08-15, sixth round). Net new
+  work: NONE. This fifth-round item is fully satisfied by what's
+  already live; it drops out of the delivery list entirely.
+- **Prepop sources, superseding the (e) spec's sabaq line:** the
+  maktab does its own prepop of all three; a student's PJ SABAQ
+  amends the maktab sabaq prepop AUTOMATICALLY; student sabaq dhor
+  and dhor do NOT amend maktab prepop — teachers amend manually. So:
+  sabaq prepop reads maktab history + the student's PJ sabaq —
+  combination pinned (sixth round): the sabaq prepop is ONE AYAH;
+  the PJ may only ever INCREASE the sabaq_to field, nothing else.
+  I.e. compute the prepop from maktab sabaq history as normal, then
+  if the student's PJ sabaq frontier is FURTHER, extend sabaq_to up
+  to it — sabaq_from, and everything else, comes from maktab
+  history alone, and a PJ frontier BEHIND the maktab's changes
+  nothing (only-increase); sabaq-dhor and dhor prepop
+  read MAKTAB history ONLY (the (e) spec's dhor-default variant
+  stands, PJ-note flow stands, but no PJ content feeds the
+  sabaq-dhor/dhor position fields).
+- **Tadabbur:** a student can make their tadabbur PUBLIC to be
+  viewable by teachers. The mechanism already exists end to end
+  (reflections.is_private + applyPrivacy: teachers already see
+  non-private reflections via GET). What's new is surfacing it in
+  the maktab day view. Assumption, stated: shown as a READ-ONLY
+  strip/card there — the maktab never writes tadabbur. Flag if
+  wrong.
+- **Haidh, teacher-entered + propagation (extends (f), plus (e2)
+  UI):** haidh can be read from the student's journal AND entered by
+  a teacher (writes the same attendance table — one haidh store) —
+  from BOTH entry points (sixth round): a control on the day view
+  AND from the summary row. Both run the same early-re-mark
+  confirm() guard below.
+  When a haidh day is entered (either way), all subsequent MAKTAB
+  DAYS with no logs derive as haidh until the student's max is
+  reached (haidh_ruling: hanafi 10 / shafii 15 — already per-student
+  since migration 0018), THEREAFTER absent. Early re-mark guard: if
+  a teacher marks haidh before the min gap has passed since the last
+  haidh day, a native confirm() asks: "15 days has not passed since
+  the last haidh day. OK to mark as Haidh, cancel to mark absent"
+  (the 15-day min gap is already HAIDH_GAP_OFFICIAL in
+  haidhRules.js, fixed across rulings — reuse, don't re-encode).
+  Note the derived-attendance model gains a WRITE path (teacher
+  haidh entry) but stays derived for present/absent.
+- **Absence flag:** a student with NO maktab log for 30 consecutive
+  MAKTAB DAYS (arbitrary, subject to change — config alongside the
+  ≥N env var, same mechanism) is flagged for teacher attention on
+  the summary — visual treatment suggested as a changed row
+  background colour ("??" in chat — exact treatment is a build-time
+  detail, not a blocker). Maktab days = days meeting the ≥N rule,
+  so this counts absence against days the maktab actually ran, not
+  calendar days.
+
+**Delivery routing for the fifth round:** registration/pin-reset —
+RESOLVED, nothing to build (stays admin-only as it already is).
+Sabaq prepop semantics (pinned above) + tadabbur strip + teacher haidh
+entry UI + early-re-mark confirm → (e2). Haidh propagation + the
+thereafter-absent rule + the 30-day flag computation → (f) (the
+summary consumes (f)'s output; (e1) can ship without it and gain
+the flag colouring when (f) lands).
+
 **DEPLOYMENT FORK (2026-08-15, stated after (d) was built):** the
 personal deployment (hifzhelper-personal-db + its own worker) is for
 students NOT connected to a maktab. It was updated through V3.56.0
@@ -182,9 +258,135 @@ building" + zip:**
   (a) and (b) touch already-live code and are correct on their own —
   worth landing and confirming before (c)–(f) start. (a) and (b)
   are both DONE; (c)'s migration file is delivered (RUN IT before
-  deploying (d)); (d) is DONE. NEXT STEP: a build-ready spec for
-  (e) — the maktab summary screen + student read-only view +
-  prepop — then "start building". (e) is the big frontend one.
+  deploying (d)); (d) is DONE; (e1) — read paths — is DONE
+  (V3.59.0). NEXT: (e2), the teacher day view + prepop + write
+  path, spec already written; then (f).
+
+## Maktab delivery (e) — SPLIT CONFIRMED and (e1) built. (e1): DONE — V3.59.0, 2026-08-15. (e2): OPEN, spec below stands, awaiting "start building"
+
+**(e1) Built + verified (V3.59.0):** read paths, per the split. One
+documented deviation from the spec: the roster endpoint folded INTO
+GET /maktab/summary?date= (roster + all three tables' rows for the
+date, one response) — a roster-only endpoint would have forced
+1 + 3-per-student requests to paint the grid. Roster is id+name only
+(the admin list stays admin-gated; it carries whatsapp numbers a
+roster shouldn't), active only, name-ordered. applyPrivacy (now
+exported from logHelpers) runs on the summary rows per requester —
+proven: one teacher's 'private' feedback nulled for another, visible
+to its author. Frontend: nav items via the existing role-gated
+mechanism (Maktab Journal for everyone, Maktab for teacher+, admin
+inherits); summary screen reusing the PJ's journalCellShorthand
+directly (pure function); count badges DOWNGRADED to plain text on
+both new screens (nested buttons would fight the whole-row tap
+target; (e2) revisits); whole-row tap routes to a real-but-
+placeholder maktabDay screen (name via textContent, not innerHTML);
+student Maktab Journal grouping own logs by date, newest first,
+zero interactive elements. Harness 22/22 (worker gating/shape/
+privacy/date-filter + jsdom over the REAL new modules + the REAL
+auth.js nav block for all three roles); full prior suite re-run
+green (176). Not harness-checkable, same as every layout round:
+how the summary grid actually reads on a phone — screenshot round
+expected.
+
+## Open — Maktab delivery (e2): teacher day view + prepop + write path — spec below (within the original (e) spec), awaiting "start building" 
+
+The largest of the six. MAKTAB DEPLOYMENT ONLY, like everything since
+V3.56.0. All UI decisions below confirmed in chat 2026-08-15.
+
+**Confirmed shape:**
+- Maktab summary (teacher+ only): TODAY only. First column student
+  names; then Sabaq | Sabaq Dhor | Dhor with the same headings/cell
+  formats as the PJ journal table (css/journal-table.css patterns).
+  Rows = ALL ACTIVE students. The WHOLE ROW is one tap target →
+  navigates to that student's maktab day view. (Assumption, stated:
+  "all active students" = every active students-table row regardless
+  of role — teachers are legitimately students in the maktab; the
+  bootstrap admin account will appear until deactivated. Flag if
+  wrong.)
+- Maktab day view (teacher+): EXACTLY the PJ day view's card
+  pattern — Sabaq / Sabaq Dhor / Dhor cards — with the student's
+  name above the cards. THREE cards, not four: no Tadabbur
+  (reflections are personal, never maktab — stated assumption,
+  unchallenged). Teacher confirms/saves each card → POST /maktab/*
+  with student_id + optional teacher note (visibility defaulting
+  teachers_only, per (c)/(d)).
+- Student "Maktab Journal" (every logged-in user): read-only
+  journal-table view over THEIR OWN maktab logs (GET /maktab/* own —
+  (d) already allows it, applyPrivacy already hides teachers_only
+  feedback). Separate from the PJ journal; the floated
+  "combine views" option stays parked, not in this build.
+- Nav: teacher+ gain "Maktab" (summary); everyone gains "Maktab
+  Journal" (own view). Same role-gated NAV_ITEMS mechanism as the
+  admin item (js/auth.js).
+
+**Prepop (the part that needed recon, done 2026-08-15):**
+- KEY FINDING — almost no new backend needed: teachers can ALREADY
+  read any student's PJ logs and attendance through the existing
+  endpoints, and applyPrivacy ALREADY nulls private student notes
+  for non-owners. So the PJ note flow ("non-private note flows into
+  the maktab") and haidh awareness are plain frontend fetches of
+  existing endpoints — zero new privacy code, no prepop endpoint.
+- Sabaq prepop: the PJ's frontier calc (computeActualSabaqFrontier)
+  is frontend-side and takes the entries array — point it at
+  GET /maktab/sabaq history for the student. Same cold-start
+  defaults as the PJ when maktab history is empty.
+- Dhor prepop: computeDefaultDhorEntry is a WORKER calc hardwired to
+  dhor_log + PJ plans. Gains an options param
+  ({ table = 'dhor_log', includePlans = true }) — PJ callers
+  unchanged; a new GET /maktab/dhor-default-entry?student_id=
+  (teacher+) calls it with { table: 'maktab_dhor_log',
+  includePlans: false } (the maktab has no plans concept).
+- Sabaq Dhor prepop: same as the PJ's (manual From/To; zone display) —
+  no calc to port.
+- PJ note flow: the day view fetches the student's PJ logs for
+  today; a non-private student_comment on today's PJ entry of the
+  same type prepopulates the card's note field (visible + editable
+  before the teacher saves; frozen into the maktab row on save, per
+  the design). Haidh: today's PJ attendance fetched; if haidh/
+  predicted-haidh, the day view shows a clear indicator on all three
+  cards ("marked haidh in her journal") — the teacher can still
+  save, which overwrites it ((d)'s targeted update, already built
+  and tested).
+
+**New worker surface (small):**
+- GET /maktab/roster (teacher+): id + name of all active students,
+  ordered by name. The admin list endpoint stays admin-only —
+  it returns whatsapp numbers etc. that a roster shouldn't carry.
+- GET /maktab/dhor-default-entry (teacher+), per above.
+
+**Frontend files:** js/api.js (maktab client fns), js/auth.js
+(NAV_ITEMS + role gating), new js/maktabSummary.js + js/maktabDay.js
++ js/maktabJournal.js (reusing journal.js's cell/popup patterns and
+the PJ card renderers where they factor cleanly — where they don't,
+prefer a thin maktab-specific copy over threading mode flags through
+live PJ code), index.html (3 screens + script tags), app.js routing,
+css (journal-table reuse + a maktab summary variant), sw.js/version
+bumps.
+
+**PROPOSED SPLIT — user's call:**
+- (e1) READ paths + plumbing: roster endpoint, api client, nav items,
+  summary screen (rows showing today's saved maktab entries, row-tap
+  landing on a placeholder day view), student Maktab Journal. Fully
+  shippable and independently useful (teachers see the day at a
+  glance even before in-app entry exists).
+- (e2) WRITE path: the teacher day view proper — 3 cards, prepop
+  (all four sources above), save/edit/delete wiring, haidh indicator,
+  dhor-default-entry endpoint.
+Rationale: (e) built as one piece is the largest single change since
+V3.45; two deliveries mean the summary/journal can be confirmed on
+real devices while the day view is still being built, and a layout
+round on the summary (likely, going by the timer rounds) doesn't
+block the write path.
+
+**Verification plan:** worker — roster gating + shape, dhor-default
+variant against maktab history with PJ callers regression-proven
+unchanged. Frontend — jsdom against the real new modules: summary
+renders roster rows + today's entries in PJ cell formats; row tap
+routes with the student id; journal view renders own logs with
+teachers_only feedback absent; day-view prepop unit-tested per
+source (maktab frontier, dhor default, PJ note only when
+non-private, haidh indicator); save payload carries student_id +
+teacher note fields. Full prior harness suite re-run.
 
 ## Done — V3.58.0 (2026-08-15): Maktab delivery (d) — worker endpoints for the three maktab logs — built to the spec below. MAKTAB DEPLOYMENT ONLY; deploy AFTER migration 0019 is run on hifzhelper-maktab1
 

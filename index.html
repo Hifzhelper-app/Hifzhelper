@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.56.0"></script>
+<script src="js/pwaManifest.js?v=3.59.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.56.0">
-<link rel="stylesheet" href="css/base.css?v=3.56.0">
-<link rel="stylesheet" href="css/nav.css?v=3.56.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.56.0">
-<link rel="stylesheet" href="css/components.css?v=3.56.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.56.0">
-<link rel="stylesheet" href="css/settings.css?v=3.56.0">
-<link rel="stylesheet" href="css/admin.css?v=3.56.0">
-<link rel="stylesheet" href="css/haidh.css?v=3.56.0">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.56.0">
-<link rel="stylesheet" href="css/sih.css?v=3.56.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.59.0">
+<link rel="stylesheet" href="css/base.css?v=3.59.0">
+<link rel="stylesheet" href="css/nav.css?v=3.59.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.59.0">
+<link rel="stylesheet" href="css/components.css?v=3.59.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.59.0">
+<link rel="stylesheet" href="css/settings.css?v=3.59.0">
+<link rel="stylesheet" href="css/admin.css?v=3.59.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.59.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.59.0">
+<link rel="stylesheet" href="css/sih.css?v=3.59.0">
 </head>
 <body>
 
@@ -191,6 +191,58 @@
       <div class="journal-wrap">
         <table class="journal-table">
           <tbody id="journalTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Maktab summary (V3.59.0, delivery (e1)) — teacher+ only via nav
+         gating + endpoint 403. Today's grid: student | Sabaq | Sabaq
+         Dhor | Dhor, whole row taps through to the day view. -->
+    <section class="screen hidden" id="screen-maktabSummary">
+      <div class="screen-top-close-row">
+        <button type="button" class="screen-close-btn" id="maktabSummaryCloseBtn" aria-label="Exit to Home"></button>
+      </div>
+      <div class="journal-header-row">
+        <div class="journal-header-cell col-date">Student</div>
+        <div class="journal-header-cell col-log"><span>Sabaq</span></div>
+        <div class="journal-header-cell col-log"><span>Sabaq Dhor</span></div>
+        <div class="journal-header-cell col-log"><span>Dhor</span></div>
+      </div>
+      <div class="maktab-summary-datebar" id="maktabSummaryDate"></div>
+      <div class="journal-wrap">
+        <table class="journal-table">
+          <tbody id="maktabSummaryBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Maktab day view — (e1) PLACEHOLDER ONLY. The real 3-card entry
+         screen (student name above Sabaq/Sabaq Dhor/Dhor cards, prepop,
+         teacher notes, haidh entry) is delivery (e2). This exists so the
+         summary's row-tap navigation is real and testable now. -->
+    <section class="screen hidden" id="screen-maktabDay">
+      <div class="screen-top-close-row">
+        <button type="button" class="screen-close-btn" id="maktabDayCloseBtn" aria-label="Exit to Home"></button>
+      </div>
+      <div id="maktabDayContent"></div>
+    </section>
+
+    <!-- Student Maktab Journal (V3.59.0, delivery (e1)) — read-only view
+         over the user's OWN maktab logs. Separate from the PJ journal by
+         design ("combine views" parked). -->
+    <section class="screen hidden" id="screen-maktabJournal">
+      <div class="screen-top-close-row">
+        <button type="button" class="screen-close-btn" id="maktabJournalCloseBtn" aria-label="Exit to Home"></button>
+      </div>
+      <div class="journal-header-row">
+        <div class="journal-header-cell col-date">Date</div>
+        <div class="journal-header-cell col-log"><span>Sabaq</span></div>
+        <div class="journal-header-cell col-log"><span>Sabaq Dhor</span></div>
+        <div class="journal-header-cell col-log"><span>Dhor</span></div>
+      </div>
+      <div class="journal-wrap">
+        <table class="journal-table">
+          <tbody id="maktabJournalBody"></tbody>
         </table>
       </div>
     </section>
@@ -1050,30 +1102,32 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.56.0"></script>
-<script src="shared/haidhRules.js?v=3.56.0"></script>
-<script src="js/icons.js?v=3.56.0"></script>
-<script src="js/customDate.js?v=3.56.0"></script>
-<script src="js/api.js?v=3.56.0"></script>
-<script src="js/uiSwitch.js?v=3.56.0"></script>
-<script src="js/position.js?v=3.56.0"></script>
-<script src="js/auth.js?v=3.56.0"></script>
-<script src="js/home.js?v=3.56.0"></script>
-<script src="js/tajweed.js?v=3.56.0"></script>
-<script src="js/commentPrivacy.js?v=3.56.0"></script>
-<script src="js/session-timer.js?v=3.56.0"></script>
-<script src="js/journal.js?v=3.56.0"></script>
-<script src="js/dhorPage.js?v=3.56.0"></script>
-<script src="js/sabaqPage.js?v=3.56.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.56.0"></script>
-<script src="js/reflectionCard.js?v=3.56.0"></script>
-<script src="js/logDetailScreen.js?v=3.56.0"></script>
-<script src="js/haidhDetailScreen.js?v=3.56.0"></script>
-<script src="js/kaabaTracker.js?v=3.56.0"></script>
-<script src="js/juzTrackerScreen.js?v=3.56.0"></script>
-<script src="js/sihScreen.js?v=3.56.0"></script>
-<script src="js/settingsScreen.js?v=3.56.0"></script>
-<script src="js/adminPage.js?v=3.56.0"></script>
-<script src="js/app.js?v=3.56.0"></script>
+<script src="shared/data.js?v=3.59.0"></script>
+<script src="shared/haidhRules.js?v=3.59.0"></script>
+<script src="js/icons.js?v=3.59.0"></script>
+<script src="js/customDate.js?v=3.59.0"></script>
+<script src="js/api.js?v=3.59.0"></script>
+<script src="js/uiSwitch.js?v=3.59.0"></script>
+<script src="js/position.js?v=3.59.0"></script>
+<script src="js/auth.js?v=3.59.0"></script>
+<script src="js/home.js?v=3.59.0"></script>
+<script src="js/tajweed.js?v=3.59.0"></script>
+<script src="js/commentPrivacy.js?v=3.59.0"></script>
+<script src="js/session-timer.js?v=3.59.0"></script>
+<script src="js/journal.js?v=3.59.0"></script>
+<script src="js/maktabSummary.js?v=3.59.0"></script>
+<script src="js/maktabJournal.js?v=3.59.0"></script>
+<script src="js/dhorPage.js?v=3.59.0"></script>
+<script src="js/sabaqPage.js?v=3.59.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.59.0"></script>
+<script src="js/reflectionCard.js?v=3.59.0"></script>
+<script src="js/logDetailScreen.js?v=3.59.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.59.0"></script>
+<script src="js/kaabaTracker.js?v=3.59.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.59.0"></script>
+<script src="js/sihScreen.js?v=3.59.0"></script>
+<script src="js/settingsScreen.js?v=3.59.0"></script>
+<script src="js/adminPage.js?v=3.59.0"></script>
+<script src="js/app.js?v=3.59.0"></script>
 </body>
 </html>

@@ -43,10 +43,18 @@ const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
 // through the normal Setup UI), so gating on this one flag is enough,
 // no separate gender check needed here.
 const HAIDH_NAV_ITEM = { id: 'haidhDetail', label: 'Haidh', icon: 'haidh' };
+// V3.59.0 (maktab delivery (e1), confirmed in chat): the maktab summary
+// is teacher+ only (admin counts as teacher everywhere — same hierarchy
+// as the worker's isTeacherOrAbove); the student's own read-only Maktab
+// Journal is for everyone. This build is maktab-deployment-only, so
+// every user here IS maktab-connected — no "has a maktab?" gate needed.
+const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'sabaq' };
+const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
 
 function visibleNavItems(){
-  let items = NAV_ITEMS;
+  let items = NAV_ITEMS.concat([MAKTAB_JOURNAL_NAV_ITEM]);
   if(currentUser.trackHaidh) items = items.concat([HAIDH_NAV_ITEM]);
+  if(currentUser.role === 'teacher' || currentUser.role === 'admin') items = items.concat([MAKTAB_SUMMARY_NAV_ITEM]);
   if(currentUser.role === 'admin') items = items.concat([ADMIN_NAV_ITEM]);
   return items;
 }
