@@ -140,7 +140,9 @@ async function renderMaktabSummaryScreen(){
 
     // whole row = one tap target (confirmed); carries the PICKED date
     // so past-day rows open the day view for that day (confirmed).
-    tr.addEventListener('click', () => showScreen('maktabDay', { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh, date }));
+    // V3.64.0: opens the PJ's OWN day view with a maktab context — not a
+    // maktab copy of it. See js/logContext.js.
+    tr.addEventListener('click', () => openMaktabDay({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date));
     host.appendChild(tr);
   });
   if (!(data.students || []).length) {

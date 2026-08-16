@@ -177,13 +177,13 @@ async function renderSabaqScreen(){
   document.getElementById('sabaq_page_count').value = '';
 
   let profile = null;
-  try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
+  try{ profile = await logProfile(); } catch(e){ profile = null; }
   sabaqRef = refForMushafSabaq(profile && profile.mushaf);
   sabaqPosition = await loadPosition();
   // V3.45.4: computed fresh from real history every time, not read from
   // a stored value -- see js/position.js's file header.
   let entriesForFrontier = [];
-  try{ entriesForFrontier = await apiSabaq.get(); } catch(e){ entriesForFrontier = []; }
+  try{ entriesForFrontier = await logClient('sabaq').get(); } catch(e){ entriesForFrontier = []; }
   sabaqFrontier = computeActualSabaqFrontier(entriesForFrontier, sabaqRef);
   const dhorExists = await hasDhorHistory();
 
@@ -301,7 +301,7 @@ document.getElementById('sabaqEditDeleteBtn').addEventListener('click', async ()
   if(!sabaqEditingId || sabaqEditingIsFrontier) return;
   if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
   try{
-    await apiSabaq.remove(sabaqEditingId);
+    await logClient('sabaq').remove(sabaqEditingId);
     cancelSabaqEdit();
     await resetSabaqFormAfterEdit();
     await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
@@ -350,7 +350,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
   };
   try{
     if(sabaqEditingId){
-      await apiSabaq.update(sabaqEditingId, payload);
+      await logClient('sabaq').update(sabaqEditingId, payload);
     } else {
       // V3.45.15: duplicate-save confirmation, confirmed in chat --
       // insertLog (worker/src/logHelpers.js) now returns
@@ -365,11 +365,11 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
       // insertLog then honors by inserting regardless (still correctly
       // flagged is_duplicate on the row either way); Cancel leaves the
       // form exactly as it was, nothing sent, nothing saved.
-      const result = await apiSabaq.save(payload);
+      const result = await logClient('sabaq').save(payload);
       if(result && result.isDuplicate && !result.id){
         const proceed = confirm('This entry has already been saved. Select OK to continue with saving or CANCEL to abort');
         if(!proceed) return;
-        await apiSabaq.save(Object.assign({}, payload, { force: true }));
+        await logClient('sabaq').save(Object.assign({}, payload, { force: true }));
       }
     }
     document.getElementById('sabaqSaveStatus').classList.add('show');
@@ -396,7 +396,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     // fine -- not separately re-confirmed with the user.
     if(!sabaqEditingId || sabaqEditingIsFrontier){
       try{
-        const freshEntries = await apiSabaq.get();
+        const freshEntries = await logClient('sabaq').get();
         const newFrontier = computeActualSabaqFrontier(freshEntries, sabaqRef);
         sabaqPosition = advancePositionAfterSabaq(sabaqPosition, sabaqFrontier, newFrontier, sabaqRef);
         sabaqFrontier = newFrontier;
@@ -406,7 +406,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
         // completed at least one quarter of the new one, whatever's left
         // of the old juz' moves to Dhor automatically. Independent of the
         // manual tickbox on Sabaq Dhor's own card -- whichever happens first.
-        const profile = await apiGetProfile();
+        const profile = await logProfile();
         const currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
         const autoMove = maybeAutoMoveToDhor(sabaqPosition, sabaqRef, currentPool);
         if(autoMove.moved){

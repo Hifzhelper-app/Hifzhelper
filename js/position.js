@@ -49,6 +49,17 @@
 // ============================================================
 
 async function loadPosition(){
+  // V3.64.0: position is a PJ-only concept — there is no maktab position
+  // table, and this endpoint is keyed off the auth token, so calling it
+  // in maktab mode would read (and savePosition would OVERWRITE) the
+  // TEACHER's own position while they log a student. Skipped, not faked.
+  // Returns the SAME empty-object shape a student with no stored
+  // position gets (see the `if(!position) position = {}` below), not
+  // null: callers read fields off it directly (sabaqDhorPosition
+  // .activeJuz / .previousJuz / .sabaqDhorRollup), so null would throw
+  // where "no position yet" merely yields undefined. Caught by tracing
+  // those reads rather than by the guard itself.
+  if(typeof logPositionEnabled === 'function' && !logPositionEnabled()) return {};
   const row = await apiGetPosition();
   let position = null;
   try{ position = row && row.position_json ? JSON.parse(row.position_json) : null; } catch(e){ position = null; }
@@ -70,6 +81,7 @@ async function loadPosition(){
 // call site is automatically protected, rather than needing each one to
 // remember to strip these itself.
 function savePosition(position){
+  if(typeof logPositionEnabled === 'function' && !logPositionEnabled()) return Promise.resolve(null);
   const toStore = Object.assign({}, position);
   delete toStore.sabaqTo;
   delete toStore.activeJuz;
@@ -109,7 +121,7 @@ function computeActualSabaqFrontier(allEntries, ref){
 // (confirmed in chat) rather than guessing where a student wants to resume.
 async function hasDhorHistory(){
   try{
-    const rows = await apiDhor.get();
+    const rows = await logClient('dhor').get();
     return Array.isArray(rows) && rows.length > 0;
   } catch(e){
     return false; // fail open to "no history" — prepopulation is a convenience, never a blocker

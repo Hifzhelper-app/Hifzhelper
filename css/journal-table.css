@@ -296,32 +296,18 @@
 .maktab-haidh-check svg { width: 16px; height: 16px; }
 .maktab-haidh-check.marked { background: #FFD400; border-color: #E6BE00; }
 
-/* V3.62.0: day view — the cards ARE the PJ's .log-detail-card in the
-   PJ's own #maktabDayRail (swipe + dots on mobile, 2-up at tablet,
-   3-up grid at >=1180 — all inherited from detail-pages.css, nothing
-   re-implemented here). These rules only style the maktab-specific
-   contents inside them; V3.61.0's .maktab-day-card wrapper class is
-   gone with the old single-container layout. */
-.maktab-card-student-row { font-weight: 700; font-size: 15px; padding: 2px 0 4px; }
-.maktab-field-label { display: block; margin: 6px 0; font-size: 13px; }
-#maktabDayRail input, #maktabDayRail select, #maktabDayRail textarea { font: inherit; padding: 6px 8px; border: 1px solid rgba(0,0,0,0.2); border-radius: 8px; max-width: 100%; }
-#maktabDayRail textarea { width: 100%; min-height: 44px; }
-.maktab-vis-row { display: flex; gap: 10px; align-items: center; font-size: 12px; margin: 6px 0 2px; }
-.maktab-vis-opt { display: inline-flex; gap: 3px; align-items: center; }
-.maktab-vis-opt input { margin: 0; }
-.maktab-student-note { margin: 6px 0; font-size: 13px; }
-.maktab-student-note-label { display: block; font-weight: 600; color: var(--muted, #8e8e93); margin-bottom: 2px; }
-.maktab-student-note-text { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; }
-
-/* (e2) V3.60.0: day view cards + summary haidh control */
-.maktab-day-date { font-size: 13px; font-weight: 600; color: var(--muted, #8e8e93); margin-bottom: 8px; }
-.maktab-tadabbur-strip { background: rgba(130, 150, 114, 0.12); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
-.maktab-existing-row { display: flex; gap: 8px; align-items: center; font-size: 13px; padding: 4px 0; }
-.maktab-existing-meta { color: var(--muted, #8e8e93); }
-.maktab-mini-btn { font: inherit; font-size: 12px; padding: 2px 8px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.2); background: #fff; }
-.maktab-dhor-suggestion { font-size: 13px; color: var(--muted, #8e8e93); margin: 4px 0; }
-
-/* V3.63.0: name row holds the haidh toggle beside the name */
-.maktab-card-student-row { display: flex; align-items: center; gap: 8px; }
+/* V3.64.0: the maktab day view IS the PJ day view (js/logContext.js), so
+   there is no maktab card layout to style any more — every V3.60.0–
+   V3.63.0 rule for hand-built cards is deleted with the markup it
+   served. What's left is the two genuinely maktab-only additions inside
+   the PJ's own cards: the student-name row, and the notes block's
+   teacher-side variant. */
+.maktab-name-row { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 2px 0 6px; }
 .maktab-name-haidh { padding: 2px; }
 .maktab-name-haidh svg { width: 14px; height: 14px; }
+.mk-vis-row { display: flex; gap: 10px; align-items: center; font-size: 12px; margin: 0 0 4px; }
+.mk-vis-opt { display: inline-flex; gap: 3px; align-items: center; }
+.mk-vis-opt input { margin: 0; }
+.mk-student-note { margin: 6px 0 0; font-size: 13px; }
+.mk-student-note-label { display: block; font-weight: 600; color: var(--muted, #8e8e93); margin-bottom: 2px; }
+.mk-student-note-text { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; }

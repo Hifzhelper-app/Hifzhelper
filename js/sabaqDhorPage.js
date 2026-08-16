@@ -184,7 +184,7 @@ async function moveRowToDhor(rowId){
   if(!row || !row.canMoveToDhor) return;
   const juz = row.lingeringJuz || sabaqDhorPosition.activeJuz;
   try{
-    const profile = await apiGetProfile();
+    const profile = await logProfile();
     const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
     const updated = addRowToBaselinePool(row, juz, current);
     await apiSaveProfile({ baseline_selection: updated });
@@ -277,7 +277,7 @@ async function renderSabaqDhorScreen(){
   document.getElementById('sabaqDhor_mistakes').value = '0';
 
   let profile = null;
-  try{ profile = await apiGetProfile(); } catch(e){ profile = null; }
+  try{ profile = await logProfile(); } catch(e){ profile = null; }
   sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
   sabaqDhorPosition = await loadPosition();
@@ -288,7 +288,7 @@ async function renderSabaqDhorScreen(){
   // as the "Confirm Sabaq Dhor" checkboxes below it always start
   // unchecked.
   let entriesForFrontier = [];
-  try{ entriesForFrontier = await apiSabaq.get(); } catch(e){ entriesForFrontier = []; }
+  try{ entriesForFrontier = await logClient('sabaq').get(); } catch(e){ entriesForFrontier = []; }
   const computedFrontier = computeActualSabaqFrontier(entriesForFrontier, sabaqDhorRef);
   sabaqDhorPosition = Object.assign({}, sabaqDhorPosition, {
     sabaqTo: computedFrontier,
@@ -423,7 +423,7 @@ document.getElementById('sabaqDhorEditDeleteBtn').addEventListener('click', asyn
   if(!sabaqDhorEditingId) return;
   if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
   try{
-    await apiSabaqDhor.remove(sabaqDhorEditingId);
+    await logClient('sabaqDhor').remove(sabaqDhorEditingId);
     cancelSabaqDhorEdit();
     resetSabaqDhorFormAfterEdit();
     await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
@@ -457,7 +457,7 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
       ...readCommentBlock('sabaqDhorCommentBlock')
     };
     try{
-      await apiSabaqDhor.update(sabaqDhorEditingId, payload);
+      await logClient('sabaqDhor').update(sabaqDhorEditingId, payload);
       document.getElementById('sabaqDhorSaveStatus').classList.add('show');
       setTimeout(() => document.getElementById('sabaqDhorSaveStatus').classList.remove('show'), 1800);
       cancelSabaqDhorEdit();
@@ -494,11 +494,11 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     // clearing) run -- those should only happen once a genuine save
     // has actually occurred, not on the first, duplicate-detected
     // attempt that didn't insert anything yet.
-    const saveResult = await apiSabaqDhor.save(payload);
+    const saveResult = await logClient('sabaqDhor').save(payload);
     if(saveResult && saveResult.isDuplicate && !saveResult.id){
       const proceed = confirm('This entry has already been saved. Select OK to continue with saving or CANCEL to abort');
       if(!proceed) return;
-      await apiSabaqDhor.save(Object.assign({}, payload, { force: true }));
+      await logClient('sabaqDhor').save(Object.assign({}, payload, { force: true }));
     }
     document.getElementById('sabaqDhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('sabaqDhorSaveStatus').classList.remove('show'), 1800);
