@@ -264,6 +264,99 @@ building" + zip:**
   attendance (haidh propagation, thereafter-absent, ≥N env-var
   rule, 30-day flag).
 
+## Done — V3.61.0 (2026-08-16): (e2) UI round from device screenshots — built to the spec below
+
+User feedback on the shipped e2, from two screenshots (summary +
+day view), 2026-08-16. All items below are user-stated unless marked
+as Claude's assumption.
+
+**GLOBAL — haidh gating:** haidh options appear ONLY for females who
+have opted into haidh tracking (Settings' track_haidh, the same flag
+that gates the PJ's Haidh nav item). The shipped e2 showed the "H"
+control on every row (screenshot: ADMIN-01 and Test Student both had
+it) — wrong. Build consequence: the summary roster query gains
+track_haidh (teacher-gated payload, same carrier as mushaf); the
+summary's haidh control and the day view's haidh anything render only
+when it's set. NOTE the shipped screenshot also shows ADMIN-01
+haidh-marked — a real attendance row created through the ungated
+button; user's own data, left alone, they can unmark via the PJ
+calendar.
+
+**Summary:**
+- A NARROW column BEFORE the names holding a small haidh icon
+  (js/icons.js 'haidh', small) as the haidh checkbox — so the haidh
+  controls line up on the extreme left edge, instead of trailing
+  after variable-length names. Only rendered for haidh-tracking
+  students; empty cell otherwise. Replaces the shipped "H"-after-name
+  button entirely.
+- The DATE moves onto the appsheet, in line with the close icon,
+  above the student column — as a DATE PICKER so teachers can view
+  previous summaries. Reuses the V3.50.1 native-input-as-tap-target
+  pattern (customDate.js) — that fix exists precisely because
+  showPicker() no-ops on iOS. Claude's assumption, stated: picking a
+  past date re-renders the summary for that date (the endpoint
+  already takes ?date=), and row-tap opens the day view FOR that
+  date — CONFIRMED 2026-08-16: the day view follows the picked date
+  (backfill/corrections on past days; prepop calcs and PJ
+  note/haidh/tadabbur fetches all key on the picked date, saves land
+  on it, the (d) endpoints already accept any valid date).
+
+**Day view (log cards):**
+- Copy the PJ log-card format EXACTLY (the .log-detail-card structure
+  the logDetail screen renders) — the shipped plain-label stack was a
+  deliberate e2 shortcut, now superseded. Student name above the
+  header as the FIRST ROW of each card.
+- REMOVE the haidh marking from the card. Claude's reading, stated:
+  the "Mark haidh" button leaves the day view entirely — haidh entry
+  now lives ONLY on the summary's new leading checkbox column; the
+  read-only "marked haidh in her journal" banner stays (it's
+  information, not a marking control). Flag if the banner should go
+  too.
+- Teacher's note ABOVE the student's note.
+- Teacher note visibility control — RESOLVED 2026-08-16: radio-style
+  Public / Teachers / Private, pick one, styled SMALL — three compact
+  inline options sitting above the teacher's note box on one slim
+  line, not a control that earns its own row. Default Teachers
+  (teachers_only), per the standing agreement. The select dropdown is
+  gone.
+- Student's note: VIEW-ONLY, shown only when there is content (the
+  shipped editable prepop textarea is superseded — the note flows
+  from the PJ as-is and is not the teacher's to edit; it freezes into
+  the maktab row on save exactly as displayed).
+
+**Build:** worker — roster + track_haidh; frontend — maktabSummary.js
+(leading haidh column, date picker + date-parameterised render),
+maktabDay.js (PJ card markup, name row, notes reorder, radio
+visibility control, read-only student note, haidh button removal),
+css, version bump.
+
+**Built + verified:** all of it, as spec'd + the two answers. Both
+new-screen modules rewritten rather than patched (V3.60.0's layout
+was superseded wholesale); every superseded V3.60.0 CSS rule deleted
+per the no-hoarding rule (old H button, day-view save/haidh buttons,
+datebar, name h2, old card chrome). Date picker reuses
+wireCustomDateDisplay unchanged — including its value-setter
+interception for programmatic sets (a first draft invented a refresh
+event that doesn't exist; caught by reading customDate.js before
+relying on it). The picked date threads: summary render → row-tap
+param → day-view heading, prepop filters, PJ note/haidh/tadabbur
+keys, and the save's date. Haidh gating: roster carries track_haidh;
+the summary's leading icon-checkbox renders only for opted-in
+students (empty cell keeps the grid aligned); the day-view banner is
+gated too; the Mark-haidh button is gone from the day view.
+Visibility: 3 compact radios on one slim line, Teachers default,
+edit-prefill selects the row's stored value. Student note: read-only
+block, absent entirely when there's no note, frozen into the save
+payload exactly as displayed. Harness: verify_e1 24/24 (leading-
+column gating, name-column shift, picker change → re-render → date
+in the row-tap param) + verify_e2 36/36 (PJ chrome on all three
+cards with the name as first row, no Mark-haidh text anywhere,
+teacher-note-above-student-note DOM order asserted, view-only note,
+radio default + radio-driven save payload, and a full past-date
+scenario: heading, PJ note, banner, and save all keyed on
+2026-08-01) + the rest of the suite = 236 green. On-device look:
+screenshot round expected as usual.
+
 ## Done — V3.59.1 (2026-08-16): (e1) response-shape crash fix — built to the spec below, shipped inside the V3.60.0 zip
 
 Reported by console screenshot: maktab summary stuck on "Loading…"

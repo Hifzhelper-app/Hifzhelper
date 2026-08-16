@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.61.0 — Maktab UI round from device screenshots: haidh gating, date picker, PJ-format cards (2026-08-16)
+
+**Files touched:** `worker/src/maktabLog.js`, `js/maktabSummary.js`, `js/maktabDay.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend; deploy worker first (one roster column added). Requires the V3.60.0 worker already deployed and migration 0019 run.**
+
+Haidh options now appear only for students who opted into haidh tracking (the global rule) — the shipped e2 showed the control on every row, including ADMIN-01, which is how a stray haidh mark landed on that account (clearable from the PJ Haidh calendar). The roster carries `track_haidh`; the summary's haidh control moved to a narrow leading column — a small haidh-icon checkbox lining up on the extreme left, empty cell for everyone else so the grid stays aligned.
+
+The summary's date now sits in line with the close icon as a real date picker (the V3.50.1 native-input pattern, whose value-setter interception handles programmatic sets — a first draft invented a refresh event that doesn't exist and was caught by reading `customDate.js` before relying on it). Picking a past date re-renders that day's grid, and the date follows all the way through: row-tap, day-view heading, prepop, PJ note/haidh/tadabbur lookups, and the save itself — backfill and corrections on past days now work end to end.
+
+The day-view cards were rebuilt in the PJ log-card chrome (`.log-detail-card`, header icon + title + header Save), with the student's name as the first row of each card. The Mark-haidh button left the day view — marking lives only on the summary column now; the informational banner stays, gated. The teacher's note sits above the student's note; visibility is three compact radios on one slim line (Public / Teachers / Private, Teachers default); and the student's note is view-only, rendered only when a non-private PJ note exists for that day, frozen into the save exactly as displayed. Every superseded V3.60.0 CSS rule was deleted rather than left behind.
+
+Verified 236 across the suite, including: leading-column gating both ways, the picker's date landing in the row-tap param, all three cards carrying the PJ chrome with the name first, DOM order of the two notes asserted, the radio driving the save payload, and a full past-date scenario keyed on 2026-08-01.
+
+---
+
 ## V3.60.0 — Maktab delivery (e2): teacher day view, prepop, write path (+ the V3.59.1 fix) (2026-08-16)
 
 **Files touched:** `worker/src/maktabLog.js`, `worker/src/dhorSchedule.js`, `worker/src/index.js`, `js/api.js`, `js/maktabDay.js` (new), `js/maktabSummary.js`, `js/maktabJournal.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend; deploy worker first. One zip carrying both V3.59.1 (the fix) and V3.60.0 (e2), confirmed in chat.**
