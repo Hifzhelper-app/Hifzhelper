@@ -389,7 +389,7 @@ async function renderDhorScreen(){
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
 
   try{
-    const profile = await apiGetProfile();
+    const profile = await logProfile();
     dhorCurrentRef = refForMushaf(profile.mushaf);
   } catch(e){
     dhorCurrentRef = 'waterval'; // sensible fallback if the profile fetch fails
@@ -425,7 +425,7 @@ async function renderDhorScreen(){
   // ensureDhorSchedule doesn't generate anything any more (Phase A), so
   // calling it before this fetch never changed what it would return.
   try{
-    const result = await apiGetDhorDefaultEntry();
+    const result = await logDhorDefaultEntry();
     if(result.source === 'today_plan'){
       // A same-day batch of >1 rows used to force an inline "which one do
       // you mean" picker here (the "never auto-selected" rule, V3.9.0) --
@@ -523,7 +523,7 @@ document.getElementById('dhorTimerBtn').addEventListener('click', async () => {
   const host = document.getElementById('dhorTimerHost');
   let perJuzMinutes = 40;
   try{
-    const profile = await apiGetProfile();
+    const profile = await logProfile();
     if(profile.target_minutes_per_juz != null) perJuzMinutes = profile.target_minutes_per_juz;
   } catch(e){ /* fall back to the same 40 the field itself defaults to */ }
   host.setAttribute('target', String(dhorTimerTargetMinutes(perJuzMinutes)));
@@ -903,7 +903,7 @@ document.getElementById('dhorViewPlanBtn').addEventListener('click', () => openP
 
 async function openPlanDhorModal(preselectUnits){
   let profile = {};
-  try{ profile = await apiGetProfile(); } catch(e){}
+  try{ profile = await logProfile(); } catch(e){}
   planDhorPool = Array.isArray(profile.baseline_selection)
     ? [...new Set(profile.baseline_selection.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a,b) => a-b)
     : [];
@@ -917,7 +917,14 @@ async function openPlanDhorModal(preselectUnits){
   // Dhor Schedule yet -- confirmed in chat as the source for that one
   // case; the backend ignores it otherwise.
   let queueResult = { hasPool: false, days: [] };
-  try{ queueResult = await apiGetUpcomingDhorQueue(document.getElementById('dhor_unit').value); } catch(e){ queueResult = { hasPool: false, days: [] }; }
+  // V3.64.0: the upcoming-plans queue is a PJ-only concept (the maktab has
+  // no plans table -- migration 0019's header) AND it is auth-token-keyed,
+  // so in maktab mode it would show the TEACHER's queue on a student's
+  // card. Left at the empty default there, which is the same state a PJ
+  // student with no configured schedule already sees.
+  if(typeof logPlansEnabled !== 'function' || logPlansEnabled()){
+    try{ queueResult = await apiGetUpcomingDhorQueue(document.getElementById('dhor_unit').value); } catch(e){ queueResult = { hasPool: false, days: [] }; }
+  }
   planDhorQueueDays = queueResult.days || [];
   planDhorTodaysPlans = planDhorQueueDays.length > 0 ? planDhorQueueDays[0].items : [];
   planDhorExpandedDates = new Set(); // always collapsed on open, confirmed in chat
@@ -1280,7 +1287,7 @@ document.getElementById('dhorEditDeleteBtn').addEventListener('click', async () 
   if(!dhorEditingId) return;
   if(!confirm('Deleting this entry may create gaps in your history which cannot be recovered. Are you sure you want to DELETE?')) return;
   try{
-    await apiDhor.remove(dhorEditingId);
+    await logClient('dhor').remove(dhorEditingId);
     cancelDhorEdit();
     resetDhorFormAfterEdit();
     await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
@@ -1327,7 +1334,7 @@ async function saveDhorEdit(){
     payload.ref = dhorCurrentRef;
   }
   try{
-    await apiDhor.update(dhorEditingId, payload);
+    await logClient('dhor').update(dhorEditingId, payload);
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
     cancelDhorEdit();
@@ -1400,11 +1407,11 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     // run at all until a genuine save has actually happened -- if the
     // student cancels, nothing was saved and the pool must stay
     // untouched too.
-    const saveResult = await apiDhor.save(payload);
+    const saveResult = await logClient('dhor').save(payload);
     if(saveResult && saveResult.isDuplicate && !saveResult.id){
       const proceed = confirm('This entry has already been saved. Select OK to continue with saving or CANCEL to abort');
       if(!proceed) return;
-      await apiDhor.save(Object.assign({}, payload, { force: true }));
+      await logClient('dhor').save(Object.assign({}, payload, { force: true }));
     }
     // Pool update, moved here from Plan Dhor's own Save (2026-08-03,
     // confirmed in chat): "logged entries go into history and add to
@@ -1418,7 +1425,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     // populated once Plan Dhor's own modal has been opened this session
     // -- a fully manual entry might never have touched it at all.
     let profile = {};
-    try{ profile = await apiGetProfile(); } catch(e){}
+    try{ profile = await logProfile(); } catch(e){}
     const currentPool = Array.isArray(profile.baseline_selection)
       ? [...new Set(profile.baseline_selection.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a,b) => a-b)
       : [];

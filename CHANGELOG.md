@@ -7,6 +7,38 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.64.1 — V3.64.0 audited against the three-inputs rule: two defects fixed before release (2026-08-16)
+
+**Files touched:** `js/logContext.js`, `js/maktabDay.js`, `js/commentPrivacy.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Frontend-only. Folds into the V3.64.0 delivery — V3.64.0 was never uploaded.**
+
+Audited against the rule that the personal journal feeds the maktab exactly three things — a sabaq_to extension, haidh days, and notes/tadabbur shown in that day's record — and found two failures.
+
+The notes input was dead. The shared notes block read a dataset attribute that nothing ever set, so a student's note never reached the maktab record; the fetch existed in V3.63.0 and was dropped in the rewrite, leaving the read behind. The day view now fetches the student's non-private note per type for the day being logged, before the cards render, into a context-held carrier that clears with the context like every other per-student value.
+
+The bigger one: eight `apiGetProfile()` calls across the three cards. That endpoint answers "whose?" from the auth token, so in maktab mode the student's card was using the *teacher's* mushaf and the *teacher's* Dhor pool — a fourth input, from the wrong person. Profile reads now follow the context: unchanged in the personal journal, and in maktab mode the maktab's own values. Per the design the maktab picks one mushaf for all its students on a settings screen that doesn't exist yet, so the interim is 13-line, held as a single named constant the settings screen will retire. The Dhor pool is empty in maktab mode rather than the teacher's, which the coming maktab student setup will fill by marking completed ajzaa.
+
+Tadabbur is still not surfaced in maktab mode — half of the third input — left deliberately and flagged rather than quietly counted as done.
+
+Verified 271 green, with new checks asserting that the personal profile passes through untouched, that the own-only endpoint is never called in maktab mode, and that the student's note actually reaches the card — the bug the previous harness missed by passing a note in directly instead of exercising the real path.
+
+---
+
+## V3.64.0 — The maktab day view IS the PJ day view (reuse, not copy) (2026-08-16)
+
+**Files touched:** `js/logContext.js` (new), `js/maktabDay.js`, `js/maktabSummary.js`, `js/commentPrivacy.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `js/position.js`, `js/app.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Frontend-only — no worker change. Load order matters: `logContext.js` must come after `api.js` and before the page modules (already wired in index.html and the SW cache list).**
+
+Two previous attempts hand-built maktab cards and both drifted from the personal journal immediately. This replaces them with reuse: tapping a student on the maktab summary opens the PJ's own day view — same rail, same dots, same three cards, same verse pickers, Lines/Pages, Tajweed, date pill, History, Timer, duplicate-confirm and edit popup — pointed at a different student and the maktab tables through a new context module.
+
+PJ mode is the default and unchanged: `logClient('sabaq')` *is* `apiSabaq`, and saves still carry no student id because the worker infers it from the auth token. Maktab mode swaps in student-scoped clients, so none of the 16 routed call sites in the three page modules knows the difference. Position and the upcoming-plans queue are skipped in maktab mode rather than faked — both are keyed off the auth token and would otherwise have written the teacher's own rows while they logged a student.
+
+Only two things inside the shared cards are maktab-specific: a student-name row carrying the yellow haidh toggle (hidden entirely in PJ mode), and the shared notes block gaining a teacher side — teacher note above with three small visibility radios, the student's note below, read-only, shown only when one exists. The old maktab day screen, its rail markup, and every rule that styled the hand-built cards were deleted rather than left behind.
+
+The real hazard of sharing a screen is shared module state, so leaving the day view drops the context on any navigation away, and the harness asserts the full round trip — maktab, back to the personal journal, then maktab for a *different* student — proving reads return to the right tables and no student identity survives. Verified 259 green, including a static guard over every routed call site (a mistyped type string would return undefined and surface only in the live journal).
+
+One thing left as the PJ has it: the Timer and History buttons appear on maktab cards too, with History correctly showing that student's maktab history.
+
+---
+
 ## V3.63.0 — Date pill on the PJ's own grid; haidh as a yellow toggle, no banner (2026-08-16)
 
 **Files touched:** `worker/src/attendance.js`, `js/api.js`, `js/maktabSummary.js`, `js/maktabDay.js`, `css/journal-table.css`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed — deploy the worker first (`attendance.js` gains a teacher override the frontend now relies on).**

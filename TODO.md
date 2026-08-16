@@ -264,6 +264,127 @@ building" + zip:**
   attendance (haidh propagation, thereafter-absent, ≥N env-var
   rule, 30-day flag).
 
+## Done — V3.64.1 (2026-08-16): V3.64.0 audited against the three-inputs rule — two real defects fixed BEFORE upload
+
+User, before uploading V3.64.0: "are you happy that 3.64 is consistent
+with the maktab philosophy". Audited against the rule stated the same
+day (the PJ feeds the maktab THREE things and nothing else: a sabaq_to
+extension, haidh days, notes/tadabbur shown in the day's record).
+Answer was no — two defects, both fixed here, neither shipped.
+
+**1. The notes input was silently dead.** commentPrivacy.js read
+`el.dataset.pjNote` to show the student's note; NOTHING anywhere set
+it. V3.63.0 had fetched the note; the V3.64.0 rewrite dropped the fetch
+and left the read dangling, so condition 3 did nothing at all. The
+harness missed it because it passed a note in directly rather than
+exercising the real path. Fixed: openMaktabDay fetches the student's
+non-private note per type for the day being logged, BEFORE showScreen
+(renderCommentBlock runs during it), into a context-held carrier that
+clears with the context like everything else per-student. Now covered
+by a check that asserts the note actually REACHES the card.
+
+**2. Eight apiGetProfile() calls were reading the TEACHER.** That
+endpoint is own-only — it answers "whose?" from the auth token — so in
+maktab mode the student's card used the teacher's mushaf and the
+teacher's Dhor pool. Not a missing feature: a FOURTH input, from the
+wrong person, worse than reading the student's own PJ would have been.
+Fixed with logProfile(): PJ mode returns the real profile untouched;
+maktab mode returns the maktab's values. Per the design, the maktab
+picks ONE mushaf for all its students (admin-only settings screen, not
+yet built) — interim is 13-line, user's explicit choice, as ONE named
+constant (MAKTAB_MUSHAF_INTERIM) so the settings screen retires exactly
+one line. The Dhor pool is EMPTY in maktab mode rather than the
+teacher's: honest ("nothing marked moved yet"), and the coming maktab
+student setup fills it by marking completed ajzaa.
+
+**3. Tadabbur still not surfaced** in maktab mode — half of condition
+3. Left deliberately: user said "ignore tadabbur for now". Flagged so
+it isn't mistaken for done.
+
+Audited clean and unchanged: sabaq_to extension (condition 1), haidh
+read + toggle (condition 2), history/prepop/duplicate-detection all off
+maktab tables, position and plans disabled rather than reading the
+teacher's.
+
+**Verified 271 green.** verify_context 49/49 — the new checks assert
+the PJ profile passes through untouched, maktab gets 13-line with an
+empty pool, the own-only endpoint is never called in maktab mode, the
+PJ note reaches the card (the bug), a saved row's own frozen note wins
+over it, a type with no note renders no block, and notes clear with the
+context. Source guard extended: no direct apiGetProfile() survives in
+the three cards, and the interim mushaf is a single named constant.
+
+## Done — V3.64.0 (2026-08-16): the maktab day view IS the PJ day view — Option A, reuse instead of copy
+
+User, after comparing the PJ Sabaq card with the maktab one side by
+side: "do you need me to detail all the differences ... or do you think
+you can do a copy and then that it is actually copied". The honest
+answer was that enumerating differences would have been me re-deriving
+the PJ by hand a third time (V3.60.0's plain inputs, V3.62.0's rail with
+simplified fields) and drifting again on the next PJ change. Three
+options were put up with their costs; user chose **A — reuse the PJ
+screen** — explicitly accepting the risk of editing live code ("we are
+still in development so I will take the risks associated with A since
+it has the payoff").
+
+**What was built.** js/logContext.js: one context deciding whose journal
+the three log modules operate on. PJ is the default and is
+byte-for-byte the old behaviour — logClient('sabaq') IS apiSabaq, saves
+carry no student_id, the worker keeps inferring from auth. Maktab mode
+swaps in student-scoped clients (/maktab/* with student_id decorated
+inside the client, so no call site learns the difference). The 16 routed
+call sites are the whole change to the page modules: 6 in sabaqPage, 5
+in sabaqDhorPage, 5 in dhorPage/position.
+
+**PJ-only concepts skipped rather than faked**, both because they are
+auth-token-keyed and would have silently written the TEACHER's own rows
+while logging a student: `position` (loadPosition returns null,
+savePosition no-ops in maktab mode — there is no maktab position table)
+and the upcoming-plans queue (no maktab plans concept; migration 0019's
+header states it). Both left at exactly the state a PJ student with no
+history/schedule already sees.
+
+**The two genuinely maktab-only additions inside the shared cards:** a
+student-name row (hidden in PJ mode) carrying the yellow haidh toggle,
+and commentPrivacy.js gaining a maktab side — teacher note above with
+the three small visibility radios (Teachers default), student note below
+read-only and only when there IS one, frozen into the save exactly as
+displayed. Everything else on those cards — verse pickers, Lines/Pages,
+Tajweed, date pill, History, Timer, duplicate-confirm, edit popup — is
+the PJ's own and now works in the maktab because it IS the PJ's.
+
+**Deleted, not kept alongside:** the entire #screen-maktabDay markup,
+its dots/rail, maktabDay.js's card rendering, and every V3.60.0–V3.63.0
+CSS rule that styled hand-built cards (~30 lines). maktabDay.js is now
+167 lines and renders nothing.
+
+**The hazard, and what guards it.** Those modules keep module-level
+state (7/7/19 vars). It is shared by whichever mode is open, so leaving
+the screen MUST drop the context — app.js clears it on any navigation
+away from logDetail. verify_context.mjs asserts the full round trip:
+maktab(STU2) → PJ → maktab(STU3), checking that PJ reads go back to
+/sabaq with no student_id and that re-entry picks up the NEW student.
+
+**Verified: 259 green.** New verify_context.mjs 37/37 (PJ default
+unchanged; all three maktab tables + student scoping on get/save/update/
+remove; dhor prepop variant; position/plans disabled; the leakage round
+trip; the notes block flipping sides including escaping and
+existing-entry visibility; the name row per card and cleared on exit).
+Plus a SOURCE guard, because these modules aren't otherwise driven by a
+harness and a typo like logClient('sabaqdhor') would return undefined
+and throw only in the live journal: it checks every call site's type
+string and that no direct apiSabaq./apiDhor. call survives. That guard
+caught a false positive on its own first draft (dhorPage's header prose
+mentions apiDhor.save) — comments are stripped now. verify_e1 32/32
+(row tap opens the shared screen), verify_e2 trimmed to the 14 checks
+that still describe real code, every prior harness green.
+
+**Not decided, deliberately left as the PJ has them:** the Timer and
+History buttons appear on the maktab cards too. History correctly shows
+the student's MAKTAB history (the client is swapped); the Timer records
+duration into the maktab entry. Flag if either should be hidden for
+teachers.
+
 ## Done — V3.63.0 (2026-08-16): date pill on the PJ's own grid + haidh as a yellow toggle, no banner — device feedback
 
 Three corrections from chat, plus two wrong-row bugs found while

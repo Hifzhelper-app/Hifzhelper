@@ -1,63 +1,36 @@
 // ============================================================
-// Hifzhelper -- Maktab day view (V3.61.0; first shipped V3.60.0, this
-// UI round from device screenshots confirmed in chat 2026-08-16).
-// The teacher's entry screen for ONE student's Hifz day: three cards
-// in the PJ LOG-CARD FORMAT (user-stated: "copy the format of the PJ
-// log cards exactly" -- .log-detail-card/.card-scroll/.card-header-row
-// chrome with the Save button in the header), the student's NAME as
-// the first row of each card, above the header.
+// Hifzhelper -- maktab day entry (V3.64.0).
 //
-// V3.61.0 changes, all user-stated unless noted:
-//   - Cards restyled to the PJ chrome (above). Field style inside
-//     stays plain inputs -- the format is the card chrome; the PJ's
-//     verse-ref pickers remain welded to PJ page state (the standing
-//     V3.60.0 decision; picker polish is a later item).
-//   - DATE follows the summary's picker (confirmed): renders, prepop
-//     calcs, every PJ fetch, and saves all key on the date the row
-//     was tapped under -- backfilling/corrections on past days.
-//   - The "Mark haidh" button is REMOVED from this screen -- haidh
-//     marking lives ONLY on the summary's leading checkbox column
-//     now. Claude's stated reading, unchallenged: the read-only
-//     "marked haidh in her journal" banner STAYS (information, not a
-//     marking control), and it too is gated on track_haidh.
-//   - Teacher's note sits ABOVE the student's note.
-//   - Teacher-note visibility: radio-style Public / Teachers /
-//     Private, pick one, styled SMALL -- one slim inline line above
-//     the teacher's note box, no row of its own (confirmed). Default
-//     Teachers (teachers_only), the standing agreement.
-//   - Student's note is VIEW-ONLY and rendered only when there IS
-//     one (a non-private PJ note for this date/type). It freezes
-//     into the maktab row on save exactly as displayed -- it is not
-//     the teacher's to edit.
+// This file no longer renders any cards. The maktab day view IS the PJ
+// day view (#screen-logDetail): same rail, same dots, same Sabaq /
+// Sabaq Dhor / Dhor cards, same verse pickers, Lines/Pages, Tajweed,
+// History and Timer -- because it is literally that screen, opened with
+// a maktab context (js/logContext.js) instead of a copy of it.
+// Confirmed in chat 2026-08-16 after two hand-built copies drifted
+// (V3.60.0's plain inputs, V3.62.0's rail with simplified fields).
 //
-// PJ use is OPTIONAL (standing rule): every PJ fetch here treats an
-// empty result as the NORMAL case, never an error.
+// What remains here is only what is genuinely maktab-only:
+//   - opening the shared screen with the right context,
+//   - painting the student-name row + haidh toggle into each card,
+//   - clearing the context on exit (the leakage hazard -- see
+//     logContext.js's header),
+//   - the haidh toggle flow itself, shared with the summary.
+//
+// Sabaq prepop deliberately needs NO code here any more: the PJ's own
+// renderSabaqScreen computes the frontier from logClient('sabaq').get(),
+// which in maktab mode returns the student's MAKTAB sabaq history -- the
+// agreed rule ("maktab prepop calculates from the maktab's own history --
+// copy the PJ prepop logic") now holds by construction rather than by a
+// reimplementation. The one agreed PJ amendment (a student's PJ sabaq may
+// only ever EXTEND sabaq_to) is applied below as a post-step.
 // ============================================================
 
-let maktabDayStudent = null; // { id, name, mushaf, track_haidh } — all ride the roster row
-let maktabDayDate = null;    // ISO — follows the summary's picker (confirmed)
-let maktabDayEditing = { sabaq: null, sabaqDhor: null, dhor: null }; // existing entry id being edited, per type
+let maktabDayStudent = null; // { id, name, mushaf, track_haidh }
+let maktabDayDate = null;    // ISO -- follows the summary's date picker
 
-function maktabDayEsc(s){ const d = document.createElement('span'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-
-// ---- sabaq prepop: maktab frontier + the one-way PJ sabaq_to extension ----
-function maktabVerseKeyFurther(a, b, ref){
-  // mirrors computeActualSabaqFrontier's direction rule: juz' 30 studies
-  // DOWNWARD through the surahs, everywhere else ascends.
-  const juz = getJuzForPosition(a.surah, a.ayah, ref);
-  const cmp = compareVerseKey(a.surah, a.ayah, b.surah, b.ayah);
-  return juz === 30 ? cmp < 0 : cmp > 0;
-}
-function maktabSabaqPrepop(maktabEntries, pjEntries, ref, hasMaktabDhor){
-  const maktabFrontier = computeActualSabaqFrontier(maktabEntries, ref);
-  const d = nextSabaqDefaults(maktabFrontier, ref, hasMaktabDhor);
-  if(!d.from) return d; // juz' complete / deliberate no-prepop — PJ never overrides a deliberate blank
-  const pjFrontier = computeActualSabaqFrontier(pjEntries, ref);
-  if(pjFrontier && maktabVerseKeyFurther(pjFrontier, d.to, ref)){
-    // extend TO only — from, and everything else, stays maktab-derived
-    return { from: d.from, to: { surah: pjFrontier.surah, ayah: pjFrontier.ayah } };
-  }
-  return d;
+function maktabTodayISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
 // ---- haidh gap check (pure, harness-tested) ----
@@ -70,15 +43,9 @@ function maktabHaidhGapDays(attendanceRows, todayIso){
   return Math.round((new Date(todayIso + 'T00:00:00Z') - new Date(last + 'T00:00:00Z')) / 86400000);
 }
 
-// Shared haidh-entry flow — since V3.61.0 called ONLY from the summary's
-// leading checkbox column (the day-view button was removed, confirmed),
-// kept in this file because the gap logic belongs with the day machinery.
-// V3.63.0: takes the DATE it should mark. It used to hardcode today --
-// harmless when the summary was today-only, but V3.61.0 gave that screen
-// a date picker, so marking from a past-day summary would have written
-// TODAY's row instead of the day on screen. Same class of wrong-row bug
-// as the DELETE handler's hardcoded auth.id, found the same way (tracing
-// the toggle's date through both paths).
+// Marking runs the 15-day guard with the exact confirmed wording. Takes
+// the date it should mark -- V3.63.0 fixed it hardcoding today, which
+// went wrong once the summary gained a date picker.
 async function maktabMarkHaidhFlow(studentId, onDone, date){
   const target = date || maktabTodayISO();
   let rows = [];
@@ -87,7 +54,6 @@ async function maktabMarkHaidhFlow(studentId, onDone, date){
   const gap = maktabHaidhGapDays(rows, target);
   let status = 'haidh';
   if(gap != null && gap < HAIDH_GAP_OFFICIAL){
-    // exact wording confirmed in chat
     status = confirm('15 days has not passed since the last haidh day. Ok to mark as Haidh, cancel to mark absent') ? 'haidh' : 'absent';
   }
   try{
@@ -99,13 +65,8 @@ async function maktabMarkHaidhFlow(studentId, onDone, date){
   if(onDone) await onDone();
 }
 
-// V3.63.0: the haidh ICON is a toggle (confirmed in chat), on both the
-// summary's leading column and beside the student's name in the day
-// view. Marking runs the shared flow below so the 15-day guard and its
-// exact confirm wording apply wherever the toggle lives. Un-ticking
-// CLEARS the day back to unset rather than writing 'absent' -- 'absent'
-// is a different statement ("she wasn't here"), and the maktab derives
-// absence anyway (delivery (f)); an untick just undoes the mark.
+// Un-ticking CLEARS the day back to unset rather than writing 'absent':
+// 'absent' is a different claim, and the maktab derives absence anyway.
 async function maktabToggleHaidh(studentId, date, currentlyMarked, onDone){
   if(currentlyMarked){
     try{
@@ -120,271 +81,100 @@ async function maktabToggleHaidh(studentId, date, currentlyMarked, onDone){
   await maktabMarkHaidhFlow(studentId, onDone, date);
 }
 
-// ---- visibility control: 3 small radios on one slim line (confirmed) ----
-function maktabVisibilityControl(idPrefix){
-  return `<div class="maktab-vis-row" role="radiogroup" aria-label="Teacher note visibility">
-    <label class="maktab-vis-opt"><input type="radio" name="${idPrefix}_vis" value="all"><span>Public</span></label>
-    <label class="maktab-vis-opt"><input type="radio" name="${idPrefix}_vis" value="teachers_only" checked><span>Teachers</span></label>
-    <label class="maktab-vis-opt"><input type="radio" name="${idPrefix}_vis" value="private"><span>Private</span></label>
-  </div>`;
-}
-function maktabVisibilityValue(idPrefix){
-  const el = document.querySelector(`input[name="${idPrefix}_vis"]:checked`);
-  return el ? el.value : 'teachers_only';
-}
-
-// Dot navigation + rail-scroll sync, copied from the PJ's own
-// logDetailScreen.js (V3.18.0 fix included: compare getBoundingClientRect
-// edges, NOT offsetLeft -- #appContent's translateZ(0) makes it the
-// offsetParent, which silently broke the offsetLeft comparison there).
-// Wired once; the rail and dots are static markup like the PJ's.
-function maktabDayUpdateDots(){
-  const rail = document.getElementById('maktabDayRail');
-  const dots = document.querySelectorAll('#maktabDayDots .dot');
-  if(!rail || !dots.length) return;
-  const cards = Array.from(rail.children);
-  const railLeft = rail.getBoundingClientRect().left;
-  let activeIndex = 0;
-  cards.forEach((card, i) => {
-    if(card.getBoundingClientRect().left <= railLeft + 4) activeIndex = i;
-  });
-  dots.forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
-}
-function maktabDayWireRail(){
-  const rail = document.getElementById('maktabDayRail');
-  if(!rail || rail.dataset.maktabWired) return;
-  rail.dataset.maktabWired = 'true';
-  rail.addEventListener('scroll', () => window.requestAnimationFrame(maktabDayUpdateDots));
-  document.querySelectorAll('#maktabDayDots .dot').forEach(dot => {
-    dot.addEventListener('click', () => {
-      const card = rail.children[parseInt(dot.dataset.index, 10)];
-      if(card) rail.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
-    });
-  });
-}
-
-async function renderMaktabDayScreen(param){
-  const rail = document.getElementById('maktabDayRail');
-  const bodyFor = (type) => rail.querySelector(`[data-body="${type}"]`);
-  if(param && param.id){
-    maktabDayStudent = { id: param.id, name: param.name || param.id, mushaf: param.mushaf || null, track_haidh: !!param.track_haidh };
-    maktabDayDate = param.date || maktabTodayISO();
-  }
-  maktabDayWireRail();
-  if(!maktabDayStudent){
-    bodyFor('sabaq').innerHTML = '<p class="maktab-day-placeholder">Open a student from the Maktab summary.</p>';
-    bodyFor('sabaqDhor').innerHTML = '';
-    bodyFor('dhor').innerHTML = '';
-    return;
-  }
-  maktabDayEditing = { sabaq: null, sabaqDhor: null, dhor: null };
-  const stu = maktabDayStudent;
-  const date = maktabDayDate || maktabTodayISO();
-  bodyFor('sabaq').innerHTML = '<p class="maktab-day-placeholder">Loading\u2026</p>';
-  bodyFor('sabaqDhor').innerHTML = '';
-  bodyFor('dhor').innerHTML = '';
-
-  const settle = (p) => p.then(v => Array.isArray(v) ? v : []).catch(() => []);
-  const settleObj = (p) => p.then(v => v || null).catch(() => null);
-  // PJ use is optional: every PJ fetch here degrading to [] IS the
-  // designed behaviour for a student who never opens their PJ.
-  const [mSabaq, mSabaqDhor, mDhor, pjSabaq, pjReflections, pjAttendance, dhorDefault] = await Promise.all([
-    settle(apiGetPJLogsFor('/maktab/sabaq', stu.id)),
-    settle(apiGetPJLogsFor('/maktab/sabaq-dhor', stu.id)),
-    settle(apiGetPJLogsFor('/maktab/dhor', stu.id)),
-    settle(apiGetPJLogsFor('/sabaq', stu.id)),
-    settle(apiGetPJLogsFor('/reflections', stu.id)),
-    settle(apiGetAttendanceFor(stu.id)),
-    settleObj(apiMaktabDhorDefault(stu.id)),
-  ]);
-
-  const ref = refForMushafSabaq(stu.mushaf);
-  const dayAtt = (pjAttendance || []).find(r => r.date === date);
-  const haidhOnDate = stu.track_haidh && dayAtt && (dayAtt.status === 'haidh' || dayAtt.status === 'predicted-haidh');
-
-  const pjNoteFor = (rows) => {
-    const r = (rows || []).find(x => x.date === date && x.student_comment);
-    return r ? r.student_comment : ''; // private ones arrive nulled by applyPrivacy — nothing to filter here
-  };
-  const publicTadabbur = (pjReflections || []).filter(r => r.date === date && r.reflection);
-
-  const sabaqPrepop = maktabSabaqPrepop(mSabaq, pjSabaq, ref, mDhor.length > 0);
-  const lastSabaqDhor = mSabaqDhor[0] || null;
-  const todays = {
-    sabaq: mSabaq.filter(r => r.date === date),
-    sabaqDhor: mSabaqDhor.filter(r => r.date === date),
-    dhor: mDhor.filter(r => r.date === date),
-  };
-
-  const fmtRef = (v) => v && v.surah ? v.surah + ':' + v.ayah : '';
-  let dhorSuggestion = null;
-  if(dhorDefault && dhorDefault.source === 'next_in_cycle' && dhorDefault.segment_from){
-    dhorSuggestion = { from: dhorDefault.segment_from, to: dhorDefault.segment_to, ref: dhorDefault.ref || '' };
-  }
-
-  // V3.63.0 (confirmed in chat): NO haidh banner. Haidh shows as one
-  // small icon beside the student's name -- bright yellow when marked --
-  // and that icon is a TOGGLE, so marking works from here as well as
-  // from the summary's leading column.
-  const haidhIcon = stu.track_haidh
-    ? `<button type="button" class="maktab-haidh-check maktab-name-haidh${haidhOnDate ? ' marked' : ''}" data-haidh-toggle aria-pressed="${haidhOnDate ? 'true' : 'false'}" aria-label="${haidhOnDate ? 'Clear haidh mark' : 'Mark haidh'}">${iconHtml('haidh')}</button>`
-    : '';
-
-  const existingList = (type, rows) => rows.map(r =>
-    `<div class="maktab-existing-row" data-type="${type}" data-id="${r.id}">
-       <span>${maktabDayEsc(maktabExistingLabel(type, r))}</span>
-       <span class="maktab-existing-meta">${maktabDayEsc(r.teacher_name || '')}</span>
-       <button type="button" class="maktab-mini-btn" data-edit>Edit</button>
-       <button type="button" class="maktab-mini-btn" data-del>Delete</button>
-     </div>`).join('');
-
-  // Teacher note (ABOVE) + read-only student note (below, only when
-  // present) — the shared notes block for all three cards.
-  const notesBlock = (idPrefix, studentNote) => `
-    ${maktabVisibilityControl(idPrefix)}
-    <label class="maktab-field-label">Teacher note <textarea id="${idPrefix}_tnote"></textarea></label>
-    ${studentNote ? `<div class="maktab-student-note"><span class="maktab-student-note-label">Student note</span><div class="maktab-student-note-text">${maktabDayEsc(studentNote)}</div></div>` : ''}`;
-
-  // Each card's own contents, in the PJ's card-scroll structure: the
-  // student's NAME as the first row (user-stated), then the PJ
-  // card-header-row (icon + title + header Save), then the date line,
-  // then fields.
-  const cardBody = (type, title, iconName, fieldsHtml, extraTop) => `
-    <div class="maktab-card-student-row"><span>${maktabDayEsc(stu.name)}</span>${haidhIcon}</div>
-    <div class="card-header-row">
-      <span class="card-header-icon">${iconHtml(iconName)}</span>
-      <div class="card-header-title-group"><h2>${title}</h2></div>
-      <div class="card-header-save-wrap">
-        <button type="button" class="card-header-save-btn" data-save="${type}"><span class="save-btn-text">Save</span></button>
-      </div>
-    </div>
-    <div class="maktab-day-date">${maktabDayEsc(date)}</div>
-    ${extraTop || ''}
-    ${fieldsHtml}`;
-
-  bodyFor('sabaq').innerHTML = cardBody('sabaq', 'Sabaq', 'sabaq', `
-      ${existingList('sabaq', todays.sabaq)}
-      <label class="maktab-field-label">From <input id="mk_sabaq_from" placeholder="surah:ayah" value="${maktabDayEsc(fmtRef(sabaqPrepop.from))}"></label>
-      <label class="maktab-field-label">To <input id="mk_sabaq_to" placeholder="surah:ayah" value="${maktabDayEsc(fmtRef(sabaqPrepop.to))}"></label>
-      ${notesBlock('mk_sabaq', pjNoteFor(pjSabaq))}`,
-    publicTadabbur.length ? `<div class="maktab-tadabbur-strip"><strong>Tadabbur (shared):</strong> ${publicTadabbur.map(r => maktabDayEsc(r.reflection)).join(' \u2022 ')}</div>` : '');
-
-  bodyFor('sabaqDhor').innerHTML = cardBody('sabaqDhor', 'Sabaq Dhor', 'sabaqDhor', `
-      ${existingList('sabaqDhor', todays.sabaqDhor)}
-      <label class="maktab-field-label">Zone <input id="mk_sd_zone" value="${maktabDayEsc(lastSabaqDhor ? (lastSabaqDhor.zone || '') : '')}"></label>
-      <label class="maktab-field-label">From <input id="mk_sd_from_surah" placeholder="surah" inputmode="numeric"> : <input id="mk_sd_from_ayah" placeholder="ayah" inputmode="numeric"></label>
-      <label class="maktab-field-label">To <input id="mk_sd_to_surah" placeholder="surah" inputmode="numeric"> : <input id="mk_sd_to_ayah" placeholder="ayah" inputmode="numeric"></label>
-      <label class="maktab-field-label">Mistakes <input id="mk_sd_mistakes" inputmode="numeric"></label>
-      ${notesBlock('mk_sd', '')}`);
-
-  bodyFor('dhor').innerHTML = cardBody('dhor', 'Dhor', 'dhor', `
-      ${existingList('dhor', todays.dhor)}
-      ${dhorSuggestion ? `<div class="maktab-dhor-suggestion">Next in cycle: ${maktabDayEsc(describeDhorSegment(dhorSuggestion.from, dhorSuggestion.to, dhorSuggestion.ref || 'waterval'))}</div>` : ''}
-      <label class="maktab-field-label">Segment from <input id="mk_dhor_from" inputmode="numeric" value="${dhorSuggestion ? maktabDayEsc(String(dhorSuggestion.from)) : ''}"></label>
-      <label class="maktab-field-label">Segment to <input id="mk_dhor_to" inputmode="numeric" value="${dhorSuggestion ? maktabDayEsc(String(dhorSuggestion.to)) : ''}"></label>
-      <label class="maktab-field-label">Ref <select id="mk_dhor_ref">
-        <option value="waterval"${(!dhorSuggestion || dhorSuggestion.ref !== 'uthmani') ? ' selected' : ''}>13-line (IndoPak)</option>
-        <option value="uthmani"${dhorSuggestion && dhorSuggestion.ref === 'uthmani' ? ' selected' : ''}>Madina</option>
-      </select></label>
-      <label class="maktab-field-label">Mistakes <input id="mk_dhor_mistakes" inputmode="numeric"></label>
-      ${notesBlock('mk_dhor', '')}`);
-
-  // stash the displayed student note so save can freeze it as-is
-  rail.dataset.sabaqStudentNote = pjNoteFor(pjSabaq) || '';
-
-  rail.querySelectorAll('.maktab-existing-row [data-del]').forEach(btn => btn.addEventListener('click', async (e) => {
-    const row = e.target.closest('.maktab-existing-row');
-    if(!confirm('Delete this entry?')) return;
-    const client = { sabaq: apiMaktabSabaq, sabaqDhor: apiMaktabSabaqDhor, dhor: apiMaktabDhor }[row.dataset.type];
-    try{ await client.remove(row.dataset.id); } catch(err){ alert('Could not delete.'); return; }
-    renderMaktabDayScreen(null);
-  }));
-  rail.querySelectorAll('.maktab-existing-row [data-edit]').forEach(btn => btn.addEventListener('click', (e) => {
-    const row = e.target.closest('.maktab-existing-row');
-    const type = row.dataset.type;
-    maktabDayEditing[type] = Number(row.dataset.id);
-    const all = { sabaq: todays.sabaq, sabaqDhor: todays.sabaqDhor, dhor: todays.dhor }[type];
-    const entry = all.find(x => x.id === Number(row.dataset.id));
-    if(entry) maktabDayPrefill(type, entry);
-    const saveBtn = rail.querySelector(`[data-save="${type}"] .save-btn-text`);
-    if(saveBtn) saveBtn.textContent = 'Update';
-  }));
-  rail.querySelectorAll('[data-save]').forEach(btn => btn.addEventListener('click', () => maktabDaySave(btn.dataset.save, stu, date)));
-  // One toggle rendered per card (each card shows the name row); all
-  // three drive the same shared flow, so the 15-day guard applies here
-  // exactly as it does from the summary.
-  rail.querySelectorAll('[data-haidh-toggle]').forEach(btn => btn.addEventListener('click', () =>
-    maktabToggleHaidh(stu.id, date, haidhOnDate, () => renderMaktabDayScreen(null))));
-
-  // open on the first card, no animation (PJ entry behaviour)
-  if(param && param.id) rail.scrollLeft = 0;
-  maktabDayUpdateDots();
-}
-
-function maktabExistingLabel(type, r){
-  if(type === 'sabaq') return (r.sabaq_from || '?') + '\u2013' + (r.sabaq_to || '?');
-  if(type === 'sabaqDhor') return (r.zone ? r.zone + ' ' : '') + (r.from_surah ? `${r.from_surah}:${r.from_ayah}\u2013${r.to_surah}:${r.to_ayah}` : '');
-  return describeDhorSegment(r.segment_from, r.segment_to, r.ref || 'waterval');
-}
-
-function maktabDayPrefill(type, e){
-  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v == null ? '' : v; };
-  if(type === 'sabaq'){ set('mk_sabaq_from', e.sabaq_from); set('mk_sabaq_to', e.sabaq_to); }
-  if(type === 'sabaqDhor'){ set('mk_sd_zone', e.zone); set('mk_sd_from_surah', e.from_surah); set('mk_sd_from_ayah', e.from_ayah); set('mk_sd_to_surah', e.to_surah); set('mk_sd_to_ayah', e.to_ayah); set('mk_sd_mistakes', e.mistakes); }
-  if(type === 'dhor'){ set('mk_dhor_from', e.segment_from); set('mk_dhor_to', e.segment_to); set('mk_dhor_mistakes', e.mistakes); const sel = document.getElementById('mk_dhor_ref'); if(sel && e.ref) sel.value = e.ref; }
-  if(e.teacher_feedback != null){ set(({ sabaq: 'mk_sabaq', sabaqDhor: 'mk_sd', dhor: 'mk_dhor' })[type] + '_tnote', e.teacher_feedback); }
-  if(e.teacher_feedback_visibility){
-    const radio = document.querySelector(`input[name="${({ sabaq: 'mk_sabaq', sabaqDhor: 'mk_sd', dhor: 'mk_dhor' })[type]}_vis"][value="${e.teacher_feedback_visibility}"]`);
-    if(radio) radio.checked = true;
-  }
-}
-
-function maktabDayReadPayload(type){
-  const val = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
-  const num = (id) => { const v = val(id); return v === '' ? null : Number(v); };
-  const host = document.getElementById('maktabDayRail');
-  if(type === 'sabaq'){
-    return {
-      sabaq_from: val('mk_sabaq_from') || null, sabaq_to: val('mk_sabaq_to') || null,
-      // the read-only student note freezes into the row exactly as displayed
-      student_comment: (host.dataset.sabaqStudentNote || '') || null, student_comment_private: false,
-      teacher_feedback: val('mk_sabaq_tnote') || null, teacher_feedback_visibility: maktabVisibilityValue('mk_sabaq'),
-    };
-  }
-  if(type === 'sabaqDhor'){
-    return {
-      zone: val('mk_sd_zone') || null,
-      from_surah: num('mk_sd_from_surah'), from_ayah: num('mk_sd_from_ayah'),
-      to_surah: num('mk_sd_to_surah'), to_ayah: num('mk_sd_to_ayah'),
-      mistakes: num('mk_sd_mistakes'),
-      teacher_feedback: val('mk_sd_tnote') || null, teacher_feedback_visibility: maktabVisibilityValue('mk_sd'),
-    };
-  }
-  return {
-    segment_from: num('mk_dhor_from'), segment_to: num('mk_dhor_to'),
-    ref: val('mk_dhor_ref') || 'waterval', mistakes: num('mk_dhor_mistakes'),
-    teacher_feedback: val('mk_dhor_tnote') || null, teacher_feedback_visibility: maktabVisibilityValue('mk_dhor'),
-  };
-}
-
-async function maktabDaySave(type, stu, date){
-  const client = { sabaq: apiMaktabSabaq, sabaqDhor: apiMaktabSabaqDhor, dhor: apiMaktabDhor }[type];
-  const payload = maktabDayReadPayload(type);
-  const editingId = maktabDayEditing[type];
-  try{
-    if(editingId){
-      await client.update(editingId, payload);
-    } else {
-      const res = await client.save(Object.assign({ student_id: stu.id, date }, payload));
-      if(res && res.isDuplicate && !res.id){
-        if(confirm('An identical entry already exists for this day. Save anyway?')){
-          await client.save(Object.assign({ student_id: stu.id, date, force: true }, payload));
-        }
-      }
+// The student name + haidh toggle row, painted into each of the three
+// shared cards. Hidden entirely in PJ mode.
+function maktabPaintNameRows(marked){
+  ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
+    const row = document.getElementById('maktabNameRow_' + type);
+    if(!row) return;
+    if(!logCtxIsMaktab()){ row.hidden = true; row.innerHTML = ''; return; }
+    row.hidden = false;
+    row.innerHTML = '';
+    const name = document.createElement('span');
+    name.className = 'maktab-name-text';
+    name.textContent = logCtxStudentName();
+    row.appendChild(name);
+    if(logCtxTrackHaidh()){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'maktab-haidh-check maktab-name-haidh' + (marked ? ' marked' : '');
+      btn.setAttribute('data-haidh-toggle', '');
+      btn.setAttribute('aria-pressed', marked ? 'true' : 'false');
+      btn.setAttribute('aria-label', (marked ? 'Clear haidh mark for ' : 'Mark haidh for ') + logCtxStudentName());
+      btn.innerHTML = iconHtml('haidh');
+      btn.addEventListener('click', () =>
+        maktabToggleHaidh(logCtxStudentId(), logCtxDate(), marked, () => openMaktabDay(maktabDayStudent, maktabDayDate)));
+      row.appendChild(btn);
     }
-  } catch(err){
-    alert('Could not save: ' + (err && err.message ? err.message : 'unknown error'));
-    return;
-  }
-  renderMaktabDayScreen(null);
+  });
+}
+
+// The one agreed PJ->maktab amendment: after the PJ's own prepop has run
+// off maktab history, a student's PJ sabaq frontier may EXTEND sabaq_to
+// (never sabaq_from, never shrink it). Applied as a post-step so the PJ's
+// prepop logic itself stays untouched.
+async function maktabExtendSabaqToFromPJ(){
+  const toAyahEl = document.getElementById('sabaq_to_ayah');
+  const toSurahEl = document.getElementById('sabaq_to_surah');
+  if(!toAyahEl || !toSurahEl) return; // no prepop rendered -- nothing to extend
+  let pjRows = [];
+  try{ pjRows = await apiGetPJLogsFor('/sabaq', logCtxStudentId()); } catch(e){ pjRows = []; }
+  if(!Array.isArray(pjRows) || !pjRows.length) return; // PJ optional -- empty is the normal case
+  const ref = typeof sabaqRef !== 'undefined' ? sabaqRef : 'waterval';
+  const pjFrontier = computeActualSabaqFrontier(pjRows, ref);
+  if(!pjFrontier) return;
+  const curSurah = Number(toSurahEl.value);
+  const curAyah = Number(toAyahEl.value);
+  if(!curSurah || !curAyah) return;
+  const juz = getJuzForPosition(curSurah, curAyah, ref);
+  const cmp = compareVerseKey(pjFrontier.surah, pjFrontier.ayah, curSurah, curAyah);
+  const further = juz === 30 ? cmp < 0 : cmp > 0;
+  if(!further) return; // PJ behind the maktab changes nothing (only-increase)
+  toSurahEl.value = pjFrontier.surah;
+  toAyahEl.value = pjFrontier.ayah;
+}
+
+// Entry point from the summary's row tap.
+async function openMaktabDay(student, date){
+  maktabDayStudent = student;
+  maktabDayDate = date || maktabTodayISO();
+  setMaktabLogContext(student, maktabDayDate);
+
+  // The third permitted PJ input: the student's own non-private note for
+  // this day, per type. Fetched BEFORE the cards render, because
+  // renderCommentBlock runs during showScreen. Private notes arrive
+  // already nulled by the worker's applyPrivacy -- nothing to filter
+  // here. PJ use is optional: empty is the normal case, never an error.
+  const pjNoteFor = (rows) => {
+    const r = (Array.isArray(rows) ? rows : []).find(x => x.date === maktabDayDate && x.student_comment);
+    return r ? r.student_comment : '';
+  };
+  const grab = (path) => apiGetPJLogsFor(path, student.id).catch(() => []);
+  const [pjS, pjSD, pjD] = await Promise.all([grab('/sabaq'), grab('/sabaq-dhor'), grab('/dhor')]);
+  setLogCtxPjNotes({ sabaq: pjNoteFor(pjS), sabaqDhor: pjNoteFor(pjSD), dhor: pjNoteFor(pjD) });
+
+  await showScreen('logDetail', 'sabaq');
+
+  // date: every card's own date control, set to the day being logged
+  ['sabaq_date', 'sabaqDhor_date', 'dhor_date'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = maktabDayDate; // setter-intercepted by customDate.js -- pill follows
+  });
+
+  let attendance = [];
+  try{ attendance = await apiGetAttendanceFor(student.id); } catch(e){ attendance = []; }
+  const onDate = (Array.isArray(attendance) ? attendance : []).find(r => r.date === maktabDayDate);
+  maktabPaintNameRows(!!(onDate && (onDate.status === 'haidh' || onDate.status === 'predicted-haidh')));
+
+  await maktabExtendSabaqToFromPJ();
+}
+
+// Leaving the shared screen MUST drop the context and repaint, or the
+// next PJ visit inherits maktab state (see logContext.js's header).
+function exitMaktabDay(){
+  if(!logCtxIsMaktab()) return;
+  clearLogContext();
+  maktabDayStudent = null;
+  maktabDayDate = null;
+  maktabPaintNameRows(false);
 }

@@ -23,7 +23,16 @@
 // saves anyway.
 // ============================================================
 
+// V3.64.0 (maktab): in MAKTAB mode this same block renders the teacher's
+// side instead of the student's -- teacher note ABOVE, editable, with the
+// three small visibility radios (Public/Teachers/Private, Teachers
+// default); the student's note BELOW, read-only, and only when there IS
+// one (it flowed from their PJ and is not the teacher's to edit -- it
+// freezes into the maktab row on save exactly as displayed). Everything
+// else about the card is the PJ's, unchanged. All confirmed in chat
+// 2026-08-16.
 function renderCommentBlock(containerId, existingEntry){
+  if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()) return renderMaktabCommentBlock(containerId, existingEntry);
   const el = document.getElementById(containerId);
   const feedback = existingEntry && existingEntry.teacher_feedback;
   const isPrivate = existingEntry ? !!existingEntry.student_comment_private : true;
@@ -40,8 +49,45 @@ function renderCommentBlock(containerId, existingEntry){
   `;
 }
 
+function esc(v){ const d = document.createElement('span'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
+
+function renderMaktabCommentBlock(containerId, existingEntry){
+  const el = document.getElementById(containerId);
+  const vis = (existingEntry && existingEntry.teacher_feedback_visibility) || 'teachers_only';
+  const teacherNote = (existingEntry && existingEntry.teacher_feedback) || '';
+  // The student's note, read-only. Either already frozen onto a saved
+  // maktab row, or -- for a new entry -- the student's own non-private
+  // PJ note for this day, the third permitted PJ input.
+  // V3.64.1 fix: this used to read el.dataset.pjNote, which NOTHING ever
+  // set, so the note silently never appeared. The fetch had existed in
+  // V3.63.0 and was dropped in the rewrite, leaving the read dangling.
+  const type = { sabaqCommentBlock: 'sabaq', sabaqDhorCommentBlock: 'sabaqDhor', dhorCommentBlock: 'dhor' }[containerId];
+  const pjNote = (typeof logCtxPjNote === 'function' && type) ? logCtxPjNote(type) : '';
+  const studentNote = (existingEntry && existingEntry.student_comment) || pjNote || '';
+  const opt = (value, label) =>
+    `<label class="mk-vis-opt"><input type="radio" name="${containerId}_vis" value="${value}"${vis === value ? ' checked' : ''}><span>${label}</span></label>`;
+  el.innerHTML = `
+    <div class="mk-vis-row" role="radiogroup" aria-label="Teacher note visibility">
+      ${opt('all', 'Public')}${opt('teachers_only', 'Teachers')}${opt('private', 'Private')}
+    </div>
+    <label>Teacher note</label>
+    <textarea class="cb-teacher-note" rows="2">${esc(teacherNote)}</textarea>
+    ${studentNote ? `<div class="mk-student-note"><span class="mk-student-note-label">Student note</span><div class="mk-student-note-text">${esc(studentNote)}</div></div>` : ''}
+  `;
+}
+
 function readCommentBlock(containerId){
   const el = document.getElementById(containerId);
+  if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
+    const noteEl = el.querySelector('.mk-student-note-text');
+    const checked = el.querySelector(`input[name="${containerId}_vis"]:checked`);
+    return {
+      teacher_feedback: el.querySelector('.cb-teacher-note').value || null,
+      teacher_feedback_visibility: checked ? checked.value : 'teachers_only',
+      // frozen exactly as displayed; absent when there was nothing to show
+      student_comment: noteEl ? noteEl.textContent : null,
+    };
+  }
   return {
     student_comment: el.querySelector('.cb-comment').value || null,
     student_comment_private: el.querySelector('.cb-private-checkbox').checked
