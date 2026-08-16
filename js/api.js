@@ -208,3 +208,27 @@ function apiGetMaktabSabaqDhor(studentId){
 function apiGetMaktabDhor(studentId){
   return apiFetch('/maktab/dhor' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
 }
+
+// ---------- maktab write path + prepop fetches (V3.60.0, delivery (e2)) ----------
+const apiMaktabSabaq = makeLogClient('/maktab/sabaq');
+const apiMaktabSabaqDhor = makeLogClient('/maktab/sabaq-dhor');
+const apiMaktabDhor = makeLogClient('/maktab/dhor');
+function apiMaktabDhorDefault(studentId){
+  return apiFetch('/maktab/dhor-default-entry?student_id=' + encodeURIComponent(studentId));
+}
+// Teacher-side reads of a STUDENT's PJ for prepop: the PJ endpoints have
+// allowed teacher+ reads with ?student_id= all along (applyPrivacy nulls
+// anything private before it leaves the worker), so these are just the
+// param'd variants the PJ's own clients never needed.
+function apiGetPJLogsFor(path, studentId){
+  return apiFetch(path + '?student_id=' + encodeURIComponent(studentId));
+}
+function apiGetAttendanceFor(studentId){
+  return apiFetch('/attendance?student_id=' + encodeURIComponent(studentId));
+}
+// Re-activates the parked POST /attendance (route + handler have been live
+// and teacher-gated since V3.40.2 removed the old caller) for teacher
+// haidh entry — confirmed in chat, delivery (e2).
+function apiSetAttendanceFor(studentId, date, status){
+  return apiFetch('/attendance', { method: 'POST', body: JSON.stringify({ student_id: studentId, date, status }) });
+}

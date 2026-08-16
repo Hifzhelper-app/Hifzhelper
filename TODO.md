@@ -259,8 +259,50 @@ building" + zip:**
   worth landing and confirming before (c)–(f) start. (a) and (b)
   are both DONE; (c)'s migration file is delivered (RUN IT before
   deploying (d)); (d) is DONE; (e1) — read paths — is DONE
-  (V3.59.0). NEXT: (e2), the teacher day view + prepop + write
-  path, spec already written; then (f).
+  (V3.59.0, + the V3.59.1 shape fix); (e2) — day view + prepop +
+  write path — is DONE (V3.60.0). NEXT AND LAST: (f), derived
+  attendance (haidh propagation, thereafter-absent, ≥N env-var
+  rule, 30-day flag).
+
+## Done — V3.59.1 (2026-08-16): (e1) response-shape crash fix — built to the spec below, shipped inside the V3.60.0 zip
+
+Reported by console screenshot: maktab summary stuck on "Loading…"
+with `TypeError: undefined is not an object (evaluating 'data.sabaq')`.
+Root cause traced, mine, in (e1)'s two new frontend files: the worker's
+`respond()` UNWRAPS (`json(result.data)`) — the response body IS the
+payload, no `{data:...}` envelope on the wire (the V3.40.3
+apiGetAttendance fix note documents this exact class). maktabSummary.js
+took `.data` off the payload (→ undefined → crash past the try/catch);
+maktabJournal.js took `.data` off arrays (→ silently `[]` → "No maktab
+entries yet" even with entries — wrong quietly, no crash).
+
+Why the 22-check harness missed it: the API stubs ENCODED the same
+wrong assumption (resolving `{data:{...}}`), so frontend and stub
+agreed with each other and both disagreed with the real worker; the
+worker-side checks called handlers directly, before respond() unwraps.
+Harness lesson, applied in the fix: stubs must mirror the WIRE shape.
+
+**Fix:**
+- js/maktabSummary.js — `data = await apiMaktabSummary(today)` (no
+  `.data`), plus a defensive shape guard (`!data || !Array.isArray(
+  data.students)` → the error message, never a throw past the catch).
+- js/maktabJournal.js — the three fetches resolve directly to arrays;
+  drop `.data`, guard `Array.isArray`.
+- verify_e1.mjs — stubs corrected to resolve the wire shape; a new
+  check that a malformed/error-shaped response renders the error row
+  rather than throwing (the exact reported failure, as a regression
+  test).
+- index.html/js/sw.js — version bump only.
+Frontend-only; no worker change (respond() is correct and consistent
+with every existing endpoint — the new code conforms to it, not the
+other way around).
+
+**Built + verified (shipped with V3.60.0, one zip/one deploy —
+confirmed in chat: "build the V3.59.1 fix and e2"):** both files
+fixed exactly as spec'd (payload used directly, Array.isArray shape
+guards); verify_e1's stubs corrected to the wire shape and the exact
+reported failure added as a permanent regression check (error-shaped
+response → error row rendered, nothing thrown) — 22/22.
 
 ## Maktab delivery (e) — SPLIT CONFIRMED and (e1) built. (e1): DONE — V3.59.0, 2026-08-15. (e2): OPEN, spec below stands, awaiting "start building"
 
@@ -288,7 +330,54 @@ green (176). Not harness-checkable, same as every layout round:
 how the summary grid actually reads on a phone — screenshot round
 expected.
 
-## Open — Maktab delivery (e2): teacher day view + prepop + write path — spec below (within the original (e) spec), awaiting "start building" 
+## Done — V3.60.0 (2026-08-16): Maktab delivery (e2) — teacher day view + prepop + write path — built to the (e) spec below + the fifth/sixth/seventh-round design additions
+
+**Built:** js/maktabDay.js (new) replaces (e1)'s placeholder — the
+student's name above THREE cards (no Tadabbur card; a PUBLIC tadabbur
+shows as a read-only strip instead), each prepopulated and saving
+through the (d) endpoints. Prepop per the pinned rules: sabaq from
+the MAKTAB frontier via the PJ's own pure functions, with the one
+agreed PJ amendment (PJ sabaq frontier may only ever EXTEND sabaq_to
+— proven in the harness including the juz'-30 descending-direction
+case, where the first test expectation was itself wrong and the code
+right); sabaq-dhor carries the last maktab zone, positions manual;
+dhor via the new GET /maktab/dhor-default-entry — computeDefault-
+DhorEntry gained { table, includePlans } opts (maktab_dhor_log, no
+plans), PJ callers proven byte-for-byte unchanged including the
+plans-win path. PJ note (non-private, today, same type) prepopulates
+the student-note field; empty PJ proven a first-class NORMAL case
+(renders clean, cold-start defaults, no banner/strip/note). Teacher
+haidh entry on BOTH surfaces (day-view button + summary-row control —
+the row control stops propagation inside the whole-row tap target,
+the one deliberate exception to the no-nested-controls rule), both
+through one shared flow: re-activated POST /attendance, min-gap
+guard against HAIDH_GAP_OFFICIAL (reused from haidhRules.js, not
+re-encoded) with the EXACT confirmed confirm() wording — OK→haidh,
+Cancel→absent, no prompt at ≥15 days. Summary now also shows "Haidh"
+in a no-log row (PJ rule: any log cancels the display) via
+attendance rows riding the summary payload, and the roster carries
+mushaf (the day view needs the STUDENT's ref; /profile is own-only
+by design, so the teacher-gated roster is the carrier — one column,
+still no whatsapp/pin). Field style is plain inputs, deliberately
+NOT the PJ's verse-ref pickers (deeply coupled to sabaqPage/dhorPage
+state — threading a second consumer through them is the exact
+mode-flag risk the (e) spec said to avoid; picker polish is a later
+item). Edit/delete of today's existing entries inline on each card;
+duplicate flow surfaces the (d) confirm with force on OK.
+
+**Verified:** 30/30 e2 (worker variant + PJ regression; the sabaq
+extension rule across maktab-only/PJ-further/PJ-behind/juz'30/cold-
+start/deliberate-blank; haidh gap math; full-PJ and empty-PJ day
+renders; save payload assembly; the haidh flow's three branches with
+the exact wording asserted) + the corrected 22 e1 + 176 across every
+prior harness — 228 this round.
+
+**NOT in this build, still (f):** haidh propagation across
+subsequent maktab days, thereafter-absent, the ≥N maktab-day rule,
+and the 30-day attention flag.
+
+Original (e) spec follows (the split's (e1)/(e2) scope lines within
+it are as built): 
 
 The largest of the six. MAKTAB DEPLOYMENT ONLY, like everything since
 V3.56.0. All UI decisions below confirmed in chat 2026-08-15.

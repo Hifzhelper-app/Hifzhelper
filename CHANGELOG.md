@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.60.0 — Maktab delivery (e2): teacher day view, prepop, write path (+ the V3.59.1 fix) (2026-08-16)
+
+**Files touched:** `worker/src/maktabLog.js`, `worker/src/dhorSchedule.js`, `worker/src/index.js`, `js/api.js`, `js/maktabDay.js` (new), `js/maktabSummary.js`, `js/maktabJournal.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend; deploy worker first. One zip carrying both V3.59.1 (the fix) and V3.60.0 (e2), confirmed in chat.**
+
+**V3.59.1 first:** the summary screen crashed ("Loading…" stuck, `TypeError` on `data.sabaq`) because the V3.59.0 frontend assumed a `{data:...}` envelope that the worker's `respond()` unwraps — the body IS the payload. Both e1 screens fixed and shape-guarded (a malformed response now renders the error row); the Maktab Journal had the same bug in quieter form, silently showing "No maktab entries yet". The harness stubs had encoded the same wrong assumption — corrected to the wire shape, with the reported crash kept as a permanent regression check.
+
+**e2:** tapping a summary row now opens the real day view — the student's name above three prepopulated cards. Sabaq prepops from the maktab's own frontier (the PJ's pure functions reused), with the one agreed PJ amendment: the student's PJ sabaq may only ever extend `sabaq_to`, proven including the juz'-30 descending-direction case. Sabaq Dhor carries the last maktab zone; Dhor prepops via a new `GET /maktab/dhor-default-entry` — `computeDefaultDhorEntry` gained `{table, includePlans}` options (maktab history, no plans) with PJ callers proven unchanged. A non-private PJ note for today prepopulates the student-note field; a public tadabbur shows as a read-only strip; an empty PJ is a first-class normal case, proven to render clean. Teacher haidh entry lands on both agreed surfaces — a day-view button and a summary-row control — through one shared flow: the re-activated `POST /attendance`, with the 15-day min-gap guard (from `haidhRules.js`) and the exact confirmed popup wording; OK marks haidh, Cancel marks absent. The summary also now shows "Haidh" in a no-log row and the roster carries `mushaf` for the day view's ref (the profile endpoint is own-only by design). Entry fields are plain inputs by deliberate choice — the PJ's verse-ref pickers are coupled to PJ page state, and threading a second consumer through them is the mode-flag risk the spec ruled out.
+
+Verified 30/30 (e2) + 22 (corrected e1) + 176 regression = 228: prepop across six sabaq scenarios, both PJ-richness extremes of the day view, the haidh flow's three branches with the wording asserted verbatim, save payload assembly, and the worker variant with the PJ's plans-win path re-proven.
+
+Still (f), the last delivery: haidh propagation across maktab days, thereafter-absent, the ≥N maktab-day rule, and the 30-day attention flag.
+
+---
+
 ## V3.59.0 — Maktab delivery (e1): summary screen, student Maktab Journal, read paths (2026-08-15)
 
 **Files touched:** `worker/src/maktabLog.js`, `worker/src/logHelpers.js`, `worker/src/index.js`, `js/api.js`, `js/auth.js`, `js/app.js`, `js/maktabSummary.js` (new), `js/maktabJournal.js` (new), `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend. Deploy worker first (pure addition — one new GET endpoint, one export); the frontend calls it on the new screens. Requires migration 0019 already run.**

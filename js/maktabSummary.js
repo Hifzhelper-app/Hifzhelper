@@ -44,10 +44,20 @@ async function renderMaktabSummaryScreen(){
   dateEl.textContent = formatDateCell ? formatDateCell(today).replace(/<[^>]*>/g, ' ').trim() : today;
   host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
 
+  // V3.59.1: respond() UNWRAPS on the worker (json(result.data)) -- the
+  // response body IS the payload, there is no {data:...} envelope on the
+  // wire (the V3.40.3 apiGetAttendance note documents this same class).
+  // The V3.59.0 first cut took .data off the payload -> undefined ->
+  // TypeError past the catch, "Loading..." stuck forever (reported by
+  // console screenshot). Shape-guarded now so ANY malformed response
+  // renders the error row instead of throwing.
   let data;
   try {
-    data = (await apiMaktabSummary(today)).data;
+    data = await apiMaktabSummary(today);
   } catch (e) {
+    data = null;
+  }
+  if (!data || !Array.isArray(data.students)) {
     host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Could not load the maktab summary.</td></tr>';
     return;
   }
@@ -59,6 +69,12 @@ async function renderMaktabSummaryScreen(){
   (data.sabaq_dhor || []).forEach(r => (byStudent.sabaqDhor[r.student_id] = byStudent.sabaqDhor[r.student_id] || []).push(r));
   (data.dhor || []).forEach(r => (byStudent.dhor[r.student_id] = byStudent.dhor[r.student_id] || []).push(r));
 
+  // V3.60.0 ((e2)): today's haidh marks ride the summary payload —
+  // shown in the Sabaq cell ONLY when the student has no logs at all
+  // (the PJ journal's own rule: any log cancels the haidh display).
+  const haidhByStudent = {};
+  (data.attendance || []).forEach(r => { haidhByStudent[r.student_id] = r.status; });
+
   host.innerHTML = '';
   (data.students || []).forEach(stu => {
     const tr = document.createElement('tr');
@@ -66,15 +82,36 @@ async function renderMaktabSummaryScreen(){
     const nameTd = document.createElement('td');
     nameTd.className = 'cell-date maktab-student-name';
     nameTd.textContent = stu.name;
+    // V3.60.0 ((e2), confirmed in chat: haidh entry from BOTH surfaces):
+    // a small per-row control. Nested inside the whole-row tap target,
+    // so it stops propagation — the one deliberate exception to the
+    // no-nested-controls rule the badges follow, because this control
+    // is an agreed requirement, not decoration.
+    const haidhBtn = document.createElement('button');
+    haidhBtn.type = 'button';
+    haidhBtn.className = 'maktab-row-haidh-btn';
+    haidhBtn.textContent = 'H';
+    haidhBtn.title = 'Mark haidh';
+    haidhBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      maktabMarkHaidhFlow(stu.id, () => renderMaktabSummaryScreen());
+    });
+    nameTd.appendChild(haidhBtn);
     tr.appendChild(nameTd);
+    const hasAnyLog = ['sabaq', 'sabaqDhor', 'dhor'].some(t => (byStudent[t][stu.id] || []).length);
     ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
       const td = document.createElement('td');
       td.className = 'journal-cell';
-      td.innerHTML = maktabCellHtml(type, byStudent[type][stu.id]);
+      if(type === 'sabaq' && !hasAnyLog && haidhByStudent[stu.id]){
+        td.className = 'journal-cell journal-cell-haidh';
+        td.textContent = 'Haidh';
+      } else {
+        td.innerHTML = maktabCellHtml(type, byStudent[type][stu.id]);
+      }
       tr.appendChild(td);
     });
     // whole row = one tap target (confirmed in chat)
-    tr.addEventListener('click', () => showScreen('maktabDay', { id: stu.id, name: stu.name }));
+    tr.addEventListener('click', () => showScreen('maktabDay', { id: stu.id, name: stu.name, mushaf: stu.mushaf || null }));
     host.appendChild(tr);
   });
   if (!(data.students || []).length) {
@@ -82,12 +119,3 @@ async function renderMaktabSummaryScreen(){
   }
 }
 
-// (e1) placeholder for the day view -- (e2) replaces this with the real
-// 3-card entry screen. Kept minimal on purpose: name + explanation, so
-// the row-tap navigation is real and testable now.
-function renderMaktabDayScreen(param){
-  const el = document.getElementById('maktabDayContent');
-  const name = param && param.name ? param.name : 'Student';
-  el.innerHTML = '<h2 class="maktab-day-name"></h2><p class="maktab-day-placeholder">Log entry for this student is coming in the next update. Their saved entries for today already show on the Maktab summary.</p>';
-  el.querySelector('.maktab-day-name').textContent = name;
-}
