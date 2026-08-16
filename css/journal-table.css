@@ -236,3 +236,23 @@
   .journal-table td { padding: var(--space-md); }
   .journal-header-cell { padding: 13px var(--space-md); }
 }
+
+/* ============================================================
+   Maktab summary + Maktab Journal (V3.59.0, delivery (e1)).
+   Deliberately appended to THIS file, not a new css/maktab.css:
+   both screens are the journal table pattern reused wholesale --
+   these few rules are the entire divergence, and keeping them next
+   to the classes they extend beats a one-rule file. Maktab
+   deployment only, like everything since V3.56.0.
+   ============================================================ */
+.maktab-summary-row { cursor: pointer; }
+.maktab-summary-row:active { background: rgba(130, 150, 114, 0.12); }
+.maktab-student-name { font-weight: 600; }
+.maktab-summary-datebar {
+  padding: 4px 12px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted, #8e8e93);
+}
+.maktab-day-name { margin: 8px 0 4px; }
+.maktab-day-placeholder { color: var(--muted, #8e8e93); }

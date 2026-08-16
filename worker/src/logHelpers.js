@@ -220,4 +220,4 @@ async function linkPlanIfProvided(env, planId, studentId, logId) {
   ).bind(logId, now, planId, studentId).run();
 }
 
-export { isDuplicate, insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided };
+export { isDuplicate, insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided, applyPrivacy };

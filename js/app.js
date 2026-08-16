@@ -32,7 +32,7 @@ function showWelcome(name){
 // component owns all of its own behavior) -- SCREENS_BUILT still needs the
 // entry so it doesn't fall to the "coming soon" placeholder, but showScreen()
 // below needs no dedicated branch for it, unlike every other built screen.
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, haidhDetail: true, juzTracker: true, sih: true };
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, haidhDetail: true, juzTracker: true, sih: true, maktabSummary: true, maktabDay: true, maktabJournal: true };
 const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
@@ -55,6 +55,9 @@ async function showScreen(id, param){
   if(id === 'haidhDetail') await renderHaidhDetailScreen(param);
   if(id === 'juzTracker') await renderJuzTrackerScreen();
   if(id === 'sih') await renderSihScreen();
+  if(id === 'maktabSummary') await renderMaktabSummaryScreen();
+  if(id === 'maktabDay') renderMaktabDayScreen(param);
+  if(id === 'maktabJournal') await renderMaktabJournalScreen();
   // V3.41: highlight whichever nav icon matches the screen just shown, in
   // both the dropdown and Home grid -- confirmed in chat. Runs AFTER any
   // screen-specific render above, since renderHomeScreen() rebuilds
@@ -195,7 +198,7 @@ window.addEventListener('popstate', () => {
   // (js/logDetailScreen.js) is the one exception, kept in its own file
   // since it already had its own icon/listener wiring from before, now
   // just repointed to Home instead of Journal.
-  ['journalCloseBtn', 'adminCloseBtn', 'settingsCloseBtn', 'tadabburCloseBtn', 'haidhDetailCloseBtn', 'juzTrackerCloseBtn', 'sihCloseBtn'].forEach(id => {
+  ['journalCloseBtn', 'adminCloseBtn', 'settingsCloseBtn', 'tadabburCloseBtn', 'haidhDetailCloseBtn', 'juzTrackerCloseBtn', 'sihCloseBtn', 'maktabSummaryCloseBtn', 'maktabDayCloseBtn', 'maktabJournalCloseBtn'].forEach(id => {
     const btn = document.getElementById(id);
     btn.innerHTML = iconHtml('close');
     btn.addEventListener('click', () => showScreen('home'));
