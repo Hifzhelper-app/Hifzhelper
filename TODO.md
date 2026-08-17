@@ -20,7 +20,7 @@ search the text.
 | --- | --- | --- | --- |
 | ~~1~~ | ~~**(i) Read-routing rewrite**~~ — *ARCHITECTURE* | **DONE — V3.68.0, 2026-08-17** | The only item producing wrong data **now**: teachers see their own recent entries on a student's card, logged portions grow the teacher's pool instead of the maktab's, the tracker reads the teacher's pool. 16 sites, no schema change, no dependencies, spec ready, harness already written and flips to a permanent guard when done |
 | **2** | **Shared maktab timezone** — *Flagged: Phase 2/Maktab* | One remaining decision (see the entry) | **DECIDED 2026-08-17: canonical timezone is a per-maktab setting, set on the maktab settings screen** (its 5th setting). Promoted from "future-proofing" because that premise expired — (a)–(h) have shipped, and (f)'s haidh propagation counts CALENDAR days, which is exactly what breaks across timezones. Cheapest to settle now: no real users, so nothing is yet recorded against a wrong day boundary |
-| **1** | **(j) Account separation** — *ARCHITECTURE* | Needs "start building (j)" | Unblocks (k). Largest single piece: migration + auth + the device-local switcher |
+| **1** | **(j) Account separation** — *ARCHITECTURE* | Needs "start building (j)" | **User paused testing 2026-08-17 until the maktab/PJ separation is done, so (j) is now the blocking item.** Two decisions landed with that: ADMIN-01 loses its history and becomes the maktab teacher; the PJ icons come out of the maktab. Both in the Open questions below | Unblocks (k). Largest single piece: migration + auth + the device-local switcher |
 | **4** | **updateLog writes an unvalidated date** — *Flagged* | Nothing — scheduled | **DECIDED 2026-08-17: rides along with (j)**, the next worker-touching delivery. Not its own release. Real integrity gap (a bad date is written **and** silently skips attendance sync) but unreachable through the UI — the date picker cannot produce one; it needs a direct API call. Scheduling call, not a product decision |
 | **5** | **(k) Merged journal** — *ARCHITECTURE* | (j) | Depends on (j) settling what a student account is |
 | **6** | **(l) Archive** — *ARCHITECTURE* | (k) | Depends on (k)'s union existing |
@@ -547,6 +547,206 @@ gone. (i) finishes by flipping its expected count to 0, after which any
 new unrouted call fails the suite. **Needed regardless of the rest,
 fixes live wrong-row bugs, no schema change -- do this FIRST.**
 
+### CURRENT NAV — what each role sees (V3.70.2, 2026-08-17)
+
+**This is the stable statement. It moved three times in one day through
+Claude misreading scope; read this rather than reconstructing it from the
+CHANGELOG.**
+
+| role | nav |
+| --- | --- |
+| **student** | Summary, Detail, Tadabbur, Juz Tracker (FULL tracker), Surahs in my Heart, Settings, Haidh (if `track_haidh`), **Maktab Journal** |
+| **teacher** | Juz Tracker (FREE PLAY only), Surahs in my Heart, Maktab. **Lands on the Maktab summary, not Home** (V3.71.0). |
+| **admin** | as teacher, plus Maktab Settings and Admin |
+
+Gated by `isTeachingProfile()` (teacher or admin) in `js/auth.js`; the juz
+tracker's `FREEPLAY_ONLY` uses the same function so the two cannot drift.
+
+**Why the student keeps Maktab Journal even though it reads maktab tables:**
+it is server-scoped to her own rows — `js/maktabJournal.js:28` sends no
+`student_id`, and `worker/src/maktabLog.js:138-139` defaults to `auth.id` and
+403s a non-teacher who names anyone else. `verify_nav.mjs` asserts both, so
+if that scoping ever changes the suite fails and the item must come off her
+nav.
+
+### (j) — answers so far and what they imply (2026-08-17, NOT BUILT)
+
+**ANSWERED: a teaching account NEVER gets a personal journal.** User,
+2026-08-17: *"no the teaching acc does not get a pj — user will have
+different teaching and pj acc."* A person who both teaches and does hifz
+holds TWO accounts, unlinked (as agreed 2026-08-16).
+
+**Implication 1 — (j) probably needs NO MIGRATION.** `students.role` already
+holds `student` / `teacher` / `admin`, so the type distinction exists in the
+schema today. What changes is behaviour, not shape: a teaching account has no
+journal rows and no PJ screens. That makes (j) a gating change plus a
+one-time data discard, not a schema change against live data — a materially
+smaller and safer delivery than it looked.
+
+**Implication 2 — the maktab roster must exclude teaching accounts. FOUND
+2026-08-17. CLAUDE'S TO FIX INSIDE (j) — no user decision needed; it was
+raised as a question in error.** `handleMaktabSummary`
+(`worker/src/maktabLog.js:62`) reads
+`SELECT id, name, mushaf, track_haidh FROM students WHERE active = 1` — **no
+role filter**. Today that is masked because ADMIN-01 is both. The moment
+teaching accounts exist as journal-less rows, every one of them appears in
+the maktab summary as a student expecting Sabaq/Sabaq Dhor/Dhor to be logged
+against it. The fix is small (`AND role = 'student'`) but it MUST ship inside
+(j), and the same question needs asking of any other place that enumerates
+students — the admin list is separate and admin-gated, so it is fine.
+
+**Implication 3 — RESOLVED 2026-08-17. "A teacher cannot log her own hifz"
+is a rule TEACHERS enforce, not code.** User: *"Teachers will enforce not
+code."* So (j) adds NOTHING for this. In particular it does NOT compare a
+teaching id against its derived student id, even though the `...teacher`
+suffix scheme would make that trivially possible — the capability exists and
+is deliberately not used.
+
+**The existing guard STAYS, and that is not a contradiction.**
+`handleSave` (`worker/src/maktabLog.js:152`) rejects
+`body.student_id === auth.id`. Two reasons to keep it:
+- It is an **API-level authorization check**, and the API is reachable
+  independently of the UI. "Unreachable" would be a property of the current
+  screens, not of the endpoint.
+- Under (j) it becomes unreachable through the UI anyway, because teaching
+  accounts are filtered out of the maktab roster (Implication 2), so a
+  teacher can never select her own teaching account to log against.
+
+This is a deliberate exception to process rule 3 (delete superseded code):
+an authorization guard that is currently unreachable is defence in depth,
+not dead feature code. Recorded so a future pass does not "tidy" it away on
+the strength of the social-rule decision.
+
+**PROPOSED id scheme (user, 2026-08-17): derive the teaching id from the PJ
+id.** Everyone is set up with a PJ account first; the admin then uses that
+profile to create a teaching profile, with `teacher` appended to the unique
+id (PJ `K7M2QX` → teaching `K7M2QXTEACHER`). Solves the real usability
+problem: remembering two unrelated random codes.
+*(Restored 2026-08-17 after Claude deleted this block by accident — a span
+replacement whose end anchor sat past it. Same class of error as the stale
+claims §13 exists for, caught by grep the same day.)*
+
+**"The id should only be seen by admin" (user, 2026-08-17) — ALREADY TRUE ON
+SCREEN, and cannot be made true in the data.** Verified: `js/maktabSummary.js`
+uses `stu.id` only as a lookup key (`byStudent[type][stu.id]`) and renders
+names; `js/maktabDay.js` prints no id either. No teacher sees an id anywhere
+in the maktab today. **Nothing to build for this.**
+
+**The limit, stated plainly:** the id is still IN the data the teacher's
+browser receives, because tapping a row has to tell the server which student
+to open. Removing it would need an indirection layer — per-session opaque
+handles the worker resolves back to real ids — which is real work and a new
+failure surface. So "only admin sees ids" is a screen-level truth, not a
+technical guarantee: a teacher who opens the browser's network inspector can
+still read them, and so could still derive another teacher's login id under
+the suffix scheme.
+
+**Judgement:** for a small maktab of trusted teachers that is probably
+enough — someone who inspects network traffic is a different person from one
+who glances at a screen. But because it is not a guarantee, **the PIN is what
+actually protects the teaching account**, which is why the one remaining
+question is the PIN and not the id.
+
+**Also to settle with the scheme:** is the ADMIN account derived the same way
+(a `...teacher` id carrying role `admin`), or does ADMIN-01 stay as it is? And
+a teacher who does no hifz still gets a PJ account she never uses, purely to
+derive from — harmless, consistent with "use of the PJ is optional", but
+worth naming so it is not a surprise.
+
+**ALL QUESTIONS ANSWERED — (j) IS BUILD-READY, 2026-08-17. Still needs its
+own "start building".**
+
+**SEPARATE PIN on the teaching account** (user, 2026-08-17). This falls out
+of the existing design at no cost: `pin_hash` is already "set on first login,
+not at creation" (SCHEMA.md), so a new teaching row simply starts with a NULL
+hash and the teacher sets its PIN the first time she enters it — the same
+path every student already takes. No new mechanism.
+
+**The switcher follows from that, and needs no further decision.** "Switch to
+teaching" PRE-FILLS the derived id and asks only for the PIN. That is what
+makes it not "logging in as someone else": nothing to remember and nothing to
+type but four digits. The derived id is a username; the separate PIN is the
+secret.
+
+### Student read-only maktab view + teaching landing screen — BUILT, V3.71.0, 2026-08-17
+
+*(Spec retained below as the record of what was agreed and why. The
+ambiguity noted in item 2 was resolved by reading it as the Maktab summary;
+say so if a journal-shaped teaching landing view was meant instead.)*
+
+**1. A student gets the Maktab Journal AND the maktab log details, VIEW
+ONLY.** Today she has the Maktab Journal (her own rows, grouped by date) but
+no route into the three log cards for a maktab day.
+
+**The data path already exists and is already safe** — nothing new is needed
+server-side. `handleGet` (`worker/src/maktabLog.js:138-139`) defaults to
+`auth.id` and 403s a non-teacher naming anyone else, so a student can read
+her own maktab rows and no one else's. And **every maktab WRITE is already
+teacher-gated** at `:51`, `:97` and `:146` — so even if a student reached a
+save control, the worker refuses. View-only is therefore enforced at the
+server already; what is missing is the UI.
+
+**What actually needs building is a read-only mode on the shared log cards.**
+The maktab day view works by `setMaktabLogContext(student, date)` then
+`showScreen('logDetail', 'sabaq')` (`js/maktabDay.js:141,166`) — it reuses the
+PJ's own cards, which is what keeps the two from drifting. A student entering
+the same screen must get those cards with every write control suppressed:
+Save, the confirm checkboxes, Delete, the edit pencil, the Dhor timer's save,
+and the notes inputs. `logClient(type).save(...)` is reached from
+`sabaqPage.js:368,372` and `dhorPage.js:1392,1396` among others.
+
+**Design note before this is built:** suppressing controls one by one is the
+fragile version — the same shape as the four pool writes before (i). Better
+is ONE read-only flag on the context (alongside `mode`), with the cards
+asking it once, so a control added later is covered by default rather than
+by someone remembering. Worth deciding deliberately, not drifting into.
+
+**2. The teacher/admin app OPENS ON THE MAKTAB, not Home.** Landing screen
+becomes the maktab summary for teaching profiles; students keep Home.
+
+**AMBIGUITY, flagged not assumed:** the phrasing was "opens to maktab
+journal", but Maktab Journal is the STUDENT's own-rows screen and teaching
+profiles deliberately do not have it (V3.70.2) — they have the Maktab
+summary, the multi-student view. Read here as "the maktab screen a teacher
+has", i.e. the summary. If the teaching landing screen really should be a
+journal-shaped view rather than the summary grid, say so, because that is a
+different screen and not one that exists.
+
+### (j) build plan — the whole of it, in order
+
+1. **Roster filter.** `handleMaktabSummary` (`worker/src/maktabLog.js:62`)
+   gains `AND role = 'student'`. Without it every teaching account appears in
+   the maktab summary as a student to be logged against. Check any other
+   place that enumerates students at the same time; the admin list is
+   separate and admin-gated, so it is fine.
+2. **Create-teaching-profile action**, admin-only, from an existing student
+   profile. Writes a row: `id = <pjId> + 'TEACHER'`, `role = 'teacher'`,
+   name derived from the student's, `pin_hash` NULL, `active = 1`, and NONE
+   of the journal columns populated. Guard against creating one twice, and
+   against creating one from a teaching account.
+3. **The switcher**, as above — pre-filled id, PIN prompt.
+4. **The updateLog date validation** rides along here (scheduled V3.68.0):
+   `updateLog` writes `updates.date` through the `contentFields` branch with
+   no `isValidDate` check, so a bad date is both stored AND silently skips
+   the attendance sync.
+5. **Run `worker/discard-admin-pj.sql`** — by hand, after deploy, per its own
+   header.
+
+**No migration.** `students.role` already carries the type and the derived id
+already encodes the relationship, so nothing about the schema changes. That
+was worth establishing: it makes (j) a gating-and-flow change rather than a
+structural one against live data.
+
+**Not in (j), deliberately:** any code enforcing "a teacher cannot log her
+own hifz" — teachers enforce that, not code — and any change to how ids are
+displayed, which is already correct.
+
+**RESOLVED BY CIRCUMSTANCE:** open question 2 (setup screen vs juz tracker,
+which is authoritative) — the tracker went free-play only in V3.69.0, so the
+(h) student setup screen is now the only thing marking completed ajzaa.
+**ADMIN-01 keeps its admin rights**; losing its history and losing its role
+are different things, and only the former was stated.
+
 **(j) Account separation.** Teaching/admin accounts distinct from
 student accounts; registration creates one or the other; the
 device-local switcher. Includes the migration question below.
@@ -564,19 +764,117 @@ depends on (j) having settled what a student account is; (l) depends on
 
 ### Open questions
 
-1. **Existing accounts.** ADMIN-01 currently has an admin role AND
-   journal data (including the stray haidh mark and a known-wrong
-   stored position). Under the separation it should become a teaching
-   account with no journal, and any real hifz data would move to a new
-   student account. Test Student / Umme are already students. What
-   should happen to ADMIN-01's existing journal rows -- discard
-   (dev data), or migrate to a new student account?
+1. **Existing accounts — ANSWERED 2026-08-17.** ADMIN-01 currently has an
+   admin role AND journal data (including the stray haidh mark and a
+   known-wrong stored position). **User's decision: ADMIN-01 LOSES ITS
+   HISTORY and becomes the maktab teacher.** So: discard, do not migrate.
+   Its journal rows (sabaq_log / sabaq_dhor_log / dhor_log / reflections /
+   attendance / position / baseline_selection) go, and the account becomes
+   a teaching account with no personal journal at all. Test Student / Umme
+   remain students. This also disposes of the stray haidh mark and the
+   known-wrong stored position — both were dev residue on that row.
+   NOT YET BUILT; needs its own "start building".
+3. **Remove the PJ icons from the maktab — BUILT, V3.69.0, 2026-08-17.**
+   Spec retained below as the record of what was agreed and why.
+
+   **"For now HIDE"** — the user's word. So a reversible gate, not a
+   deletion: these come back when the separation settles. That answers the
+   scope question raised earlier the same day. Both surfaces are covered by
+   one change: `visibleNavItems()` in `js/auth.js` feeds the Home tile grid
+   AND the nav dropdown, so gating there does both.
+
+   **Hide these four** (ids from `NAV_ITEMS`, `js/auth.js`):
+
+   | id | label | note |
+   | --- | --- | --- |
+   | `journal` | Summary | |
+   | `logDetail` | Detail | the one entry point to the three log cards |
+   | `reflections` | Tadabbur | |
+   | `settings` | Settings | the PJ settings screen |
+
+   **Remove the Maktab Journal icon.** `MAKTAB_JOURNAL_NAV_ITEM`
+   (`id: 'maktabJournal'`), currently appended unconditionally in
+   `visibleNavItems()`. This is the student's read-only view of her own
+   maktab logs — it has no place on a teaching account.
+
+   **Juz Tracker: free play only.** The item stays visible; only the
+   fidget mode is reachable. Today `js/juzTrackerScreen.js:177` calls
+   `setFreeplay(false)` on open ("always defaults to juz tracker") and
+   `:178` wires a button that toggles back and forth. Free-play-only means
+   opening in freeplay and retiring that toggle.
+   **TEMPORARY — user, 2026-08-17: "free play only for now, we may bring
+   it back."** So the real tracker is suspended, not retired: keep its code
+   intact and reachable behind whatever gate does the hiding, rather than
+   deleting it. This is a deliberate exception to process rule 3 (delete
+   superseded code promptly) — it is not superseded, it is parked with a
+   stated intention to return.
+   *Consequence worth knowing:* this makes the tracker's pool reads and
+   writes unreachable — the very calls (i) just routed
+   (`juzTrackerScreen.js:88`, `:132`, `:146`). The routing stays correct and
+   costs nothing, and must NOT be stripped as dead code: it is what makes
+   the tracker safe to switch back on.
+
+   **What is left visible afterwards** (admin): Home tile, Juz Tracker
+   (free play), Surahs in my Heart, Maktab, Maktab Settings, Admin. A
+   coherent teaching surface — nothing personal-journal left on it.
+
+   **Haidh: HIDE IT TOO — confirmed 2026-08-17.** `HAIDH_NAV_ITEM`
+   (`id: 'haidhDetail'`) is hidden alongside the four above.
+   **What this does NOT touch, because "hide haidh" reads wider than it
+   means:** it removes the route to the personal haidh CALENDAR screen and
+   nothing else. `trackHaidh` keeps its value; the maktab's OWN haidh
+   marking from (e2) — the yellow icon on the summary row and in the day
+   view — is untouched; and (f)'s derived attendance keeps propagating
+   haidh across maktab days on calendar-day counting exactly as built.
+   Only a PJ screen goes out of reach, which is the point.
+   *Why it needed saying:* the item is gated on `currentUser.trackHaidh`,
+   and that flag is only settable from the Settings screen this same change
+   hides — so where it is already true it would otherwise have kept showing
+   with no UI route to turn it off.
+
+   **Still NOT stated, flagged rather than assumed:** **Surahs in my Heart**
+   (`sih`) was not named. A personal colouring activity, deliberately
+   unconnected to progress — arguably a PJ icon by the same logic, arguably
+   harmless. Left visible pending a word either way.
+
 2. **Setup screen vs juz tracker.** They do the same job. Claude's
    lean, consistent with what worked for the log cards: the juz tracker
    BECOMES the maktab setup (a teacher opens a student's tracker, it
    reads and writes the maktab pool) and the (h) setup screen is
    deleted. Alternatives: keep both (then which is authoritative?), or
    leave the tracker PJ-only.
+
+## Flagged — V3.68.0 field report: Dhor logged for a student shows on the summary but not in her history (2026-08-17)
+
+**Reported by the user 2026-08-17, testing as admin:** a Dhor entry logged
+for Umme appears on the maktab summary page but does not appear in her
+history. **User has PAUSED TESTING** until the maktab/PJ separation is
+complete, so this is recorded, not chased.
+
+**Most likely explanation: V3.68.0 was not deployed yet when this was
+observed, and this is the exact symptom (i) fixes.** Before V3.68.0 the
+History rail called `apiDhor` — own-only — so it showed the LOGGED-IN
+person's entries. An admin logging for Umme would therefore see the row on
+the summary (which reads the maktab tables by date) and NOT in the rail
+(which was showing the admin's own history). This is item 4 of the V3.68.0
+manual checklist in TESTING.md, described there before the report came in.
+**First thing to check on resuming: was V3.68.0 deployed, worker first?**
+
+**If it WAS deployed, this is a new defect and needs one disambiguation
+before tracing:** which screen was "her history"? Three candidates behave
+differently — (a) the History rail on the maktab Dhor card, (b) the
+student's own Maktab Journal view, (c) Umme's personal journal, where a
+maktab entry legitimately does NOT appear yet (the merged view is delivery
+(k), not built).
+
+**Server side ruled out by inspection 2026-08-17:** `handleGet` in
+`worker/src/maktabLog.js:136` takes `student_id` from the query and passes
+it to `getLogs`, which filters only on `student_id` (plus `since` when
+supplied) and orders by date — no date window, no visibility filter that
+could hide a just-saved row. `applyPrivacy` nulls note fields for other
+requesters but never drops rows. So a correctly-addressed request returns
+the row; suspicion falls on which student id the rail asked for, i.e.
+exactly what (i) changed.
 
 ## Flagged — updateLog writes an unvalidated date straight to the row (2026-08-15, SCHEDULED 2026-08-17)
 
@@ -596,7 +894,7 @@ A malformed date cannot be produced by the frontend's date picker, so
 reaching this needs a direct API call — low real-world risk, but a genuine
 gap in what the endpoint itself guarantees.
 
-## Flagged — Home header icon removal, separate from the redesign above (2026-08-09, DECIDED 2026-08-17)
+## Done — Home header icon removal (2026-08-09, DECIDED then BUILT 2026-08-17, V3.69.0)
 
 - [ ] Remove the home icon from Home's own header row entirely — this is
   `#homeHeaderIcon`, the lavender `home` icon in Home's `card-header-row`

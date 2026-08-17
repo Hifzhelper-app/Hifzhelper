@@ -211,3 +211,42 @@ document.querySelectorAll('#logDetailDots .dot').forEach(dot => {
     if(card) rail.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
   });
 });
+
+
+// ============================================================
+// applyLogDetailReadOnly (V3.71.0)
+//
+// A student viewing her own maktab day gets the SAME shared log cards a
+// teacher gets — that reuse is what keeps the maktab from drifting away
+// from the personal journal, and it should not be abandoned just to make a
+// read-only variant.
+//
+// This is deliberately a SWEEP, not a list of known control ids. Enumerating
+// them would leave the next control anyone adds visible by default; the same
+// failure shape as the four scattered pool writes before (i). Anything that
+// can write is either a button, an input, a select or a textarea, so the
+// sweep catches controls that do not exist yet.
+//
+// KEPT deliberately: the History buttons and the entry-count badges. Those
+// are reads, and reading her own history is the entire point of the screen.
+// ============================================================
+function applyLogDetailReadOnly(on){
+  const screen = document.getElementById('screen-logDetail');
+  if(!screen) return;
+  screen.classList.toggle('log-detail-readonly', !!on);
+  screen.querySelectorAll('input, textarea, select').forEach(el => {
+    if(on){ el.setAttribute('disabled', 'disabled'); }
+    else { el.removeAttribute('disabled'); }
+  });
+  // Buttons that are reads stay live; everything else is inert. Matching on
+  // a positive allow-list of READ controls (rather than a deny-list of write
+  // ones) is what makes this safe as the screen grows.
+  screen.querySelectorAll('button').forEach(btn => {
+    const isRead = btn.classList.contains('history-btn')
+                || btn.classList.contains('entry-count-badge')
+                || btn.classList.contains('close-btn')
+                || btn.hasAttribute('data-nav');
+    if(on && !isRead){ btn.setAttribute('disabled', 'disabled'); }
+    else { btn.removeAttribute('disabled'); }
+  });
+}

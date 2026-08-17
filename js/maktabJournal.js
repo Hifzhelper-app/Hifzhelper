@@ -52,6 +52,20 @@ async function renderMaktabJournalScreen(){
       td.innerHTML = maktabCellHtml(type, days[date][type]);
       tr.appendChild(td);
     });
+    // V3.71.0: the whole row opens that maktab day's log cards, READ ONLY —
+    // same shared cards a teacher sees, same tap-the-whole-row target the
+    // maktab summary uses. The context names HER (currentUser), so the
+    // student-scoped clients ask for her own rows and the worker would 403
+    // anything else.
+    tr.classList.add('maktab-journal-row');
+    tr.addEventListener('click', async () => {
+      setMaktabLogContext(
+        { id: currentUser.id, name: currentUser.name || currentUser.id, track_haidh: currentUser.trackHaidh },
+        date,
+        { readOnly: true }
+      );
+      await showScreen('logDetail', 'sabaq');
+    });
     host.appendChild(tr);
   });
   if (!dates.length) {

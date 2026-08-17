@@ -54,10 +54,61 @@ const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 's
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
 
+// V3.70.0: the personal journal is hidden FOR TEACHING PROFILES ONLY.
+// Confirmed in chat 2026-08-17: "those items are only hidden for teacher
+// profiles. Students see everything except admin profiles." V3.69.0 hid
+// them from everyone, which was too broad — it took the personal journal
+// away from the students whose journal it is.
+//
+// This is still not the real account separation: (j) is what makes a
+// teaching account a distinct kind of account that never has a journal.
+// Until then `role` is the only discriminator available, and it happens to
+// give the right answer, because an account that teaches is exactly the one
+// that should not be offered a personal journal.
+//
+// Reversible in one place: emptying this set restores everything.
+const HIDDEN_PJ_NAV_IDS = new Set([
+  'journal',      // Summary
+  'logDetail',    // Detail — the single entry point to the three log cards
+  'reflections',  // Tadabbur
+  'settings',     // personal Settings
+  'haidhDetail',  // the personal haidh CALENDAR only — see below
+]);
+// Hiding 'haidhDetail' removes the route to the personal haidh calendar and
+// NOTHING else. track_haidh keeps its value, the maktab's own haidh marking
+// from (e2) is untouched, and (f)'s derived attendance keeps propagating
+// haidh across maktab days unchanged.
+// 'sih' (Surahs in my Heart) is deliberately NOT in this set: never named
+// in chat, and it is an activity rather than a journal screen.
+
+// Admin counts as a teacher everywhere else in this codebase
+// (isTeacherOrAbove), and does here too: ADMIN-01 is the maktab teacher.
+function isTeachingProfile(){
+  return currentUser.role === 'teacher' || currentUser.role === 'admin';
+}
+
 function visibleNavItems(){
-  let items = NAV_ITEMS.concat([MAKTAB_JOURNAL_NAV_ITEM]);
-  if(currentUser.trackHaidh) items = items.concat([HAIDH_NAV_ITEM]);
-  if(currentUser.role === 'teacher' || currentUser.role === 'admin') items = items.concat([MAKTAB_SUMMARY_NAV_ITEM]);
+  const hidePJ = isTeachingProfile();
+  let items = NAV_ITEMS.filter(item => !(hidePJ && HIDDEN_PJ_NAV_IDS.has(item.id)));
+  // The student's own Maktab Journal — SHOWN TO STUDENTS, withheld from
+  // teaching profiles (V3.70.2, user: "students only see their own rows in
+  // the maktab journal").
+  //
+  // VERIFIED 2026-08-17 rather than taken on trust, because this screen
+  // reads maktab tables and the whole point of the separation is that a
+  // student sees only herself. It is scoped at TWO layers:
+  //   - js/maktabJournal.js:28 calls apiGetMaktabSabaq/SabaqDhor/Dhor with
+  //     NO argument, so no student_id is sent;
+  //   - worker/src/maktabLog.js:138-139 defaults studentId to auth.id and
+  //     403s any non-teacher who names someone else.
+  // So it is not merely that the client asks nicely — the server refuses.
+  // That is what makes this a personal screen rather than "maktab stuff".
+  //
+  // Teaching profiles do not get it: they reach the same rows through the
+  // Maktab summary, which is the multi-student view built for them.
+  if(!hidePJ) items = items.concat([MAKTAB_JOURNAL_NAV_ITEM]);
+  if(currentUser.trackHaidh && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(HAIDH_NAV_ITEM.id))) items = items.concat([HAIDH_NAV_ITEM]);
+  if(isTeachingProfile()) items = items.concat([MAKTAB_SUMMARY_NAV_ITEM]);
   if(currentUser.role === 'admin') items = items.concat([MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM]);
   return items;
 }
@@ -131,7 +182,12 @@ function setupAuthBandAndDropdown(){
   document.getElementById('authBandToggle').addEventListener('click', toggleAuthDropdown);
   document.getElementById('homeDropdownBtn').addEventListener('click', () => {
     closeAuthDropdown();
-    showScreen('home');
+    // V3.71.0: teaching profiles open ON THE MAKTAB, not Home (stated
+    // 2026-08-17). Read as the Maktab summary — the multi-student view a
+    // teacher actually has; Maktab Journal is the student's own-rows screen
+    // and teaching profiles deliberately do not get it (V3.70.2). Students
+    // keep Home.
+    showScreen(isTeachingProfile() ? 'maktabSummary' : 'home');
   });
   document.getElementById('timerDropdownBtn').addEventListener('click', () => {
     closeAuthDropdown();

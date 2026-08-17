@@ -33,25 +33,37 @@
 // without leakage.
 // ============================================================
 
-let LOG_CTX = { mode: 'pj', studentId: null, studentName: null, date: null, trackHaidh: false };
+let LOG_CTX = { mode: 'pj', studentId: null, studentName: null, date: null, trackHaidh: false, readOnly: false };
 
 function logCtxIsMaktab(){ return LOG_CTX.mode === 'maktab'; }
 function logCtxStudentId(){ return LOG_CTX.studentId; }
 function logCtxStudentName(){ return LOG_CTX.studentName; }
 function logCtxDate(){ return LOG_CTX.date; }
 function logCtxTrackHaidh(){ return !!LOG_CTX.trackHaidh; }
+// V3.71.0. ONE flag, asked once, rather than a list of individually
+// suppressed controls — a list leaves the next control anyone adds exposed
+// by default, which is the shape the four scattered pool writes had before
+// (i). See applyLogDetailReadOnly() in js/logDetailScreen.js: it sweeps the
+// rendered screen, so a new button is covered without anyone remembering.
+function logCtxReadOnly(){ return !!LOG_CTX.readOnly; }
 
-function setMaktabLogContext(student, date){
+function setMaktabLogContext(student, date, opts){
   LOG_CTX = {
     mode: 'maktab',
     studentId: student.id,
     studentName: student.name || student.id,
     date: date || null,
     trackHaidh: !!student.track_haidh,
+    // V3.71.0: a STUDENT opening her own maktab day gets the same shared
+    // cards a teacher gets, read-only. Belt and braces — every maktab write
+    // is already teacher-gated in the worker (maktabLog.js :51/:97/:146), so
+    // this hides controls that would be refused anyway rather than being
+    // the only thing standing between her and a write.
+    readOnly: !!(opts && opts.readOnly),
   };
 }
 function clearLogContext(){
-  LOG_CTX = { mode: 'pj', studentId: null, studentName: null, date: null, trackHaidh: false };
+  LOG_CTX = { mode: 'pj', studentId: null, studentName: null, date: null, trackHaidh: false, readOnly: false };
   LOG_CTX_PJ_NOTES = { sabaq: '', sabaqDhor: '', dhor: '' }; // notes are per-student too — must not survive
   LOG_CTX_POOL = [];                                          // ...and so is the pool
 }

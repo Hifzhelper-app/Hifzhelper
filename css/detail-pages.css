@@ -1611,3 +1611,20 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* V3.71.0 — read-only maktab day for a student. The JS sweep in
+   js/logDetailScreen.js disables the controls; this is only how they LOOK.
+   Deliberately not display:none on individual controls — hiding some
+   children of the shared card grids is what scrambled auto-placement in the
+   V3.45.6-.11 saga, so the layout stays identical and the controls simply
+   read as inert. */
+.log-detail-readonly [disabled] {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
+/* The save wrap and Delete are pure write chrome — nothing to read there, so
+   they go entirely rather than sitting greyed out. Whole rows, not
+   individual grid children. */
+.log-detail-readonly .card-header-save-wrap,
+.log-detail-readonly .edit-delete-btn { display: none; }
