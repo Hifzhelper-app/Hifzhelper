@@ -49,18 +49,16 @@
 // ============================================================
 
 async function loadPosition(){
-  // V3.64.0: position is a PJ-only concept — there is no maktab position
-  // table, and this endpoint is keyed off the auth token, so calling it
-  // in maktab mode would read (and savePosition would OVERWRITE) the
-  // TEACHER's own position while they log a student. Skipped, not faked.
-  // Returns the SAME empty-object shape a student with no stored
-  // position gets (see the `if(!position) position = {}` below), not
-  // null: callers read fields off it directly (sabaqDhorPosition
-  // .activeJuz / .previousJuz / .sabaqDhorRollup), so null would throw
-  // where "no position yet" merely yields undefined. Caught by tracing
-  // those reads rather than by the guard itself.
-  if(typeof logPositionEnabled === 'function' && !logPositionEnabled()) return {};
-  const row = await apiGetPosition();
+  // V3.64.0 skipped position entirely in maktab mode: /position is
+  // auth-token-keyed, so it would have read (and savePosition would have
+  // OVERWRITTEN) the TEACHER's own row while they logged a student.
+  // V3.66.0 (delivery (h)) replaces that skip with the maktab's OWN
+  // position store, so the computation functions below — lingering rows,
+  // rollup, "already moved to Dhor" — work in the maktab unchanged.
+  // User: "sabaq dhor needs to copy the logic from the PJ".
+  const row = (typeof logCtxIsMaktab === 'function' && logCtxIsMaktab())
+    ? await apiGetMaktabPosition(logCtxStudentId())
+    : await apiGetPosition();
   let position = null;
   try{ position = row && row.position_json ? JSON.parse(row.position_json) : null; } catch(e){ position = null; }
   // V3.45.4: sabaqTo/activeJuz removed from the stored/default shape --
@@ -81,10 +79,15 @@ async function loadPosition(){
 // call site is automatically protected, rather than needing each one to
 // remember to strip these itself.
 function savePosition(position){
-  if(typeof logPositionEnabled === 'function' && !logPositionEnabled()) return Promise.resolve(null);
   const toStore = Object.assign({}, position);
   delete toStore.sabaqTo;
   delete toStore.activeJuz;
+  // V3.66.0: in maktab mode this writes the MAKTAB's position row for the
+  // student being logged — never the teacher's own (the bug the V3.64.0
+  // guard existed to prevent, now solved properly rather than skipped).
+  if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
+    return apiSaveMaktabPosition(logCtxStudentId(), JSON.stringify(toStore), null);
+  }
   return apiSavePosition(JSON.stringify(toStore), null);
 }
 

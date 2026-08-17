@@ -251,3 +251,57 @@ export const handleGetMaktabDhor = (r, e, a) => handleGet(CONFIG.dhor, r, e, a);
 export const handleSaveMaktabDhor = (r, e, a) => handleSave(CONFIG.dhor, r, e, a);
 export const handleUpdateMaktabDhor = (r, e, a) => handleUpdate(CONFIG.dhor, r, e, a);
 export const handleDeleteMaktabDhor = (r, e, a) => handleDelete(CONFIG.dhor, r, e, a);
+
+// ============================================================
+// Maktab position (V3.66.0, delivery (h)) — the maktab's own copy of the
+// PJ position blob, so the PJ's Sabaq Dhor logic (lingering rows, rollup
+// level, "already moved to Dhor") works unchanged against maktab state.
+// The Dhor POOL lives in this blob: maktab-owned, never
+// students.baseline_selection, so it can't become a fourth PJ input.
+//
+// Unlike the PJ's own handlers these are teacher-gated on BOTH sides: a
+// teacher legitimately reads and writes a student's maktab position
+// while logging them. A student may read their own (their maktab
+// journal shows what the maktab recorded) but never write it — the
+// maktab owns this, not them.
+// ============================================================
+
+const MAKTAB_POSITION_MAX = 50000; // same ceiling as the PJ blob
+
+async function handleGetMaktabPosition(request, env, auth) {
+  const url = new URL(request.url);
+  const studentId = url.searchParams.get('student_id') || auth.id;
+  if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
+  const row = await env.DB.prepare(
+    'SELECT position_json, last_dhor_json, updated_at FROM maktab_position WHERE student_id = ?'
+  ).bind(studentId).first();
+  return { data: row || { position_json: null, last_dhor_json: null, updated_at: null } };
+}
+
+async function handleSaveMaktabPosition(request, env, auth) {
+  if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
+  let body;
+  try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
+  const { student_id, position_json, last_dhor_json } = body || {};
+  // Explicit student_id required, exactly as maktab log saves demand it —
+  // never defaulting to auth.id, which would write the teacher's own row.
+  if (!student_id) return { error: 'student_id is required', status: 400 };
+  for (const [name, value] of [['position_json', position_json], ['last_dhor_json', last_dhor_json]]) {
+    if (value == null) continue;
+    if (typeof value !== 'string' || value.length > MAKTAB_POSITION_MAX) {
+      return { error: `${name} must be a JSON string under ${MAKTAB_POSITION_MAX} bytes`, status: 400 };
+    }
+    try { JSON.parse(value); } catch (e) { return { error: `${name} is not valid JSON`, status: 400 }; }
+  }
+  const now = new Date().toISOString();
+  await env.DB.prepare(
+    `INSERT INTO maktab_position (student_id, position_json, last_dhor_json, updated_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(student_id) DO UPDATE SET
+       position_json = COALESCE(excluded.position_json, maktab_position.position_json),
+       last_dhor_json = COALESCE(excluded.last_dhor_json, maktab_position.last_dhor_json),
+       updated_at = excluded.updated_at`
+  ).bind(student_id, position_json ?? null, last_dhor_json ?? null, now).run();
+  return { data: { saved: true } };
+}
+
+export { handleGetMaktabPosition, handleSaveMaktabPosition };

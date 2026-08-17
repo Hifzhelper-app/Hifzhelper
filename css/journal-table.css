@@ -311,3 +311,12 @@
 .mk-student-note { margin: 6px 0 0; font-size: 13px; }
 .mk-student-note-label { display: block; font-weight: 600; color: var(--muted, #8e8e93); margin-bottom: 2px; }
 .mk-student-note-text { background: rgba(0,0,0,0.05); border-radius: 8px; padding: 8px 10px; white-space: pre-wrap; }
+/* V3.66.0: maktab student setup */
+.maktab-setup-btn { font: inherit; font-size: 11px; margin-left: 6px; padding: 1px 7px; border-radius: 7px; border: 1px solid rgba(0,0,0,0.2); background: #fff; }
+.maktab-setup-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin: 10px 0; }
+.maktab-setup-juz { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.maktab-setup-juz.partial span { font-style: italic; color: var(--muted, #8e8e93); }
+
+/* V3.67.0: derived attendance on the summary */
+.journal-cell-absent { color: #B4534F; font-style: italic; }
+.maktab-row-flagged { background: rgba(255, 212, 0, 0.18); }

@@ -53,6 +53,7 @@ function setMaktabLogContext(student, date){
 function clearLogContext(){
   LOG_CTX = { mode: 'pj', studentId: null, studentName: null, date: null, trackHaidh: false };
   LOG_CTX_PJ_NOTES = { sabaq: '', sabaqDhor: '', dhor: '' }; // notes are per-student too — must not survive
+  LOG_CTX_POOL = [];                                          // ...and so is the pool
 }
 
 // Student-scoped maktab clients: same shape as makeLogClient's, but every
@@ -98,21 +99,40 @@ function logDhorDefaultEntry(){
 // notes/tadabbur) and everything else is maktab-set.
 //
 // Correct source, confirmed in chat: the maktab picks ONE mushaf that
-// all its students follow, stored on the (not-yet-built) admin-only
-// maktab settings screen. Until that lands the maktab uses 13-line --
-// user's explicit interim choice. Deliberately ONE named constant so
-// the settings screen replaces exactly one line, and so it can never be
-// mistaken for a per-student value.
-const MAKTAB_MUSHAF_INTERIM = '13line'; // -> maktab settings screen
+// all its students follow, stored on the admin-only maktab settings
+// screen. V3.65.0 (delivery (g)) retires V3.64.1's MAKTAB_MUSHAF_INTERIM
+// constant -- exactly the one-line replacement it was written to be --
+// and reads the real setting instead. Cached for the session: it changes
+// rarely and every card render would otherwise refetch it.
+let MAKTAB_SETTINGS_CACHE = null;
+async function loadMaktabSettings(force){
+  if(MAKTAB_SETTINGS_CACHE && !force) return MAKTAB_SETTINGS_CACHE;
+  try{
+    MAKTAB_SETTINGS_CACHE = await apiGetMaktabSettings();
+  } catch(e){
+    // A failed settings read must not break logging: fall back to the
+    // migration's own defaults rather than leaving cards unrenderable.
+    MAKTAB_SETTINGS_CACHE = { mushaf: '13line', maktab_day_min: 3, absence_flag_days: 30, name: '' };
+  }
+  return MAKTAB_SETTINGS_CACHE;
+}
+function maktabSettingsCached(){ return MAKTAB_SETTINGS_CACHE; }
+function invalidateMaktabSettings(){ MAKTAB_SETTINGS_CACHE = null; }
 
 // Dhor pool: EMPTY in maktab mode, not the teacher's. The maktab sets
 // its own pool via the coming student setup (completed ajzaa marked,
 // stored as their quarter units). Empty is the honest state meanwhile --
 // "nothing marked as moved to Dhor yet" -- where the teacher's pool
 // would have marked the wrong sections as already moved.
-function logProfile(){
+async function logProfile(){
   if(logCtxIsMaktab()){
-    return Promise.resolve({ mushaf: MAKTAB_MUSHAF_INTERIM, baseline_selection: [] });
+    const settings = await loadMaktabSettings();
+    // baseline_selection (the Dhor pool) is maktab-owned and lives in the
+    // maktab position blob from (h) onward; until then it is empty here
+    // rather than the teacher's.
+    // pool comes from the maktab position blob, loaded per student when
+    // the day view opens (V3.66.0) — never students.baseline_selection.
+    return { mushaf: settings.mushaf, baseline_selection: logCtxPool() };
   }
   return apiGetProfile();
 }
@@ -123,6 +143,11 @@ function logProfile(){
 // each card refetching. Keyed by type: a Sabaq note belongs on the Sabaq
 // card only.
 let LOG_CTX_PJ_NOTES = { sabaq: '', sabaqDhor: '', dhor: '' };
+// The maktab Dhor pool for the student currently open. Filled from the
+// maktab position blob by (h); empty until then, never the teacher's.
+let LOG_CTX_POOL = [];
+function setLogCtxPool(pool){ LOG_CTX_POOL = Array.isArray(pool) ? pool.slice() : []; }
+function logCtxPool(){ return LOG_CTX_POOL.slice(); }
 function setLogCtxPjNotes(notes){ LOG_CTX_PJ_NOTES = Object.assign({ sabaq: '', sabaqDhor: '', dhor: '' }, notes || {}); }
 function logCtxPjNote(type){ return logCtxIsMaktab() ? (LOG_CTX_PJ_NOTES[type] || '') : ''; }
 

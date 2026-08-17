@@ -137,6 +137,14 @@ Each mirrors its PJ counterpart's full current column set (the rule: ALL PJ colu
 
 Maktab attendance is NOT a table — it's derived at read time (delivery (f)): present assumed, haidh from the PJ's `attendance`, absent when no maktab log exists on a maktab day (≥N distinct students logged; N is a worker env var). A teacher's save overwrites a haidh mark — log always wins, same as the PJ.
 
+## Tables: `maktab_settings`, `maktab_position` (migrations 0020/0021 — Maktab Phase 2)
+
+`maktab_settings` — ONE row (`CHECK (id = 1)`, inserted by the migration so it always exists). Four settings for this maktab: `mushaf` (every student follows it; affects Sabaq line/page counts, Sabaq Dhor portions, and whether a half is labelled Hizb — nothing else), `maktab_day_min` (distinct students needed before a date counts as a maktab day), `absence_flag_days` (consecutive maktab days without an entry before a student is flagged), `name`. Read is teacher+, write is admin-only.
+
+`maktab_position` — mirrors `position` exactly (`student_id` PK, `position_json`, `last_dhor_json`, `updated_at`), so the PJ's own Sabaq Dhor computation reads it unchanged. The maktab Dhor **pool** lives in `position_json.baselineSelection` here, NOT in `students.baseline_selection` — it is maktab-owned, set by the student setup screen, and never read from the student's personal journal.
+
+Maktab attendance remains **derived**, with no table of its own: present/absent/haidh are computed at read time from the three maktab log tables plus the haidh rows in `attendance` (see `worker/src/maktabAttendance.js`).
+
 ## Table: `plans`
 
 A plan is an intention, not a record of something that happened — genuinely

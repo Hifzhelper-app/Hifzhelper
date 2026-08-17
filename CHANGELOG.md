@@ -7,6 +7,20 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.65.0 – V3.67.0 — Maktab settings, student setup, derived attendance: deliveries (g), (h), (f) (2026-08-16)
+
+**Files touched:** `worker/migrations/0020_maktab_settings.sql` (new), `worker/migrations/0021_maktab_position.sql` (new), `worker/src/maktabSettings.js` (new), `worker/src/maktabAttendance.js` (new), `worker/src/maktabLog.js`, `worker/src/dhorSchedule.js`, `worker/src/index.js`, `js/maktabSettings.js` (new), `js/maktabSetup.js` (new), `js/logContext.js`, `js/position.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/api.js`, `js/auth.js`, `js/app.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend. RUN MIGRATIONS 0020 AND 0021 on hifzhelper-maktab1 first (0019 too, if it hasn't been), then deploy the worker, then the frontend.**
+
+**(g) Maktab settings.** An admin-only screen holding four settings: the maktab mushaf, the number of students that makes a date a maktab day, the days-without-an-entry that flags a student, and the maktab name. The two numbers were going to be worker environment variables; here they change without a redeploy. Storage is a single row with a constraint that keeps it single, and the migration inserts it, so no code ever handles a "not configured yet" case. The gate is deliberately asymmetric: only admins see or change the screen, but every teacher's cards read the mushaf, so the read is teacher-level and the write is admin-only. This retires the interim 13-line constant introduced in V3.64.1, which was written as one line precisely so this could replace it.
+
+**(h) Maktab position and student setup.** The maktab gets its own position store, mirroring the personal journal's table, so the journal's own Sabaq Dhor logic — lingering rows, rollup level, what has already moved to Dhor — works against maktab state with no changes to the computation itself. V3.64.0 had disabled position in maktab mode because the endpoint is keyed to the login token and would have overwritten the teacher's own row; that skip is now replaced by a real store rather than worked around. The Dhor pool lives in that blob rather than on the student's row, which keeps it maktab-owned. A teacher-accessible setup screen marks a student's completed ajzaa and writes their quarter units as the pool, replacing rather than merging — with a confirmation that names the ajzaa being removed. This also fixes a server-side bug found while tracing Dhor prepop: the worker was reading the student's own pool and mushaf, so maktab Dhor was rotating through her personal journal's pool.
+
+**(f) Derived attendance.** Nothing is stored; every value is computed from the three maktab log tables and the existing haidh marks. A date is a maktab day once enough distinct students have logged; present is assumed; absent means a maktab day with no log and no haidh; and a haidh mark propagates onto later maktab days with no logs until the student's ruling maximum — counted in calendar days, so a fortnight when the maktab doesn't meet still consumes the allowance. Students who go the configured number of maktab days without an entry are flagged on the summary.
+
+Verified 352 across twelve harnesses, including the case that distinguishes calendar-day propagation from maktab-day propagation, which is the only scenario where the two rules disagree.
+
+---
+
 ## V3.64.1 — V3.64.0 audited against the three-inputs rule: two defects fixed before release (2026-08-16)
 
 **Files touched:** `js/logContext.js`, `js/maktabDay.js`, `js/commentPrivacy.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `index.html`, `js/sw.js`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Frontend-only. Folds into the V3.64.0 delivery — V3.64.0 was never uploaded.**

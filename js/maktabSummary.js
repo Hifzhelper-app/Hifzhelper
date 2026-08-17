@@ -93,6 +93,17 @@ async function renderMaktabSummaryScreen(){
   const haidhByStudent = {};
   (data.attendance || []).forEach(r => { haidhByStudent[r.student_id] = r.status; });
 
+  // V3.67.0 (delivery (f)): derived attendance — absent / haidh
+  // propagation / the attention flag. Fetched alongside, and failing
+  // softly: a summary that can still show today's entries is more useful
+  // than an error, and every value here is derived rather than recorded.
+  let derived = {};
+  let isMaktabDay = false;
+  try {
+    const att = await apiGetMaktabAttendance(date);
+    if(att && att.attendance){ derived = att.attendance; isMaktabDay = !!att.isMaktabDay; }
+  } catch(e){ derived = {}; }
+
   host.innerHTML = '';
   (data.students || []).forEach(stu => {
     const tr = document.createElement('tr');
@@ -122,21 +133,48 @@ async function renderMaktabSummaryScreen(){
 
     const nameTd = document.createElement('td');
     nameTd.className = 'cell-date maktab-student-name';
-    nameTd.textContent = stu.name;
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = stu.name;
+    nameTd.appendChild(nameSpan);
+    // V3.66.0: student setup (delivery (h)) — deliberately a small,
+    // explicit control rather than part of the row tap, since saving it
+    // REPLACES her Dhor pool; it must not be reachable by a mis-tap
+    // meant for the day view.
+    const setupBtn = document.createElement('button');
+    setupBtn.type = 'button';
+    setupBtn.className = 'maktab-setup-btn';
+    setupBtn.textContent = 'Setup';
+    setupBtn.setAttribute('aria-label', 'Student setup for ' + stu.name);
+    setupBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openMaktabStudentSetup({ id: stu.id, name: stu.name });
+    });
+    nameTd.appendChild(setupBtn);
     tr.appendChild(nameTd);
 
     const hasAnyLog = ['sabaq', 'sabaqDhor', 'dhor'].some(t => (byStudent[t][stu.id] || []).length);
     ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
       const td = document.createElement('td');
       td.className = 'journal-cell';
-      if(type === 'sabaq' && !hasAnyLog && haidhByStudent[stu.id]){
+      const d = derived[stu.id];
+      if(type === 'sabaq' && !hasAnyLog && (haidhByStudent[stu.id] || (d && d.status === 'haidh'))){
         td.className = 'journal-cell journal-cell-haidh';
+        // "Haidh" covers both an explicit mark and a propagated day —
+        // the teacher does not need to know which; both mean the same
+        // thing on the register.
         td.textContent = 'Haidh';
+      } else if(type === 'sabaq' && !hasAnyLog && d && d.status === 'absent'){
+        td.className = 'journal-cell journal-cell-absent';
+        td.textContent = 'Absent';
       } else {
         td.innerHTML = maktabCellHtml(type, byStudent[type][stu.id]);
       }
       tr.appendChild(td);
     });
+
+    // attention flag: the row is tinted when a student has gone
+    // absence_flag_days consecutive MAKTAB DAYS without an entry.
+    if(derived[stu.id] && derived[stu.id].flagged) tr.classList.add('maktab-row-flagged');
 
     // whole row = one tap target (confirmed); carries the PICKED date
     // so past-day rows open the day view for that day (confirmed).

@@ -235,3 +235,25 @@ function apiClearAttendanceFor(studentId, date){
 function apiSetAttendanceFor(studentId, date, status){
   return apiFetch('/attendance', { method: 'POST', body: JSON.stringify({ student_id: studentId, date, status }) });
 }
+
+// ---------- derived maktab attendance (V3.67.0, delivery (f)) ----------
+function apiGetMaktabAttendance(date){
+  return apiFetch('/maktab/attendance?date=' + encodeURIComponent(date));
+}
+
+// ---------- maktab position (V3.66.0, delivery (h)) ----------
+// The maktab's own position blob per student — teacher-gated both ways.
+function apiGetMaktabPosition(studentId){
+  return apiFetch('/maktab/position?student_id=' + encodeURIComponent(studentId));
+}
+function apiSaveMaktabPosition(studentId, position_json, last_dhor_json){
+  return apiFetch('/maktab/position', { method: 'POST', body: JSON.stringify({ student_id: studentId, position_json, last_dhor_json: last_dhor_json ?? null }) });
+}
+
+// ---------- maktab settings (V3.65.0, delivery (g)) ----------
+// Read is teacher+ (cards need the mushaf); write is admin-only, enforced
+// server-side by requireAdmin — the screen is admin-only too.
+function apiGetMaktabSettings(){ return apiFetch('/maktab/settings'); }
+function apiSaveMaktabSettings(fields){
+  return apiFetch('/maktab/settings', { method: 'POST', body: JSON.stringify(fields) });
+}

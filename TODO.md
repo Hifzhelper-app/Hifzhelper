@@ -253,8 +253,18 @@ building" + zip:**
       0019 is run.**
   (e) Maktab summary screen (teacher) + the student read-only view
       + prepop reusing the PJ calcs against maktab tables.
-  (f) Derived attendance (env-var N, 3-table UNION, haidh from PJ,
-      log-wins overwrite).
+  (f) Derived attendance (3-table UNION, haidh from PJ, log-wins
+      overwrite). N is NO LONGER an env var — it moved to (g)'s
+      settings screen, along with the absence-flag days.
+  PLUS two deliveries added 2026-08-16, after (e) shipped, and ordered
+  BEFORE (f) because it consumes them:
+  (g) Maktab settings — admin-only: mushaf, N, absence days, name.
+  (h) Maktab position + student setup — the maktab's own position
+      store (so Sabaq Dhor copies the PJ logic rather than running
+      without one) + the setup screen marking completed ajzaa, which
+      seeds the maktab Dhor pool. Also fixes computeDefaultDhorEntry's
+      server-side read of students.baseline_selection/mushaf.
+  ORDER: (g) -> (h) -> (f). Each has a full spec above.
   (a) and (b) touch already-live code and are correct on their own —
   worth landing and confirming before (c)–(f) start. (a) and (b)
   are both DONE; (c)'s migration file is delivered (RUN IT before
@@ -263,6 +273,236 @@ building" + zip:**
   write path — is DONE (V3.60.0). NEXT AND LAST: (f), derived
   attendance (haidh propagation, thereafter-absent, ≥N env-var
   rule, 30-day flag).
+
+## Done — V3.65.0 (2026-08-16): (g) Maktab settings — built to the spec below
+
+Admin-only screen, admin-only changes (confirmed). First of the three
+remaining maktab deliveries; ordered FIRST because (h) needs the mushaf
+and (f) needs two of its numbers.
+
+**The four settings (confirmed in chat):**
+| setting | type | notes |
+| --- | --- | --- |
+| maktab mushaf | '13line' \| '15line_madani' | ONE mushaf, every student follows it. Retires MAKTAB_MUSHAF_INTERIM in js/logContext.js — that constant exists precisely so this replaces one line. |
+| maktab day threshold (N) | integer, default 3 | a date is a maktab day when >= N DISTINCT students have any maktab log. Moves OFF the worker env var planned in the (f) design — changeable without a redeploy. |
+| absence flag days | integer, default 30 | consecutive maktab days with no log before a student is flagged for attention. Same reasoning; user called 30 "arbitrary, subject to change", which is itself the argument for a setting. |
+| maktab name | text | shown in the summary header. |
+
+**Storage — ONE row, not a key/value table.** These are four known
+settings for one maktab (one DB per maktab, per the standing
+architecture), so a settings table with a `key`/`value` pair would buy
+nothing but casting and absent-row handling at every read. Migration
+0020 creates `maktab_settings` with a CHECK constraint pinning it to a
+single row (`id INTEGER PRIMARY KEY CHECK (id = 1)`), typed columns, and
+an INSERT of the defaults so the row always exists — application code
+never needs a "no settings yet" branch, the same reasoning migration
+0018 used for haidh_ruling's NOT NULL DEFAULT.
+
+**Worker:** `GET /maktab/settings` (teacher+) and `POST
+/maktab/settings` (requireAdmin — the existing admin gate, NOT
+isTeacherOrAbove). The asymmetry is deliberate and worth stating: only
+admins SEE or change the settings screen, but every teacher's cards
+must READ the mushaf to render portions at all, so the read is
+teacher+ while the screen and the write are admin-only. Validation: mushaf against the same
+two values the students CHECK uses; both numbers integers >= 1; name
+non-empty, trimmed, length-capped.
+
+**Frontend:** its own screen, ONLY ADMINS SEE IT (confirmed
+2026-08-16) — nav item gated exactly like the existing Admin item
+(`role === 'admin'`, js/auth.js), NOT isTeacherOrAbove, since that
+helper deliberately does not govern admin-only surfaces. A teacher
+never sees the item and the POST 403s them even by hand. js/logContext.js's
+mushaf source switches from the constant to the fetched setting, cached
+per session (it changes rarely, and every card render would otherwise
+refetch it).
+
+**Verification:** single-row CHECK actually rejects a second row; the
+defaults row exists immediately after migration; teacher can GET but
+POST is admin-only (403 for a plain teacher — the one case where
+isTeacherOrAbove would be WRONG, so it is asserted); each field's
+validation; logContext returns the stored mushaf once set and no longer
+mentions the interim constant.
+
+**Built + verified: 29/29.** Migration 0020 (2 statements) + worker
+module + admin-only screen, all as spec'd. The single-row CHECK is
+proven to reject a second row; the defaults row exists the moment the
+migration runs, so no "not configured" branch exists anywhere. The
+asymmetric gate is asserted from both sides — a TEACHER can read (their
+cards need the mushaf) but gets 403 on write, and their rejected write
+is proven to have changed nothing. Frontend: settings cached per session
+(one fetch, not one per card render), invalidated on save so a change
+takes effect without a reload, and a failed read falls back to the
+migration's own defaults rather than leaving cards unrenderable.
+
+## Done — V3.66.0 (2026-08-16): (h) Maktab position + student setup — built to the spec below
+
+Two things that are really one: the maktab's own position store, and the
+screen that seeds it. Ordered after (g) because setup renders sections in
+the maktab mushaf.
+
+**Why it exists.** User: "sabaq dhor needs to copy the logic from the
+PJ". The PJ's Sabaq Dhor is entirely position-driven — `previousJuz`
+gives the lingering rows, `sabaqDhorRollup` the display granularity, and
+the pool says what has already moved to Dhor. V3.64.0 disabled position
+in maktab mode (it is auth-token-keyed; calling it would have read and
+OVERWRITTEN the TEACHER's own row), which left the card thin. The fix is
+not to reimplement the logic — it is to give that same logic a maktab
+store to read.
+
+**Also fixes a fourth-input bug found while tracing Dhor prepop
+(2026-08-16, not yet fixed anywhere):** `computeDefaultDhorEntry` reads
+`students.baseline_selection` and `students.mushaf` DIRECTLY in the
+worker. So maktab Dhor prepop currently rotates through the student's
+PJ pool in her PJ mushaf — same class as the 8 frontend profile reads
+fixed in V3.64.1, but server-side, so logProfile() did not touch it.
+Must read the maktab pool + the (g) mushaf in maktab mode.
+
+**Storage:** migration 0020/0021 `maktab_position`, mirroring `position`
+exactly (`student_id` PK, `position_json`, `last_dhor_json`,
+`updated_at`) — the same mirror-the-PJ decision the three log tables
+took, for the same reason: the PJ's own functions then read it
+unchanged. The Dhor POOL lives in this blob, NOT in
+`students.baseline_selection` — keeping it maktab-owned is what stops it
+becoming a fourth PJ input, and leaves a student's own PJ pool
+untouched.
+
+**Routing:** `loadPosition`/`savePosition` follow the context the way
+`logClient` already does — the V3.64.0 guards that currently return `{}`
+/ no-op become real maktab reads and writes. Once they do, Sabaq Dhor's
+lingering rows, rollup persistence and move-to-Dhor all work in the
+maktab with ZERO changes to position.js's computation functions. The
+half rule stays exactly as the PJ has it (verified in chat 2026-08-16:
+a lone quarter never moves alone; halves move sequentially — Second Half
+only once First Half has; a full juz' moves as one row; the pool always
+stores quarter units whatever granularity moved).
+
+**Student setup screen:** per student, marks COMPLETED AJZAA (whole juz'
+only — user: "during set up only complete ajzaa are marked as dhor, the
+system stores the 4 quarters"). Writes those quarter units into the
+maktab pool.
+
+**All three (h) questions answered 2026-08-16:**
+1. **TEACHERS can run student setup** (not admin-only — unlike
+   registration/pin reset). So: isTeacherOrAbove on both the screen and
+   the endpoint.
+2. **Setup RESETS the pool** — a plain replace, not a merge. So the
+   ticked ajzaa ARE the pool afterwards; un-ticking one removes it.
+   Because this is destructive of prior state, the build must confirm
+   before writing when a pool already exists, and the confirm should
+   name what is being replaced rather than ask a bare "are you sure".
+3. **Setup does NOT set sabaq** — the first maktab sabaq entry
+   establishes that. Nothing to build for it: sabaq prepop already
+   computes from history (V3.45.4 removed stored position.sabaqTo), so
+   an unset sabaq simply means the first entry is entered manually and
+   every later one prepopulates from it. No cold-start default is
+   written into position by setup.
+
+**Built + verified: 27/27.** Migration 0021 (mirrors the PJ position
+table, asserted column-for-column), teacher-gated /maktab/position on
+both sides, and js/maktabSetup.js. position.js's V3.64.0 SKIP is gone:
+loadPosition/savePosition now route to the maktab store, so Sabaq Dhor's
+lingering rows, rollup and move-to-Dhor work in the maktab with ZERO
+changes to the computation functions — proven by driving the real
+position.js in both modes and asserting the write lands on the STUDENT's
+maktab row, never the teacher's PJ. The server-side fourth-input bug is
+fixed and asserted: maktab Dhor prepop now uses the maktab pool and the
+(g) mushaf, an empty maktab pool yields none rather than borrowing her
+PJ pool, and the PJ's own prepop is proven unchanged alongside. Setup:
+whole ajzaa only, replace-not-merge, and the confirm NAMES the ajzaa
+being removed (asserted) rather than asking a bare "are you sure";
+cancelling writes nothing. Harness lesson recorded: a top-level `let` in
+an eval'd script is scoped to that eval, so the first draft's assignment
+created a second variable and the function still saw null — driving the
+module through its real entry point fixed it and is the better test.
+
+## Done — V3.67.0 (2026-08-16): (f) Derived attendance — built to the spec below. THE MAKTAB DELIVERY SET (a)-(h) IS NOW COMPLETE
+
+The last of the original six. Ordered LAST: it consumes (g)'s two
+numbers, and "no log on a maktab day" only means something once (h) has
+given students a starting point.
+
+**Nothing is stored.** Maktab attendance is computed at read time from
+the three maktab log tables plus the haidh marks already in
+`attendance`. No new table, no sync on edit or delete — which is why
+V3.54.0's attendance-sync work deliberately did NOT extend to the maktab
+tables.
+
+**The rules, as agreed:**
+- **Maktab day** = a date where >= N distinct students have any maktab
+  log (3-table UNION on date, COUNT DISTINCT student_id, N from (g)).
+  Dates below the threshold are not maktab days at all — nobody is
+  absent on them.
+- **Present** = the student has any maktab log that day. Assumed, never
+  written.
+- **Haidh** = a haidh/predicted-haidh row in `attendance` for that date
+  (from her PJ or a teacher's toggle — one shared store, already built).
+  A log always overrides it: (d)'s save already clears the mark, so a
+  day cannot be both.
+- **Absent** = a maktab day, no log, and not haidh.
+- **Haidh propagation:** after a haidh day, subsequent MAKTAB DAYS with
+  no logs continue as haidh until the student's ruling max is reached
+  (hanafi 10 / shafii 15, per-student since migration 0018 — reuse
+  haidhOfficialMaxDuration from shared/haidhRules.js, do NOT re-encode),
+  and are ABSENT thereafter.
+  **The max is counted in CALENDAR days, not maktab days** (corrected
+  by the user 2026-08-16; an earlier draft of this spec had it the
+  wrong way round). Haidh is a physiological duration, so it runs on
+  the calendar regardless of whether the maktab met. Concretely: the
+  allowance is measured from the haidh start date, so a maktab that
+  skips a week DOES consume it — a student marked haidh on the 1st
+  under the hanafi ruling is past her max by the 11th whether the
+  maktab met twice in between or not, and the next maktab day with no
+  log shows ABSENT. Only the DISPLAY is restricted to maktab days; the
+  clock is not.
+- **Attention flag** = no maktab log for >= (g)'s absence-days
+  consecutive MAKTAB DAYS. Surfaced on the summary row (background
+  colour was the user's suggestion, "??" — exact treatment at build
+  time).
+
+**Where it surfaces:** the summary's existing per-date payload gains a
+derived status per student, and the student's own Maktab Journal gains
+the same for its dates. One computation, both readers.
+
+**Deliberately NOT in scope:** back-writing derived values into
+`attendance` (it stays the haidh store only), and any attendance UI for
+past-date bulk editing.
+
+**Verification:** the N threshold boundary (N-1 students logged = not a
+maktab day, nobody absent; N = maktab day); present/absent/haidh
+precedence including a log on a haidh day; propagation stopping exactly
+at each ruling's max and flipping to absent; propagation counted in
+CALENDAR days — the case that proves it: a haidh start, then a gap in
+maktab days spanning past the max, and the next maktab day asserting
+ABSENT rather than continued haidh (the inverse assertion would pass
+under the wrong rule, so this case is the one that distinguishes them);
+the
+flag firing at exactly the configured count and resetting on any log;
+and a student with no maktab history at all never being marked absent
+before her setup date.
+
+**Built + verified: 23/23.** worker/src/maktabAttendance.js — nothing
+stored, everything derived, exactly as designed. The threshold is proven
+to come from the SETTING (the same data yields a different answer when
+it changes), N-1 students is not a maktab day and yields a null status
+for everyone rather than marking anyone absent, and a log beats a haidh
+mark. Propagation is CALENDAR-day counted, with the DISTINGUISHING CASE
+asserted explicitly: a haidh mark, then a fortnight where the maktab
+does not meet, then a maktab day — ABSENT, because the allowance ran on
+the calendar. A test that only checked "haidh continues then flips"
+would pass under either rule, so that case is the one that earns its
+place. Also: consecutive marks form ONE run measured from its start; the
+shafii/hanafi maxima are inclusive of the start day (first draft of the
+check was off by one — the code was right); the flag counts consecutive
+MAKTAB days and resets on any log. Surfaced on the summary as Absent /
+Haidh and a tinted row, fetched alongside and failing soft.
+
+**Suite after all three: 352 green across twelve harnesses.** Three
+pre-existing checks were updated rather than worked around, because
+(g)/(h) deliberately changed what they asserted: the interim-mushaf
+constant is retired, position no longer no-ops in maktab mode, and the
+summary's name cell now carries the Setup control. One harness stub also
+needed D1's bindless .first()/.all() form, which the worker legitimately
+uses.
 
 ## Done — V3.64.1 (2026-08-16): V3.64.0 audited against the three-inputs rule — two real defects fixed BEFORE upload
 

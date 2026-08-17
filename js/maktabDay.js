@@ -153,6 +153,16 @@ async function openMaktabDay(student, date){
   const [pjS, pjSD, pjD] = await Promise.all([grab('/sabaq'), grab('/sabaq-dhor'), grab('/dhor')]);
   setLogCtxPjNotes({ sabaq: pjNoteFor(pjS), sabaqDhor: pjNoteFor(pjSD), dhor: pjNoteFor(pjD) });
 
+  // V3.66.0: the maktab Dhor pool for this student, from the maktab
+  // position blob — loaded BEFORE the cards render, since logProfile()
+  // serves it to Sabaq Dhor and Dhor during showScreen.
+  try{
+    const pos = await apiGetMaktabPosition(student.id);
+    let blob = null;
+    try{ blob = pos && pos.position_json ? JSON.parse(pos.position_json) : null; } catch(e){ blob = null; }
+    setLogCtxPool(blob && Array.isArray(blob.baselineSelection) ? blob.baselineSelection : []);
+  } catch(e){ setLogCtxPool([]); }
+
   await showScreen('logDetail', 'sabaq');
 
   // date: every card's own date control, set to the day being logged
