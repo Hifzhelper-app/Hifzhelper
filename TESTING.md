@@ -2044,3 +2044,63 @@ anything obviously:
 
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
+
+## V3.68.0 — delivery (i): what the harnesses CANNOT check
+
+381 automated checks cover the pool-merge logic, the routing scan and the
+context round-trips. They cannot see a rendered screen or a real deploy.
+These are the things to check by hand, in this order.
+
+**Deploy order first, because there is a real window.** The frontend no
+longer writes the Dhor pool; the worker now does. Deploy the WORKER FIRST.
+If the frontend goes up first, nobody writes the pool at all and it fails
+silently — exactly the fault this delivery removes. **Immediately after
+deploying, log one Dhor and confirm the pool grew** (the next Dhor prepop
+should advance to the following portion). That one action proves the
+handover landed.
+
+**1. Hard-refresh first.** `index.html` version strings and the service
+worker cache name both went to 3.68.0. If any screen behaves oddly, confirm
+you are not on cached JS before treating it as a bug.
+
+**2. Tadabbur history — the highest regression risk in this delivery.**
+`renderRecentEntries` lost its client argument, so every caller's arguments
+shifted position, and Tadabbur is the only one passing a third
+(`showTadabburReadView`). Open Tadabbur → History → **tap a row's content
+area**. The read view must open. If the arguments were mis-ordered this is
+where it shows.
+
+**3. History rails in the personal journal (regression check).** Open Sabaq,
+Sabaq Dhor and Dhor. Each rail must list YOUR entries as before, and the
+History button must open the full list. Nothing should have changed —
+that is the point.
+
+**4. History rails in the maktab — the headline fix.** As a teacher, open a
+student's card. Each rail must show **that student's** entries, not your
+own. Before this delivery it showed yours. Check with a student whose
+history differs visibly from yours, or the test proves nothing.
+
+**5. The Dhor pool goes to the right person.** As a teacher, log a Dhor for
+a student. Then: (a) that student's Dhor prepop advances; (b) **your own**
+Dhor prepop and Juz Tracker are unchanged. Before this delivery, logging for
+a student grew YOUR pool. (b) is the assertion that matters.
+
+**6. Sabaq auto-move and Sabaq Dhor rollup.** Both write the pool through
+the new routed writer. Trigger a sabaq that auto-moves the previous juz to
+Dhor, and a Sabaq Dhor move-to-Dhor. Confirm the pool updates — in the PJ
+against your own, and in the maktab against the student's.
+
+**7. Removal still works, and stays removed.** In Hifz Setup (or maktab
+student setup) remove a juz from the pool. Log a Dhor in a DIFFERENT juz.
+The removed juz must stay removed. Removing juz is a legitimate action and
+the merge must never resurrect it — the harness asserts this, but confirm it
+end to end once.
+
+**8. Juz Tracker in maktab context.** Its profile reads and pool write are
+now routed. Worth one look: if it is reachable while a student's day view is
+open, it must show that student's pool, not yours. If navigating to it
+clears the context and it always runs in PJ mode, note that — the routing
+there is then harmless but unexercised, which is worth knowing.
+
+**Not checkable here, by design:** nothing in this delivery touches the
+schema, so there is no migration to run and no data shape to verify.
