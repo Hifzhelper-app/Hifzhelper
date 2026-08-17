@@ -7,6 +7,26 @@ standing reference docs (those aren't repeated here unless they change).
 
 ---
 
+## V3.67.2 — Verification harnesses moved into the repo (2026-08-17)
+
+**Files touched:** `tests/` (new — 13 harnesses, `run-all.mjs`, `README.md`), `TODO.md`, `CHANGELOG.md`. **No application code. Nothing to deploy, no migration.**
+
+The harnesses have always lived in the build sandbox, which is discarded at the end of each session — so 357 checks, including the routing guard the architecture entry depends on, would have been lost on the next handover. They now live in `tests/`, with every hardcoded path rewritten to resolve relative to the repo so they run wherever it is checked out.
+
+`node tests/run-all.mjs` runs all 13 and reports one total; `npm install jsdom` is the only dependency (`node:sqlite` is built into Node 22). The README explains what each harness covers, the two techniques they use (a D1-shaped stub over `node:sqlite` for worker code, jsdom over the real modules for frontend code), and the maintenance rule that has mattered most: when a delivery changes behaviour a harness asserts, update the assertion rather than working around it.
+
+`verify_routing.mjs` gets its own section, including the fact that its own first draft was broken — it skipped one-line functions and so missed `apiSaveProfile`, one of the exact sites it exists to catch, reporting 13 where the truth was 16.
+
+---
+
+## V3.67.1 — TODO.md only: architecture write-up and routing audit (2026-08-17)
+
+**Files touched:** `TODO.md`. **Documentation only.**
+
+Carries the maktab/PJ separation architecture agreed in chat — separate teaching and student accounts, the device-local account switcher, the merged-with-provenance journal, union-at-read-time plus a 60-day archive with re-sync — together with the mechanical read-routing audit and the delivery split (i)–(l). Issued separately because V3.67.0's zip was repackaged twice under the same number after its code was already uploaded; only `TODO.md` differed, and reusing a version number for changed content breaks the convention that deliveries increment.
+
+---
+
 ## V3.65.0 – V3.67.0 — Maktab settings, student setup, derived attendance: deliveries (g), (h), (f) (2026-08-16)
 
 **Files touched:** `worker/migrations/0020_maktab_settings.sql` (new), `worker/migrations/0021_maktab_position.sql` (new), `worker/src/maktabSettings.js` (new), `worker/src/maktabAttendance.js` (new), `worker/src/maktabLog.js`, `worker/src/dhorSchedule.js`, `worker/src/index.js`, `js/maktabSettings.js` (new), `js/maktabSetup.js` (new), `js/logContext.js`, `js/position.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/api.js`, `js/auth.js`, `js/app.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend. RUN MIGRATIONS 0020 AND 0021 on hifzhelper-maktab1 first (0019 too, if it hasn't been), then deploy the worker, then the frontend.**

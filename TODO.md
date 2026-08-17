@@ -274,6 +274,222 @@ building" + zip:**
   attendance (haidh propagation, thereafter-absent, ≥N env-var
   rule, 30-day flag).
 
+## ARCHITECTURE — Maktab/PJ separation and the merged journal (agreed 2026-08-16, NOTHING BUILT — deliveries (i)-(l) below, each needs its own "start building")
+
+### Why this exists
+
+One bug class has recurred FIVE times, always silently, always the same
+shape: code running in maktab mode resolving "whose data?" from the auth
+token, and so reading or writing the TEACHER's own personal journal
+while they logged a student.
+
+  1. `position` load/save (found V3.64.0, skipped; properly fixed V3.66.0)
+  2. the upcoming-plans queue (found V3.64.0, guarded off)
+  3. eight `apiGetProfile()` reads (found V3.64.1 — the teacher's mushaf
+     and Dhor pool were being used to render a student's card)
+  4. `handleDeleteAttendance` hardcoding `auth.id` (found V3.63.0 — a
+     teacher un-ticking a student's haidh would have cleared their own
+     day)
+  5. the Dhor pool WRITES (found 2026-08-16 by the user's "just like the
+     PJ, when a portion is logged as dhor it gets added to the pool" —
+     the read was routed, both writes were not)
+
+Every one was found by hand, after shipping, and each fix was a patch.
+The user's judgement, correct: patching is not working, and the right
+answer is architectural. Their proposal, adopted below, removes the
+HARM by construction (a teaching account has no journal to corrupt),
+and the read-routing rewrite + guard removes the SILENCE (a missed call
+site fails loudly instead of writing the wrong row).
+
+### The architecture, as agreed
+
+**1. Accounts are separated by role.**
+- Teaching/admin accounts and student (PJ) accounts are DIFFERENT
+  logins, deliberately NOT linked at registration.
+- Logging into the maktab you are either a student or a teacher.
+- A STUDENT has ONE identity: the same account the maktab records
+  against and the one she uses for her journal.
+- A TEACHER who also memorises gets a SECOND, unlinked student account.
+- A teaching session therefore has no personal hifz data at all. That
+  is what kills the bug class: a missed call site writes junk to an
+  account nobody reads, instead of damaging a real record.
+
+**2. Account switching — device-local, PIN always (Claude's suggestion,
+user asked for anything other than typing another username).**
+- The DEVICE remembers account IDs that have signed in on it. Never
+  PINs, never tokens-per-account.
+- "Switch account" lists them as chips; tapping pre-fills the ID and
+  asks for the 4-digit PIN.
+- PIN required EVERY time, deliberately: maktab devices get shared, and
+  a tablet that lets anyone tap into a teacher account (or a student's
+  journal) is a worse problem than four digits of friction.
+- "Forget this account" for a borrowed device. Frontend-only: no
+  schema, no endpoint, accounts stay genuinely unlinked.
+
+**3. The student's journal: merged, with provenance.**
+- A maktab student does NOT normally confirm and save the sabaq/sabaq
+  dhor/dhor she recites at the maktab — the maktab confirms it.
+- Maktab entries therefore MERGE into her journal and become part of
+  her personal record, carrying provenance (the confirming teacher).
+- Entries she creates herself stay PERSONAL — the maktab never sees
+  them (the three-inputs rule below is the only channel outward).
+- She can still view the maktab journal on its own: once entries carry
+  provenance that is a FILTER on the merged history, not a second
+  store.
+- Because maktab entries are part of her journal, her prepop, frontier
+  and juz tracker COUNT them.
+- Duplication (she logs it AND the maktab does) is rare, and is a
+  FEATURE when it happens — user: "as soon as the student sees the
+  duplication they will figure out what comes from the maktab and what
+  they need to do." No de-duplication logic, no merge-on-write, no
+  "which record wins".
+
+**4. Merge mechanism: union at read time + a 60-day archive.**
+- UNION: her journal reads her own rows plus maktab rows, interleaved
+  by date. Nothing copied while records are still live, so a teacher's
+  edit or delete is reflected automatically and there is no sync
+  surface for recent data.
+- ARCHIVE: maktab data older than ~60 days is PHYSICALLY COPIED into
+  her tables, so the journal survives losing maktab access ("hifz is a
+  solo journey with the maktab helping during certain periods; even
+  when one loses connection the journey continues, so the journal can
+  always be used").
+- Exactness: her log tables gain a nullable `maktab_log_id` (+ the
+  teacher-name snapshot). The union reads her rows PLUS maktab rows
+  whose id is not already present as a `maktab_log_id`. Exact
+  regardless of when archiving runs -- no cutoff arithmetic, no window
+  where a row shows twice or disappears. Archiving is idempotent.
+- RE-SYNC, not frozen (user's call): if a teacher edits or deletes a
+  maktab record that has already been archived, the copy is patched or
+  removed to match. Bounded -- one targeted statement keyed on
+  `maktab_log_id`, firing only when a copy exists. **The DELETE path is
+  the one that gets forgotten**: an archived copy surviving a deleted
+  maktab record would leave her journal asserting something the maktab
+  no longer says.
+- Trigger: opportunistic, when she opens her journal (bounded work,
+  idempotent, no cron -- the project has none, and 100 students does
+  not justify one).
+- The maktab tables are NEVER moved or emptied: archiving copies into
+  her journal, and the maktab keeps its own complete record, including
+  for students who leave.
+
+**5. The three PJ->maktab inputs are KEPT** (sabaq_to extension, haidh,
+notes/tadabbur). They were never the source of the bug class: each is a
+read of a NAMED student (`?student_id=`), which is explicit and safe.
+The bugs were always the UNNAMED calls where the token silently
+supplied the answer. The code for all three already exists and is
+tested.
+
+### The read-routing audit (2026-08-16) — MECHANICAL, and now a harness
+
+Method: classify every api client in js/api.js by whether the CALL
+names a student (`?student_id=`) or lets the auth token decide; find
+every call site of the token-deciding ones; flag those in modules that
+can execute while a maktab context is active. Lives in
+`verify_routing.mjs` and runs with the suite, so it re-checks on every
+delivery instead of depending on how carefully anyone reads.
+
+**16 unrouted call sites:**
+
+| Sites | What | Effect in maktab mode |
+| --- | --- | --- |
+| 10 | History rails — `renderRecentEntries(type, apiSabaq/apiSabaqDhor/apiDhor, ...)` in sabaqPage (197, 307, 421), sabaqDhorPage (325, 429, 469), dhorPage (452, 1293, 1342, 1440) | a teacher opening a student's card sees THEIR OWN recent entries |
+| 4 | Dhor pool writes — `apiSaveProfile({baseline_selection})` in sabaqPage:415, sabaqDhorPage:190, dhorPage:1436, juzTrackerScreen:146 | portions logged for a student grow the TEACHER's own pool; the maktab pool never grows past setup |
+| 2 | juzTrackerScreen:88, :132 — `apiGetProfile()` | the tracker reads the teacher's pool |
+
+Justified exceptions, each with a stated reason in the scan: app.js's
+boot identity check (always PJ mode), position.js's two calls (the PJ
+branch of an already-routed ternary), dhorPage's plans queue (wrapped
+in the logPlansEnabled guard).
+
+**Two findings worth keeping, because they are why this is mechanical
+now:**
+- The manual passes missed three sites. `sabaqPage:307` is the History
+  rail refresh after a DELETE — eyeballing found the save paths and
+  skipped the delete path. The juz tracker was raised by the USER, not
+  found by Claude.
+- **The first draft of the scan itself was broken and reported 13.** Its
+  function-extraction regex required a closing brace on its own line,
+  so it silently skipped every ONE-LINE client — including
+  `apiSaveProfile`, one of the exact sites it exists to catch. A guard
+  that reports clean while missing the target is worse than no guard;
+  it now chunks on function boundaries instead. **The scan needed
+  verifying against a hand count before it could be trusted.**
+
+**The one assumption it cannot check:** `MAKTAB_REACHABLE`, the list of
+modules that run in maktab mode, is maintained by hand. If a maktab
+screen ever calls a module not on that list, the scan goes quiet about
+it. Stated in the file itself so it stays visible.
+
+**Also flagged, not a violation:** `apiMaktabSabaq` / `apiMaktabSabaqDhor`
+/ `apiMaktabDhor` in js/api.js may now be dead — the day-view rewrite
+(V3.64.0) moved to logContext's student-scoped clients. Check and
+delete during (i) rather than leaving two ways to reach the same
+tables.
+
+### What this changes in what is already built
+
+- **(a)-(h) mostly survive untouched.** They already write maktab
+  tables; that stays correct under the new model.
+- **js/logContext.js keeps its job but its purpose shifts**: from
+  "protect the teacher's PJ" to "point at the right student". Still
+  essential -- the shared cards must write the STUDENT's maktab rows.
+- **Goes away**: the day view's PJ-reading bits stay (the three inputs
+  are kept), but they now read a student account that is never the
+  logged-in teacher, which is what makes them safe rather than
+  incidental.
+- **The (h) student setup screen vs the juz tracker**: both mark
+  completed ajzaa into the pool. STILL OPEN -- see the question below.
+
+### Deliveries
+
+**Harnesses now live in `tests/` (V3.67.2)** — 13 of them, 357 checks,
+`node tests/run-all.mjs`. They were sandbox-only until now, so every
+session discarded them; `verify_routing.mjs` in particular is the guard
+this architecture depends on, and it needs to survive a handover.
+
+**(i) Read-routing rewrite + the guard.** All 16 sites through the
+context; `renderRecentEntries` takes its client from `logClient(type)`
+rather than a passed-in constant; ONE context-aware pool writer serving
+all four write sites (setup, ongoing dhor logs, sabaq dhor overflow,
+juz tracker); the tracker's two reads routed too. Delete the possibly-
+dead apiMaktab* clients. `verify_routing.mjs` already exists and
+currently PASSES at 16 — it is measuring the debt, not asserting it is
+gone. (i) finishes by flipping its expected count to 0, after which any
+new unrouted call fails the suite. **Needed regardless of the rest,
+fixes live wrong-row bugs, no schema change -- do this FIRST.**
+
+**(j) Account separation.** Teaching/admin accounts distinct from
+student accounts; registration creates one or the other; the
+device-local switcher. Includes the migration question below.
+
+**(k) Merged journal.** Union-at-read-time view with provenance, plus
+the maktab-only filter; her prepop/frontier/tracker counting maktab
+entries.
+
+**(l) Archive.** `maktab_log_id` migration, the 60-day copy, the
+opportunistic trigger, and re-sync on maktab edit AND delete.
+
+Order: (i) -> (j) -> (k) -> (l). (i) is independent and urgent; (k)
+depends on (j) having settled what a student account is; (l) depends on
+(k)'s union being in place.
+
+### Open questions
+
+1. **Existing accounts.** ADMIN-01 currently has an admin role AND
+   journal data (including the stray haidh mark and a known-wrong
+   stored position). Under the separation it should become a teaching
+   account with no journal, and any real hifz data would move to a new
+   student account. Test Student / Umme are already students. What
+   should happen to ADMIN-01's existing journal rows -- discard
+   (dev data), or migrate to a new student account?
+2. **Setup screen vs juz tracker.** They do the same job. Claude's
+   lean, consistent with what worked for the log cards: the juz tracker
+   BECOMES the maktab setup (a teacher opens a student's tracker, it
+   reads and writes the maktab pool) and the (h) setup screen is
+   deleted. Alternatives: keep both (then which is authoritative?), or
+   leave the tracker PJ-only.
+
 ## Done — V3.65.0 (2026-08-16): (g) Maktab settings — built to the spec below
 
 Admin-only screen, admin-only changes (confirmed). First of the three
