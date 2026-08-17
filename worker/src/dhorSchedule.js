@@ -146,16 +146,36 @@ export async function computeDefaultDhorEntry(env, studentId, opts = {}) {
     if (todaysPlans.length > 0) return { source: 'today_plan', date: today, plans: todaysPlans };
   }
 
-  const student = await env.DB.prepare(
-    'SELECT mushaf, baseline_selection FROM students WHERE id = ?'
-  ).bind(studentId).first();
-  if (!student) return { source: 'none', reason: 'Student not found' };
-  let pool;
-  try { pool = JSON.parse(student.baseline_selection || '[]'); } catch (e) { pool = []; }
+  // V3.66.0 (delivery (h)): in maktab mode the pool and the mushaf come
+  // from the MAKTAB, not the student's own row. Found 2026-08-16 while
+  // tracing Dhor prepop for the user: these two reads are the same
+  // fourth-input bug as the 8 frontend apiGetProfile() calls fixed in
+  // V3.64.1, but server-side, so logProfile() never touched them —
+  // maktab Dhor prepop was rotating through the student's PJ pool in her
+  // PJ mushaf. The maktab pool lives in maktab_position's blob; the
+  // mushaf is the one maktab setting.
+  let poolSource, mushaf;
+  if (opts.table === 'maktab_dhor_log') {
+    const settings = await env.DB.prepare('SELECT mushaf FROM maktab_settings WHERE id = 1').first();
+    mushaf = (settings && settings.mushaf) || '13line';
+    const posRow = await env.DB.prepare('SELECT position_json FROM maktab_position WHERE student_id = ?')
+      .bind(studentId).first();
+    let blob = null;
+    try { blob = posRow && posRow.position_json ? JSON.parse(posRow.position_json) : null; } catch (e) { blob = null; }
+    poolSource = (blob && Array.isArray(blob.baselineSelection)) ? blob.baselineSelection : [];
+  } else {
+    const student = await env.DB.prepare(
+      'SELECT mushaf, baseline_selection FROM students WHERE id = ?'
+    ).bind(studentId).first();
+    if (!student) return { source: 'none', reason: 'Student not found' };
+    mushaf = student.mushaf;
+    try { poolSource = JSON.parse(student.baseline_selection || '[]'); } catch (e) { poolSource = []; }
+  }
+  let pool = poolSource;
   pool = [...new Set(pool.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b);
   if (pool.length === 0) return { source: 'none', reason: "No memorised juz'/quarters recorded yet in Hifz Setup" };
 
-  const ref = student.mushaf === '15line_madani' ? 'uthmani' : 'waterval';
+  const ref = mushaf === '15line_madani' ? 'uthmani' : 'waterval';
   const lastLog = await env.DB.prepare(
     `SELECT segment_from, segment_to FROM ${table} WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1`
   ).bind(studentId).first();

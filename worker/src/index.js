@@ -9,7 +9,10 @@ import {
   handleGetMaktabSabaqDhor, handleSaveMaktabSabaqDhor, handleUpdateMaktabSabaqDhor, handleDeleteMaktabSabaqDhor,
   handleGetMaktabDhor, handleSaveMaktabDhor, handleUpdateMaktabDhor, handleDeleteMaktabDhor,
   handleMaktabSummary, handleMaktabDhorDefault,
+  handleGetMaktabPosition, handleSaveMaktabPosition,
 } from './maktabLog.js';
+import { handleGetMaktabSettings, handleSaveMaktabSettings } from './maktabSettings.js';
+import { handleMaktabAttendance } from './maktabAttendance.js';
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
@@ -85,6 +88,11 @@ export default {
       // Maktab logs (V3.58.0, maktab delivery (d)) — teacher-confirmed
       // records, independent of the PJ routes above. Requires migration
       // 0019 to have been run; see worker/src/maktabLog.js.
+      if (path === '/maktab/settings' && request.method === 'GET') return respond(await handleGetMaktabSettings(request, env, auth));
+      if (path === '/maktab/settings' && request.method === 'POST') return respond(await handleSaveMaktabSettings(request, env, auth));
+      if (path === '/maktab/position' && request.method === 'GET') return respond(await handleGetMaktabPosition(request, env, auth));
+      if (path === '/maktab/position' && request.method === 'POST') return respond(await handleSaveMaktabPosition(request, env, auth));
+      if (path === '/maktab/attendance' && request.method === 'GET') return respond(await handleMaktabAttendance(request, env, auth));
       if (path === '/maktab/summary' && request.method === 'GET') return respond(await handleMaktabSummary(request, env, auth));
       if (path === '/maktab/dhor-default-entry' && request.method === 'GET') return respond(await handleMaktabDhorDefault(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'GET') return respond(await handleGetMaktabSabaq(request, env, auth));

@@ -49,13 +49,16 @@ const HAIDH_NAV_ITEM = { id: 'haidhDetail', label: 'Haidh', icon: 'haidh' };
 // Journal is for everyone. This build is maktab-deployment-only, so
 // every user here IS maktab-connected — no "has a maktab?" gate needed.
 const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'sabaq' };
+// V3.65.0 (delivery (g)): admin-only, like the Admin item — a teacher
+// never sees the maktab settings, though their cards read the mushaf.
+const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
 
 function visibleNavItems(){
   let items = NAV_ITEMS.concat([MAKTAB_JOURNAL_NAV_ITEM]);
   if(currentUser.trackHaidh) items = items.concat([HAIDH_NAV_ITEM]);
   if(currentUser.role === 'teacher' || currentUser.role === 'admin') items = items.concat([MAKTAB_SUMMARY_NAV_ITEM]);
-  if(currentUser.role === 'admin') items = items.concat([ADMIN_NAV_ITEM]);
+  if(currentUser.role === 'admin') items = items.concat([MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM]);
   return items;
 }
 
