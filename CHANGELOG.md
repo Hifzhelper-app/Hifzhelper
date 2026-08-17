@@ -5,6 +5,44 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## MIGRATION STATUS — hifzhelper-maktab1 (confirmed 2026-08-17)
+
+**All delivered migrations are RUN. Nothing is pending. Do not re-run.**
+
+| Migration | Delivered | Status on `hifzhelper-maktab1` |
+| --- | --- | --- |
+| `0019_maktab_tables.sql` | V3.57.0 | RUN |
+| `0020_maktab_settings.sql` | V3.65.0–V3.67.0 | RUN |
+| `0021_maktab_position.sql` | V3.65.0–V3.67.0 | RUN |
+
+**Every entry below is a record of one delivery on the day it shipped.** The
+"RUN MIGRATION x first", "deploy the worker first" and similar instructions
+inside them were the correct instruction *for that upload*. They are history,
+not an outstanding action — read this block for current state. Mirrored from
+`TODO.md`, which carries the same block; both are updated together
+(CONVENTIONS.md §13).
+
+Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
+none of these.
+
+---
+
+## V3.67.3 — Documentation restructure: TODO split, live-items index, migration status, convention 13 (2026-08-17)
+
+**Files touched:** `TODO.md`, `SPECS.md` (new), `CHANGELOG.md`, `CONVENTIONS.md`. **Documentation only. No application code, nothing to deploy, no migration.**
+
+`TODO.md` had reached 4,465 lines, of which 84% were `## Done` entries — a spec archive wearing an action list's name. Nobody reads 64k tokens of it, so sessions grep; grep returns a fragment with no signal that it is frozen delivery-time text. That mechanism had produced three false statements, all found in one pass: migration 0019 marked NOT YET RUN three deliveries after it was run; delivery (e2) marked OPEN three deliveries after V3.60.0 built it; and the V3.51.1 bottombar section whose heading read "awaiting start building" directly above its own body recording all ten items as built and verified. The two false open items are corrected and archived; their headings carry a note saying what they used to claim.
+
+**The split.** All 90 `## Done` entries moved to `SPECS.md`, which keeps the third thing neither other document holds — why it was built that way and what was rejected. `TODO.md` drops to 673 lines and holds only what is not done. Verified lossless by line accounting: 4,470 in, 4,470 out, 90 sections archived, 0 left behind.
+
+**`LIVE ITEMS`**, at the top of `TODO.md`: the entire action list — four architecture deliveries (i)–(l) and six open bugs/flags. Every one was re-verified against the code rather than trusted, which is how the parked-attendance item turned out to be two-thirds closed (`apiGetAttendance` has 4 call sites, `apiDeleteAttendance` 1; only `apiSetAttendance` is unwired). Deliberately carries no line numbers — they go stale on the next edit, which is the failure being fixed.
+
+**`MIGRATION STATUS`** now appears in both `TODO.md` and `CHANGELOG.md`, dated, stating all three migrations RUN. The stale imperative inside the V3.65.0–V3.67.0 entry is rewritten to past tense pointing at that block.
+
+**CONVENTIONS.md §13 — mutable state never lives in append-only prose.** Current state lives in one dated block per file and gets edited; delivery entries say what was required at upload time and point at it; the mirrored status blocks are updated together; a delivery that closes a flagged item edits the flag rather than superseding it further down the file. This is the part that stops the next one being generated.
+
+Suite re-run after every step: 357 passed, 0 failed across 13.
+
 ---
 
 ## V3.67.2 — Verification harnesses moved into the repo (2026-08-17)
@@ -29,7 +67,7 @@ Carries the maktab/PJ separation architecture agreed in chat — separate teachi
 
 ## V3.65.0 – V3.67.0 — Maktab settings, student setup, derived attendance: deliveries (g), (h), (f) (2026-08-16)
 
-**Files touched:** `worker/migrations/0020_maktab_settings.sql` (new), `worker/migrations/0021_maktab_position.sql` (new), `worker/src/maktabSettings.js` (new), `worker/src/maktabAttendance.js` (new), `worker/src/maktabLog.js`, `worker/src/dhorSchedule.js`, `worker/src/index.js`, `js/maktabSettings.js` (new), `js/maktabSetup.js` (new), `js/logContext.js`, `js/position.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/api.js`, `js/auth.js`, `js/app.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend. RUN MIGRATIONS 0020 AND 0021 on hifzhelper-maktab1 first (0019 too, if it hasn't been), then deploy the worker, then the frontend.**
+**Files touched:** `worker/migrations/0020_maktab_settings.sql` (new), `worker/migrations/0021_maktab_position.sql` (new), `worker/src/maktabSettings.js` (new), `worker/src/maktabAttendance.js` (new), `worker/src/maktabLog.js`, `worker/src/dhorSchedule.js`, `worker/src/index.js`, `js/maktabSettings.js` (new), `js/maktabSetup.js` (new), `js/logContext.js`, `js/position.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/api.js`, `js/auth.js`, `js/app.js`, `index.html`, `js/sw.js`, `css/journal-table.css`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend. Required at upload time: run migrations 0020 and 0021 on hifzhelper-maktab1, then deploy the worker, then the frontend. — 0019/0020/0021 are all RUN as of 2026-08-17; see the MIGRATION STATUS block at the top of this file.**
 
 **(g) Maktab settings.** An admin-only screen holding four settings: the maktab mushaf, the number of students that makes a date a maktab day, the days-without-an-entry that flags a student, and the maktab name. The two numbers were going to be worker environment variables; here they change without a redeploy. Storage is a single row with a constraint that keeps it single, and the migration inserts it, so no code ever handles a "not configured yet" case. The gate is deliberately asymmetric: only admins see or change the screen, but every teacher's cards read the mushaf, so the read is teacher-level and the write is admin-only. This retires the interim 13-line constant introduced in V3.64.1, which was written as one line precisely so this could replace it.
 
