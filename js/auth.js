@@ -54,9 +54,43 @@ const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 's
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
 
+// V3.69.0: the personal journal is hidden in the maktab, pending the real
+// account separation in delivery (j). Confirmed in chat 2026-08-17: "for
+// now hide" — so this is ONE reversible switch, not a deletion and not a
+// role gate. Every screen, route and module behind these ids is untouched
+// and still works; only the way in is withheld. Restoring any of them is
+// deleting a line from this set.
+//
+// Why a flat set rather than gating on role: (j) is what introduces a real
+// teaching-vs-student account distinction. Until it lands, role is the
+// wrong axis — an admin IS the maktab teacher here (ADMIN-01, confirmed
+// 2026-08-17), and inventing a half-separation now would be a second
+// mechanism to unpick later.
+//
+// MAKTAB_JOURNAL_NAV_ITEM is dropped from the concat below rather than
+// listed here: it is the STUDENT's read-only view of her own maktab logs,
+// so it is not a PJ screen being hidden — it has no place on a teaching
+// account at all.
+const HIDDEN_PJ_NAV_IDS = new Set([
+  'journal',      // Summary
+  'logDetail',    // Detail — the single entry point to the three log cards
+  'reflections',  // Tadabbur
+  'settings',     // personal Settings
+  'haidhDetail',  // the personal haidh CALENDAR only — see below
+]);
+// Hiding 'haidhDetail' removes the route to the personal haidh calendar and
+// NOTHING else (confirmed 2026-08-17). track_haidh keeps its value, the
+// maktab's own haidh marking from (e2) is untouched, and (f)'s derived
+// attendance keeps propagating haidh across maktab days unchanged. It has
+// to be hidden explicitly because it is gated on currentUser.trackHaidh,
+// and that flag is only settable from the Settings screen also hidden here
+// — so where it is already true it would otherwise show with no way off.
+// 'sih' (Surahs in my Heart) is deliberately NOT in this set: never named
+// in chat, and it is an activity rather than a journal screen.
+
 function visibleNavItems(){
-  let items = NAV_ITEMS.concat([MAKTAB_JOURNAL_NAV_ITEM]);
-  if(currentUser.trackHaidh) items = items.concat([HAIDH_NAV_ITEM]);
+  let items = NAV_ITEMS.filter(item => !HIDDEN_PJ_NAV_IDS.has(item.id));
+  if(currentUser.trackHaidh && !HIDDEN_PJ_NAV_IDS.has(HAIDH_NAV_ITEM.id)) items = items.concat([HAIDH_NAV_ITEM]);
   if(currentUser.role === 'teacher' || currentUser.role === 'admin') items = items.concat([MAKTAB_SUMMARY_NAV_ITEM]);
   if(currentUser.role === 'admin') items = items.concat([MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM]);
   return items;

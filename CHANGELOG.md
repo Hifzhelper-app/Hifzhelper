@@ -27,6 +27,204 @@ none of these.
 
 ---
 
+## V3.69.0 — The personal journal hidden in the maktab; Home header row removed (2026-08-17)
+
+**Files touched:** `js/auth.js`, `js/juzTrackerScreen.js`, `js/app.js`, `index.html`, `css/nav.css`, `js/sw.js`, `tests/verify_nav.mjs` (new), `tests/verify_e1.mjs`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY — no worker changes, no migration, no schema change.**
+
+**Hidden, via one reversible switch.** `HIDDEN_PJ_NAV_IDS` in `js/auth.js` withholds `journal` (Summary), `logDetail` (Detail), `reflections` (Tadabbur), `settings` and `haidhDetail`. Not a role gate: (j) is what introduces a real teaching-vs-student distinction, and inventing a half-separation now would be a second mechanism to unpick later. Restoring any screen is deleting a line from that set. `MAKTAB_JOURNAL_NAV_ITEM` is dropped from the nav entirely — it is the student's read-only view of her own maktab logs, not a PJ screen being hidden.
+
+**Hiding withholds the way in, not the screen — and that distinction is load-bearing.** `js/maktabDay.js` routes straight into the logDetail screen, so removing logDetail rather than hiding its nav entry would have taken the maktab day view down with it. Verified that `showScreen` never consults the nav list, so every hidden screen stays reachable by route; `verify_nav.mjs` asserts both.
+
+**Juz Tracker: free play only, tracker parked.** A `FREEPLAY_ONLY` flag opens the screen in free play and withdraws the toggle. `setFreeplay(false)` still restores the real tracker intact, and delivery (i)'s routed `logProfile()` / `logSavePool()` calls are untouched — unreachable while the flag is true, and precisely what makes the tracker safe to switch back on. The harness asserts they survive, and that the screen has not quietly regained an own-only call while nobody could see it. Reverting is one boolean.
+
+**Home header row removed whole**, not just `#homeHeaderIcon` — V3.43 had already taken the text label, so removing the icon alone would have left an empty row and a gap above the tiles. The unguarded `getElementById('homeHeaderIcon')` write in `js/app.js` was **removed rather than null-guarded**: left in place it would throw and kill the rest of that function, the same TypeError shape as the V3.51.2 `haidhRulingHint` bug.
+
+**Two `verify_e1.mjs` nav expectations were updated, not worked around** — they asserted `maktabJournal` in the nav, which this delivery deliberately removes. Per the maintenance rule in `tests/README.md`.
+
+**⚠ A DEFECT IN V3.68.0, FOUND AND FIXED HERE — read this before deploying.** V3.68.0's cache-busting bump never landed: `index.html` was still serving `?v=3.67.0` on every script tag and `js/sw.js` still named its cache `hifzhelper-v3.67.0`. The bump was written into the same script as an earlier edit that failed an assertion, so it died before running and the re-run only covered the other two changes — a scripting mistake, not a design one.
+
+**Consequence, and the likely explanation of the field report in V3.68.2:** any browser with a warm cache would have kept running the V3.67.0 JavaScript after V3.68.0 was deployed. That means the History rails would still have been calling the own-only client — so a Dhor logged for a student appears on the summary (server-rendered from the maktab tables) but not in her history (stale client-side JS asking for the wrong person's rows). That is exactly the reported symptom, and it fits better than "not deployed yet". Both `index.html` and `js/sw.js` now go to `3.69.0`, so this delivery carries the bump V3.68.0 should have.
+
+**On resuming testing: hard-refresh, or confirm the service worker picked up `hifzhelper-v3.69.0`, before judging any behaviour.**
+
+**Verification: 414 passed, 0 failed across 15 harnesses** — the new `verify_nav.mjs` (31 checks) plus all 14 prior harnesses green.
+
+**NOT built, and not attempted:** (j) and (k). See the CHANGELOG note and TODO for what they still need.
+
+---
+
+## V3.68.4 — Haidh hidden too; the tracker restriction is explicitly temporary (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. Nothing built — the nav-hiding spec still awaits its own "start building".**
+
+**Haidh joins the hidden items.** `HAIDH_NAV_ITEM` is hidden alongside Summary, Detail, Tadabbur and Settings, answering the first of the two questions V3.68.3 left open. Recorded with a boundary, because "hide haidh" reads wider than it means: this removes the route to the personal haidh **calendar screen** and nothing else. `trackHaidh` keeps its value, the maktab's own haidh marking from (e2) is untouched, and (f)'s derived attendance keeps propagating haidh across maktab days on calendar-day counting exactly as built.
+
+**The Juz Tracker restriction is temporary and the code is parked, not retired.** The real tracker may come back, so its code stays intact behind the gate rather than being deleted — a deliberate exception to convention 3 (delete superseded code promptly), because it is not superseded. The routed pool reads and write that (i) added become unreachable while free-play-only is in force, and the entry now says explicitly that they must not be stripped as dead code: they are what makes the tracker safe to switch back on.
+
+Surahs in my Heart remains unanswered and visible — the one open question left in this spec.
+
+**On cadence:** V3.68.2 committed to batching doc-only changes rather than cutting a version per exchange, and this breaks it deliberately. Spec decisions have to reach the repo, because the build sandbox does not survive the session — the lesson that produced `tests/` in V3.67.2. Batching applies to trivia; a decision the next session needs does not qualify.
+
+---
+
+## V3.68.3 — Nav-hiding spec for (j) (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Nothing built — this is the spec, awaiting its own "start building".
+
+The "remove the PJ icons from the maktab" item is now specified against the real nav list. **Hide** is the user's word, so a reversible gate rather than a deletion, and one change covers both surfaces: `visibleNavItems()` in `js/auth.js` feeds the Home tile grid and the dropdown alike.
+
+Hidden: `journal` (Summary), `logDetail` (Detail), `reflections` (Tadabbur), `settings` (Settings). Removed: `MAKTAB_JOURNAL_NAV_ITEM` — the student's read-only view of her own maktab logs, which has no place on a teaching account. The Juz Tracker stays but free-play only: today it opens in tracker mode and offers a toggle, so free-play-only means opening in freeplay and retiring that toggle.
+
+That last one makes the tracker's pool reads and writes unreachable — the exact three calls (i) routed a few hours earlier. The routing remains correct and costs nothing; it simply goes unexercised until the real tracker returns, which is worth knowing before someone reads it as dead code.
+
+**Two things flagged rather than assumed.** The Haidh nav item is gated on `trackHaidh`, and that flag is only settable from the Settings screen this change hides — so on an account where it is already true the item keeps showing with no UI route to turn it off. And Surahs in my Heart was not named: a personal activity, arguably a PJ icon by the same logic, left visible pending a word.
+
+---
+
+## V3.68.2 — Field report recorded; two (j) decisions landed (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.**
+
+**Field report:** a Dhor entry logged for a student as admin appears on the maktab summary but not in her history. Recorded rather than chased — the user has paused testing until the maktab/PJ separation is complete. The most likely explanation is that V3.68.0 was not yet deployed when it was observed: before it, the History rail called the own-only client and so showed the logged-in person's entries, which is precisely item 4 of the V3.68.0 checklist in `TESTING.md`. First thing to establish on resuming is whether V3.68.0 was deployed, worker first.
+
+Server side ruled out by inspection: `handleGet` takes `student_id` from the query and `getLogs` filters on it alone, with no date window and no row-dropping privacy filter. So a correctly-addressed request returns the row, and suspicion falls on which student id the rail asked for — exactly what (i) changed. If V3.68.0 *was* deployed, one disambiguation is needed before tracing: whether "her history" meant the rail on the maktab card, the student's Maktab Journal, or her personal journal — where a maktab entry legitimately does not appear yet, since the merged view is delivery (k).
+
+**Open question 1 answered: ADMIN-01 loses its history and becomes the maktab teacher.** Discard, not migrate. Its journal rows go and the account becomes a teaching account with no personal journal, which also disposes of the stray haidh mark and the known-wrong stored position — both dev residue on that row.
+
+**New for (j): remove the PJ icons from the maktab.** Under the separation a login is either a teaching account or a student account, so the personal journal's entry points have no meaning in a teaching session, and their presence is what makes the two feel merged. Scope to settle when built: which nav items count (Home tiles and the dropdown both mirror `NAV_ITEMS` in `js/auth.js`), and whether they are hidden by role, by active context, or removed from the teaching account's list entirely.
+
+**(j) is now the blocking item** — testing does not resume until the separation lands.
+
+---
+
+## V3.68.1 — V3.68.0 test plan + one stale comment in its own code (2026-08-17)
+
+**Files touched:** `TESTING.md`, `js/dhorPage.js`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Frontend + docs. Supersedes V3.68.0's `js/dhorPage.js`; everything else in V3.68.0 is unchanged, so deploy V3.68.0 as described there and take this file with it.**
+
+`TESTING.md` gains the manual checklist for delivery (i) — the things 381 automated checks cannot see: that a rendered rail shows the right student, that the worker-first deploy order actually landed, and that removing a juz stays removed end to end. It leads with the deploy-order check because there is a genuine window: the frontend no longer writes the Dhor pool and the worker now does, so a frontend-first deploy means nobody writes it, silently.
+
+Also flags Tadabbur history as the highest regression risk in V3.68.0: dropping the client argument shifted every caller's argument positions, and Tadabbur is the only caller passing a third one.
+
+**And a stale comment in V3.68.0's own code, fixed.** `js/dhorPage.js` still described `onRowClick` as "the optional 4th parameter" after the same delivery made it the 3rd. Trivial in isolation; recorded because it is the exact mechanism §13 exists to stop — a true statement left behind by a change that moved past it — and it appeared in code written hours earlier the same day.
+
+---
+
+## V3.68.0 — Delivery (i): read-routing rewrite, the guard flipped, Dhor pool moved server-side (2026-08-17)
+
+**Files touched:** `js/logContext.js`, `js/dhorPage.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/reflectionCard.js`, `js/juzTrackerScreen.js`, `js/api.js`, `shared/data.js`, `worker/src/dhorSchedule.js`, `worker/src/dhorLog.js`, `worker/src/maktabLog.js`, `index.html`, `js/sw.js`, `tests/verify_routing.mjs`, `tests/verify_pool.mjs` (new), `tests/README.md`, `TODO.md`, `CHANGELOG.md`. **MAKTAB DEPLOYMENT ONLY. Mixed worker + frontend — DEPLOY THE WORKER FIRST (`shared/data.js` and `worker/src/*` carry the pool merge the frontend now relies on having), then the frontend. No migration, no schema change.**
+
+**All 16 unrouted call sites are routed; `verify_routing.mjs` flipped from measuring 16 to asserting 0.** Any new own-only call reachable in maktab mode now fails the suite instead of shipping unnoticed.
+
+**The ten History rails.** `renderRecentEntries` no longer takes a client — it asks `logClient(type)`. Ten call sites each handed over a hardcoded own-only constant, so a teacher opening a student's card saw her own recent entries. There is no longer a constant to pass wrongly. `logClient` also gained `reflections` and became a switch rather than an object literal: building a map dereferenced every client on every call, so one absent global broke lookups for unrelated types — the harness caught precisely that.
+
+**The four pool writes became one routed writer,** `logSavePool` in `logContext.js`, serving Sabaq's auto-move, Sabaq Dhor's rollup and the juz tracker. The maktab branch writes the same `position_json.baselineSelection` shape `maktabSetup.js` already uses. The juz tracker's two `apiGetProfile()` reads now go through `logProfile()`.
+
+**The Dhor pool write moved into the worker.** `mergeDhorUnitsIntoPool` merges the logged quarter-units inside the same request that writes the row, for the same `studentId`, and the client block in `dhorPage.js` is deleted. Two faults go by construction rather than by discipline: there is no second request left to fail silently (the old one neither awaited nor surfaced its error), and the pool written is always the pool of the student the row was written for — the maktab wrong-row case is unroutable, not merely routed. `segmentRangeToPicker` and `segmentToQuarterUnits` moved to `shared/data.js`, which was already dual browser+worker; both are pure and depended only on `segmentsPerJuz`, already there.
+
+**Removal stays entirely free,** and the harness guards it. The merge only ever ADDS what was just logged — clearing juz from the pool is a legitimate action and nothing here re-asserts or repairs it. Re-logging a removed juz adds back that juz and nothing else.
+
+**A pool failure cannot destroy a committed log row.** The merge runs after the insert, so it is wrapped: a fault is reported to the worker log rather than thrown, because throwing would turn a good save into a 500 and invite a retry that duplicates the row. This is not the silent `.catch(() => {})` it replaces — that one sat between two requests and lost real failures to the network; anything reaching this one is a schema or DB fault, and it is visible.
+
+**`apiMaktabSabaq` / `apiMaktabSabaqDhor` / `apiMaktabDhor` deleted.** Zero call sites, and they were the token-deciding form of the very endpoints `makeMaktabLogClient` student-scopes — the wrong-row footgun under inviting names. `verify_routing.mjs` could never guard them because it scans call sites and they had none, so deletion was the only guard.
+
+**Verification: 381 passed, 0 failed across 14 harnesses** — the new `verify_pool.mjs` (24 checks, a D1-shaped stub over `node:sqlite` driving the real merge for both the PJ and maktab paths) plus all 13 prior harnesses re-run green.
+
+---
+
+## V3.67.10 — Dhor pool: design (B) withdrawn, scope collapses to one change (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3–V3.67.9. Cut immediately after V3.67.9 despite the batching commitment, because V3.67.9 records a design that is wrong — a wrong design left sitting in `TODO.md` is exactly the failure §13 exists to stop, and a correction must not lag the claim it corrects.
+
+**Design (B) — "make the pool a derived union" — is withdrawn.** User, 2026-08-17: *"There may be legitimate reasons for resetting or removing juz from dhor — it's not your call, and all it means is that the prepop changes."* Removing a juz from the Dhor pool is a normal action, not corruption. A derived union would have made removal impossible, since the unit would be re-derived from history on the next read — it would have removed a capability while claiming to prevent a bug. The value judgement underneath it, that a student cannot un-memorise something she has demonstrably revised, was never the user's and should not have been assumed.
+
+**Most of the item collapses as a result.** An empty pool alongside real history is a legitimate state meaning the pool has been cleared, so the prepop has nothing to offer. The Setup-reset path is not a fault, and "setup RESETS the pool" (2026-08-16) stands exactly as decided. The emptiness gate at `dhorSchedule.js:176` is correct ahead of the history query at `:179` — with an empty pool there is genuinely nothing to continue from. Only its wording is loose: *"No memorised juz'/quarters recorded yet in Hifz Setup"* implies she never set it up when she may have cleared it deliberately. Reword eventually; not a bug.
+
+**One real change survives: (A).** The only genuine fault is the pool diverging from what the student actually did without her asking — `js/dhorPage.js:1436` neither awaits nor surfaces its failure, and is one of the four unrouted pool writes so it grows the teacher's pool in maktab mode. Move the Dhor contribution into `handleSaveDhor`, which already has the segment, the ref and the target `studentId` in the same request, and delete the client block. Removal stays entirely free — adding on log and removing on demand are independent, and re-logging a removed juz simply adds it back under the existing rule.
+
+Both earlier framings of this item — "rebuild from history" and "derived union" — are recorded in `TODO.md` as withdrawn, with reasons, so neither gets revived.
+
+---
+
+## V3.67.9 — Dhor pool: prevention design replaces the repair; Haidh hint scope confirmed (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3–V3.67.8 — the zip carries all four files. Batched rather than shipped per-answer; V3.67.8's note explains why.
+
+**Dhor pool — the rebuild-from-history repair is withdrawn.** User's direction: prevent the mistake rather than mitigate the failure. Rebuilding a corrupt pool is mitigation, so it is out. The structural cause is recorded instead: `students.baseline_selection` is one mutable array that four client-side writers read-modify-write, each as a non-atomic two-request sequence, any of which can clobber another's contribution. The model is "the pool grows in three ways"; the storage is "one array anyone can overwrite," and all three failure paths are that mismatch showing through.
+
+**(A) The Dhor contribution moves server-side, into the log insert.** `handleSaveDhor` already has `segment_from`/`segment_to`/`ref` and the target `studentId` in the same request that writes the row; it merges the units there, and the client block at `js/dhorPage.js:1426-1437` is deleted. Feasibility confirmed: `shared/data.js` is already dual browser+worker and `dhorSchedule.js` imports from it; only `segmentToQuarterUnits` needs moving out of `js/dhorPage.js:637` into `shared/` and adding to the export list. This removes the silent-failure path (no second request left to fail) and makes the maktab wrong-row case unroutable rather than merely routed — `verify_routing.mjs` loses a site instead of gaining a guard.
+
+**(B) The pool becomes derived rather than stored.** `pool = explicit marks (Hifz Setup, Juz Tracker) ∪ units derived from logged activity (Dhor logs, Sabaq-Dhor overflow)`. An empty pool alongside real history stops being a representable state. Flagged for the user's word because it changes a stated decision: "setup RESETS the pool" (2026-08-16) would become a reset of the marked portion only, with history-derived units surviving.
+
+**Scope note added for (i):** (A) removes the Dhor pool write from (i)'s set of four rather than routing it, so (A) belongs inside (i) — otherwise (i) builds a routed writer for a call about to be deleted. The cost is that (i) stops being frontend-only and gains a worker-first deploy order. Still no schema change.
+
+**Haidh ruling hint — scope confirmed.** The sentence comes off the screen; the ruling stays a working part of the app. Verified that the four-piece removal leaves `setupSelectedRuling`, the switch callback, the profile load/render, the 10/15-day duration validation and the `haidh_ruling` save all intact — only the two hint writes, the constant and the `<p>` go. The separate deletion of the "Ruling" label remains a distinct item, still standing from 2026-08-08.
+
+---
+
+## V3.67.8 — updateLog date fix scheduled onto (j) (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3–V3.67.7 — the zip carries all four files.
+
+**The unvalidated-date fix rides along with (j)**, the next worker-touching delivery, rather than getting a release of its own. This was raised with the user as a question; it should not have been. Whether a few lines of server-side validation ship alone or bundled is a delivery-mechanics call with no product consequence and no information the user held — and a recommendation had already been given. Recorded here so the pattern is visible: questions go to the user when the answer depends on something only they know (a design preference, a visual choice, what an earlier message meant), not for scheduling or packaging.
+
+Same note applies to the `apiSetAttendance` question in V3.67.5, which tracing the code would have dissolved before it was ever asked — the function had been gone since V3.40.2. Verify first; ask only what verification cannot settle.
+
+---
+
+## V3.67.7 — Empty-pool question re-scoped upwards; a swallowed pool-write found (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3–V3.67.6 — the zip carries all four files.
+
+**The suggestion to close the empty-pool question as "working as intended" was wrong, and is withdrawn.** The user's rule — logging Dhor adds to the pool, so history implies a non-empty pool — is correct as design and *is* implemented at `js/dhorPage.js:1426-1437`. Checking whether that makes the state unreachable turned up three ways it is reachable.
+
+**`dhorPage.js:1436` is the only one of the four pool-write sites that does not `await` and swallows its error** — `apiSaveProfile({...}).catch(() => {})`. `sabaqPage.js:415`, `sabaqDhorPage.js:190` and `juzTrackerScreen.js:146` all await. So a Dhor log can commit while its pool write fails with nothing surfaced. Same empty-catch shape as the swallowed `savePosition` failure that caused the real stuck-prepopulation bug in the V3.45.x saga.
+
+**In maktab mode the state is not an edge case but the current behaviour**, because that same line is one of the four unrouted pool writes in the read-routing audit: it grows the teacher's pool, so a maktab student's pool never grows past setup while her maktab history does. Delivery (i) removes this cause and only this one. A Setup reset is the third path.
+
+**Why it matters:** the emptiness gate at `dhorSchedule.js:176` fires before the history query at `:179`, so such a student is told *"No memorised juz'/quarters recorded yet in Hifz Setup"* — false, and it points her at the wrong screen. Recorded explicitly: moving the gate alone would NOT produce a next segment (empty pool → `buildChunks` returns `[]` → `:188` returns none regardless), only a truthful message.
+
+**Decision recorded as needed before this is buildable:** rebuild the pool from history when history exists but the pool is empty — every logged segment is by definition memorised, so history is a valid pool source and this self-heals all three causes — or report accurately and leave repair to Setup. Independent of that: `dhorPage.js:1436` should await and surface failures like its three siblings.
+
+---
+
+## V3.67.6 — Dhor start-point question confirmed and closed (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3–V3.67.5 — the zip carries all four files.
+
+**Confirmed: Setup does not set the Dhor starting point; the prepop starts from the marked completed ajzaa in ascending juz order — which is what the code already does.** No change needed. Verified rather than assumed, by driving the real `computeUpcomingDhorQueue` with a D1-shaped stub: `baseline_selection` sorts ascending (`dhorSchedule.js:256`), `buildChunks` preserves that order (`:71`), and `startIdx` stays `0` with no `dhor_log` row (`:276-280`). Scenario with ajzaa entered 5, 9, 2 produced the queue 5,6,7,8,17,18,19 — juz 2's four quarters, then juz 5's, unmarked juz skipped. 6/6.
+
+**Trap recorded alongside it:** "Setup does nothing" holds only for the starting point. `setupConfigured` (`:260`) still drives granularity (`:261`) and the per-day count (`:262-264`) — the same run showed 4 items/day configured against 1 unconfigured. Stripping that branch on the strength of this answer would silently break both. Same over-deletion shape as the `settingsScreen.js:381` note added in V3.67.5.
+
+The second dhorSchedule question — empty pool with real Dhor history never reaching continue-from-last — stays open, with "close as working as intended" as the suggested resolution.
+
+---
+
+## V3.67.5 — Four TODO decisions recorded; a fourth stale item closed (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3 and V3.67.4 — the zip carries all four files, so upload it regardless of which earlier zips went up.
+
+**Home header icon — decided: remove the whole header row**, not just `#homeHeaderIcon`, so no blank strip is left above the tile grid. The open sub-question in that entry since 2026-08-09 is now closed.
+
+**Settings Haidh heading — clarified and extended to three changes.** Confirmed that the checkbox resize-and-move has NOT been built. Added a third: delete the ruling hint text ("Hanafi: haidh cannot exceed 10 days."). That one carries a trap now documented in full — `#haidhRulingHint` is written by `js/settingsScreen.js` at two sites (:65, :273) with no null guard, and :273 sits immediately before the haidh cycle/period/next-expected population. Deleting the element alone reproduces the exact V3.51.2 bug it was added to fix: TypeError kills `renderSettingsScreen` mid-function, those three fields go blank, and a save can overwrite real values. Correct removal is four pieces — the `<p>`, the `HAIDH_RULING_HINTS` constant, and both write lines. The entry also flags `settingsScreen.js:381` to KEEP: similar wording, but a real validation error rather than a standing label.
+
+**Parked attendance — closed as already done, and it was a fourth stale claim.** The item still named `apiSetAttendance` as an unused function to build a UI for or delete. It does not exist: **removed in V3.40.2**, with `js/api.js:161` carrying the comment recording that. Every attendance client that exists is live — `apiGetAttendance` (4 call sites), `apiDeleteAttendance` (1), `apiPredictHaidh` (1), `apiMarkHaidhRange`, and (e2)'s three teacher-side `*For` variants. The worker's `handleSetAttendance` stays; `apiSetAttendanceFor` uses it. Nothing to delete on either side. That is now four stale claims found in one day's pass — same mechanism each time, and the reason for §13.
+
+The live list is down to **nine items, one of them closed**: (i)–(l), the timezone decision, the unvalidated-date rider, two dhorSchedule confirmations, and two cosmetic sets that are now fully specified and need only "start building".
+
+---
+
+## V3.67.4 — TODO priority order + timezone decision (2026-08-17)
+
+**Files touched:** `TODO.md`, `CHANGELOG.md`. **Documentation only. No application code, nothing to deploy, no migration.** Supersedes V3.67.3 — the zip carries all four of that delivery's files, so upload it whether or not V3.67.3 went up; `SPECS.md` and `CONVENTIONS.md` are byte-identical to their V3.67.3 copies.
+
+Numbered separately rather than repackaged as V3.67.3 because a zip may already have been uploaded under that number, and reusing a number for changed content is what produced the V3.67.0/V3.67.1 split in the first place.
+
+**`LIVE ITEMS` is now priority-ordered** and carries a `Blocked on` column. It replaces the previous grouped version rather than sitting alongside it as a summary — a summary kept separately from the detail is a second thing to keep in sync, which is what §13 exists to stop. Ordering: (i) first as the only item producing wrong data now; then the timezone decision; then (j); the unvalidated-date fix as a rider on (j)'s worker delivery rather than its own; then (k), (l); then four cosmetic or confirm-the-behaviour items. The (i) → (j) → (k) → (l) chain is fixed; everything else slots between them freely.
+
+**Shared timezone — decided: a per-maktab setting on the maktab settings screen**, making it that screen's 5th setting alongside the mushaf, the maktab-day threshold, the absence-flag days and the maktab name. Admin-only to change, like the rest of the screen. It moves from #10-ish to #2 because its own "Phase 2 hasn't started" premise expired — (a)–(h) have shipped, and (f)'s haidh propagation counts calendar days, exactly the arithmetic that breaks across timezones. Cheapest now, with no real users and nothing yet recorded against a wrong day boundary. One sub-decision remains: display in the viewer's local timezone while calculating in the maktab's, or show the maktab's everywhere.
+
+---
+
 ## V3.67.3 — Documentation restructure: TODO split, live-items index, migration status, convention 13 (2026-08-17)
 
 **Files touched:** `TODO.md`, `SPECS.md` (new), `CHANGELOG.md`, `CONVENTIONS.md`. **Documentation only. No application code, nothing to deploy, no migration.**

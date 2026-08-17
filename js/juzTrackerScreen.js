@@ -85,7 +85,7 @@ async function renderJuzTrackerScreen(){
   // (js/settingsScreen.js's openSectionGridModal).
   let pool = [];
   try {
-    const profile = await apiGetProfile();
+    const profile = await logProfile();
     pool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
   } catch(e) {
     // Non-fatal -- leave the tracker blank rather than blocking the
@@ -129,7 +129,7 @@ async function renderJuzTrackerScreen(){
     // accurate, not just what gets written after confirming.
     let currentPool;
     try {
-      const profile = await apiGetProfile();
+      const profile = await logProfile();
       currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
     } catch(e) {
       currentPool = pool.slice(); // fall back to what was loaded at screen-entry
@@ -143,7 +143,7 @@ async function renderJuzTrackerScreen(){
     if(!confirm(buildJuzConfirmMessage(newlyMarked, newlyUnmarked, resultingFullList))) return;
 
     try {
-      await apiSaveProfile({ baseline_selection: updatedPool });
+      await logSavePool(updatedPool);
       juzTrackerInitialValue = current.slice();
       saveStatusEl.classList.add('show');
       setTimeout(() => saveStatusEl.classList.remove('show'), 1800);
@@ -174,6 +174,22 @@ async function renderJuzTrackerScreen(){
     barEl.classList.toggle('hidden', on);
     if(!on) sync();
   }
-  setFreeplay(false);                            // "always defaults to juz tracker"
-  fpBtn.onclick = () => setFreeplay(el.getAttribute('mode') !== 'freeplay');
+  // V3.69.0: FREE PLAY ONLY, temporarily. Confirmed in chat 2026-08-17:
+  // "free play only for now — we may bring it back." So the real tracker is
+  // PARKED, NOT RETIRED. Everything above stays intact — setFreeplay(false)
+  // still restores it correctly, sync() still works, and the routed pool
+  // reads/writes from delivery (i) are untouched.
+  //
+  // DO NOT delete the tracker path or those routed calls as dead code. They
+  // are unreachable only while this flag is true, and they are precisely
+  // what makes the tracker safe to switch back on. Reverting is setting
+  // FREEPLAY_ONLY to false.
+  const FREEPLAY_ONLY = true;
+  setFreeplay(FREEPLAY_ONLY);
+  if(FREEPLAY_ONLY){
+    fpBtn.classList.add('hidden');               // no way back to tracker mode
+    fpBtn.onclick = null;
+  } else {
+    fpBtn.onclick = () => setFreeplay(el.getAttribute('mode') !== 'freeplay');
+  }
 }

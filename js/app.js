@@ -188,10 +188,10 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
   document.getElementById('juzTrackerHeaderIcon').innerHTML = iconHtml('juzTracker');
   document.getElementById('adminHeaderIcon').innerHTML = iconHtml('admin');
-  // V3.41.1: Home's own header icon, confirmed in chat -- colored
-  // lavender specifically (css/nav.css's #homeHeaderIcon rule), unlike
-  // every other screen's ink-soft .card-header-icon default.
-  document.getElementById('homeHeaderIcon').innerHTML = iconHtml('home');
+  // V3.69.0: Home's header icon and the row holding it are both gone --
+  // the element no longer exists, so this unguarded getElementById would
+  // throw and kill the rest of this function (the same TypeError shape as
+  // the V3.51.2 haidhRulingHint bug). Removed, not null-guarded.
   document.querySelectorAll('.journal-header-row button[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => showScreen('logDetail', btn.dataset.nav));
   });

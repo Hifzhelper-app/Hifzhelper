@@ -215,13 +215,22 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   w.eval(authSrc.slice(start, end));
   const ids = () => w.eval('visibleNavItems().map(i => i.id)');
   let v = ids();
-  check('nav student: has maktabJournal, NOT maktabSummary/admin', v.includes('maktabJournal') && !v.includes('maktabSummary') && !v.includes('admin'));
+  // V3.69.0 updated this expectation rather than working around it (the
+  // tests/README maintenance rule). maktabJournal was dropped from the nav
+  // when the personal journal was hidden in the maktab: it is the STUDENT's
+  // read-only view of her own maktab logs, so it has no place on a teaching
+  // account. The role gating this asserted is otherwise unchanged.
+  check('nav student: no maktabJournal (V3.69.0), and NOT maktabSummary/admin', !v.includes('maktabJournal') && !v.includes('maktabSummary') && !v.includes('admin'));
+  check('nav student: the hidden PJ screens are absent (V3.69.0)',
+    !v.includes('journal') && !v.includes('logDetail') && !v.includes('reflections') && !v.includes('settings'));
   w.eval('currentUser.role = "teacher"');
   v = ids();
   check('nav teacher: + maktabSummary, still no admin', v.includes('maktabSummary') && !v.includes('admin'));
   w.eval('currentUser.role = "admin"');
   v = ids();
-  check('nav admin: maktabSummary AND admin (admin counts as teacher)', v.includes('maktabSummary') && v.includes('admin') && v.includes('maktabJournal'));
+  check('nav admin: maktabSummary AND admin (admin counts as teacher)', v.includes('maktabSummary') && v.includes('admin'));
+  check('nav admin: Juz Tracker and Surahs in my Heart survive the hiding (V3.69.0)',
+    v.includes('juzTracker') && v.includes('sih'));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
