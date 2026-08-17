@@ -204,7 +204,46 @@ actually active (V3.8.0) — a cross-cutting per-screen concern belongs in
 the one place every screen already passes through, not in each screen's
 own render function.
 
-## File structure
+## 13. Mutable state never lives in append-only prose — it lives in one block that gets updated
+
+`TODO.md`, `SPECS.md` and `CHANGELOG.md` are **append-only narrative**: an
+entry is written once, on the day a delivery ships, and is never revisited.
+That is the right shape for a record, and the wrong shape for anything whose
+truth changes afterwards.
+
+Migration state changes afterwards. So does deploy state. So does "is this
+still open". Writing `RUN MIGRATION 0019 FIRST` into a delivery entry
+produces a sentence that is true for about a day and then quietly wrong
+forever — and because nobody reads a 4,000-line document end to end, it is
+found by grep, which returns the fragment stripped of any signal that it is
+historical.
+
+**The rule:**
+
+- **Current state** — what has been run, what is deployed, what is
+  outstanding — lives in exactly one block per file, at the top, dated. That
+  block is *edited*. Today those are the `MIGRATION STATUS` blocks in
+  `TODO.md` and `CHANGELOG.md`, and `LIVE ITEMS` in `TODO.md`.
+- **Delivery entries** state what the delivery *required at upload time* and
+  point at the status block. Past tense: "required at upload time: run 0020",
+  not "RUN 0020 FIRST".
+- **The two mirrored MIGRATION STATUS blocks are updated together.** A
+  delivery that adds a migration adds a row to both, in the same zip.
+- **Never leave an open item's heading to be corrected later.** If a
+  delivery closes something flagged, the flag is edited in the same delivery
+  — not marked done in a new entry further down the file.
+
+**Why this exists (2026-08-17).** A single pass over `TODO.md` found three
+false statements of exactly this kind: a migration marked NOT YET RUN three
+deliveries after it was run; delivery (e2) marked OPEN three deliveries
+after V3.60.0 built it; and a section whose heading read "awaiting start
+building" directly above its own body recording all ten of its items as
+built and verified. None was a mistake at the time of writing. All three
+were produced by the same mechanism — mutable facts written into prose that
+is never revisited. `TODO.md` was split at V3.67.3 (delivered specs to
+`SPECS.md`) so the action list is short enough to actually be read, which is
+the other half of the fix.
+
 
 ```
 /frontend/
