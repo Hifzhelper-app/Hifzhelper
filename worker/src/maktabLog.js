@@ -35,7 +35,7 @@
 
 import { isDuplicate, updateLog, deleteLog, getLogs, applyPrivacy } from './logHelpers.js';
 import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
-import { computeDefaultDhorEntry } from './dhorSchedule.js';
+import { computeDefaultDhorEntry, mergeDhorUnitsIntoPool } from './dhorSchedule.js';
 
 // V3.59.0 (maktab delivery (e1)): one round-trip payload for the maktab
 // summary screen — the active-student roster PLUS all three tables'
@@ -194,6 +194,14 @@ async function handleSave(cfg, request, env, auth) {
   const result = await env.DB.prepare(
     `INSERT INTO ${cfg.table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`
   ).bind(...bindVals).run();
+
+  // V3.68.0 (delivery (i)): Dhor only -- the maktab pool grows in the same
+  // request that writes the row, into THIS student's maktab_position blob.
+  // Sabaq and Sabaq Dhor do not touch the pool here; sabaq-dhor's
+  // move-to-Dhor still runs through the frontend's routed logSavePool.
+  if (cfg.table === 'maktab_dhor_log') {
+    await mergeDhorUnitsIntoPool(env, body.student_id, src.segment_from, src.segment_to, src.ref, { maktab: true });
+  }
 
   // Haidh overwrite (confirmed in chat: "the save overwrites the haidh
   // mark" -- haidh and a log cannot co-exist, log always wins).

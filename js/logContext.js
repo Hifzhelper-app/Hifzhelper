@@ -76,11 +76,30 @@ const maktabSabaqDhorClient = makeMaktabLogClient('/maktab/sabaq-dhor');
 const maktabDhorClient = makeMaktabLogClient('/maktab/dhor');
 
 // The one function the page modules call instead of naming a client.
+// A switch, not an object literal: building a map would dereference EVERY
+// client on every call, so one absent global takes down a lookup for a
+// different type entirely. The harness caught exactly that when
+// 'reflections' joined the list. Only the requested client is touched.
 function logClient(type){
   if(logCtxIsMaktab()){
-    return { sabaq: maktabSabaqClient, sabaqDhor: maktabSabaqDhorClient, dhor: maktabDhorClient }[type];
+    switch(type){
+      case 'sabaq':     return maktabSabaqClient;
+      case 'sabaqDhor': return maktabSabaqDhorClient;
+      case 'dhor':      return maktabDhorClient;
+    }
+    // 'reflections' has NO maktab table -- the maktab day view carries no
+    // Tadabbur card. Falling back to the PJ client would hand back the
+    // TEACHER's reflections, the exact bug class this file exists to stop,
+    // so fail loudly rather than quietly wrong.
+    throw new Error(`logClient: no maktab client for "${type}" -- this module must not run in maktab mode`);
   }
-  return { sabaq: apiSabaq, sabaqDhor: apiSabaqDhor, dhor: apiDhor }[type];
+  switch(type){
+    case 'sabaq':       return apiSabaq;
+    case 'sabaqDhor':   return apiSabaqDhor;
+    case 'dhor':        return apiDhor;
+    case 'reflections': return apiReflections;
+  }
+  return undefined;
 }
 
 // Dhor's prepop calc lives in the worker and already has a maktab variant
@@ -135,6 +154,34 @@ async function logProfile(){
     return { mushaf: settings.mushaf, baseline_selection: logCtxPool() };
   }
   return apiGetProfile();
+}
+
+// THE ONE POOL WRITER (V3.68.0, delivery (i)). Before this, four call
+// sites each did their own apiSaveProfile({baseline_selection}) --
+// sabaqPage's auto-move, sabaqDhorPage's rollup, dhorPage's post-save
+// merge and the juz tracker. apiSaveProfile is own-only, so in maktab
+// mode every one of them grew the TEACHER's pool while the student's
+// stayed at whatever setup put there. Routing four call sites
+// individually would have been four chances to get it wrong again; they
+// all come through here instead, and the maktab branch writes the same
+// position_json.baselineSelection shape maktabSetup.js already uses.
+async function logSavePool(units){
+  const pool = Array.isArray(units)
+    ? [...new Set(units.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a, b) => a - b)
+    : [];
+  if(logCtxIsMaktab()){
+    const id = logCtxStudentId();
+    let blob = {};
+    try{
+      const pos = await apiGetMaktabPosition(id);
+      if(pos && pos.position_json) blob = JSON.parse(pos.position_json) || {};
+    } catch(e){ blob = {}; }
+    blob.baselineSelection = pool;
+    await apiSaveMaktabPosition(id, JSON.stringify(blob), null);
+    setLogCtxPool(pool);   // keep the cached copy honest for this session
+    return;
+  }
+  await apiSaveProfile({ baseline_selection: pool });
 }
 
 // The student's own non-private note for the day being logged -- the

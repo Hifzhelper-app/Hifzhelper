@@ -150,7 +150,7 @@ async function renderTadabburScreen(){
     // Non-fatal -- leave the form blank rather than blocking the whole card
     // over a failed prefill fetch; saving still works either way.
   }
-  await renderRecentEntries('reflections', apiReflections, 'tadabburHistoryRail', showTadabburReadView);
+  await renderRecentEntries('reflections', 'tadabburHistoryRail', showTadabburReadView);
 }
 
 document.getElementById('tadabburSaveBtn').addEventListener('click', async () => {

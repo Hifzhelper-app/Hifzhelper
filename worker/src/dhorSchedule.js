@@ -1,4 +1,4 @@
-import { segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex, quarterUnitToJuzQuarter } from '../../shared/data.js';
+import { segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex, quarterUnitToJuzQuarter, segmentToQuarterUnits } from '../../shared/data.js';
 
 // Dhor scheduling (V3.9.0 -> pure queue model, confirmed in chat 2026-08-02).
 // Current as of V3.38.
@@ -298,4 +298,89 @@ export async function handleGetUpcomingDhorQueue(request, env, auth) {
   const fallbackUnit = url.searchParams.get('fallback_unit');
   const result = await computeUpcomingDhorQueue(env, auth.id, fallbackUnit);
   return { data: result };
+}
+
+
+// ============================================================
+// mergeDhorUnitsIntoPool (V3.68.0, delivery (i))
+//
+// The Dhor pool grows as part of the SAME request that writes the log
+// row, replacing the client-side merge that used to follow the save as a
+// second, fire-and-forget call. Two properties follow by construction
+// rather than by discipline:
+//   - there is no second request left to fail silently (the old one did
+//     not await and swallowed its error, so a log could commit while the
+//     pool quietly did not grow);
+//   - the pool written is always the pool of the student the row was
+//     written for, so the maktab wrong-row case is not "routed
+//     correctly" -- it is unroutable.
+//
+// REMOVAL STAYS FREE. This only ever ADDS the units just logged.
+// Clearing juz from the pool (Hifz Setup, the juz tracker, maktab
+// student setup) is a legitimate action and is untouched here --
+// re-logging a removed juz simply adds it back, which is the existing
+// "logging adds to the pool" rule, not a fight with the user.
+// ============================================================
+function mergedPool(current, units) {
+  const clean = (Array.isArray(current) ? current : [])
+    .filter(n => Number.isInteger(n) && n >= 1 && n <= 120);
+  const set = new Set(clean);
+  let added = false;
+  for (const u of units) if (!set.has(u)) { set.add(u); added = true; }
+  return added ? [...set].sort((a, b) => a - b) : null;   // null = nothing to write
+}
+
+export async function mergeDhorUnitsIntoPool(env, studentId, segment_from, segment_to, ref, opts = {}) {
+  // The log row is ALREADY COMMITTED by the time this runs. A pool merge
+  // that throws would turn a successful save into a 500 and invite the
+  // client to retry it -- duplicate rows to fix a derived convenience.
+  // So the whole thing is best-effort. This is NOT the silent
+  // .catch(() => {}) it replaces: that one sat between two requests and
+  // lost real failures to the network, whereas anything reaching here is
+  // a schema or DB fault, reported to the worker log where it is visible.
+  try {
+    await mergePoolInner(env, studentId, segment_from, segment_to, ref, opts);
+  } catch (e) {
+    console.error('mergeDhorUnitsIntoPool failed (log row saved, pool not grown):', studentId, e && e.message);
+  }
+}
+
+async function mergePoolInner(env, studentId, segment_from, segment_to, ref, opts) {
+  if (segment_from == null || segment_to == null) return;
+  let units;
+  // A segment that will not decompose must never fail the save -- the log
+  // row is the record; the pool is a derived convenience on top of it.
+  try { units = segmentToQuarterUnits(segment_from, segment_to, ref || 'waterval'); }
+  catch (e) { return; }
+  if (!Array.isArray(units) || !units.length) return;
+
+  if (opts.maktab) {
+    const row = await env.DB.prepare('SELECT position_json FROM maktab_position WHERE student_id = ?')
+      .bind(studentId).first();
+    let blob = {};
+    try { blob = row && row.position_json ? (JSON.parse(row.position_json) || {}) : {}; } catch (e) { blob = {}; }
+    const merged = mergedPool(blob.baselineSelection, units);
+    if (merged === null) return;
+    blob.baselineSelection = merged;
+    // Mirrors handleSaveMaktabPosition's own upsert, COALESCE included, so
+    // a pool merge never clobbers last_dhor_json.
+    const now = new Date().toISOString();
+    await env.DB.prepare(
+      `INSERT INTO maktab_position (student_id, position_json, last_dhor_json, updated_at) VALUES (?, ?, NULL, ?)
+       ON CONFLICT(student_id) DO UPDATE SET
+         position_json = COALESCE(excluded.position_json, maktab_position.position_json),
+         last_dhor_json = COALESCE(excluded.last_dhor_json, maktab_position.last_dhor_json),
+         updated_at = excluded.updated_at`
+    ).bind(studentId, JSON.stringify(blob), now).run();
+    return;
+  }
+
+  const row = await env.DB.prepare('SELECT baseline_selection FROM students WHERE id = ?')
+    .bind(studentId).first();
+  let current = [];
+  try { current = JSON.parse((row && row.baseline_selection) || '[]'); } catch (e) { current = []; }
+  const merged = mergedPool(current, units);
+  if (merged === null) return;
+  await env.DB.prepare('UPDATE students SET baseline_selection = ? WHERE id = ?')
+    .bind(JSON.stringify(merged), studentId).run();
 }

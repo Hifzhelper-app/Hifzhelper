@@ -637,6 +637,36 @@ function structuralQuarterBounds(juz, quarterIndex, ref){
 // Works as a plain global-scope script in the browser (file:// safe — no ES module
 // CORS restrictions) AND as a CommonJS module for the Worker (wrangler/esbuild
 // supports require()). Nothing above this line needs to change either way.
+// ---------- dhor segment <-> quarter-unit conversion ----------
+// Moved here from js/dhorPage.js in V3.68.0 (delivery (i)): the worker
+// merges a logged Dhor segment into the student's pool as part of the
+// same request that writes the row, so it needs segmentToQuarterUnits
+// too. Both are pure and depend only on segmentsPerJuz, already here.
+function segmentRangeToPicker(segment_from, segment_to, ref){
+  const perJuz = segmentsPerJuz(ref);
+  const juz = Math.floor((segment_from - 1) / perJuz) + 1;
+  const positionInJuz = ((segment_from - 1) % perJuz) + 1;
+  const span = segment_to - segment_from + 1;
+  let unit = 'quarter';
+  if(span === perJuz) unit = 'full';
+  else if(span === perJuz / 2) unit = 'half';
+  else if(span === perJuz / 4) unit = 'quarter';
+  return { juz, positionInJuz, unit };
+}
+
+function segmentToQuarterUnits(segment_from, segment_to, ref){
+  const { juz, positionInJuz, unit } = segmentRangeToPicker(segment_from, segment_to, ref);
+  if(unit === 'full') return quarterUnitsForJuz(juz);
+  const perJuz = segmentsPerJuz(ref);
+  if(unit === 'half'){
+    const halfIdx = positionInJuz <= perJuz / 2 ? 1 : 2;
+    return quarterUnitsForHalf(juz, halfIdx);
+  }
+  const quarterSize = perJuz / 4;
+  const quarterIdx = Math.ceil(positionInJuz / quarterSize);
+  return [quarterUnitId(juz, quarterIdx)];
+}
+
 if(typeof module !== 'undefined' && module.exports){
   module.exports = {
     TAJWEED_DEFAULTS, SURAHS, surahName, JUZ_BOUNDARIES, JUZ_BOUNDARIES_UTHMANI,
@@ -653,6 +683,7 @@ if(typeof module !== 'undefined' && module.exports){
     studyMaqraIndex, structuralMaqraOf, structuralMaqraBounds,
     quarterUnitWord, globalHizbNumber,
     parseVerseRef, formatVerseRef, crossesAtMostOneJuzBoundary, getLinesForSpan,
-    quarterUnitId, quarterUnitToJuzQuarter, quarterUnitsForJuz, quarterUnitsForHalf
+    quarterUnitId, quarterUnitToJuzQuarter, quarterUnitsForJuz, quarterUnitsForHalf,
+    segmentRangeToPicker, segmentToQuarterUnits
   };
 }

@@ -1,4 +1,5 @@
 import { insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided } from './logHelpers.js';
+import { mergeDhorUnitsIntoPool } from './dhorSchedule.js';
 import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
 
 const TABLE = 'dhor_log';
@@ -62,6 +63,10 @@ export async function handleSaveDhor(request, env, auth) {
   // not set means insertLog returned early, nothing to link/mark
   // attendance for yet).
   if (result.id) {
+    // V3.68.0 (delivery (i)): the pool merge that used to be a second
+    // fire-and-forget request from js/dhorPage.js now happens here, in
+    // the same request that wrote the row, for the same studentId.
+    await mergeDhorUnitsIntoPool(env, studentId, body.segment_from, body.segment_to, body.ref);
     if (body.plan_id) await linkPlanIfProvided(env, body.plan_id, studentId, result.id);
 
     // V3.56.0: fresh-save note fix -- see sabaqLog.js's identical block

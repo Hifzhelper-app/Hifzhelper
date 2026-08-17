@@ -194,7 +194,7 @@ async function renderSabaqScreen(){
 
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', null);
-  await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
+  await renderRecentEntries('sabaq', 'sabaqRecentRail');
 }
 
 // V3.14.2: page count is a fixed-standard capacity measure, not a real-
@@ -304,7 +304,7 @@ document.getElementById('sabaqEditDeleteBtn').addEventListener('click', async ()
     await logClient('sabaq').remove(sabaqEditingId);
     cancelSabaqEdit();
     await resetSabaqFormAfterEdit();
-    await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
+    await renderRecentEntries('sabaq', 'sabaqRecentRail');
   } catch(e){
     document.getElementById('sabaqError').textContent = "Couldn't delete: " + e.message;
   }
@@ -412,13 +412,13 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
         if(autoMove.moved){
           sabaqPosition = autoMove.position;
           await savePosition(sabaqPosition);
-          await apiSaveProfile({ baseline_selection: autoMove.baselineSelection });
+          await logSavePool(autoMove.baselineSelection);
         }
       } catch(e){ /* best-effort -- sabaq entry itself already saved */ }
     }
 
     if(sabaqEditingId) cancelSabaqEdit();
-    await renderRecentEntries('sabaq', apiSabaq, 'sabaqRecentRail');
+    await renderRecentEntries('sabaq', 'sabaqRecentRail');
     const dhorExists = await hasDhorHistory();
     const next = nextSabaqDefaults(sabaqFrontier, sabaqRef, dhorExists);
     sabaqValue = { from: next.from, to: next.to };

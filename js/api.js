@@ -210,9 +210,13 @@ function apiGetMaktabDhor(studentId){
 }
 
 // ---------- maktab write path + prepop fetches (V3.60.0, delivery (e2)) ----------
-const apiMaktabSabaq = makeLogClient('/maktab/sabaq');
-const apiMaktabSabaqDhor = makeLogClient('/maktab/sabaq-dhor');
-const apiMaktabDhor = makeLogClient('/maktab/dhor');
+// V3.68.0 (delivery (i)): apiMaktabSabaq / apiMaktabSabaqDhor /
+// apiMaktabDhor DELETED. Zero call sites since the V3.64.0 day-view
+// rewrite moved to logContext's student-scoped clients, and they were the
+// makeLogClient (token-deciding) form of the very endpoints
+// makeMaktabLogClient student-scopes -- the wrong-row footgun under
+// inviting names. verify_routing.mjs could never guard them: it scans
+// call SITES and they had none, so deleting them is the only guard.
 function apiMaktabDhorDefault(studentId){
   return apiFetch('/maktab/dhor-default-entry?student_id=' + encodeURIComponent(studentId));
 }

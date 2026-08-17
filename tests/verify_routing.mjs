@@ -115,10 +115,12 @@ if (violations.length) {
   console.log('');
 }
 
-// The guard proper. Until delivery (i) lands this is EXPECTED to fail —
-// it is measuring the debt, not asserting it is gone. After (i) the
-// expected count drops to 0 and any regression fails the suite.
-const EXPECTED_UNROUTED = Number(process.env.EXPECTED_UNROUTED ?? 16);
+// The guard proper. V3.68.0 (delivery (i)) routed all 16 sites, so this
+// flipped from MEASURING the debt to ASSERTING it is gone: any new
+// own-only call reachable in maktab mode fails the suite. Do NOT raise
+// this number to make a build pass — route the call, or add a JUSTIFIED
+// entry carrying a real reason.
+const EXPECTED_UNROUTED = Number(process.env.EXPECTED_UNROUTED ?? 0);
 check(`unrouted call sites: ${violations.length} (expected ${EXPECTED_UNROUTED})`,
   violations.length === EXPECTED_UNROUTED);
 

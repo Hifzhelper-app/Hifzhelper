@@ -164,17 +164,11 @@ function tripleToPositionInJuz(triple, ref){
   return (triple.slot - 1) * unitMarkerCount(ref, triple.unit) + 1;
 }
 
-function segmentRangeToPicker(segment_from, segment_to, ref){
-  const perJuz = segmentsPerJuz(ref);
-  const juz = Math.floor((segment_from - 1) / perJuz) + 1;
-  const positionInJuz = ((segment_from - 1) % perJuz) + 1;
-  const span = segment_to - segment_from + 1;
-  let unit = 'quarter';
-  if(span === perJuz) unit = 'full';
-  else if(span === perJuz / 2) unit = 'half';
-  else if(span === perJuz / 4) unit = 'quarter';
-  return { juz, positionInJuz, unit };
-}
+// V3.68.0 (delivery (i)): segmentRangeToPicker and segmentToQuarterUnits
+// MOVED to shared/data.js -- the worker needs segmentToQuarterUnits to
+// merge logged units into the pool inside the log insert, and both are
+// pure functions whose only dependency (segmentsPerJuz) already lived
+// there. They stay globally available to this file unchanged.
 
 let dhorSelectedTags = [];
 // V3.24.0: duration switched from decimal minutes to mm:ss text. Unlike
@@ -449,7 +443,7 @@ async function renderDhorScreen(){
     dhorTodaysPlans = [];
   }
 
-  await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+  await renderRecentEntries('dhor', 'dhorRecentRail');
 }
 
 // 2026-08-04: the timer is now a persistent, static overlay element
@@ -634,18 +628,6 @@ let planDhorRangeStart = null;
 // quarter-unit IDs it spans -- the common representation every tab's
 // selections get reduced to. Mirrors describeDhorSegment's own
 // juz'/unit derivation (segmentRangeToPicker) rather than a second way.
-function segmentToQuarterUnits(segment_from, segment_to, ref){
-  const { juz, positionInJuz, unit } = segmentRangeToPicker(segment_from, segment_to, ref);
-  if(unit === 'full') return quarterUnitsForJuz(juz);
-  const perJuz = segmentsPerJuz(ref);
-  if(unit === 'half'){
-    const halfIdx = positionInJuz <= perJuz / 2 ? 1 : 2;
-    return quarterUnitsForHalf(juz, halfIdx);
-  }
-  const quarterSize = perJuz / 4;
-  const quarterIdx = Math.ceil(positionInJuz / quarterSize);
-  return [quarterUnitId(juz, quarterIdx)];
-}
 
 // Given which quarter-unit IDs are "available" for juzNum in the current
 // tab (pool membership for View All Completed; always all 4 for View
@@ -1290,7 +1272,7 @@ document.getElementById('dhorEditDeleteBtn').addEventListener('click', async () 
     await logClient('dhor').remove(dhorEditingId);
     cancelDhorEdit();
     resetDhorFormAfterEdit();
-    await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+    await renderRecentEntries('dhor', 'dhorRecentRail');
   } catch(e){
     document.getElementById('dhorError').textContent = "Couldn't delete: " + e.message;
   }
@@ -1339,7 +1321,7 @@ async function saveDhorEdit(){
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
     cancelDhorEdit();
     resetDhorFormAfterEdit();
-    await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+    await renderRecentEntries('dhor', 'dhorRecentRail');
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;
   }
@@ -1413,31 +1395,18 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
       if(!proceed) return;
       await logClient('dhor').save(Object.assign({}, payload, { force: true }));
     }
-    // Pool update, moved here from Plan Dhor's own Save (2026-08-03,
-    // confirmed in chat): "logged entries go into history and add to
-    // the dhor pool... any save from the dhor card should add to the
-    // dhor pool" -- covers both branches above (a clean segment and a
-    // raw range both already computed a real segment_from/segment_to),
-    // and runs regardless of whether this entry came from a Plan Dhor
-    // selection or was entered fully manually, so the two paths can no
-    // longer drift apart the way they could before. Fetches the profile
-    // fresh rather than trusting planDhorPool, since that's only ever
-    // populated once Plan Dhor's own modal has been opened this session
-    // -- a fully manual entry might never have touched it at all.
-    let profile = {};
-    try{ profile = await logProfile(); } catch(e){}
-    const currentPool = Array.isArray(profile.baseline_selection)
-      ? [...new Set(profile.baseline_selection.filter(n => Number.isInteger(n) && n >= 1 && n <= 120))].sort((a,b) => a-b)
-      : [];
-    const loggedUnits = segmentToQuarterUnits(segment_from, segment_to, dhorCurrentRef);
-    const newUnits = loggedUnits.filter(u => !currentPool.includes(u));
-    if(newUnits.length > 0){
-      const merged = [...new Set([...currentPool, ...newUnits])].sort((a,b) => a-b);
-      apiSaveProfile({ baseline_selection: merged }).catch(() => { /* best-effort, matches the original behaviour this moved from */ });
-    }
+    // V3.68.0 (delivery (i)): the client-side pool merge that used to sit
+    // here is GONE. It was a second, non-atomic request that neither
+    // awaited nor surfaced its failure (.catch(() => {})), so a Dhor log
+    // could commit while the pool silently did not grow -- and being
+    // own-only, in maktab mode it grew the TEACHER's pool instead of the
+    // student's. The worker now merges the logged units as part of the
+    // same request that writes the row (mergeDhorUnitsIntoPool in
+    // worker/src/dhorSchedule.js), so there is no second request left to
+    // fail and no "whose pool?" question left to answer wrongly.
     document.getElementById('dhorSaveStatus').classList.add('show');
     setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
-    await renderRecentEntries('dhor', apiDhor, 'dhorRecentRail');
+    await renderRecentEntries('dhor', 'dhorRecentRail');
     // Items 1+2 (2026-08-04, confirmed in chat): every successful save --
     // whether the entry came from the timer or was entered fully
     // manually -- clears the whole form and immediately repopulates it
@@ -1481,8 +1450,15 @@ const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor Histo
 // callers (Sabaq/Sabaq Dhor/Dhor) don't pass this, so their rows stay
 // exactly as non-interactive as before -- only Tadabbur's own call
 // site opts in.
-async function renderRecentEntries(type, client, railId, onRowClick){
+// V3.68.0 (delivery (i)): the client is no longer passed in. Ten call
+// sites each handed over a hardcoded own-only constant (apiSabaq /
+// apiSabaqDhor / apiDhor), so in maktab mode a teacher opening a
+// student's card saw HER OWN recent entries in the rail. Taking it from
+// logClient(type) means the rail follows whatever student the context
+// points at, and there is no longer a constant to pass wrongly.
+async function renderRecentEntries(type, railId, onRowClick){
   const container = document.getElementById(railId);
+  const client = logClient(type);
   let rows = [];
   try{ rows = await client.get(); } catch(e){ rows = []; }
   rows = rows.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id||0) - (a.id||0));

@@ -82,3 +82,25 @@ assertion rather than working around it** — a check that no longer
 describes the code is worse than no check. Several assertions in here
 were deliberately rewritten when (g) and (h) changed what they
 described, and each rewrite says why in a comment.
+
+## verify_pool.mjs (added V3.68.0, delivery (i))
+
+Covers the server-side Dhor pool merge that replaced the client-side one.
+A D1-shaped stub over `node:sqlite` drives the real
+`mergeDhorUnitsIntoPool` for both the PJ (`students.baseline_selection`)
+and the maktab (`maktab_position.position_json.baselineSelection`) paths.
+
+**The assertions most worth keeping honest** are the removal ones.
+Clearing juz from the pool is a legitimate action — Hifz Setup, the juz
+tracker and maktab student setup all do it deliberately — so the merge
+must only ever ADD what was just logged, never re-assert or "repair" what
+someone removed on purpose. A design that made the pool a derived union
+was withdrawn for exactly this reason. If a future change makes those
+tests fail, the change is wrong, not the tests.
+
+It also asserts a pool failure never throws: the log row is committed
+before the merge runs, so throwing would turn a good save into a 500 and
+invite a retry that duplicates the row. The failure is reported to the
+worker log instead — which is why running this harness prints one
+`mergeDhorUnitsIntoPool failed` line to stderr. That line is a passing
+test, not a fault.

@@ -8,43 +8,40 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## LIVE ITEMS — everything open, 2026-08-17
+## LIVE ITEMS — the whole action list, in priority order (2026-08-17)
 
-The whole action list. If it is not here it is not outstanding.
-Deliberately **no line numbers**: they go stale on the next edit, which is
-the failure this restructure exists to stop. Headings are unique — search
-the text.
+**If it is not in this table it is not outstanding.** One list, not two — a
+summary kept separately from the detail is a second thing to keep in sync,
+which is the failure CONVENTIONS.md §13 exists to stop. Deliberately **no
+line numbers**: they go stale on the next edit. Headings are unique, so
+search the text.
 
-**Designs agreed, nothing built — each needs its own "start building":**
+| # | Item | Blocked on | Why it sits here |
+| --- | --- | --- | --- |
+| ~~1~~ | ~~**(i) Read-routing rewrite**~~ — *ARCHITECTURE* | **DONE — V3.68.0, 2026-08-17** | The only item producing wrong data **now**: teachers see their own recent entries on a student's card, logged portions grow the teacher's pool instead of the maktab's, the tracker reads the teacher's pool. 16 sites, no schema change, no dependencies, spec ready, harness already written and flips to a permanent guard when done |
+| **2** | **Shared maktab timezone** — *Flagged: Phase 2/Maktab* | One remaining decision (see the entry) | **DECIDED 2026-08-17: canonical timezone is a per-maktab setting, set on the maktab settings screen** (its 5th setting). Promoted from "future-proofing" because that premise expired — (a)–(h) have shipped, and (f)'s haidh propagation counts CALENDAR days, which is exactly what breaks across timezones. Cheapest to settle now: no real users, so nothing is yet recorded against a wrong day boundary |
+| **1** | **(j) Account separation** — *ARCHITECTURE* | Needs "start building (j)" | Unblocks (k). Largest single piece: migration + auth + the device-local switcher |
+| **4** | **updateLog writes an unvalidated date** — *Flagged* | Nothing — scheduled | **DECIDED 2026-08-17: rides along with (j)**, the next worker-touching delivery. Not its own release. Real integrity gap (a bad date is written **and** silently skips attendance sync) but unreachable through the UI — the date picker cannot produce one; it needs a direct API call. Scheduling call, not a product decision |
+| **5** | **(k) Merged journal** — *ARCHITECTURE* | (j) | Depends on (j) settling what a student account is |
+| **6** | **(l) Archive** — *ARCHITECTURE* | (k) | Depends on (k)'s union existing |
+| **7** | **dhorSchedule — 1 left** — *Flagged: dhorSchedule behaviour questions* | Your confirmation | **First one CLOSED 2026-08-17: confirmed intended, code already starts Dhor from the lowest marked juz ascending — proven against the real function, no change needed.** **Final scope 2026-08-17 — much smaller than it looked.** Removing/resetting juz from Dhor is LEGITIMATE (user's call, and it only changes the prepop), so an empty pool with history is a valid state, the Setup-reset path is not a fault, and the emptiness gate is correct as written. All that remains is (A): move the Dhor pool write server-side into the log insert. **Read before scoping (i)** — it removes a site from (i) rather than routing it, and makes (i) worker-touching |
+| **8** | **Settings Haidh heading tweaks** — *Flagged* | Nothing — say "start building" | **Now THREE changes** (2026-08-17): resize + move the checkbox (confirmed not yet done), delete the "Ruling" label, and delete the ruling hint text. The hint deletion has a trap — see the entry; removing the element without its two JS writers reproduces the V3.51.2 blank-fields bug |
+| **9** | **Home header icon removal** — *Flagged* | Nothing — say "start building" | **DECIDED 2026-08-17: remove the whole header row**, not just the icon. `#homeHeaderIcon` is in index.html, js/app.js (×2), css/nav.css |
+| ~~10~~ | ~~**`apiSetAttendance`**~~ — *now "Closed — attendance clients"* | **CLOSED 2026-08-17** | **Was stale — nothing to do.** The function it named was removed back in V3.40.2; every attendance client that exists is live |
 
-| Item | Where | State |
-| --- | --- | --- |
-| Maktab records Phase 2, deliveries (a)–(h) | *Design — Maktab records* | **(a)–(h) ALL SHIPPED.** Kept for the design rationale the later deliveries still reference |
-| Read-routing rewrite **(i)** | *ARCHITECTURE* | Spec ready, urgent, no schema change — **do this first** |
-| Account separation **(j)** | *ARCHITECTURE* | Spec ready; blocks (k) |
-| Merged journal **(k)** | *ARCHITECTURE* | Spec ready; depends on (j) |
-| Archive **(l)** | *ARCHITECTURE* | Spec ready; depends on (k) |
+**Dependency chain:** (i) → (j) → (k) → (l) is fixed. Everything else can be
+slotted between them in any order.
 
-**Open bugs and flagged items — each verified against the code 2026-08-17:**
-
-| Item | Verified state |
-| --- | --- |
-| *updateLog writes an unvalidated date* | **Live.** `date` reaches the row through the `contentFields` branch with no validation; `isValidDate` is consulted only to decide attendance sync, so an invalid date is both written *and* silently skips attendance |
-| *Home header icon removal* | **Live.** `#homeHeaderIcon` still in index.html, js/app.js (×2), css/nav.css |
-| *Phase 2/Maktab: shared timezone* | **Live.** Design question, unresolved |
-| *Settings Haidh heading tweaks* | **Live.** `.haidh-ruling-label` still at index.html:1089; both tweaks outstanding |
-| *Flagged, not yet resolved* (dhorSchedule ×2) | **Live.** Both are "confirm the intended behaviour" questions |
-| *Parked — attendance* | **Partly closed.** Only `apiSetAttendance` is now unwired; see the entry |
+**Design — Maktab records (a)–(h): ALL SHIPPED.** That section is kept for
+the design rationale later deliveries still reference — it is not an action.
 
 **Corrected on 2026-08-17 — previously listed as open, actually shipped:**
-
-- Maktab delivery **(e2)** — its heading still read "OPEN … awaiting start
-  building" three deliveries after V3.60.0 built it.
-- **V3.51.1 edit bottombar tweaks** — heading read "awaiting start building"
-  while the body directly below recorded all ten items as built and verified.
-
-Both are now in `SPECS.md`. Two false open items and one stale migration
-instruction, all found in a single pass, is what motivated the split.
+maktab delivery **(e2)** (its heading read "OPEN … awaiting start building"
+three deliveries after V3.60.0 built it) and the **V3.51.1 edit bottombar
+tweaks** (heading read "awaiting start building" while the body directly
+below recorded all ten items as built and verified). Both now in `SPECS.md`.
+Two false open items and one stale migration instruction, all found in a
+single pass, is what motivated the split.
 
 ## MIGRATION STATUS — hifzhelper-maktab1 (confirmed 2026-08-17)
 
@@ -450,7 +447,7 @@ can execute while a maktab context is active. Lives in
 `verify_routing.mjs` and runs with the suite, so it re-checks on every
 delivery instead of depending on how carefully anyone reads.
 
-**16 unrouted call sites:**
+**16 unrouted call sites — ALL FIXED in V3.68.0. `verify_routing.mjs` now asserts 0 and fails the suite on any new one. Kept as the record of what was wrong:**
 
 | Sites | What | Effect in maktab mode |
 | --- | --- | --- |
@@ -537,7 +534,7 @@ sites are asserted inside it, not counted in that number. A future session
 seeing "5" next to a 16-site audit will think something regressed; it has
 not. When (i) flips the expectation to 0, that 5 does not change either.
 
-**(i) Read-routing rewrite + the guard.** All 16 sites through the
+**(i) Read-routing rewrite + the guard. — DONE, V3.68.0, 2026-08-17. All 16 sites routed, guard flipped to assert 0, `mergeDhorUnitsIntoPool` moved the Dhor pool write server-side. See the CHANGELOG entry.** All 16 sites through the
 context; `renderRecentEntries` takes its client from `logClient(type)`
 rather than a passed-in constant; ONE context-aware pool writer serving
 all four write sites (setup, ongoing dhor logs, sabaq dhor overflow,
@@ -581,87 +578,221 @@ depends on (j) having settled what a student account is; (l) depends on
    deleted. Alternatives: keep both (then which is authoritative?), or
    leave the tracker PJ-only.
 
-## Flagged — updateLog writes an unvalidated date straight to the row (2026-08-15)
+## Flagged — updateLog writes an unvalidated date straight to the row (2026-08-15, SCHEDULED 2026-08-17)
 
-Found while writing V3.54.0's test harness, not introduced by it and
-not fixed by it. `updateLog`'s generic field-update loop writes
-whatever's in `updates.date` directly into the log's `date` column —
-no `isValidDate` check on that write itself, only (as of V3.54.0) on
-whether it's well-formed enough to trigger the attendance sync. A
-malformed date currently can't be produced by the frontend's date
-picker, so this needs a direct API call to reach — low real-world
-risk, but a genuine gap in what the endpoint itself guarantees.
-User's call whether this is worth its own small delivery.
+**Scheduled: rides along with (j)**, the next delivery that touches the
+worker. Not a separate release — the fix is a few lines and bundling it
+avoids a worker deploy of its own.
 
-## Flagged — Home header icon removal, separate from the redesign above (2026-08-09)
+Found while writing V3.54.0's test harness, not introduced by it and not
+fixed by it. `updateLog`'s generic field-update loop writes whatever is in
+`updates.date` straight into the log's `date` column via the `contentFields`
+branch — no `isValidDate` check on the write itself. `isValidDate` is
+consulted only for the `dateChanging` flag that decides attendance sync, so a
+malformed date is both written to the row AND silently skips the attendance
+update.
 
-- [ ] Remove the home icon from Home's own header row entirely,
-  confirmed in chat — this is `#homeHeaderIcon`, the lavender `home`
-  icon in Home's `card-header-row` (V3.43 already stripped the "Home"
-  text label next to it). Now the icon itself goes too, leaving that
-  header row empty of both icon and text. Not yet decided/asked: does
-  the empty `card-header-row` div stay in the markup (just visually
-  blank), or does the whole header row element get removed too,
-  leaving the tile grid as the screen's only content? Leaning toward
-  removing the whole row rather than leaving a blank one, but flagging
-  rather than assuming. NOT part of the V3.44 build below — separate,
-  still unresolved.
+A malformed date cannot be produced by the frontend's date picker, so
+reaching this needs a direct API call — low real-world risk, but a genuine
+gap in what the endpoint itself guarantees.
 
-## Flagged — Phase 2/Maktab: shared timezone (2026-08-08)
+## Flagged — Home header icon removal, separate from the redesign above (2026-08-09, DECIDED 2026-08-17)
 
-- [ ] Future-proofing note, NOT current-phase work (Phase 2/Maktab
-  hasn't started — see profile): once there's a maktab with students
-  across different timezones, everyone needs to operate on ONE shared,
-  canonical timezone (attendance/haidh/journal date boundaries, etc.),
-  rather than each device's own local timezone — otherwise "today"
-  means a different calendar day for different users, plus the exact
-  class of bug just diagnosed below becomes structural rather than a
-  one-off. Raised in chat right after debugging the timezone date-shift
-  bug, deliberately kept separate from that fix (the fix itself stays
-  device-timezone-agnostic and correct either way).
-- [ ] Open design questions for whenever this is picked up: is the
-  canonical timezone fixed or configurable per maktab; where a
-  teacher/admin would set it (Maktab phase doesn't exist yet); whether
-  the UI should still DISPLAY times in each user's own local time for
-  readability while storing/calculating against the shared one, or show
-  the maktab's timezone everywhere regardless of viewer location.
+- [ ] Remove the home icon from Home's own header row entirely — this is
+  `#homeHeaderIcon`, the lavender `home` icon in Home's `card-header-row`
+  (V3.43 already stripped the "Home" text label next to it).
+  **DECIDED 2026-08-17: remove the WHOLE header row element, not just the
+  icon** — no blank row left behind, so the tile grid becomes the screen's
+  only content.
+- [ ] Scope, traced 2026-08-17: `#homeHeaderIcon` appears in `index.html`,
+  `js/app.js` (×2) and `css/nav.css`. Removing the row means the
+  `card-header-row` wrapper on Home goes with it; check nothing else on
+  Home positions itself against that row before deleting.
+
+## Flagged — Phase 2/Maktab: shared timezone (2026-08-08, DECIDED 2026-08-17)
+
+**DECIDED 2026-08-17: the canonical timezone is a per-maktab setting, set on
+the maktab settings screen.** That makes it the screen's 5th setting,
+alongside the mushaf, the ≥N-students maktab-day threshold, the
+absence-flag days and the maktab name. Admin-only to change, like the rest
+of that screen; readable by anything that needs a date boundary.
+
+**Why this is no longer "future work".** The original note below deferred it
+on the grounds that Phase 2/Maktab had not started. It has — (a)–(h) have
+all shipped — and (f)'s derived attendance propagates haidh by counting
+**calendar days**, which is precisely the arithmetic that breaks when users
+sit in different timezones. It is also at its cheapest right now: no real
+users, so no data has yet been recorded against a wrong day boundary.
+
+**Still open, the one remaining decision:** whether the UI should DISPLAY
+times and dates in each viewer's own local timezone for readability while
+storing and calculating against the maktab's, or show the maktab's timezone
+everywhere regardless of where the viewer is.
+
+**Original note (2026-08-08), kept for context:**
+
+- Once there's a maktab with students across different timezones, everyone
+  needs to operate on ONE shared, canonical timezone
+  (attendance/haidh/journal date boundaries, etc.), rather than each
+  device's own local timezone — otherwise "today" means a different
+  calendar day for different users, plus the timezone date-shift class of
+  bug becomes structural rather than a one-off. Raised in chat right after
+  debugging that bug, deliberately kept separate from the fix (the fix
+  itself stays device-timezone-agnostic and correct either way).
 
 
-## Flagged — Settings Haidh heading tweaks (2026-08-08)
+## Flagged — Settings Haidh heading tweaks (2026-08-08, CLARIFIED + EXTENDED 2026-08-17)
 
-- [ ] Checkbox next to "Haaidha": make it 2x its current size, and move
-  it from the LEFT of the heading text (where V3.40.1 put it) to the
-  RIGHT of it instead — heading text first, checkbox immediately after.
-  User's message cut off after "...to" — worth confirming there wasn't
-  more to this before building.
-- [ ] Remove the "Ruling" label entirely (`.haidh-ruling-label` above
-  the Hanafi/Shafi'i switch, added in V3.40.1) — just the switch itself,
-  no text label above it.
+Three changes to the Haaidha block on the Settings screen. **Confirmed
+2026-08-17: none of these has been built yet** — in particular the checkbox
+has NOT moved.
 
-## Flagged, not yet resolved
+- [ ] **Checkbox next to "Haaidha": 2x its current size, and moved from the
+  LEFT of the heading text to the RIGHT of it** — heading text first,
+  checkbox immediately after. (The 2026-08-08 message cut off after "...to";
+  confirmed 2026-08-17 that this is what it meant and that it is still
+  outstanding.)
+- [ ] **Remove the "Ruling" label entirely** — `.haidh-ruling-label` at
+  `index.html:1089`, above the Hanafi/Shafi'i switch, added in V3.40.1. Just
+  the switch, no text label above it.
+- [ ] **NEW 2026-08-17 — remove the ruling hint text** ("Hanafi: haidh cannot
+  exceed 10 days." / "Shafi'i: haidh cannot exceed 15 days.").
+  **Scope confirmed by the user 2026-08-17: the TEXT goes off the screen; the
+  RULING REMAINS PART OF THE APP.** Verified that the four-piece removal below
+  does exactly that and nothing more — the Hanafi/Shafi'i switch keeps working
+  end to end:
+  - `settingsScreen.js:61` `setupSelectedRuling` — KEPT
+  - `:63-64` the switch callback sets the value and re-renders — KEPT
+  - `:271-272` the saved ruling is loaded from the profile and rendered — KEPT
+  - `:379` `haidhOfficialMaxDuration(setupSelectedRuling)` — KEPT, so
+    duration validation still enforces the 10/15-day cap
+  - `:394` `haidh_ruling: setupSelectedRuling` — KEPT, so the choice still saves
+  Only the two `haidhRulingHint` write lines (`:65`, `:273`), the
+  `HAIDH_RULING_HINTS` constant and the `<p>` element go. The ruling is still
+  read, rendered, saved, and enforced — the sentence just stops being drawn.
+  **Delete rather than CSS-hide** (process rule 3: no back-compat hoarding).
 
-- [ ] Phase C's "has Setup configured, but no dhor_log yet" case
-  (`computeUpcomingDhorQueue`, `worker/src/dhorSchedule.js`) reuses the
-  same pool-start logic as "no Setup, no history" — Claude's own
-  extrapolation, since chat didn't address that exact combination.
-  Worth confirming it's the intended behavior.
-- [ ] computeDefaultDhorEntry checks pool-emptiness before ever querying
-  dhor_log, so a student with an empty Setup pool but real Dhor history
-  never gets a chance at continue-from-last (predates the pure-queue
-  rebuild). Low stakes: if the pool is genuinely empty, continue-from-
-  last couldn't build anything from it anyway, so the functional result
-  is likely the same either way — mostly a tidiness/ordering question.
+**TRAP — do not delete the hint element alone.** `#haidhRulingHint`
+(`index.html:1103`) is written to by `js/settingsScreen.js` at **two** call
+sites (:65 in the `wireSwitch` callback, :273 in `renderSettingsScreen`),
+both `document.getElementById('haidhRulingHint').textContent = ...` with no
+null guard. Deleting the `<p>` and leaving those lines reproduces the exact
+V3.51.2 bug: the TypeError kills `renderSettingsScreen` mid-function, and the
+three lines immediately after :273 are the haidh cycle / period /
+next-expected population — they would go blank and could overwrite real
+values on save. That element exists *because* of that bug; its markup comment
+says so.
 
-## Parked — attendance (2026-08-03, rechecked 2026-08-17)
+**Correct removal is all four pieces together:** the `<p id="haidhRulingHint">`
+and its comment (index.html), the `HAIDH_RULING_HINTS` constant
+(settingsScreen.js:57-60), and both write lines (:65, :273).
 
-- [ ] **Rechecked 2026-08-17 — this item is now only one third true.**
-  `apiGetAttendance` has 4 call sites and `apiDeleteAttendance` has 1;
-  `apiPredictHaidh` has 1, as originally noted. Only **`apiSetAttendance`**
-  is still at zero call sites. Note that (e2) wired the teacher-side
-  `apiSetAttendanceFor` / `apiClearAttendanceFor` variants for maktab haidh
-  entry — those are separate functions and are live; the own-scoped
-  `apiSetAttendance` is the one with no UI entry point. Decide whether to
-  build the own-scoped manual marking UI or delete that one function.
+**Keep** `settingsScreen.js:381` — `Duration cannot exceed ${maxDuration} days
+for the selected ruling.` is a validation error shown only when an over-long
+duration is actually entered, not a standing label. Different thing, similar
+wording; easy to over-delete.
+
+## Flagged — dhorSchedule behaviour questions (one CLOSED 2026-08-17, one open)
+
+- [x] **CLOSED 2026-08-17 — confirmed intended, no change needed.** The
+  question was: when a student has marked completed ajzaa in Setup but has
+  never logged a Dhor, `computeUpcomingDhorQueue`
+  (`worker/src/dhorSchedule.js`) uses the same pool-start logic as a student
+  with no Setup and no history — was that right?
+
+  **User's answer: Setup does not set the starting point; the Dhor prepop
+  starts from the marked completed ajzaa in ascending juz order.** That is
+  exactly what the code already does, verified 2026-08-17 by driving the real
+  `computeUpcomingDhorQueue` with a D1-shaped stub: `baseline_selection` is
+  sorted ascending (`dhorSchedule.js:256`), `buildChunks` preserves that order
+  (`:71`), and `startIdx` stays `0` when there is no `dhor_log` row (`:276-280`)
+  — so the queue opens on the lowest-numbered marked unit. Scenario: ajzaa
+  entered 5, 9, 2 → queue ran 5,6,7,8,17,18,19 (marker indices) = juz 2's four
+  quarters, then juz 5's, with unmarked juz skipped entirely. 6/6 checks.
+
+  **TRAP if this is ever revisited — "Setup does nothing" is true ONLY of the
+  starting point.** The `setupConfigured` flag at `dhorSchedule.js:260` still
+  drives `granularity` (`:261`) and the per-day count (`:262-264`) — proven in
+  the same run: configured 4 items/day vs unconfigured 1. Stripping that
+  branch as "Setup does nothing" would silently break granularity and
+  quantity. Same over-deletion shape as the `settingsScreen.js:381` note in
+  the Haidh entry above.
+
+- [ ] **FINAL SCOPE 2026-08-17.** Two earlier framings of this item were
+  wrong and are both withdrawn — recorded here so neither gets revived.
+
+  **Withdrawn 1: "rebuild the pool from history."** Repairing a bad state
+  after the fact is mitigation; the user's direction is to prevent the
+  mistake instead.
+
+  **Withdrawn 2: "make the pool a derived union so history-derived units
+  survive a reset."** This was wrong on the facts, not just the approach.
+  **User, 2026-08-17: "There may be legitimate reasons for resetting or
+  removing juz from dhor — it's not your call, and all it means is that the
+  prepop changes."** Removing a juz from the Dhor pool is a normal action, not
+  corruption. A derived union would have made removal impossible — the unit
+  would be re-derived from history on the next read — so it would have taken
+  away a capability while claiming to prevent a bug. The value judgement
+  behind it ("she cannot un-memorise something she has demonstrably revised")
+  was never the user's and should not have been assumed.
+
+  **Consequences, which collapse most of this item:**
+  - **An empty pool alongside real history is a LEGITIMATE state.** It means
+    the Dhor pool has been cleared, so the prepop has nothing to offer. That
+    is correct behaviour.
+  - **The Setup-reset path is not a fault.** "Setup RESETS the pool"
+    (2026-08-16) stands exactly as decided. Nothing to change.
+  - **The emptiness gate at `dhorSchedule.js:176` is CORRECT** and stays
+    ahead of the history query at `:179`. With an empty pool there is
+    genuinely nothing to continue from, so returning early is right. Only the
+    wording is slightly off — *"No memorised juz'/quarters recorded yet in
+    Hifz Setup"* implies she never set it up, when she may have deliberately
+    cleared it. Reword at some point; not a bug.
+
+  **What actually remains — one concrete change.** The only real fault is the
+  pool diverging from what she DID, without her asking for it:
+  - `js/dhorPage.js:1436` is the only one of the four pool writes that does
+    not `await` and swallows its error (`.catch(() => {})`). The Dhor log
+    commits, the pool write fails, nothing surfaces.
+  - The same line is one of the four unrouted pool writes in the audit above,
+    so in maktab mode it grows the TEACHER's pool.
+
+  **The fix (A) — BUILT in V3.68.0, 2026-08-17.** Move the Dhor contribution server-side into the log insert.
+  `handleSaveDhor` (`worker/src/dhorLog.js:45`) already receives
+  `segment_from`, `segment_to` and `ref` in the same request that writes the
+  row, and already knows the target `studentId`. Merge the units there and
+  DELETE the client block at `js/dhorPage.js:1426-1437`.
+  - Feasibility checked: `shared/data.js` is already dual browser+worker
+    (`module.exports` at :640; `dhorSchedule.js:1` imports from it). Only
+    `segmentToQuarterUnits` needs moving out of `js/dhorPage.js:637` into
+    `shared/data.js` and adding to the export list.
+  - No second request left to fail, and the worker writes the pool for the
+    same `studentId` it is writing the log for — so the maktab wrong-row case
+    becomes unroutable rather than merely routed. `verify_routing.mjs` loses
+    a site instead of gaining a guard.
+  - **Removal stays entirely free.** Adding on log and removing on demand are
+    independent; if she later logs Dhor in a juz she removed, it is added
+    again, which is just the existing "logging adds to the pool" rule.
+
+  **Interaction with (i) — read before scoping (i).** (A) removes the Dhor
+  pool write from (i)'s set of four rather than routing it, so (A) belongs
+  inside (i); otherwise (i) builds a routed writer for a call about to be
+  deleted. Cost: (i) stops being frontend-only and gains a worker-first
+  deploy order. Still no schema change.
+
+## Closed — attendance clients (2026-08-03, CLOSED 2026-08-17 as already done)
+
+- [x] **Nothing to do — this item was stale.** Original note: the attendance
+  clients had no UI entry point. Traced 2026-08-17: `apiSetAttendance`, the
+  one function the item still named, **was removed in V3.40.2** — `js/api.js:161`
+  carries the comment recording its removal. Every attendance client that
+  actually exists is live: `apiGetAttendance` (4 call sites),
+  `apiDeleteAttendance` (1), `apiPredictHaidh` (1), `apiMarkHaidhRange`, plus
+  the teacher-side `apiGetAttendanceFor` / `apiSetAttendanceFor` /
+  `apiClearAttendanceFor` wired by (e2).
+- The worker's `handleSetAttendance` (POST /attendance) stays — (e2) uses it
+  for teacher haidh entry via `apiSetAttendanceFor`. Nothing to delete on
+  either side.
 
 
 ---

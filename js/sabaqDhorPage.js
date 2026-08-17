@@ -187,7 +187,7 @@ async function moveRowToDhor(rowId){
     const profile = await logProfile();
     const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
     const updated = addRowToBaselinePool(row, juz, current);
-    await apiSaveProfile({ baseline_selection: updated });
+    await logSavePool(updated);
     // If this was the last lingering piece of a previous juz', clear it
     // from position so it stops being tracked as "lingering" going forward.
     if(row.lingeringJuz){
@@ -322,7 +322,7 @@ async function renderSabaqDhorScreen(){
 
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', null);
-  await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
+  await renderRecentEntries('sabaqDhor', 'sabaqDhorRecentRail');
 }
 
 // Composites whichever rows stayed checked into one overall from/to range
@@ -426,7 +426,7 @@ document.getElementById('sabaqDhorEditDeleteBtn').addEventListener('click', asyn
     await logClient('sabaqDhor').remove(sabaqDhorEditingId);
     cancelSabaqDhorEdit();
     resetSabaqDhorFormAfterEdit();
-    await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
+    await renderRecentEntries('sabaqDhor', 'sabaqDhorRecentRail');
   } catch(e){
     document.getElementById('sabaqDhorError').textContent = "Couldn't delete: " + e.message;
   }
@@ -466,7 +466,7 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
       sabaqDhorSelectedTags = [];
       renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
       renderCommentBlock('sabaqDhorCommentBlock', null);
-      await renderRecentEntries('sabaqDhor', apiSabaqDhor, 'sabaqDhorRecentRail');
+      await renderRecentEntries('sabaqDhor', 'sabaqDhorRecentRail');
     } catch(e){
       errEl.textContent = "Couldn't save: " + e.message;
     }

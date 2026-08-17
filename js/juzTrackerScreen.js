@@ -85,7 +85,7 @@ async function renderJuzTrackerScreen(){
   // (js/settingsScreen.js's openSectionGridModal).
   let pool = [];
   try {
-    const profile = await apiGetProfile();
+    const profile = await logProfile();
     pool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
   } catch(e) {
     // Non-fatal -- leave the tracker blank rather than blocking the
@@ -129,7 +129,7 @@ async function renderJuzTrackerScreen(){
     // accurate, not just what gets written after confirming.
     let currentPool;
     try {
-      const profile = await apiGetProfile();
+      const profile = await logProfile();
       currentPool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
     } catch(e) {
       currentPool = pool.slice(); // fall back to what was loaded at screen-entry
@@ -143,7 +143,7 @@ async function renderJuzTrackerScreen(){
     if(!confirm(buildJuzConfirmMessage(newlyMarked, newlyUnmarked, resultingFullList))) return;
 
     try {
-      await apiSaveProfile({ baseline_selection: updatedPool });
+      await logSavePool(updatedPool);
       juzTrackerInitialValue = current.slice();
       saveStatusEl.classList.add('show');
       setTimeout(() => saveStatusEl.classList.remove('show'), 1800);
