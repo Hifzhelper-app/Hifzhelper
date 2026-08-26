@@ -32,21 +32,26 @@ async function renderMaktabSettingsScreen(){
       <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
     </label>
 
-    <label class="form-label">Mushaf
-      <select id="mset_mushaf">
-        <option value="13line"${s.mushaf === '13line' ? ' selected' : ''}>13-line (IndoPak)</option>
-        <option value="15line_madani"${s.mushaf === '15line_madani' ? ' selected' : ''}>Madina</option>
-      </select>
-    </label>
-    <p class="form-hint">Every student in the maktab follows this mushaf. It affects Sabaq line and page counts, Sabaq Dhor portions, and whether a half is labelled Hizb.</p>
+    <fieldset class="mset-mushaf">
+      <legend>Mushaf <span class="mset-legend-note">(counting lines and pages, and determining boundaries for juz)</span></legend>
+      ${[
+        ['13line', '13 line indopak', 'quarter and half from the ruku'],
+        ['15line_madani', '15 line madani', 'maqra (sabaq dhor only), rub and hizb'],
+        ['15line_indopak', '15 line indopak', 'quarter and half from the ruku'],
+      ].map(([value, name, detail]) => `
+        <label class="mset-mushaf-opt">
+          <input type="radio" name="mset_mushaf" value="${value}"${s.mushaf === value ? ' checked' : ''}>
+          <span class="mset-mushaf-name">${name}</span>
+          <span class="mset-mushaf-detail">${detail}</span>
+        </label>`).join('')}
+    </fieldset>
 
-    <label class="form-label">Students needed for a maktab day
+    <label class="form-label">Minimum no of students to mark a Hifz maktab day
       <input type="number" id="mset_day_min" min="1" inputmode="numeric" value="${esc(s.maktab_day_min)}">
     </label>
-    <p class="form-hint">A date counts as a maktab day once this many different students have any entry. Attendance is only worked out for maktab days.</p>
 
-    <label class="form-label">Flag a student after this many maktab days with no entry
-      <input type="number" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}">
+    <label class="form-label">Students will be flagged as inactive after
+      <input type="number" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}"> days
     </label>
 
     <button type="button" class="primary-btn" id="mset_save">Save settings</button>
@@ -59,7 +64,10 @@ async function saveMaktabSettingsScreen(){
   const status = document.getElementById('mset_status');
   const payload = {
     name: document.getElementById('mset_name').value,
-    mushaf: document.getElementById('mset_mushaf').value,
+    // V3.74.0: radios now, not a select. Falls back to the first option
+    // rather than undefined if none is checked — an unchecked group would
+    // otherwise send undefined and be rejected by the worker whitelist.
+    mushaf: (document.querySelector('input[name="mset_mushaf"]:checked') || {}).value || '13line',
     maktab_day_min: Number(document.getElementById('mset_day_min').value),
     absence_flag_days: Number(document.getElementById('mset_absence').value),
   };

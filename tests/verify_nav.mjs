@@ -178,8 +178,76 @@ check('it names HER, never another student', !/student_id/.test(journal));
 check('read-only styling does not display:none individual grid children (V3.45.6-.11 lesson)',
   /\.log-detail-readonly \[disabled\]/.test(css) && !/\.log-detail-readonly \.checkbox-box \{ display: none/.test(css));
 
-check('teaching profiles land on the maktab, students on Home',
-  /showScreen\(isTeachingProfile\(\) \? 'maktabSummary' : 'home'\)/.test(auth));
+// V3.74.1: the Home BUTTON goes Home, for everyone. V3.71.0 pointed it at
+// the maktab summary while trying to change where the app LANDS — the wrong
+// target, and it made a button labelled Home not go home. Landing lives in
+// bootApp and is asserted in verify_setup_sheet.mjs. Keeping both stops the
+// two being confused for each other again.
+check('the Home dropdown button goes Home, not the maktab',
+  /homeDropdownBtn[\s\S]{0,600}showScreen\('home'\)/.test(auth)
+  && !/showScreen\(isTeachingProfile\(\) \? 'maktabSummary'/.test(auth));
+
+// ---------- V3.74.1: the menu is a right-hand vertical strip ----------
+{
+  const nav = read('css/nav.css');
+  check('the menu is anchored right, not stretched across the width',
+    /#authDropdown \{[\s\S]{0,600}right: 0;[\s\S]{0,200}left: auto;/.test(nav));
+  check('it takes about a quarter of the width', /#authDropdown \{[\s\S]{0,600}width: 25%;/.test(nav));
+  check('with a floor and ceiling — 25% of a phone is unusably narrow',
+    /min-width: 200px/.test(nav) && /max-width: 320px/.test(nav));
+  check('items are laid out as a vertical list',
+    /#authDropdown \.dropdown-inner \{[\s\S]{0,160}flex-direction: column;/.test(nav));
+  check('and each item is a row: icon then label, left aligned',
+    /#authDropdown \.nav-icon-item \{[\s\S]{0,220}flex-direction: row;/.test(nav));
+  check('the old 4/6-column grid rules are GONE, not just overridden',
+    !/grid-template-columns: repeat\(4, 1fr\)/.test(nav) && !/grid-template-columns: repeat\(6, 1fr\)/.test(nav));
+  check('a long menu scrolls rather than clipping its last item',
+    /#authDropdown\.open \{[\s\S]{0,160}overflow-y: auto;/.test(nav));
+  check('the Home TILES keep their stacked centred shape — only the menu changed',
+    /\.nav-icon-item \{[\s\S]{0,120}flex-direction: column;/.test(read('css/base.css')));
+}
+
+// ---------- V3.74.0: the Maktab item has its own icon ----------
+// It borrowed 'sabaq' — three dots — which is ALSO the Sabaq card header
+// (logDetailScreen.js) and the Sabaq journal column header (app.js). So the
+// maktab read as a Sabaq screen, and repointing 'sabaq' would have changed
+// all three. A new icon was added instead. Both halves asserted, because
+// the tempting fix is the one that breaks two other places.
+{
+  const icons = read('js/icons.js');
+  check('a distinct maktab icon exists', /maktab: '<svg/.test(icons) && /M12 5v16/.test(icons));
+  check('the Maktab nav item uses it', /MAKTAB_SUMMARY_NAV_ITEM = \{[^}]*icon: 'maktab'/.test(auth));
+  check('the shared sabaq icon is UNCHANGED — three dots, still used elsewhere',
+    /sabaq: '<svg[^']*circle cx="12"[^']*circle cx="19"/.test(icons));
+  check('and its other two consumers still point at it',
+    /iconHtml\('sabaq'\)/.test(read('js/app.js')) && /iconHtml\('sabaq'\)/.test(read('js/logDetailScreen.js')));
+  check('the icon carries no fixed width/height, so CSS sizes it like the rest',
+    !/maktab: '<svg[^']*width="24"/.test(icons));
+}
+
+// ---------- V3.74.0: the stroked chevron style is retired app-wide ----------
+// "Don't use this style icon anywhere in the app" — so this asserts the
+// STYLE is gone, not just the three instances that prompted it. A later
+// icon added in the old style fails here, which a per-icon check would
+// have missed.
+{
+  const icons = read('js/icons.js');
+  for (const k of ['chevronDown', 'rollupMerge', 'rollupSplit']) {
+    const body = new RegExp(`${k}: '([^']*)'`).exec(icons);
+    check(`${k} is a solid triangle, not a stroked chevron`,
+      !!body && /fill="currentColor"/.test(body[1]) && !/stroke-width/.test(body[1]),
+      body && body[1].slice(0, 60));
+  }
+  check('no stroked chevron path survives anywhere in the icon set',
+    !/M6 9l6 6 6-6/.test(icons));
+  check('the roll-up pair point in OPPOSITE directions — the direction is the meaning',
+    /rollupMerge:[^\n]*M6 4h12L12 11z/.test(icons) && /rollupSplit:[^\n]*M12 3l6 7H6z/.test(icons));
+  // The surah/ayah selectors were already solid triangles; they are the
+  // reference this matched, so they must not have been "tidied" too.
+  const sd = read('js/sabaqDhorPage.js');
+  check('the surah selector triangles it was matched to are untouched',
+    /&#x25B2;&#x25BC;/.test(sd) && /&#x25B2;<\/button>/.test(sd));
+}
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

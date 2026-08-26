@@ -26,6 +26,62 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.74.1 — Home button goes Home; the menu becomes a right-hand strip (2026-08-26)
+
+**Files touched:** `js/auth.js`, `css/nav.css`, `index.html`, `js/sw.js`, `tests/verify_nav.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY — no worker, no migration.** Supersedes V3.74.0's frontend files; the worker change in V3.74.0 still applies and must be deployed.
+
+**The Home menu button goes Home again.** V3.71.0 pointed it at the maktab summary while trying to change where the app LANDS — the wrong target entirely. The result did neither job: the landing stayed on the personal journal (fixed in V3.74.0's `bootApp`) and a button labelled Home stopped going home. A harness assertion written at the same time pinned the mistake in place, which is why it survived two deliveries. That assertion now checks the Home button goes Home, and the landing is asserted separately in `verify_setup_sheet.mjs` — kept apart so the two are not confused for each other again.
+
+**The menu is a vertical strip down the right**, 25% wide, opening under the auth band beside the toggle that opens it. It only ever holds six to eight items; a 4- or 6-column grid stretched across the full width meant long labels wrapped while most of the row sat empty. Each item is now a row — icon, then label, left-aligned — with a fixed icon column so every label starts at the same x.
+
+**Three details that matter more than they look.** The width is clamped between 200px and 320px: 25% of a phone is too narrow for "Surahs in my Heart", and 25% of a wide monitor is far more than a short list needs. The old 4- and 6-column grid rules are DELETED rather than overridden — left in place they would fight the vertical layout at particular viewport widths, which is the equal-specificity trap this project has hit three times. And `max-height` for the open state now clears the tallest case with `overflow-y: auto`, so a longer menu scrolls rather than clipping its last item silently.
+
+**The Home tiles are untouched.** They share `.nav-icon-item` with the menu, so the row layout is scoped inside `#authDropdown` only; the tiles keep their stacked, centred shape. Asserted, because the tempting edit is the one that changes both.
+
+**Verification: 544 passed, 0 failed across 18 harnesses.**
+
+---
+
+## V3.74.0 — Maktab settings rebuilt, landing fixed, panel sizing, icons (2026-08-26)
+
+**Files touched:** `worker/src/maktabSettings.js`, `js/maktabSettings.js`, `js/app.js`, `js/dhorPage.js`, `js/auth.js`, `js/icons.js`, `css/base.css`, `css/settings.css`, `css/detail-pages.css`, `css/journal-table.css`, `index.html`, `js/sw.js`, `tests/verify_maktab_settings_form.mjs` (new), `tests/verify_setup_sheet.mjs`, `tests/verify_nav.mjs`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** No migration.
+
+**Maktab settings.** Mushaf is three radios, not a dropdown: what separates the three options is which boundaries they support, and a dropdown shows that one line at a time. `15line_indopak` added — `shared/data.js` already understood the value, but **the worker's whitelist did not**, so offering it in the UI alone would have failed with a 400 at save. The worker's error message is now derived from its list rather than naming values in a string that goes stale. Labels reworded to "Minimum no of students to mark a Hifz maktab day" and "Students will be flagged as inactive after X days"; explanatory hints removed.
+
+**Admin landing — a V3.71.0 bug, not a new feature.** That delivery claimed teaching profiles land on the maktab and changed the Home DROPDOWN BUTTON instead, which is not the landing path, so an admin still opened on the personal journal. Fixed in `bootApp`, which actually decides. The `setup_complete` branch is skipped for teaching profiles: Settings is a PJ screen hidden from them, so a teacher sent there would land with no way out. The harness now extracts `bootApp` and asserts the logic is inside it — the old one passed because the string existed somewhere in the file.
+
+**Green panel sizing, fixed as a rule.** `.screen-content` capped the white card at 30/50 but the `<section>` painting the olive background was left full-width, so the card floated in a band of green across the viewport. Four screens had it: maktab settings, admin, tadabbur, haidh detail. Home never did, because it caps the SECTION. Now `.screen:has(> .screen-content)` — by shape, not a list of ids, because a hand-written screen-id list drifted and killed the boot two deliveries ago. Where `:has()` is unsupported the rules are ignored and the panel is full-width as before. Truncated headings ("Maktab Set…") given room by the same rule.
+
+**Summary date pill and header.** The pill stretched the screen because `.maktab-summary-toprow`'s grid NEVER APPLIED: the element also carries `.screen-top-close-row` (display:flex), equal specificity, and detail-pages.css loads later. Qualified with both classes so it wins on specificity rather than file order — the third equal-specificity/source-order bug in this project. V3.63.0 had already chosen this grid as the fix and it has been inert ever since. A width override on the shared date wrap was tried and REJECTED by `verify_e1.mjs`, which guards that hack staying gone; the guard was right, and the structural fix needs no override. The header's leading cell was painted — it always existed, it was just invisible, which is what made the header look inset.
+
+**Icons.** The Maktab item had its own icon added (an open book) rather than repointing `sabaq`, which the Sabaq card header and journal column also use. The stroked-chevron style is retired app-wide: `chevronDown`, `rollupMerge` and `rollupSplit` are solid triangles matching the surah selector, with the roll-up pair pointing inward/outward so direction carries the meaning.
+
+**Other:** the Dhor card's maktab button reads "Add Juz to Dhor"; the note-visibility pill is 187×14.
+
+**Verification: 536 passed, 0 failed across 18 harnesses.** The settings form previously had NO coverage at all — the suite stayed green through its entire rewrite, which is worse than red because it reads as assurance. Its new harness cross-checks the form's mushaf options against the worker's whitelist in both directions, so they cannot drift apart again.
+
+---
+
+## V3.73.3 — The running version, shown on the login screens (2026-08-26)
+
+**Files touched:** `js/versionStamp.js` (new), `js/app.js`, `index.html`, `css/base.css`, `js/sw.js`, `tests/verify_version_stamp.mjs` (new). **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. Supersedes V3.73.0–V3.73.2 — deploy this one.**
+
+**Every login card now shows the running version.** Visible before signing in, so it can be checked without an account.
+
+**It is DERIVED, never hardcoded**, and that is the whole point. V3.68.0 shipped without its cache bump, so browsers ran V3.67.0's JavaScript while the source said 3.68.0 — which cost a debugging session and produced a wrong diagnosis of a real field report. A hardcoded string would have read "3.68.0" throughout that failure and actively misled. Instead the app version comes from the `?v=` on the real `<script>` tag the page loaded, and the cache version from `caches.keys()`, i.e. what the service worker is actually holding.
+
+**A mismatch is stated in words**, not left to be spotted: `v3.68.0 — cached v3.67.0, reload`, styled amber. That is precisely the state that went unnoticed for a full session.
+
+**Attached by query to `.login-card`**, not to a list of screen ids. There are four login screens, and a hand-maintained list would drift — which is exactly how the boot crash two deliveries ago happened.
+
+**Degrades quietly:** no `caches` API (Safari private mode, older browsers) still shows the app version; no version on the tag says "version unknown" rather than guessing; no login cards present returns without throwing, since this runs during boot.
+
+**One assertion had to be corrected before it was trustworthy.** The check for "no hardcoded version" scanned the raw source — but the module's own comments cite 3.68.0 and 3.67.0 while explaining why it exists, so it read its own documentation as evidence and failed. It now strips comments and inspects code. Second occurrence of that mistake in two deliveries; both times the fix was to test the code rather than the prose around it.
+
+**Verification: 496 passed, 0 failed across 17 harnesses**, fifteen of them new — including the V3.68.0 mismatch driven for real, not asserted from source.
+
+---
+
 ## V3.73.2 — Invisible switch option, invisible X, spacing, and the crash list removed (2026-08-26)
 
 **Files touched:** `js/commentPrivacy.js`, `js/app.js`, `css/detail-pages.css`, `css/journal-table.css`, `index.html`, `js/sw.js`, `tests/verify_setup_sheet.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. Supersedes V3.73.0 and V3.73.1 — deploy this one.**

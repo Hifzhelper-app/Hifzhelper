@@ -15,7 +15,10 @@
 
 import { isTeacherOrAbove } from './utils.js';
 
-const MUSHAFS = ['13line', '15line_madani'];
+// V3.74.0: 15line_indopak added. shared/data.js already knew this value
+// (its script ref maps it to 'indopak'); only this whitelist did not, so
+// choosing it would have failed with a 400 while the UI happily offered it.
+const MUSHAFS = ['13line', '15line_madani', '15line_indopak'];
 
 // The row always exists (migration 0020 inserts it), so there is no
 // "not configured yet" branch anywhere. If it is somehow missing --
@@ -39,7 +42,7 @@ export async function handleSaveMaktabSettings(request, env, auth) {
   const updates = [];
   const values = [];
   if (body.mushaf !== undefined) {
-    if (!MUSHAFS.includes(body.mushaf)) return { error: 'mushaf must be 13line or 15line_madani', status: 400 };
+    if (!MUSHAFS.includes(body.mushaf)) return { error: `mushaf must be one of: ${MUSHAFS.join(', ')}`, status: 400 };
     updates.push('mushaf = ?'); values.push(body.mushaf);
   }
   for (const [field, label] of [['maktab_day_min', 'maktab_day_min'], ['absence_flag_days', 'absence_flag_days']]) {

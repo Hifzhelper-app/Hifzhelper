@@ -174,6 +174,28 @@ async function renderJuzTrackerScreen(){
     barEl.classList.toggle('hidden', on);
     if(!on) sync();
   }
-  setFreeplay(false);                            // "always defaults to juz tracker"
-  fpBtn.onclick = () => setFreeplay(el.getAttribute('mode') !== 'freeplay');
+  // V3.69.0: FREE PLAY ONLY, temporarily. Confirmed in chat 2026-08-17:
+  // "free play only for now — we may bring it back." So the real tracker is
+  // PARKED, NOT RETIRED. Everything above stays intact — setFreeplay(false)
+  // still restores it correctly, sync() still works, and the routed pool
+  // reads/writes from delivery (i) are untouched.
+  //
+  // DO NOT delete the tracker path or those routed calls as dead code. They
+  // are unreachable only while this flag is true, and they are precisely
+  // what makes the tracker safe to switch back on. Reverting is setting
+  // FREEPLAY_ONLY to false.
+  // V3.70.0: free-play-only applies to TEACHING PROFILES ONLY, by the same
+  // rule as the hidden PJ items ("students see everything"). A student's
+  // tracker reads and writes HER OWN pool, which is exactly what it is for;
+  // there was never a reason to withhold it from her. Still temporary for
+  // teachers — "we may bring it back" — and the tracker path stays intact
+  // either way, so this is one boolean, not a deletion.
+  const FREEPLAY_ONLY = (typeof isTeachingProfile === 'function') && isTeachingProfile();
+  setFreeplay(FREEPLAY_ONLY);
+  if(FREEPLAY_ONLY){
+    fpBtn.classList.add('hidden');               // no way back to tracker mode
+    fpBtn.onclick = null;
+  } else {
+    fpBtn.onclick = () => setFreeplay(el.getAttribute('mode') !== 'freeplay');
+  }
 }

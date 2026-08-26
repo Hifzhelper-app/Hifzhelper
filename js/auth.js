@@ -48,7 +48,7 @@ const HAIDH_NAV_ITEM = { id: 'haidhDetail', label: 'Haidh', icon: 'haidh' };
 // as the worker's isTeacherOrAbove); the student's own read-only Maktab
 // Journal is for everyone. This build is maktab-deployment-only, so
 // every user here IS maktab-connected — no "has a maktab?" gate needed.
-const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'sabaq' };
+const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'maktab' };
 // V3.65.0 (delivery (g)): admin-only, like the Admin item — a teacher
 // never sees the maktab settings, though their cards read the mushaf.
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
@@ -182,12 +182,12 @@ function setupAuthBandAndDropdown(){
   document.getElementById('authBandToggle').addEventListener('click', toggleAuthDropdown);
   document.getElementById('homeDropdownBtn').addEventListener('click', () => {
     closeAuthDropdown();
-    // V3.71.0: teaching profiles open ON THE MAKTAB, not Home (stated
-    // 2026-08-17). Read as the Maktab summary — the multi-student view a
-    // teacher actually has; Maktab Journal is the student's own-rows screen
-    // and teaching profiles deliberately do not get it (V3.70.2). Students
-    // keep Home.
-    showScreen(isTeachingProfile() ? 'maktabSummary' : 'home');
+    // V3.74.1: back to Home for everyone. V3.71.0 pointed this at the
+    // maktab summary while trying to change where the app LANDS — the
+    // wrong target entirely, and it made the Home button not go home.
+    // Landing is decided in bootApp (js/app.js), fixed in V3.74.0.
+    // A button labelled Home goes Home.
+    showScreen('home');
   });
   document.getElementById('timerDropdownBtn').addEventListener('click', () => {
     closeAuthDropdown();

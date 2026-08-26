@@ -283,7 +283,35 @@
    width:auto override plus a 7% indent that silently duplicated the
    haidh column's share and would drift if those percentages changed);
    both are gone, replaced by the PJ's own structure. */
-.maktab-summary-toprow { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 8px; }
+/* V3.74.0 — the date pill stretched across the screen. TWO causes, both fixed
+   here rather than one patched over.
+
+   1. THIS RULE NEVER APPLIED. The element carries both .screen-top-close-row
+      and .maktab-summary-toprow, and .screen-top-close-row sets
+      display:flex. Equal specificity (0,1,0) each, so source order decided
+      — and detail-pages.css loads AFTER journal-table.css, so flex won and
+      the grid was ignored. Qualifying with both class names takes this to
+      (0,2,0), which wins on specificity and no longer depends on the order
+      stylesheets happen to be listed in. Third time this project has been
+      bitten by equal-specificity-plus-source-order (see V3.52.0).
+
+   2. .custom-date-wrap is created at RUNTIME with width:100%. As a FLEX
+      item that meant "the whole row" — which is what actually stretched the
+      pill. It needs no override: in the auto/1fr grid the percentage
+      resolves against a track sized to content, which is exactly how the
+      PJ's own pill is constrained.
+
+   V3.63.0 had already chosen this grid as the fix and deliberately removed
+   an earlier width-override hack, with verify_e1.mjs asserting the hack
+   stays gone. That guard fired when a width override was tried again here,
+   and it was right to: V3.63.0's approach was correct all along and merely
+   inert, so the structural fix is enough on its own. */
+.screen-top-close-row.maktab-summary-toprow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
 .maktab-summary-toprow .screen-close-btn { justify-self: end; }
 .maktab-summary-date-input { font: inherit; font-weight: 600; }
 
@@ -354,3 +382,16 @@
 .maktab-setup-close svg { width: 20px; height: 20px; display: block; }
 /* The instruction text must not run under the X. */
 .maktab-setup-card #maktabSetupBody { padding-top: var(--space-md, 16px); }
+
+/* V3.74.0 — the summary header's leading cell.
+   The header ALREADY had five cells matching the table; the first one
+   (.col-haidh, aria-hidden, empty) simply had no background, so the header
+   appeared to start at "Student" and read as inset against the rows below.
+   Nothing was missing — it was invisible. Giving it the same green as the
+   Student cell makes the header span the full width and line up.
+   No heading text: it sits over the haidh icons, which have no label. */
+.maktab-summary-headers .col-haidh {
+  background: var(--color-table-header-date);   /* the SAME token the Student
+     cell uses -- not a lookalike, so the two read as one green block and
+     stay in step if the palette ever changes. */
+}

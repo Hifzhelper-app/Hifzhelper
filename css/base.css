@@ -198,3 +198,52 @@ input, select, textarea {
   text-align: center;
   display: none;
 }
+
+/* V3.73.3 — running version, on the login cards. Deliberately quiet: it is
+   a diagnostic, not a feature, and must not compete with the sign-in form.
+   Turns amber when the loaded version and the service worker's cache
+   disagree — the state that cost a whole debugging session in V3.68.0. */
+.version-stamp {
+  margin-top: var(--space-md, 16px);
+  font-size: 11px;
+  text-align: center;
+  color: var(--ink-soft, #8a8a8a);
+  letter-spacing: 0.02em;
+}
+.version-stamp.stale { color: #b4700f; font-weight: 600; }
+
+/* V3.74.0 — cap the GREEN PANEL on card screens, not just the card.
+   .screen-content already capped the white card at 30/50, but the <section>
+   painting the olive --surface-track background was left full-width — so on
+   a wide display the card floated in a band of green stretching the whole
+   viewport. Reported on Maktab Settings and Admin; the same fault was
+   present on Tadabbur and Haidh detail.
+
+   Home never had it because #screen-home caps the SECTION (css/nav.css) and
+   lets its content fill it. This is that shape, generalised.
+
+   :has() rather than a list of screen ids, deliberately. This file already
+   learned that lesson twice this month: a hand-written list of screen ids
+   in app.js drifted the moment a screen was deleted and killed the boot.
+   Any screen with a card gets this automatically; delete one and it leaves
+   the set. Where :has() is unsupported the rules are simply ignored and the
+   panel is full-width as before — no worse than today, never broken.
+
+   The inner cap is neutralised: capping 30% of an already-30% panel would
+   shrink the card to a strip.
+
+   NOT applied to: journal, maktabSummary, maktabJournal, logDetail,
+   juzTracker, sih, home, settings. None uses .screen-content, and several
+   are documented full-width or differently-capped exceptions. */
+@media (min-width: 768px) and (max-width: 1179px) {
+  .screen:has(> .screen-content) { width: var(--width-tablet); margin: 0 auto; }
+  .screen:has(> .screen-content) > .screen-content { width: 100%; }
+}
+@media (min-width: 1180px) {
+  .screen:has(> .screen-content) { width: var(--width-desktop); margin: 0 auto; }
+  .screen:has(> .screen-content) > .screen-content { width: 100%; }
+}
+/* Headings truncated ("Maktab Set…", and Admin's title pushed off-centre)
+   because the header row's first column was sized for a short title. */
+.screen:has(> .screen-content) .card-header-row { grid-template-columns: 1fr auto; }
+.screen:has(> .screen-content) .card-header-row h2 { white-space: normal; }

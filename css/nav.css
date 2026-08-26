@@ -48,32 +48,66 @@
    the band's real height varies by device (env(safe-area-inset-top) for
    a notch) -- the fallback below only matters before that JS has run
    for the first time. */
+/* V3.74.1 — the menu is a vertical strip down the RIGHT, not a band across
+   the full width. It only ever holds 6-8 items; stretching them across the
+   screen in a 4- or 6-column grid meant long labels wrapped while most of
+   the row sat empty, and the eye had to travel the whole width to read a
+   short list.
+
+   Anchored to the right edge under the auth band, which is where the
+   toggle that opens it lives — so it opens beside its own button rather
+   than somewhere else entirely.
+
+   Animating max-height still works for a vertical list, but the value has
+   to clear the tallest case (8 items) or the last one is clipped. Sized
+   generously and paired with overflow-y so a longer menu scrolls rather
+   than truncating silently. */
 #authDropdown {
   background: var(--color-surface);
+  border-left: 1px solid var(--color-table-border);
   border-bottom: 1px solid var(--color-table-border);
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.2s ease;
   position: fixed;
-  left: 0;
   right: 0;
+  left: auto;
+  width: 25%;
+  min-width: 200px;   /* 25% of a phone is unusably narrow for a label */
+  max-width: 320px;
   top: var(--auth-band-height, 60px);
   z-index: 99;
+  box-shadow: -2px 4px 12px rgba(0, 0, 0, 0.08);
 }
 #authDropdown.open {
-  max-height: 400px;
+  max-height: calc(100vh - var(--auth-band-height, 60px));
+  overflow-y: auto;
 }
+/* Each item becomes a ROW: icon then label, left-aligned, so the labels
+   line up as a list. .nav-icon-item is column-stacked and centred for the
+   Home TILES, which keep that shape — this only overrides it in here. */
 #authDropdown .dropdown-inner {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: var(--space-sm);
+}
+#authDropdown .nav-icon-item {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
   gap: var(--space-sm);
-  padding: var(--space-md);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm, 8px);
 }
-@media (min-width: 720px) {
-  #authDropdown .dropdown-inner { grid-template-columns: repeat(6, 1fr); }
-}
+#authDropdown .nav-icon-item:hover { background: var(--surface-track); }
+/* The icon column is fixed so every label starts at the same x. */
+#authDropdown .nav-icon-item-icon { flex: 0 0 28px; }
 #authDropdown .dropdown-divider {
-  grid-column: 1 / -1;
+  /* grid-column dropped with the grid (V3.74.1); a flex child spans the
+     full width on its own. */
   border-top: 1px solid var(--color-table-border);
   margin: var(--space-xs) 0;
 }
@@ -88,7 +122,7 @@
    entirely too (index.html) -- just the lavender icon remains, so the
    white-heading-text color fix from V3.41.1 (needed for contrast
    against the old olive) is removed as dead code along with it. */
-#homeHeaderIcon { color: var(--palette-lavender); }
+/* V3.69.0: #homeHeaderIcon rule deleted with the element and its row. */
 /* V3.41.2: standard 30%/50% width cap on larger screens, confirmed in
    chat -- same pattern as #screen-settings/#screen-admin/
    #screen-haidhDetail. Home had never been given this. */

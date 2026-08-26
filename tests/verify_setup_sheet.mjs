@@ -59,8 +59,8 @@ check('the renderer takes its host rather than hardcoding a screen body',
 check('it bails safely if handed nothing', /if\(!host\) return;/.test(setup));
 
 // ---------- the button ----------
-check('the button is Setup in the maktab and Plan in the PJ',
-  /btn\.textContent = setup \? 'Setup' : 'Plan';/.test(dhor));
+check('the button says Add Juz to Dhor in the maktab, Plan in the PJ (V3.74.0)',
+  /btn\.textContent = setup \? 'Add Juz to Dhor' : 'Plan';/.test(dhor));
 check('Setup mode is decided by the log context, not a role or a flag',
   /function dhorPlanBtnIsSetup\(\)\{[\s\S]{0,140}logCtxIsMaktab\(\)/.test(dhor));
 check('the click routes to Setup only in the maktab; PJ still opens the plan modal',
@@ -121,6 +121,39 @@ check('setup never reaches for an own-only profile call',
     /moveVisThumb\(vt, vt\.querySelector\('\.switch-option\.active'\)\)/.test(cp));
   check('and moves when a different option is chosen',
     /moveVisThumb\(track, btn\)/.test(cp));
+}
+
+// ---------- V3.74.0: the LANDING screen, not a menu button ----------
+// V3.71.0 claimed teaching profiles land on the maktab and shipped a change
+// to the Home DROPDOWN BUTTON instead — not the landing path at all. The
+// harness passed because the string existed somewhere in the file. These
+// assert it is in bootApp, which is the function that actually decides
+// where the app opens.
+{
+  const appSrc = read('js/app.js');
+  const boot = appSrc.slice(appSrc.indexOf('async function bootApp('));
+  const bootBody = boot.slice(0, boot.indexOf('\n}'));
+  check('bootApp sends a teaching profile to the maktab summary',
+    /isTeachingProfile\(\)[\s\S]{0,80}showScreen\('maktabSummary'\)/.test(bootBody));
+  check('and a student still lands on home / settings',
+    /showScreen\(profile\.setup_complete \? 'home' : 'settings'\)/.test(bootBody));
+  check('the setup_complete branch is skipped for teaching profiles — Settings is hidden from them',
+    /if\(typeof isTeachingProfile === 'function' && isTeachingProfile\(\)\)\{[\s\S]{0,90}maktabSummary[\s\S]{0,40}\} else \{/.test(bootBody));
+}
+
+// ---------- V3.74.0: the summary date pill ----------
+// It stretched across the screen for two reasons at once. Both are
+// asserted, because fixing either alone leaves it fragile.
+{
+  const jt = read('css/journal-table.css');
+  check('the toprow grid is qualified with BOTH classes, so it cannot lose on file order',
+    /\.screen-top-close-row\.maktab-summary-toprow \{[\s\S]{0,120}display: grid/.test(jt));
+  // NOT by overriding the shared wrap's width — verify_e1.mjs guards that
+  // hack staying gone, and the grid makes it unnecessary.
+  check('no width override on the shared date wrap was reintroduced',
+    !/\.custom-date-wrap \{ width: auto/.test(jt));
+  check('the leading header cell is painted, so the header spans the full width',
+    /\.maktab-summary-headers \.col-haidh \{[\s\S]{0,120}--color-table-header-date/.test(jt));
 }
 
 console.log(`${pass} passed, ${fail} failed`);

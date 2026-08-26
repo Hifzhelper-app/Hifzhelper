@@ -153,7 +153,21 @@ async function bootApp(){
     // before, confirmed changed in chat). Setup itself is also reachable
     // any time afterward via the "Settings" nav item; Journal remains
     // fully reachable as its own nav item too, just no longer the default.
-    showScreen(profile.setup_complete ? 'home' : 'settings');
+    // V3.74.0: a teaching profile LANDS on the maktab summary — the screen
+    // it actually works from. V3.71.0 claimed this and got it wrong: it
+    // changed the Home DROPDOWN BUTTON instead, which is not the landing
+    // path, so an admin still opened on the personal journal. This is
+    // bootApp, the real one.
+    //
+    // The setup_complete branch is deliberately skipped for teaching
+    // profiles: Settings is a PJ screen and is hidden from them anyway
+    // (V3.70.0), so sending a teacher there would land them on a screen
+    // with no way out.
+    if(typeof isTeachingProfile === 'function' && isTeachingProfile()){
+      showScreen('maktabSummary');
+    } else {
+      showScreen(profile.setup_complete ? 'home' : 'settings');
+    }
   } catch(e){
     showBanner("Couldn't load your profile: " + e.message);
     clearToken();
@@ -217,6 +231,12 @@ window.addEventListener('popstate', () => {
   // A query cannot drift: delete a screen and its button leaves the set.
   // #logDetailClose is excluded because js/logDetailScreen.js wires it in
   // its own file, and double-wiring would navigate twice on one tap.
+  // The running version, on every login card. Derived from the loaded
+  // script tag and the service worker's cache, never hardcoded — a
+  // hardcoded string would have read "3.68.0" throughout the very failure
+  // this exists to make visible.
+  if(typeof renderVersionStamp === 'function') renderVersionStamp();
+
   document.querySelectorAll('.screen-close-btn:not(#logDetailClose)').forEach(btn => {
     btn.innerHTML = iconHtml('close');
     btn.addEventListener('click', () => showScreen('home'));

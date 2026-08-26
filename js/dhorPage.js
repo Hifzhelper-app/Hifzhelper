@@ -892,8 +892,8 @@ function refreshDhorPlanBtn(){
   const btn = document.getElementById('dhorViewPlanBtn');
   if(!btn) return;
   const setup = dhorPlanBtnIsSetup();
-  btn.textContent = setup ? 'Setup' : 'Plan';
-  btn.setAttribute('aria-label', setup ? 'Student setup — the maktab Dhor pool' : 'Plan Dhor');
+  btn.textContent = setup ? 'Add Juz to Dhor' : 'Plan';
+  btn.setAttribute('aria-label', setup ? 'Add juz to this student\u2019s Dhor pool' : 'Plan Dhor');
 }
 document.getElementById('dhorViewPlanBtn').addEventListener('click', () => {
   if(dhorPlanBtnIsSetup()){
