@@ -31,9 +31,20 @@ const jt = read('css/journal-table.css');
 const st = read('css/settings.css');
 
 // ---------- 1: the pill ----------
-check('1: pill is wider and shorter than V3.74.0', /\.mk-vis-switch \{ max-width: 240px; height: 11px; \}/.test(dp));
+// V3.74.4: the two earlier attempts set MAX-width on a flex container that
+// sizes to its content, so they capped it and never widened it — both were
+// no-ops. This asserts an explicit width, and that max-width has not crept
+// back, because that is the mistake that made it look like nothing changed.
+check('1: the pill sets an explicit WIDTH, not max-width',
+  /\.mk-vis-switch \{[\s\S]{0,140}width: 240px;/.test(dp) && !/\.mk-vis-switch \{[\s\S]{0,140}max-width/.test(dp));
+check('1: and will not be shrunk back by the flex row it sits in',
+  /\.mk-vis-switch \{[\s\S]{0,140}flex: 0 0 auto;/.test(dp));
+check('1: exactly ONE .mk-vis-switch rule — three generations had stacked up',
+  (dp.match(/^\.mk-vis-switch \{/gm) || []).length === 1, String((dp.match(/^\.mk-vis-switch \{/gm) || []).length));
 check('1: the thumb radius is tied to the height, so it is a pill not a circle',
-  /\.mk-vis-switch \.switch-thumb \{[\s\S]{0,120}border-radius: 999px/.test(dp));
+  /\.mk-vis-switch \.switch-thumb \{[\s\S]{0,140}border-radius: 999px/.test(dp));
+check('1: the options cannot hold the track taller than its set height',
+  /\.mk-vis-switch \.switch-option \{[\s\S]{0,160}line-height: 1;/.test(dp));
 
 // ---------- 2-4: maktab settings ----------
 check('2: the four settings carry their own spacing', /#maktabSettingsBody > \.form-label[\s\S]{0,180}margin-bottom/.test(st));

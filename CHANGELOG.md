@@ -26,6 +26,22 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.74.4 — The visibility pill actually resizes this time (2026-08-26)
+
+**Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY.**
+
+**Two attempts at this had no effect, and the reason is that both were no-ops.** They set `max-width` on `.mk-vis-switch`. The track is a flex container that sizes to its content — three short words — so a max-width only ever capped it and never widened it. 110 → 187 → 240 changed nothing at all. It now sets an explicit `width: 240px`, with `flex: 0 0 auto` so the note-head flex row cannot shrink it back below that.
+
+**Height set to 20px with `line-height: 1` on the options.** The earlier 14px and 11px were below what the inherited line-height would hold, so even where the height applied the options could keep the track taller.
+
+**Three stacked generations of the same rule, consolidated into one.** V3.73.2, V3.74.0 and V3.74.2 each APPENDED a new `.mk-vis-switch` block rather than editing the existing one, leaving three contradictory sets of numbers in the file with the last winning by source order. Now a single rule. A new assertion fails if a second ever appears.
+
+**A rule was deleted by accident and restored.** The span replacement that removed those three blocks reached past its intended end and took `.card-header-row-left` — the admin header grid from V3.74.2 — with it. The second time in this project a span replacement has over-reached and destroyed an unrelated block. Caught immediately by the assertion covering that rule, which is precisely why it existed.
+
+**Verification: 591 passed, 0 failed across 19 harnesses.** The new checks assert an explicit width, that `max-width` has not crept back, and that exactly one `.mk-vis-switch` rule exists.
+
+---
+
 ## V3.74.3 — Move to Dhor rewritten: per juz, not per row (item 12) (2026-08-26)
 
 **Files touched:** `js/position.js`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY.**

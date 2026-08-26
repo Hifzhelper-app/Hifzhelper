@@ -1629,58 +1629,58 @@
 .log-detail-readonly .card-header-save-wrap,
 .log-detail-readonly .edit-delete-btn { display: none; }
 
-/* V3.73.0 — note visibility switch, now inside the note box. Reuses
-   .switch-track / .switch-option and the .switch-track-small-wide size that
-   already existed here unused. The box groups label, switch and textarea so
-   the control reads as governing the note rather than floating above it.
-   Note: no display:none on individual controls -- hiding some children of a
-   shared grid is what scrambled auto-placement in the V3.45.6-.11 saga. */
-.cb-note-box { border: 1px solid var(--line, #d9d9d9); border-radius: 12px; padding: var(--space-sm, 8px); }
-.cb-note-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm, 8px); margin-bottom: var(--space-xs, 4px); }
-.cb-note-head label { margin: 0; }
-.cb-note-box .cb-teacher-note { border: none; width: 100%; background: transparent; resize: vertical; }
-.mk-vis-switch { margin: 0; }
-.mk-vis-switch .switch-option.active { font-weight: 600; }
-
-/* V3.73.2 — Dhor card spacing and switch size.
-   The note box sat flush against Duration with nothing between them. */
-.cb-note-box { margin-top: var(--space-lg, 20px); }
-
-/* The visibility switch at HALF the .switch-track-small-wide footprint:
-   220px -> 110px, 34px -> 17px. Kept as an override on .mk-vis-switch
-   rather than editing .switch-track-small-wide, which is a shared size
-   variant — narrowing it there would silently shrink any future user. */
-/* V3.74.0: +70% width, -20% height on the V3.73.2 size — 110px -> 187px,
-   17px -> 14px. Still an override on .mk-vis-switch rather than an edit to
-   the shared .switch-track-small-wide variant, so nothing else that adopts
-   that size is dragged along. */
-.mk-vis-switch { max-width: 187px; height: 14px; }
-.mk-vis-switch .switch-option { font-size: 10px; padding: 0 4px; }
-.mk-vis-switch .switch-thumb { height: 100%; }
-
 /* V3.74.2 — header row with the icon and heading grouped LEFT.
    The shared .card-header-row is 10%/70%/20% with the icon centred in its
    own column, which reads fine on the log cards but leaves an admin-style
    heading floating away from its icon. auto/1fr/auto puts them together
-   and lets the close button keep the right edge. */
+   and lets the close button keep the right edge.
+   (Restored V3.74.4 — a span replacement for the switch rules reached past
+   its intended end and deleted this. Second time that has happened; the
+   harness caught it, which is why the assertion existed.) */
 .card-header-row-left {
   grid-template-columns: auto 1fr auto;
 }
 .card-header-row-left .card-header-icon { justify-self: start; }
 .card-header-row-left h2 { justify-self: start; }
 
-/* V3.74.2 — item 1: the visibility pill, wider and shorter.
-   The thumb was rendering as a CIRCLE overlapping "Teachers" rather than a
-   pill behind it: it inherited a pill radius sized for a taller track, so
-   at 14px high the radius exceeded half the width. Radius is now tied to
-   the height, and the thumb is inset slightly so the track's own border
-   stays visible around it. */
-.mk-vis-switch { max-width: 240px; height: 11px; }
-.mk-vis-switch .switch-option { font-size: 9px; padding: 0 4px; }
+/* Note-visibility switch, inside the note box (V3.73.0, resized V3.74.4).
+   Reuses .switch-track / .switch-option; the box groups label, switch and
+   textarea so the control reads as governing the note.
+   No display:none on individual controls -- hiding some children of a
+   shared grid is what scrambled auto-placement in the V3.45.6-.11 saga. */
+.cb-note-box { border: 1px solid var(--line, #d9d9d9); border-radius: 12px; padding: var(--space-sm, 8px); }
+.cb-note-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm, 8px); margin-bottom: var(--space-xs, 4px); }
+.cb-note-head label { margin: 0; }
+.cb-note-box .cb-teacher-note { border: none; width: 100%; background: transparent; resize: vertical; }
+
+/* V3.74.4 — ONE rule, replacing three stacked generations of it. Each
+   earlier attempt appended a new .mk-vis-switch block rather than editing
+   the previous, so the file carried three contradictory sets of numbers.
+
+   And the real bug: both earlier attempts set MAX-WIDTH. The track is a
+   flex container that sizes to its content -- three short words -- so a
+   max-width only ever capped it and never widened anything. 110 -> 187 ->
+   240 were all no-ops. It needs an explicit WIDTH.
+
+   flex: 0 0 auto stops the .cb-note-head flex row shrinking it back below
+   the width set here, which would undo the fix from the other direction. */
+.mk-vis-switch {
+  width: 240px;
+  flex: 0 0 auto;
+  height: 20px;
+  margin: 0;
+}
+.mk-vis-switch .switch-option {
+  font-size: 10px;
+  padding: 0 4px;
+  line-height: 1;      /* the inherited line-height alone can hold the track taller than its height */
+  min-width: 0;        /* flex children default to min-content -- a long label would force it wider */
+}
+.mk-vis-switch .switch-option.active { font-weight: 600; }
 .mk-vis-switch .switch-thumb {
   height: 100%;
-  border-radius: 999px;
   top: 0;
+  border-radius: 999px;   /* tied to the height, so it is a pill and not a circle */
 }
 
 /* V3.74.2 — item 10: Move to Dhor on its own row, spanning the grid rather
