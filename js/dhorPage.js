@@ -1464,7 +1464,8 @@ const HISTORY_BTN_LABEL = { sabaq: 'Sabaq History', sabaqDhor: 'Sabaq Dhor Histo
 // sorted most-recent-first) is passed through so Sabaq's save handler
 // knows whether it's safe to recompute position afterward -- see
 // js/sabaqPage.js for why that matters.
-// V3.45.1: optional 4th parameter onRowClick, confirmed in chat for
+// V3.45.1 (renumbered to the 3rd parameter in V3.68.0, when the client
+// argument was removed): optional onRowClick, confirmed in chat for
 // Tadabbur specifically -- tapping an entry's own content area (not
 // its edit icon) opens it for reading. Purely additive: the 3 existing
 // callers (Sabaq/Sabaq Dhor/Dhor) don't pass this, so their rows stay
