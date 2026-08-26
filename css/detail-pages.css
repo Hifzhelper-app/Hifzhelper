@@ -1628,3 +1628,16 @@
    individual grid children. */
 .log-detail-readonly .card-header-save-wrap,
 .log-detail-readonly .edit-delete-btn { display: none; }
+
+/* V3.73.0 — note visibility switch, now inside the note box. Reuses
+   .switch-track / .switch-option and the .switch-track-small-wide size that
+   already existed here unused. The box groups label, switch and textarea so
+   the control reads as governing the note rather than floating above it.
+   Note: no display:none on individual controls -- hiding some children of a
+   shared grid is what scrambled auto-placement in the V3.45.6-.11 saga. */
+.cb-note-box { border: 1px solid var(--line, #d9d9d9); border-radius: 12px; padding: var(--space-sm, 8px); }
+.cb-note-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm, 8px); margin-bottom: var(--space-xs, 4px); }
+.cb-note-head label { margin: 0; }
+.cb-note-box .cb-teacher-note { border: none; width: 100%; background: transparent; resize: vertical; }
+.mk-vis-switch { margin: 0; }
+.mk-vis-switch .switch-option.active { font-weight: 600; }

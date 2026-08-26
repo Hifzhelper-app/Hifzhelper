@@ -149,10 +149,10 @@ function makeDom(){
   w.eval("setMaktabLogContext({ id: 'STU2', name: 'Umme' }, '2026-08-16')");
   w.eval("renderCommentBlock('sabaqCommentBlock', null)");
   const doc = w.document;
-  check('notes maktab: teacher note + 3 radios, Teachers default, no student textarea',
+  check('notes maktab: teacher note + 3-way switch (V3.73.0), Teachers default, no student textarea',
     doc.querySelector('.cb-teacher-note') !== null
-    && doc.querySelectorAll('.mk-vis-row input[type=radio]').length === 3
-    && doc.querySelector('.mk-vis-row input:checked').value === 'teachers_only'
+    && doc.querySelectorAll('.mk-vis-switch .switch-option').length === 3
+    && doc.querySelector('.mk-vis-switch .switch-option.active').dataset.value === 'teachers_only'
     && doc.querySelector('.cb-comment') === null);
   check('notes maktab: NO student-note block when there is no note',
     doc.querySelector('.mk-student-note') === null);
@@ -170,12 +170,14 @@ function makeDom(){
   check('notes maktab: read returns teacher fields + the frozen student note',
     readBack.teacher_feedback_visibility === 'teachers_only'
     && readBack.student_comment === 'from her PJ');
-  w.eval("document.querySelector('.mk-vis-row input[value=all]').checked = true");
-  check('notes maktab: radio choice drives the saved visibility',
+  // V3.73.0: buttons, not radios — select by toggling .active, the same
+  // thing the delegated click handler does.
+  w.eval("document.querySelectorAll('.mk-vis-switch .switch-option').forEach(b => b.classList.toggle('active', b.dataset.value === 'all'))");
+  check('notes maktab: switch choice drives the saved visibility (V3.73.0)',
     JSON.parse(w.eval("JSON.stringify(readCommentBlock('sabaqCommentBlock'))")).teacher_feedback_visibility === 'all');
   check('notes maktab: existing entry keeps its stored visibility', (() => {
     w.eval("renderCommentBlock('sabaqCommentBlock', { teacher_feedback: 'good', teacher_feedback_visibility: 'private' })");
-    return w.document.querySelector('.mk-vis-row input:checked').value === 'private'
+    return w.document.querySelector('.mk-vis-switch .switch-option.active').dataset.value === 'private'
       && w.document.querySelector('.cb-teacher-note').value === 'good';
   })());
   check('notes maktab: a student note is escaped, not injected', (() => {
@@ -193,8 +195,11 @@ function makeDom(){
   const rows = [...w.document.querySelectorAll('.maktab-name-row')];
   check('name row: shown on all three cards with the student name',
     rows.length === 3 && rows.every(r => !r.hidden && r.querySelector('.maktab-name-text').textContent === 'Umme'));
-  check('name row: haidh toggle present and MARKED (yellow class)',
-    rows.every(r => r.querySelector('[data-haidh-toggle]') && r.querySelector('[data-haidh-toggle]').classList.contains('marked')));
+  // V3.73.0: the haidh toggle LEFT the day cards — marking happens in one
+  // place now, the summary. Asserted as absent so it cannot quietly return
+  // and give two ways to mark again.
+  check('name row: NO haidh toggle on the day cards (V3.73.0)',
+    rows.every(r => r.querySelector('[data-haidh-toggle]') === null));
 
   w.eval("setMaktabLogContext({ id: 'STU9', name: 'NoHaidh', track_haidh: 0 }, '2026-08-16')");
   w.eval('maktabPaintNameRows(false)');
@@ -220,25 +225,32 @@ function makeDom(){
   check('profile maktab: never calls the own-only endpoint',
     !JSON.parse(w.eval('JSON.stringify(calls)')).some(c => String(c.path).includes('/profile')));
 
-  // the third permitted PJ input
-  w.eval("setLogCtxPjNotes({ sabaq: 'practised at home', sabaqDhor: '', dhor: 'struggled' })");
-  check('pj note: served per type', w.eval("logCtxPjNote('sabaq')") === 'practised at home'
-    && w.eval("logCtxPjNote('dhor')") === 'struggled' && w.eval("logCtxPjNote('sabaqDhor')") === '');
-  w.eval("renderCommentBlock('sabaqCommentBlock', null)");
-  check('pj note: REACHES the card (the V3.64.0 dangling-read bug)',
-    w.document.querySelector('.mk-student-note-text').textContent === 'practised at home');
-  check('pj note: a type with no note shows no student-note block', (() => {
-    w.document.body.insertAdjacentHTML('beforeend', '<div id="sabaqDhorCommentBlock"></div>');
-    w.eval("renderCommentBlock('sabaqDhorCommentBlock', null)");
-    return w.document.querySelector('#sabaqDhorCommentBlock .mk-student-note') === null;
+  // V3.73.0: the maktab NO LONGER READS STUDENT NOTES. The live PJ-note
+  // lookup and its context accessors are deleted, leaving two permitted PJ
+  // inputs (sabaq_to extension, haidh). Asserted as GONE rather than
+  // deleted silently — a shim or a stray caller here would be the same
+  // dangling read V3.64.1 had to fix once already.
+  check('pj note: the context accessors are gone', (() => {
+    try { w.eval('typeof setLogCtxPjNotes'); } catch(e) { return true; }
+    return w.eval('typeof setLogCtxPjNotes') === 'undefined'
+        && w.eval('typeof logCtxPjNote') === 'undefined';
   })());
-  check('pj note: a SAVED row\'s own note wins over the PJ note', (() => {
+  check('pj note: nothing in the shipped code still calls them',
+    !/logCtxPjNote|setLogCtxPjNotes/.test(read('js/commentPrivacy.js') + read('js/maktabDay.js')));
+  check('pj note: the day view no longer fetches her PJ logs for notes', (() => {
+    const day = read('js/maktabDay.js');
+    // apiGetPJLogsFor SURVIVES for the sabaq_to extension. Count real CALLS
+    // (name followed by '('), not mentions — the comments explaining the
+    // removal name it too, which is exactly the false signal a bare
+    // substring count gives.
+    return (day.match(/apiGetPJLogsFor\(/g) || []).length === 1;
+  })());
+  check('pj note: a note FROZEN onto a saved maktab row still shows', (() => {
     w.eval("renderCommentBlock('sabaqCommentBlock', { student_comment: 'frozen at save' })");
-    return w.document.querySelector('.mk-student-note-text').textContent === 'frozen at save';
+    const el = w.document.querySelector('.mk-student-note-text');
+    return el && el.textContent === 'frozen at save';
   })());
   w.eval('clearLogContext()');
-  check('pj note: cleared with the context (per-student, must not leak)',
-    w.eval("logCtxPjNote('sabaq')") === '');
   const backToPj = JSON.parse(await w.eval('logProfile().then(p => JSON.stringify(p))'));
   check('profile: back in PJ mode the real profile returns', backToPj.mushaf === '15line_madani');
 }

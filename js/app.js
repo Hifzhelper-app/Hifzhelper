@@ -209,8 +209,18 @@ window.addEventListener('popstate', () => {
   // (js/logDetailScreen.js) is the one exception, kept in its own file
   // since it already had its own icon/listener wiring from before, now
   // just repointed to Home instead of Journal.
-  ['journalCloseBtn', 'adminCloseBtn', 'settingsCloseBtn', 'tadabburCloseBtn', 'haidhDetailCloseBtn', 'juzTrackerCloseBtn', 'sihCloseBtn', 'maktabSummaryCloseBtn', 'maktabJournalCloseBtn', 'maktabSettingsCloseBtn', 'maktabSetupCloseBtn'].forEach(id => {
+  // V3.73.1: 'maktabSetupCloseBtn' REMOVED from this list. V3.72.0 deleted
+  // the maktab setup screen and its button; this loop still looked for it
+  // and threw on a null at boot, taking everything after it down with it.
+  //
+  // The guard is the real fix. This list names ids in index.html and is
+  // edited by hand, so it will drift again the next time a screen is
+  // deleted — and an unguarded getElementById in BOOT code turns a stale
+  // list entry into a dead app rather than a missing icon. Same shape as
+  // the V3.51.2 haidhRulingHint bug and the V3.69.0 homeHeaderIcon removal.
+  ['journalCloseBtn', 'adminCloseBtn', 'settingsCloseBtn', 'tadabburCloseBtn', 'haidhDetailCloseBtn', 'juzTrackerCloseBtn', 'sihCloseBtn', 'maktabSummaryCloseBtn', 'maktabJournalCloseBtn', 'maktabSettingsCloseBtn'].forEach(id => {
     const btn = document.getElementById(id);
+    if(!btn) return;   // a deleted screen must not take the boot down
     btn.innerHTML = iconHtml('close');
     btn.addEventListener('click', () => showScreen('home'));
   });

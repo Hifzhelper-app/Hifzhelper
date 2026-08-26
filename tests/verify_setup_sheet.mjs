@@ -88,5 +88,22 @@ check('the pool is read for the named student, not the logged-in one',
 check('setup never reaches for an own-only profile call',
   !/apiGetProfile\(\)/.test(setup) && !/apiSaveProfile\(/.test(setup));
 
+// ---------- V3.73.1: the boot close-button list must not name dead screens ----------
+// V3.72.0 deleted the setup screen but left its id in app.js's boot loop,
+// which did an unguarded getElementById and threw — killing startup. Both
+// halves are asserted: the stale id is gone, AND the loop is guarded so the
+// next deleted screen cannot do the same thing.
+{
+  const appSrc = read('js/app.js');
+  const list = appSrc.match(/\['journalCloseBtn'[^\]]*\]/);
+  check('the boot close-button list exists', !!list);
+  const ids = list ? [...list[0].matchAll(/'([A-Za-z]+)'/g)].map(m => m[1]) : [];
+  check('it no longer names the deleted maktabSetupCloseBtn', !ids.includes('maktabSetupCloseBtn'));
+  check('every id it names still exists in the markup',
+    ids.every(id => html.includes(`id="${id}"`)), ids.filter(id => !html.includes(`id="${id}"`)).join(','));
+  check('and the loop is guarded, so a future deletion cannot kill the boot',
+    /const btn = document\.getElementById\(id\);\s*\n\s*if\(!btn\) return;/.test(appSrc));
+}
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

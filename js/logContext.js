@@ -64,7 +64,6 @@ function setMaktabLogContext(student, date, opts){
 }
 function clearLogContext(){
   LOG_CTX = { mode: 'pj', studentId: null, studentName: null, date: null, trackHaidh: false, readOnly: false };
-  LOG_CTX_PJ_NOTES = { sabaq: '', sabaqDhor: '', dhor: '' }; // notes are per-student too — must not survive
   LOG_CTX_POOL = [];                                          // ...and so is the pool
 }
 
@@ -201,14 +200,15 @@ async function logSavePool(units){
 // held here so the shared notes block can show it read-only without
 // each card refetching. Keyed by type: a Sabaq note belongs on the Sabaq
 // card only.
-let LOG_CTX_PJ_NOTES = { sabaq: '', sabaqDhor: '', dhor: '' };
 // The maktab Dhor pool for the student currently open. Filled from the
 // maktab position blob by (h); empty until then, never the teacher's.
 let LOG_CTX_POOL = [];
 function setLogCtxPool(pool){ LOG_CTX_POOL = Array.isArray(pool) ? pool.slice() : []; }
 function logCtxPool(){ return LOG_CTX_POOL.slice(); }
-function setLogCtxPjNotes(notes){ LOG_CTX_PJ_NOTES = Object.assign({ sabaq: '', sabaqDhor: '', dhor: '' }, notes || {}); }
-function logCtxPjNote(type){ return logCtxIsMaktab() ? (LOG_CTX_PJ_NOTES[type] || '') : ''; }
+// V3.73.0: setLogCtxPjNotes, logCtxPjNote and LOG_CTX_PJ_NOTES all DELETED —
+// the maktab no longer reads student notes. Removed outright rather than
+// left as no-op shims; a shim here would be the same dangling read V3.64.1
+// already had to fix in this area once.
 
 // PJ-only concepts, skipped in maktab mode rather than faked:
 //  - position: a per-student stored blob the maktab has no table for, and

@@ -61,29 +61,56 @@ function renderMaktabCommentBlock(containerId, existingEntry){
   // V3.64.1 fix: this used to read el.dataset.pjNote, which NOTHING ever
   // set, so the note silently never appeared. The fetch had existed in
   // V3.63.0 and was dropped in the rewrite, leaving the read dangling.
-  const type = { sabaqCommentBlock: 'sabaq', sabaqDhorCommentBlock: 'sabaqDhor', dhorCommentBlock: 'dhor' }[containerId];
-  const pjNote = (typeof logCtxPjNote === 'function' && type) ? logCtxPjNote(type) : '';
-  const studentNote = (existingEntry && existingEntry.student_comment) || pjNote || '';
+  // V3.73.0: the live PJ-note lookup is gone. A note FROZEN onto a saved
+  // maktab row still shows — that is maktab data on a maktab row.
+  const studentNote = (existingEntry && existingEntry.student_comment) || '';
+
+  // V3.73.0: three full-size radios became the SAME segmented control the
+  // Quarter/Half/Juz portion selector uses, at the .switch-track-small-wide
+  // size — a compact variant that already existed in detail-pages.css and
+  // had never been wired to anything.
+  //
+  // It sits INSIDE the note box because it governs who can see THE NOTE,
+  // not the entry. Detached above the box, it read as unrelated chrome.
   const opt = (value, label) =>
-    `<label class="mk-vis-opt"><input type="radio" name="${containerId}_vis" value="${value}"${vis === value ? ' checked' : ''}><span>${label}</span></label>`;
+    `<button type="button" class="switch-option${vis === value ? ' active' : ''}" data-value="${value}" role="radio" aria-checked="${vis === value}">${label}</button>`;
   el.innerHTML = `
-    <div class="mk-vis-row" role="radiogroup" aria-label="Teacher note visibility">
-      ${opt('all', 'Public')}${opt('teachers_only', 'Teachers')}${opt('private', 'Private')}
+    <div class="cb-note-box">
+      <div class="cb-note-head">
+        <label>Teacher note</label>
+        <div class="switch-track switch-track-small-wide mk-vis-switch" role="radiogroup" aria-label="Teacher note visibility">
+          ${opt('all', 'Public')}${opt('teachers_only', 'Teachers')}${opt('private', 'Private')}
+        </div>
+      </div>
+      <textarea class="cb-teacher-note" rows="2">${esc(teacherNote)}</textarea>
     </div>
-    <label>Teacher note</label>
-    <textarea class="cb-teacher-note" rows="2">${esc(teacherNote)}</textarea>
     ${studentNote ? `<div class="mk-student-note"><span class="mk-student-note-label">Student note</span><div class="mk-student-note-text">${esc(studentNote)}</div></div>` : ''}
   `;
 }
+
+// V3.73.0: wired by DELEGATION on document, once — not per render.
+// renderCommentBlock rewrites innerHTML on every entry load and mode change,
+// so per-render listeners would either leak or silently stop working after a
+// re-render.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('.mk-vis-switch .switch-option');
+  if(!btn) return;
+  btn.closest('.mk-vis-switch').querySelectorAll('.switch-option').forEach(b => {
+    const on = b === btn;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+});
 
 function readCommentBlock(containerId){
   const el = document.getElementById(containerId);
   if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
     const noteEl = el.querySelector('.mk-student-note-text');
-    const checked = el.querySelector(`input[name="${containerId}_vis"]:checked`);
+    // .dataset.value, not .value: these are buttons now, not radios.
+    const checked = el.querySelector('.mk-vis-switch .switch-option.active');
     return {
       teacher_feedback: el.querySelector('.cb-teacher-note').value || null,
-      teacher_feedback_visibility: checked ? checked.value : 'teachers_only',
+      teacher_feedback_visibility: checked ? checked.dataset.value : 'teachers_only',
       // frozen exactly as displayed; absent when there was nothing to show
       student_comment: noteEl ? noteEl.textContent : null,
     };

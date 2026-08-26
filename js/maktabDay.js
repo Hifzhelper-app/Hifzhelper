@@ -98,18 +98,17 @@ function maktabPaintNameRows(marked){
     name.className = 'maktab-name-text';
     name.textContent = logCtxStudentName();
     row.appendChild(name);
-    if(logCtxTrackHaidh()){
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'maktab-haidh-check maktab-name-haidh' + (marked ? ' marked' : '');
-      btn.setAttribute('data-haidh-toggle', '');
-      btn.setAttribute('aria-pressed', marked ? 'true' : 'false');
-      btn.setAttribute('aria-label', (marked ? 'Clear haidh mark for ' : 'Mark haidh for ') + logCtxStudentName());
-      btn.innerHTML = iconHtml('haidh');
-      btn.addEventListener('click', () =>
-        maktabToggleHaidh(logCtxStudentId(), logCtxDate(), marked, () => openMaktabDay(maktabDayStudent, maktabDayDate)));
-      row.appendChild(btn);
-    }
+    // V3.73.0: the haidh toggle is GONE from the day cards. Haidh is marked
+    // in ONE place now — the summary's leading-column icon.
+    //
+    // It was a CONTROL here, not a badge: it marked and cleared haidh
+    // including the 15-day gap confirm. So this removed one of the two ways
+    // to mark, and a teacher already inside a student's cards now backs out
+    // to the summary to do it. Accepted as the cost of one place, not two.
+    //
+    // maktabToggleHaidh, maktabMarkHaidhFlow and the gap check are NOT
+    // deleted — the summary's toggle still uses them; this file's header
+    // records that the flow is shared. Only the rendering and wiring went.
   });
 }
 
@@ -144,18 +143,14 @@ async function openMaktabDay(student, date){
   maktabDayDate = date || maktabTodayISO();
   setMaktabLogContext(student, maktabDayDate);
 
-  // The third permitted PJ input: the student's own non-private note for
-  // this day, per type. Fetched BEFORE the cards render, because
-  // renderCommentBlock runs during showScreen. Private notes arrive
-  // already nulled by the worker's applyPrivacy -- nothing to filter
-  // here. PJ use is optional: empty is the normal case, never an error.
-  const pjNoteFor = (rows) => {
-    const r = (Array.isArray(rows) ? rows : []).find(x => x.date === maktabDayDate && x.student_comment);
-    return r ? r.student_comment : '';
-  };
-  const grab = (path) => apiGetPJLogsFor(path, student.id).catch(() => []);
-  const [pjS, pjSD, pjD] = await Promise.all([grab('/sabaq'), grab('/sabaq-dhor'), grab('/dhor')]);
-  setLogCtxPjNotes({ sabaq: pjNoteFor(pjS), sabaqDhor: pjNoteFor(pjSD), dhor: pjNoteFor(pjD) });
+  // V3.73.0: the maktab NO LONGER READS STUDENT NOTES. That drops one of the
+  // three permitted PJ inputs, leaving two — the sabaq_to extension above
+  // and haidh. It also removes THREE apiGetPJLogsFor calls that fired on
+  // every day-view open purely to fetch her notes.
+  //
+  // apiGetPJLogsFor itself stays: the sabaq_to extension above still uses
+  // it. Notes already FROZEN onto saved maktab rows keep showing — that is
+  // maktab data sitting on a maktab row, not a read into her journal.
 
   // V3.66.0: the maktab Dhor pool for this student, from the maktab
   // position blob — loaded BEFORE the cards render, since logProfile()

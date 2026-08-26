@@ -26,6 +26,36 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.73.1 — Fixes a boot crash introduced by V3.72.0 (2026-08-26)
+
+**Files touched:** `js/app.js`, `index.html`, `js/sw.js`, `tests/verify_setup_sheet.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. Deploy this with or before V3.73.0 — V3.72.0 alone is broken.**
+
+**`TypeError: null is not an object (evaluating 'btn.innerHTML = iconHtml('close')')` at startup.** V3.72.0 deleted the maktab setup screen and its close button, but `js/app.js` wires a hand-maintained list of close-button ids at boot and still named `maktabSetupCloseBtn`. The unguarded `getElementById` returned null and threw, taking down everything after it in the boot sequence.
+
+**Both halves fixed.** The stale id is removed, and the loop now skips a missing element rather than throwing. The guard matters more than the removal: that list names ids in `index.html` and is edited by hand, so it will drift again the next time a screen is deleted — and an unguarded lookup in BOOT code turns a stale entry into a dead app rather than a missing icon. Same shape as the V3.51.2 `haidhRulingHint` bug and the `homeHeaderIcon` removal in V3.69.0, where the write was deleted rather than null-guarded for exactly this reason.
+
+**Four new assertions in `verify_setup_sheet.mjs`**, including that every id the boot list names still exists in the markup — which is the check that would have caught this before shipping, and did not exist.
+
+**Verification: 477 passed, 0 failed across 16 harnesses.**
+
+---
+
+## V3.73.0 — Dhor card: note-visibility switch, student notes dropped, haidh icon off the day cards (2026-08-26)
+
+**Files touched:** `js/commentPrivacy.js`, `js/maktabDay.js`, `js/logContext.js`, `css/detail-pages.css`, `index.html`, `js/sw.js`, `tests/verify_context.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY — no worker, no migration.** Completes items 2–4 of the Dhor card list; item 1 shipped as V3.72.0.
+
+**Note visibility is a compact three-way switch inside the note box.** Three full-size radios became the same segmented control the Quarter/Half/Juz selector uses, at the `.switch-track-small-wide` size — a variant that already existed in `detail-pages.css` and had never been wired to anything. It sits in the note box because it governs who can see THE NOTE, not the entry; detached above it, it read as unrelated chrome. Wired by delegation on `document`, once, rather than per render: `renderCommentBlock` rewrites `innerHTML` on every entry load and mode change, so per-render listeners would leak or silently stop working. The read uses `.dataset.value` — these are buttons now, not radios.
+
+**The maktab no longer reads student notes.** That drops one of the three permitted PJ→maktab inputs, leaving two: the sabaq_to extension and haidh. It also removes THREE `apiGetPJLogsFor` calls that fired on every day-view open purely to fetch her notes — a real latency saving, not only tidying. `apiGetPJLogsFor` survives for the sabaq_to extension. `setLogCtxPjNotes`, `logCtxPjNote` and `LOG_CTX_PJ_NOTES` are deleted outright rather than left as no-op shims; a shim there would be the same dangling read V3.64.1 had to fix in that area once. **Notes already frozen onto saved maktab rows still show** — that is maktab data on a maktab row, and hiding it would mean entries visible today showing less tomorrow.
+
+**The haidh icon left the day cards.** Marking happens in one place now, the summary. It was a CONTROL there, not a badge — it marked and cleared including the 15-day gap confirm — so this removed one of two ways to mark, and a teacher inside a student's cards now backs out to the summary. `maktabToggleHaidh`, `maktabMarkHaidhFlow` and the gap check are untouched; the summary still uses them.
+
+**Harness assertions updated, not worked around.** `verify_context.mjs` drove the radios and the deleted PJ-note feature. Its checks now assert the REMOVALS held: the context accessors are undefined, nothing in shipped code still calls them, the day view makes exactly one `apiGetPJLogsFor` call, no `[data-haidh-toggle]` survives on the day cards, and a frozen note still renders. One of those assertions was itself wrong first time — it counted the substring `apiGetPJLogsFor`, which the new explanatory comments also contain; it now counts real calls.
+
+**Verification: 473 passed, 0 failed across 16 harnesses**, from a confirmed-green 474 baseline (the net −1 is the deleted PJ-note feature's own checks, replaced by fewer removal checks). Cache bump as its own operation, verified after writing.
+
+---
+
 ## V3.72.0 — Setup takes over the Dhor card's Plan button (2026-08-26)
 
 **Files touched:** `js/maktabSetup.js`, `js/dhorPage.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/app.js`, `index.html`, `css/journal-table.css`, `js/sw.js`, `tests/verify_setup_sheet.mjs` (new), `tests/verify_e1.mjs`, `tests/verify_e2.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY — no worker, no migration.**
