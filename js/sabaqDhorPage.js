@@ -22,6 +22,7 @@
 
 let sabaqDhorSelectedTags = [];
 let sabaqDhorRows = [];
+let sabaqDhorMoveOptions = [];   // V3.74.3: per-juz, not per-row
 let sabaqDhorRef = 'waterval';
 let sabaqDhorPosition = null;
 // V3.21.0: editing state. Sabaq Dhor's checkboxes reflect TODAY's live
@@ -99,7 +100,17 @@ function renderSabaqDhorRows(){
     <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
     <span></span>
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
-    ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn move-to-dhor-row" data-id="${r.id}">Move ${r.label} to Dhor</button>` : ''}
+  `).join('');
+
+  // V3.74.3: ONE move option per juz, on its own row, rendered from the
+  // juz rather than from any row — so roll-up state cannot make it appear
+  // or vanish. Disabled until all four quarters are complete, and shown
+  // while disabled on purpose: it tells the teacher the option exists and
+  // what it is waiting for.
+  const moveHtml = sabaqDhorMoveOptions.map(o => `
+    <button type="button" class="move-to-dhor-btn move-to-dhor-row" data-juz="${o.juz}"${o.enabled ? '' : ' disabled'}>
+      Move ${o.label} to Dhor${o.enabled ? '' : ` (${o.completeQuarters} of 4 complete)`}
+    </button>
   `).join('');
 
   // V3.45.14: "Set Sabaq Dhor" is now a genuine From/To range, confirmed
@@ -151,10 +162,12 @@ function renderSabaqDhorRows(){
   // the survivors reflow into the wrong columns (the V3.45.6-.11
   // lesson: fix the structure, not the symptom). Keyed off the same
   // sabaqDhorEditingId the rest of edit mode already uses.
-  el.innerHTML = (sabaqDhorEditingId ? '' : rowsHtml) + manualHtml;
+  // V3.74.3: the move options follow the rows and are suppressed in edit
+  // mode alongside them — editing an entry is not the moment to move a juz.
+  el.innerHTML = (sabaqDhorEditingId ? '' : rowsHtml + moveHtml) + manualHtml;
 
-  el.querySelectorAll('.move-to-dhor-btn').forEach(btn => {
-    btn.addEventListener('click', () => moveRowToDhor(btn.dataset.id));
+  el.querySelectorAll('.move-to-dhor-btn[data-juz]').forEach(btn => {
+    btn.addEventListener('click', () => moveJuzToDhor(Number(btn.dataset.juz)));
   });
 
   // Reapply preserved manual-field state to the freshly-created nodes,
@@ -180,43 +193,33 @@ function renderSabaqDhorRows(){
 // sabaqPage.js's save handler instead, since that's where a juz'
 // actually gets crossed. Both are independent paths to the same outcome,
 // confirmed in chat -- whichever happens first.
-async function moveRowToDhor(rowId){
-  const row = sabaqDhorRows.find(r => r.id === rowId);
-  if(!row || !row.canMoveToDhor) return;
-  const juz = row.lingeringJuz || sabaqDhorPosition.activeJuz;
+// V3.74.3: moves a WHOLE JUZ. Was per-row, with halves sequenced so the
+// second could not move until the first had. All of that is gone: the
+// option belongs to the juz, takes all four quarters, and the juz then
+// leaves Sabaq Dhor entirely — it is a handover, not a copy.
+//
+// The juz disappears on its own once every unit is in the pool: the
+// lingering-row builder returns nothing for a fully-moved juz. So there is
+// no separate "remove the rows" step to fall out of step with the write.
+async function moveJuzToDhor(juz){
+  const opt = sabaqDhorMoveOptions.find(o => o.juz === juz);
+  if(!opt || !opt.enabled) return;
 
-  // V3.74.2: confirm before changing her pool. Adding is far less
-  // destructive than Setup's replace, so the wording says what will
-  // happen rather than warning — but it is still a real change to her
-  // Dhor rotation from a single tap, and it names the portion so a
-  // mis-tap on the wrong row is caught here rather than after.
-  if(!confirm(`Move ${row.label} (${row.fromSurah}:${row.fromAyah} - ${row.toSurah}:${row.toAyah}) into her Dhor pool?`)) return;
+  if(!confirm(`Move all four quarters of Juz ${juz} into the Dhor pool? It will no longer appear in Sabaq Dhor.`)) return;
 
   try{
     const profile = await logProfile();
-    const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];
-    const updated = addRowToBaselinePool(row, juz, current);
-    await logSavePool(updated);
-    // If this was the last lingering piece of a previous juz', clear it
-    // from position so it stops being tracked as "lingering" going forward.
-    if(row.lingeringJuz){
-      const stillLingering = computeLingeringRows(row.lingeringJuz, sabaqDhorRef, sabaqDhorRollupLevel, updated);
-      if(stillLingering.length === 0 && sabaqDhorPosition.previousJuz === row.lingeringJuz){
-        sabaqDhorPosition = Object.assign({}, sabaqDhorPosition, { previousJuz: null });
-        await savePosition(sabaqDhorPosition);
-      }
-    }
-    rebuildRowsFromPosition();
+    const pool = Array.isArray(profile.baseline_selection) ? profile.baseline_selection : [];
+    const merged = [...new Set(pool.concat(opt.units))].sort((a, b) => a - b);
+    await logSavePool(merged);
+    sabaqDhorBaselineSelection = merged;
+    renderSabaqDhorRows();
   } catch(e){
-    document.getElementById('sabaqDhorError').textContent = "Couldn't move to Dhor: " + e.message;
+    const st = document.getElementById('sabaqDhorSaveStatus');
+    if(st){ st.textContent = "Couldn't move to Dhor: " + e.message; st.classList.add('show'); }
   }
 }
 
-function rebuildRowsFromPosition(){
-  sabaqDhorRows = computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, sabaqDhorRollupLevel, sabaqDhorBaselineSelection);
-  renderSabaqDhorRows();
-  updateRollupStepperVisibility();
-}
 
 // V3.19.0: each rollup button is only shown when it would actually change
 // something -- rather than hand-duplicating computeSabaqDhorRows' own

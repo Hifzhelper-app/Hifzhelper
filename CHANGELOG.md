@@ -26,6 +26,26 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.74.3 — Move to Dhor rewritten: per juz, not per row (item 12) (2026-08-26)
+
+**Files touched:** `js/position.js`, `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY.**
+
+**The Dhor option now belongs to the juz, not to a row.** It ignores roll-up entirely, so collapsing or expanding the quarters no longer makes it appear or vanish; it activates only when all four quarters are complete; and moving takes all four, after which the juz leaves Sabaq Dhor.
+
+**What this retires.** Each half previously carried its own option, sequenced — the Second Half stayed locked until the First had actually moved (`firstHalfMoved`). That machinery existed solely to stage half-moves and is gone, along with `canMoveToDhor` on every row that carried it. `computeJuzMoveOption` and `computeSabaqDhorMoveOptions` replace it.
+
+**The juz leaves Sabaq Dhor without a separate removal step.** The lingering-row builder already returns nothing for a juz whose units are all in the pool, so the disappearance falls out of the same condition that decides eligibility. Nothing to keep in step with the write, and nothing that can half-succeed.
+
+**Shown disabled rather than appearing from nowhere.** Before the fourth quarter the button reads *"Move Juz N to Dhor (2 of 4 complete)"* and is inactive — it tells the teacher the option exists and what it is waiting for. A juz already in the pool offers nothing at all.
+
+**A lingering juz is complete by definition** — that is what makes it linger, the student having moved on. So its option is live immediately, and nothing is stranded by the new rule. Worth recording because the opposite was assumed during specification and was wrong: "First Half" in that card describes the ROLL-UP, not how much of the juz is done.
+
+**Both reads and writes stay routed** — `logProfile()` and `logSavePool()`, so this remains correct in the maktab. The confirmation names the juz and says it will leave Sabaq Dhor.
+
+**Verification: 588 passed, 0 failed across 19 harnesses.** Three assertions from V3.74.2 asserted the per-row button and were replaced rather than worked around; twelve new ones cover the rewrite, including that no row carries an option and the sequential unlock is gone.
+
+---
+
 ## V3.74.2 — UI batch, items 1-11 (2026-08-26)
 
 **Files touched:** `js/auth.js`, `js/maktabSummary.js`, `js/sabaqDhorPage.js`, `js/maktabSettings.js`, `js/adminPage.js`, `css/detail-pages.css`, `css/journal-table.css`, `css/settings.css`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs` (new), `tests/verify_nav.mjs`, `tests/verify_maktab_settings_form.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY.** Item 12 (the Move-to-Dhor rewrite) and 13 (tajweed tags) are NOT in this.

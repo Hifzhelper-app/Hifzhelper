@@ -102,12 +102,33 @@ check('9: but it still reads as tappable — it is the ONLY place haidh is marke
 
 // ---------- 10-11: move to dhor ----------
 check('10: the button is on its own row spanning the grid', /\.move-to-dhor-row \{[\s\S]{0,80}grid-column: 1 \/ -1/.test(dp));
-check('10: and names its portion, since one line loses the tie to the row above',
-  /Move \$\{r\.label\} to Dhor/.test(sd));
-check('11: it confirms before changing the pool', /if\(!confirm\(`Move \$\{row\.label\}/.test(sd));
-check('11: the confirmation names the portion, so a mis-tap is caught here',
-  /\$\{row\.fromSurah\}:\$\{row\.fromAyah\}/.test(sd));
-check('11: and cancelling does nothing at all', /\)\) return;\n\n  try\{/.test(sd));
+
+// ---------- 12: the per-juz rewrite (V3.74.3) ----------
+// Was one option per ROW, with halves sequenced so the second could not
+// move until the first had. The option now belongs to the JUZ: it ignores
+// roll-up, activates at four quarters, and takes the whole juz.
+{
+  const pos = read('js/position.js');
+  check('12: no row carries a move option any more', !/canMoveToDhor: (true|false)/.test(pos));
+  check('12: the sequential half-unlock is gone', !/firstHalfMoved/.test(pos) && !/secondHalfMoved/.test(pos));
+  check('12: the option is computed per juz', /function computeJuzMoveOption\(/.test(pos) && /function computeSabaqDhorMoveOptions\(/.test(pos));
+  check('12: it activates only at four complete quarters', /enabled: completeQuarters >= 4/.test(pos));
+  check('12: a juz already in the pool offers nothing', /if\(units\.every\(u => baselineSelection\.includes\(u\)\)\) return null/.test(pos));
+  check('12: a fully-moved juz leaves Sabaq Dhor — no separate removal step to drift',
+    /const fullyMoved = allUnits\.every[\s\S]{0,120}if\(fullyMoved\) return \[\]/.test(pos));
+
+  check('12: the button is rendered from the juz, NOT from a row — roll-up cannot hide it',
+    /sabaqDhorMoveOptions\.map\(o =>/.test(sd) && /data-juz="\$\{o\.juz\}"/.test(sd));
+  check('12: it is shown disabled before four, with the count, rather than appearing from nowhere',
+    /o\.enabled \? '' : ' disabled'/.test(sd) && /\$\{o\.completeQuarters\} of 4 complete/.test(sd));
+  check('12: moving takes all four quarters', /pool\.concat\(opt\.units\)/.test(sd));
+  check('11: it confirms first, naming the juz and saying it leaves Sabaq Dhor',
+    /confirm\(`Move all four quarters of Juz \$\{juz\}/.test(sd) && /no longer appear in Sabaq Dhor/.test(sd));
+  check('11: cancelling does nothing at all', /\)\) return;\n\n  try\{/.test(sd));
+  check('12: the pool read and write both stay routed — this is a maktab write',
+    /await logProfile\(\)/.test(sd) && /await logSavePool\(merged\)/.test(sd) && !/apiSaveProfile\(/.test(sd));
+  check('12: the old per-row mover is gone', !/function moveRowToDhor/.test(sd));
+}
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

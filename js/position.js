@@ -188,45 +188,65 @@ function nextSabaqDefaults(frontier, ref, hasDhor){
 // content the same way. Second Half only ever appears here once First
 // Half is confirmed already in the pool (the sequential rule) -- if
 // neither half has moved yet, both are still eligible together.
+// V3.74.3 REWRITE. Was: each half carried its own Dhor option, sequenced —
+// Second Half stayed locked until First Half had actually moved. That whole
+// mechanism is retired.
+//
+// Now the Dhor option belongs to the JUZ, not to a row:
+//   - one option per juz, never one per half or quarter;
+//   - it ignores roll-up entirely, so collapsing or expanding the quarters
+//     does not make it appear or vanish;
+//   - it activates only when all four quarters are complete;
+//   - moving takes ALL FOUR quarters and the juz leaves Sabaq Dhor.
+//
+// A lingering juz is complete by definition — that is what makes it linger,
+// the student having moved on to the next one. So its option is active
+// immediately. The rows below are display only; `canMoveToDhor` is gone
+// from them.
 function computeLingeringRows(previousJuz, ref, rollupLevel, baselineSelection){
-  const firstHalfUnits = quarterUnitsForHalf(previousJuz, 1);
-  const secondHalfUnits = quarterUnitsForHalf(previousJuz, 2);
-  const firstHalfMoved = firstHalfUnits.every(u => baselineSelection.includes(u));
-  const secondHalfMoved = secondHalfUnits.every(u => baselineSelection.includes(u));
-  if(firstHalfMoved && secondHalfMoved) return []; // fully moved already, nothing lingers
+  const allUnits = quarterUnitsForJuz(previousJuz);
+  const fullyMoved = allUnits.every(u => baselineSelection.includes(u));
+  if(fullyMoved) return []; // already in the pool -- the juz has left Sabaq Dhor
 
   const juzBounds = { from: structuralQuarterBounds(previousJuz, 1, ref), to: structuralQuarterBounds(previousJuz, 4, ref) };
-  if(!firstHalfMoved && !secondHalfMoved && rollupLevel === 'full'){
+  if(rollupLevel === 'full'){
     return [{ id: 'lingering-full', label: `Juz ${previousJuz} (complete)`,
       fromSurah: juzBounds.from.startSurah, fromAyah: juzBounds.from.startAyah,
       toSurah: juzBounds.to.endSurah, toAyah: juzBounds.to.endAyah,
-      complete: true, canMoveToDhor: true, isFull: true, lingeringJuz: previousJuz }];
+      complete: true, isFull: true, lingeringJuz: previousJuz }];
   }
-  const rows = [];
   const halfBounds = (h) => {
     const start = structuralQuarterBounds(previousJuz, h === 1 ? 1 : 3, ref);
     const end = structuralQuarterBounds(previousJuz, h === 1 ? 2 : 4, ref);
     return { fromSurah: start.startSurah, fromAyah: start.startAyah, toSurah: end.endSurah, toAyah: end.endAyah };
   };
-  // 2026-08-07, confirmed in chat ("4321 for all"): most-recent-first --
-  // Second Half pushed before First Half. Ru'b/Hizb labeling (V3.37):
-  // Hizb is a standalone global 1-60 number here, same as everywhere else
-  // this unit is described -- see shared/data.js's globalHizbNumber.
-  // Both un-moved halves stay visible/revisable in Sabaq Dhor regardless
-  // of order -- the sequential rule only governs canMoveToDhor (Second
-  // Half's Dhor option isn't available until First Half has actually
-  // moved), not whether the row is shown at all.
-  if(!secondHalfMoved){
-    const b = halfBounds(2);
-    const label = ref === 'uthmani' ? `Hizb ${globalHizbNumber(previousJuz, 2)}` : `Juz ${previousJuz}, Second Half`;
-    rows.push(Object.assign({ id: 'lingering-h2', label }, b, { complete: true, canMoveToDhor: firstHalfMoved, isHalf: true, halfIndex: 2, lingeringJuz: previousJuz }));
-  }
-  if(!firstHalfMoved){
-    const b = halfBounds(1);
-    const label = ref === 'uthmani' ? `Hizb ${globalHizbNumber(previousJuz, 1)}` : `Juz ${previousJuz}, First Half`;
-    rows.push(Object.assign({ id: 'lingering-h1', label }, b, { complete: true, canMoveToDhor: true, isHalf: true, halfIndex: 1, lingeringJuz: previousJuz }));
-  }
+  // Most-recent-first (2026-08-07, "4321 for all"): Second Half before
+  // First. Hizb is a standalone global 1-60 number, as everywhere else.
+  const rows = [];
+  [2, 1].forEach(h => {
+    const label = ref === 'uthmani' ? `Hizb ${globalHizbNumber(previousJuz, h)}` : `Juz ${previousJuz}, ${h === 1 ? 'First' : 'Second'} Half`;
+    rows.push(Object.assign({ id: `lingering-h${h}`, label }, halfBounds(h), { complete: true, isHalf: true, halfIndex: h, lingeringJuz: previousJuz }));
+  });
   return rows;
+}
+
+// The per-juz move option. Returned alongside the rows rather than attached
+// to one of them, because it belongs to the juz and must survive whatever
+// roll-up level happens to be showing.
+function computeJuzMoveOption(juz, ref, baselineSelection, completeQuarters){
+  if(!juz) return null;
+  const units = quarterUnitsForJuz(juz);
+  if(units.every(u => baselineSelection.includes(u))) return null; // already moved
+  return {
+    juz,
+    units,
+    label: `Juz ${juz}`,
+    // Visible either way; enabled only at four. Showing it inactive is
+    // deliberate -- it tells the teacher the option exists and what it is
+    // waiting for, rather than appearing from nowhere on the fourth tick.
+    enabled: completeQuarters >= 4,
+    completeQuarters,
+  };
 }
 
 function computeSabaqDhorRows(position, ref, rollupLevel, baselineSelection){
@@ -234,6 +254,24 @@ function computeSabaqDhorRows(position, ref, rollupLevel, baselineSelection){
   const lingering = position.previousJuz ? computeLingeringRows(position.previousJuz, ref, rollupLevel, pool) : [];
   const currentRows = computeCurrentJuzRows(position, ref, rollupLevel);
   return lingering.concat(currentRows);
+}
+
+// V3.74.3: the move options for whatever juz the card is showing. At most
+// two -- the lingering juz (complete, so active) and the current one
+// (active only once its fourth quarter is done).
+function computeSabaqDhorMoveOptions(position, ref, baselineSelection){
+  const pool = baselineSelection || [];
+  const out = [];
+  if(position.previousJuz){
+    const o = computeJuzMoveOption(position.previousJuz, ref, pool, 4);
+    if(o) out.push(o);
+  }
+  if(position.activeJuz && position.activeJuz !== position.previousJuz){
+    const done = (position.completedQuarters || []).length;
+    const o = computeJuzMoveOption(position.activeJuz, ref, pool, done);
+    if(o) out.push(o);
+  }
+  return out;
 }
 
 // 2026-08-07 (V3.37): plain "Quarter N"/"Ru'b N" rows for a list of
@@ -252,8 +290,7 @@ function buildIndividualCompletedRows(completed, ref){
       id: `q${s.studyQuarter}`,
       label: `${quarterUnitWord(ref)} ${s.studyQuarter}`,
       fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
-      complete: true,
-      canMoveToDhor: false // a lone quarter/rub' never has its own Dhor option -- only halves and full juz' do
+      complete: true
     }));
 }
 
@@ -289,15 +326,13 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
       label: `Maqra ${currentM.studyMaqra} (current)`,
       fromSurah: currentM.fromSurah, fromAyah: currentM.fromAyah,
       toSurah: currentM.toSurah, toAyah: currentM.toAyah,
-      complete: false,
-      canMoveToDhor: false
+      complete: false
     }];
     completedM.forEach(s => maqraRows.push({
       id: `m${s.studyMaqra}`,
       label: `Maqra ${s.studyMaqra}`,
       fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
-      complete: true,
-      canMoveToDhor: false // a lone Maqra never has its own Dhor option, same rule as a lone quarter/rub'
+      complete: true
     }));
     return maqraRows.concat(completedRubRows);
   }
@@ -313,8 +348,7 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
     label: `${quarterUnitWord(ref)} ${current.studyQuarter} (current)`,
     fromSurah: current.fromSurah, fromAyah: current.fromAyah,
     toSurah: current.toSurah, toAyah: current.toAyah,
-    complete: false,
-    canMoveToDhor: false
+    complete: false
   }];
 
   if(rollupLevel === 'quarters' || completed.length === 0){
@@ -338,7 +372,7 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
         id: 'full', label: 'Full Juz\'',
         fromSurah: completed[completed.length-1].fromSurah, fromAyah: completed[completed.length-1].fromAyah,
         toSurah: completed[0].toSurah, toAyah: completed[0].toAyah,
-        complete: true, canMoveToDhor: true, isFull: true
+        complete: true, isFull: true   // V3.74.3: no per-row Dhor option
       });
     } else {
       // 2026-08-07: a single descending walk (4->1) rather than "process
@@ -363,7 +397,7 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
             id: `h${a}`, label,
             fromSurah: byQuarter[a].fromSurah, fromAyah: byQuarter[a].fromAyah,
             toSurah: byQuarter[q].toSurah, toAyah: byQuarter[q].toAyah,
-            complete: true, canMoveToDhor: true, isHalf: true, halfIndex
+            complete: true, isHalf: true, halfIndex   // V3.74.3: no per-row Dhor option
           });
           consumed.add(a); consumed.add(q);
         } else {
@@ -371,7 +405,7 @@ function computeCurrentJuzRows(position, ref, rollupLevel){
           rows.push({
             id: `q${q}`, label: `${quarterUnitWord(ref)} ${q}`,
             fromSurah: s.fromSurah, fromAyah: s.fromAyah, toSurah: s.toSurah, toAyah: s.toAyah,
-            complete: true, canMoveToDhor: false
+            complete: true
           });
           consumed.add(q);
         }
@@ -433,7 +467,7 @@ function advancePositionAfterSabaq(position, oldFrontier, newFrontier, ref){
 
 // Phase 2b (V3.17.0): which quarter-unit IDs a given row represents, for
 // actually moving it into Dhor's eligibility pool (baseline_selection).
-// Only ever called for halves/full-juz' rows (canMoveToDhor === true) —
+// V3.74.3: called for a whole juz now, not a row —
 // a lone quarter never has this option (confirmed in chat).
 function quarterUnitsForRow(row, juz){
   if(row.isFull) return quarterUnitsForJuz(juz);
