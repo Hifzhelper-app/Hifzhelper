@@ -221,6 +221,22 @@ async function moveJuzToDhor(juz){
 }
 
 
+// RESTORED V3.74.5. This function was destroyed by a span replacement in
+// V3.74.3: the slice that replaced moveRowToDhor ran from its opening line
+// to the next "\n}" after a `renderSabaqDhorRows` reference, and swallowed
+// this whole function on the way. Nothing assigned sabaqDhorRows any more,
+// so the Sabaq Dhor card rendered empty — no rows, no history, no manual
+// field. It shipped in V3.74.3 and V3.74.4 because no harness drives this
+// render path; only a screenshot caught it.
+function rebuildRowsFromPosition(){
+  sabaqDhorRows = computeSabaqDhorRows(sabaqDhorPosition, sabaqDhorRef, sabaqDhorRollupLevel, sabaqDhorBaselineSelection);
+  // V3.74.3: the per-juz move options, computed alongside the rows so the
+  // two can never describe different states.
+  sabaqDhorMoveOptions = computeSabaqDhorMoveOptions(sabaqDhorPosition, sabaqDhorRef, sabaqDhorBaselineSelection);
+  renderSabaqDhorRows();
+  updateRollupStepperVisibility();
+}
+
 // V3.19.0: each rollup button is only shown when it would actually change
 // something -- rather than hand-duplicating computeSabaqDhorRows' own
 // merge logic (pairs, full-juz' conditions, lingering-juz rows) to work

@@ -26,6 +26,24 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.74.5 — URGENT: repairs Sabaq Dhor, broken by V3.74.3 (2026-08-26)
+
+**Files touched:** `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. V3.74.3 and V3.74.4 are BROKEN — deploy this one.**
+
+**The Sabaq Dhor card rendered completely empty** — no rows, no history button, no manual field. Reported from a screenshot.
+
+**Cause: a span replacement in V3.74.3 destroyed `rebuildRowsFromPosition()`.** The edit that swapped `moveRowToDhor` for `moveJuzToDhor` sliced from the function's opening line to the next `\n}` following a `renderSabaqDhorRows` reference — and swallowed the whole of `rebuildRowsFromPosition` on the way. Nothing assigned `sabaqDhorRows` after that, so the render read an empty array and produced an empty card. Restored, with the V3.74.3 move-options line included where it always belonged.
+
+**Every other function in the file was verified present** against the pristine copy: only `moveRowToDhor` is gone and only `moveJuzToDhor` added, as intended.
+
+**This is the third over-reaching span replacement in this project** — the earlier two destroyed the derived-id block in `TODO.md` and `.card-header-row-left` in `detail-pages.css`. The other two were caught within minutes, one by an assertion and one by a failed anchor. This one shipped in two releases.
+
+**It shipped because nothing tested it.** 591 assertions passed over a card that rendered nothing, because no harness drives that render path — the same failure as the Maktab Settings form, where the suite stayed green through a full rewrite of untested code. New assertions now check that `rebuildRowsFromPosition` exists, that it assigns the rows the render reads, and — stated generally — that every module-level list the render consumes is assigned somewhere rather than merely declared. That last one is the shape of this bug rather than the instance of it.
+
+**Verification: 596 passed, 0 failed across 19 harnesses.**
+
+---
+
 ## V3.74.4 — The visibility pill actually resizes this time (2026-08-26)
 
 **Files touched:** `css/detail-pages.css`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY.**

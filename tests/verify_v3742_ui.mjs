@@ -139,6 +139,24 @@ check('10: the button is on its own row spanning the grid', /\.move-to-dhor-row 
   check('12: the pool read and write both stay routed — this is a maktab write',
     /await logProfile\(\)/.test(sd) && /await logSavePool\(merged\)/.test(sd) && !/apiSaveProfile\(/.test(sd));
   check('12: the old per-row mover is gone', !/function moveRowToDhor/.test(sd));
+
+  // V3.74.5 — THE CHECK THAT WAS MISSING. V3.74.3's replacement of
+  // moveRowToDhor over-reached and swallowed rebuildRowsFromPosition, so
+  // nothing assigned sabaqDhorRows and the card rendered completely empty.
+  // It shipped in two releases because no harness drove this path. These
+  // assert the state the render reads actually gets populated.
+  check('12: rebuildRowsFromPosition exists — it was destroyed once by an over-wide edit',
+    /function rebuildRowsFromPosition\(\)\{/.test(sd));
+  check('12: it assigns the rows the render reads',
+    /rebuildRowsFromPosition\(\)\{[\s\S]{0,400}sabaqDhorRows = computeSabaqDhorRows\(/.test(sd));
+  check('12: and the move options, alongside them so the two cannot disagree',
+    /rebuildRowsFromPosition\(\)\{[\s\S]{0,500}sabaqDhorMoveOptions = computeSabaqDhorMoveOptions\(/.test(sd));
+  // Every module-level list the render reads must be assigned somewhere,
+  // not merely declared. This is the shape of the bug, stated generally.
+  for (const v of ['sabaqDhorRows', 'sabaqDhorMoveOptions']) {
+    check(`12: ${v} is assigned, not just declared`,
+      new RegExp(`(^|\\n)\\s*${v} = `).test(sd), 'declared but never populated');
+  }
 }
 
 console.log(`${pass} passed, ${fail} failed`);
