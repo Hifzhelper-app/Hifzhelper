@@ -88,7 +88,7 @@
    entirely too (index.html) -- just the lavender icon remains, so the
    white-heading-text color fix from V3.41.1 (needed for contrast
    against the old olive) is removed as dead code along with it. */
-/* V3.69.0: #homeHeaderIcon rule deleted with the element and its row. */
+#homeHeaderIcon { color: var(--palette-lavender); }
 /* V3.41.2: standard 30%/50% width cap on larger screens, confirmed in
    chat -- same pattern as #screen-settings/#screen-admin/
    #screen-haidhDetail. Home had never been given this. */

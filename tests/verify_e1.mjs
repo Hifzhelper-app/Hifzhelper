@@ -220,23 +220,13 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   w.eval(authSrc.slice(start, end));
   const ids = () => w.eval('visibleNavItems().map(i => i.id)');
   let v = ids();
-  // Updated twice in one day, both times to track reality rather than work
-  // around it (tests/README maintenance rule). V3.69.0 hid the personal
-  // journal from EVERYONE and dropped maktabJournal outright; V3.70.0
-  // corrected that to teaching profiles only — "students see everything
-  // except admin profiles". So the student expectation is back to what it
-  // was, and the per-role detail now lives in verify_nav.mjs.
-  check('nav student: has her own maktabJournal, NOT maktabSummary/admin', v.includes('maktabJournal') && !v.includes('maktabSummary') && !v.includes('admin'));
-  check('nav student: keeps her personal journal screens (V3.70.0)',
-    v.includes('journal') && v.includes('logDetail') && v.includes('reflections') && v.includes('settings'));
+  check('nav student: has maktabJournal, NOT maktabSummary/admin', v.includes('maktabJournal') && !v.includes('maktabSummary') && !v.includes('admin'));
   w.eval('currentUser.role = "teacher"');
   v = ids();
   check('nav teacher: + maktabSummary, still no admin', v.includes('maktabSummary') && !v.includes('admin'));
   w.eval('currentUser.role = "admin"');
   v = ids();
-  check('nav admin: maktabSummary AND admin (admin counts as teacher)', v.includes('maktabSummary') && v.includes('admin'));
-  check('nav admin: Juz Tracker and Surahs in my Heart survive the hiding (V3.69.0)',
-    v.includes('juzTracker') && v.includes('sih'));
+  check('nav admin: maktabSummary AND admin (admin counts as teacher)', v.includes('maktabSummary') && v.includes('admin') && v.includes('maktabJournal'));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);
