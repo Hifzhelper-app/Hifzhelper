@@ -97,8 +97,9 @@ function renderSabaqDhorRows(){
     ? `<p class="form-hint">Nothing to revise yet -- log a Sabaq entry first.</p>`
     : sabaqDhorRows.map(r => `
     <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
-    ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn" data-id="${r.id}">Move to Dhor</button>` : '<span></span>'}
+    <span></span>
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
+    ${r.canMoveToDhor ? `<button type="button" class="move-to-dhor-btn move-to-dhor-row" data-id="${r.id}">Move ${r.label} to Dhor</button>` : ''}
   `).join('');
 
   // V3.45.14: "Set Sabaq Dhor" is now a genuine From/To range, confirmed
@@ -183,6 +184,14 @@ async function moveRowToDhor(rowId){
   const row = sabaqDhorRows.find(r => r.id === rowId);
   if(!row || !row.canMoveToDhor) return;
   const juz = row.lingeringJuz || sabaqDhorPosition.activeJuz;
+
+  // V3.74.2: confirm before changing her pool. Adding is far less
+  // destructive than Setup's replace, so the wording says what will
+  // happen rather than warning — but it is still a real change to her
+  // Dhor rotation from a single tap, and it names the portion so a
+  // mis-tap on the wrong row is caught here rather than after.
+  if(!confirm(`Move ${row.label} (${row.fromSurah}:${row.fromAyah} - ${row.toSurah}:${row.toAyah}) into her Dhor pool?`)) return;
+
   try{
     const profile = await logProfile();
     const current = Array.isArray(profile.baseline_selection) ? profile.baseline_selection.slice() : [];

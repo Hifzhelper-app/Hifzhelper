@@ -87,30 +87,50 @@ function isTeachingProfile(){
   return currentUser.role === 'teacher' || currentUser.role === 'admin';
 }
 
-function visibleNavItems(){
+// V3.74.2: the menu is ordered in THREE GROUPS, confirmed 2026-08-26:
+//   1  Home, Maktab, Maktab Settings, Admin   — where you work
+//   2  Surahs in my Heart, Juz Tracker, Timer — personal tools
+//   3  Refresh, Log out                        — session actions (added by
+//                                                the caller, not here)
+//
+// Built as groups rather than one flat ordered list because most items are
+// role-gated: a student sees group 1 as Home alone. Emitting a divider per
+// gap would leave her a stray line under a single item, so empty groups
+// are dropped and dividers only appear BETWEEN surviving ones.
+function visibleNavGroups(){
   const hidePJ = isTeachingProfile();
-  let items = NAV_ITEMS.filter(item => !(hidePJ && HIDDEN_PJ_NAV_IDS.has(item.id)));
-  // The student's own Maktab Journal — SHOWN TO STUDENTS, withheld from
-  // teaching profiles (V3.70.2, user: "students only see their own rows in
-  // the maktab journal").
-  //
-  // VERIFIED 2026-08-17 rather than taken on trust, because this screen
-  // reads maktab tables and the whole point of the separation is that a
-  // student sees only herself. It is scoped at TWO layers:
-  //   - js/maktabJournal.js:28 calls apiGetMaktabSabaq/SabaqDhor/Dhor with
-  //     NO argument, so no student_id is sent;
-  //   - worker/src/maktabLog.js:138-139 defaults studentId to auth.id and
-  //     403s any non-teacher who names someone else.
-  // So it is not merely that the client asks nicely — the server refuses.
-  // That is what makes this a personal screen rather than "maktab stuff".
-  //
-  // Teaching profiles do not get it: they reach the same rows through the
-  // Maktab summary, which is the multi-student view built for them.
-  if(!hidePJ) items = items.concat([MAKTAB_JOURNAL_NAV_ITEM]);
-  if(currentUser.trackHaidh && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(HAIDH_NAV_ITEM.id))) items = items.concat([HAIDH_NAV_ITEM]);
-  if(isTeachingProfile()) items = items.concat([MAKTAB_SUMMARY_NAV_ITEM]);
-  if(currentUser.role === 'admin') items = items.concat([MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM]);
-  return items;
+  const byId = (id) => NAV_ITEMS.find(x => x.id === id);
+  const keep = (item) => item && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(item.id));
+
+  // Home, Timer, Refresh and Log out are not in NAV_ITEMS — they are not
+  // screens (Home is a tile grid, Timer a floating panel, the other two
+  // actions), so they are marked here and rendered from their own ids.
+  const g1 = [{ id: 'home', label: 'Home', icon: 'home', raw: 'homeDropdownBtn' }];
+  if(isTeachingProfile()) g1.push(MAKTAB_SUMMARY_NAV_ITEM);
+  if(currentUser.role === 'admin') g1.push(MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM);
+
+  const g2 = [byId('sih'), byId('juzTracker')].filter(keep);
+  g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
+
+  // The student's own Maktab Journal and the PJ screens keep their place
+  // among the personal tools — they are hers, not maktab machinery.
+  const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id));
+  if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
+  if(currentUser.trackHaidh && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(HAIDH_NAV_ITEM.id))) g3.push(HAIDH_NAV_ITEM);
+
+  const g4 = [
+    { id: 'refresh', label: 'Refresh', icon: 'refresh', raw: 'refreshBtn' },
+    { id: 'logout', label: 'Log out', icon: 'logout', raw: 'logoutBtn' },
+  ];
+  // g3 (the PJ screens) folds into the personal-tools group; a student
+  // otherwise gets two adjacent groups of her own things.
+  return [g1.filter(Boolean), g2.concat(g3), g4].filter(g => g.length);
+}
+
+// Flat list, order preserved — kept for callers that just want the items
+// (the Home tile grid, and every existing test).
+function visibleNavItems(){
+  return visibleNavGroups().flat();
 }
 
 function renderNavItemsInto(containerId, extraItemsHtml){
@@ -122,9 +142,18 @@ function renderNavItemsInto(containerId, extraItemsHtml){
   // together. Neutral/unstyled by default (see css/base.css) so the
   // dropdown menu's own plain icon+label look is unaffected -- only
   // #homeGrid's own CSS (css/nav.css) gives the chip its visual treatment.
-  el.innerHTML = visibleNavItems().map(item =>
-    `<button class="nav-icon-item" data-nav="${item.id}"><span class="nav-icon-item-icon">${iconHtml(item.icon)}</span><span class="nav-icon-item-label">${item.label}</span></button>`
-  ).join('') + (extraItemsHtml || '');
+  // V3.74.2: grouped, with dividers only BETWEEN surviving groups — never a
+  // trailing line under a group that role-gating emptied.
+  // An item with `raw` is not a screen (Home, Timer, Refresh, Log out); it
+  // gets its own id so its existing listener still finds it, and no
+  // data-nav, so the generic screen handler leaves it alone.
+  const btn = (item) => item.raw
+    ? `<button class="nav-icon-item" id="${item.raw}"><span class="nav-icon-item-icon">${iconHtml(item.icon)}</span><span class="nav-icon-item-label">${item.label}</span></button>`
+    : `<button class="nav-icon-item" data-nav="${item.id}"><span class="nav-icon-item-icon">${iconHtml(item.icon)}</span><span class="nav-icon-item-label">${item.label}</span></button>`;
+  const grouped = (containerId === 'authDropdownNav')
+    ? visibleNavGroups().map(g => g.map(btn).join('')).join('<div class="dropdown-divider"></div>')
+    : visibleNavItems().filter(i => !i.raw).map(btn).join('');   // Home tiles: screens only
+  el.innerHTML = grouped + (extraItemsHtml || '');
   el.querySelectorAll('[data-nav]').forEach(btn => {
     btn.addEventListener('click', () => {
       closeAuthDropdown();
@@ -161,23 +190,11 @@ function closeAuthDropdown(){
 }
 
 function setupAuthBandAndDropdown(){
-  renderNavItemsInto('authDropdownNav',
-    // V3.44: Home added to the dropdown, confirmed in chat -- same
-    // pattern as Refresh/Log out below (hardcoded here, NOT added to
-    // NAV_ITEMS, so it doesn't also duplicate into #homeGrid itself).
-    // Placed before the divider, closer to the other destinations than
-    // the session actions after it.
-    // V3.45.7: Timer added the same way, right alongside Home -- calls
-    // openFloatingTimer() (js/dhorPage.js) directly rather than
-    // showScreen(), since the timer isn't a screen at all anymore, a
-    // truly top-level element shown/hidden independently of the whole
-    // screen-swapping system.
-    `<button class="nav-icon-item" id="homeDropdownBtn"><span class="nav-icon-item-icon">${iconHtml('home')}</span><span class="nav-icon-item-label">Home</span></button>` +
-    `<button class="nav-icon-item" id="timerDropdownBtn"><span class="nav-icon-item-icon">${iconHtml('timer')}</span><span class="nav-icon-item-label">Timer</span></button>` +
-    '<div class="dropdown-divider"></div>' +
-    `<button class="nav-icon-item" id="refreshBtn"><span class="nav-icon-item-icon">${iconHtml('refresh')}</span><span class="nav-icon-item-label">Refresh</span></button>` +
-    `<button class="nav-icon-item" id="logoutBtn"><span class="nav-icon-item-icon">${iconHtml('logout')}</span><span class="nav-icon-item-label">Log out</span></button>`
-  );
+  // V3.74.2: Home/Timer/Refresh/Log out are no longer appended as raw HTML
+  // after the items — they could not be interleaved into the requested
+  // order that way. visibleNavGroups() places them; their ids and existing
+  // listeners are unchanged.
+  renderNavItemsInto('authDropdownNav');
   document.getElementById('authBandToggle').innerHTML = iconHtml('menu');
   document.getElementById('authBandToggle').addEventListener('click', toggleAuthDropdown);
   document.getElementById('homeDropdownBtn').addEventListener('click', () => {

@@ -307,3 +307,50 @@
    button keeps its own. */
 #screen-maktabSettings .card-header-row { grid-template-columns: 1fr auto; }
 #screen-maktabSettings .card-header-row h2 { white-space: normal; }
+
+/* V3.74.2 — Maktab Settings layout.
+   Item 2: the four settings ran together with no separation. Each block
+   now carries its own bottom margin rather than relying on the inputs'
+   incidental spacing. */
+#maktabSettingsBody > .form-label,
+#maktabSettingsBody > .mset-name-row,
+#maktabSettingsBody > .mset-mushaf { margin-bottom: var(--space-lg, 20px); }
+#maktabSettingsBody .mset-mushaf { margin-top: var(--space-xs, 4px); }
+
+/* Item 3: name field and save icon share a row, save on the right. */
+.mset-name-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--space-md, 16px);
+}
+.mset-name-row .mset-name-field { margin-bottom: 0; }
+.mset-save-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-ink);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 0 0 var(--space-xs, 4px);
+}
+.mset-save-icon svg { width: 26px; height: 26px; }
+
+/* Item 4: "Mushaf" matches "Maktab name" — same label styling, same left
+   edge, sitting above the group rather than inset in its border. */
+.mset-mushaf-label { display: block; }
+.mset-mushaf-label .mset-legend-note { font-weight: 400; }
+
+/* The two numeric settings wrapped, stranding "day" and "days" on their own
+   lines beside the field. Label above, field and unit on the line below. */
+#maktabSettingsBody .form-label { display: block; }
+#maktabSettingsBody .form-label input[type="number"] {
+  display: inline-block;
+  width: auto;
+  min-width: 96px;
+  margin-top: var(--space-xs, 4px);
+}

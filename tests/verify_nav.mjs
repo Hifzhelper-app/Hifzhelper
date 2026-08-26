@@ -48,15 +48,18 @@ check('exactly the five agreed ids are hidden, no quiet additions',
 // ---------- the filter is applied, and ONLY to teaching profiles ----------
 // V3.70.0. This is the correction that matters: V3.69.0 hid the personal
 // journal from everyone, including the students whose journal it is.
+// V3.74.2 restructured visibleNavItems into groups, so these now assert
+// the RULE rather than the exact expression — the jsdom runs below already
+// prove the behaviour per role, which is the thing that matters.
 check('hiding is gated on a teaching profile, not applied unconditionally',
-  /const hidePJ = isTeachingProfile\(\);/.test(auth) &&
-  /NAV_ITEMS\.filter\(item => !\(hidePJ && HIDDEN_PJ_NAV_IDS\.has\(item\.id\)\)\)/.test(auth));
+  /const hidePJ = isTeachingProfile\(\);/.test(auth)
+  && /hidePJ && HIDDEN_PJ_NAV_IDS\.has\(item\.id\)/.test(auth));
 check('admin counts as a teaching profile (isTeacherOrAbove parity)',
   /function isTeachingProfile\(\)\{[\s\S]{0,160}role === 'teacher'[\s\S]{0,60}role === 'admin'/.test(auth));
 check('the haidh item is gated the same way, not left dangling',
   /currentUser\.trackHaidh && !\(hidePJ && HIDDEN_PJ_NAV_IDS\.has/.test(auth));
 check('Maktab Journal goes to students, not teaching profiles',
-  /if\(!hidePJ\) items = items\.concat\(\[MAKTAB_JOURNAL_NAV_ITEM\]\)/.test(auth));
+  /if\(!hidePJ\) g3\.push\(MAKTAB_JOURNAL_NAV_ITEM\)/.test(auth));
 // It is only safe on a student's nav because it is server-scoped to her own
 // rows. If that ever stops being true this item must come off the nav again.
 check('the student Maktab Journal sends no student_id — it cannot ask for anyone else',

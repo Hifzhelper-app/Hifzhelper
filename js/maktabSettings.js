@@ -28,12 +28,25 @@ async function renderMaktabSettingsScreen(){
 
   const esc = (v) => { const d = document.createElement('span'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
   host.innerHTML = `
-    <label class="form-label">Maktab name
-      <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
-    </label>
+    <div class="mset-name-row">
+      <label class="form-label mset-name-field">Maktab name
+        <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
+      </label>
+      <!-- V3.74.2: save moved up here as an icon, matching the Dhor card's
+           icon-plus-SAVE pattern. It REPLACES the text button that used to
+           sit at the bottom — one way to save, not two. -->
+      <button type="button" class="mset-save-btn" id="mset_save" aria-label="Save settings">
+        <span class="mset-save-icon" id="mset_save_icon"></span><span>SAVE</span>
+      </button>
+    </div>
 
+    <!-- V3.74.2: was a <legend>, which sits inset into the fieldset border
+         at a smaller size — that is why it never lined up with "Maktab
+         name" above. Now a normal label outside the group, same styling. -->
+    <div class="form-label mset-mushaf-label">Mushaf
+      <span class="mset-legend-note">(counting lines and pages, and determining boundaries for juz)</span>
+    </div>
     <fieldset class="mset-mushaf">
-      <legend>Mushaf <span class="mset-legend-note">(counting lines and pages, and determining boundaries for juz)</span></legend>
       ${[
         ['13line', '13 line indopak', 'quarter and half from the ruku'],
         ['15line_madani', '15 line madani', 'maqra (sabaq dhor only), rub and hizb'],
@@ -54,8 +67,11 @@ async function renderMaktabSettingsScreen(){
       <input type="number" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}"> days
     </label>
 
-    <button type="button" class="primary-btn" id="mset_save">Save settings</button>
     <span class="save-status" id="mset_status"></span>`;
+
+  // V3.74.2: the save icon, drawn from the shared set like every other.
+  const si = document.getElementById('mset_save_icon');
+  if(si && typeof iconHtml === 'function') si.innerHTML = iconHtml('save');
 
   document.getElementById('mset_save').addEventListener('click', saveMaktabSettingsScreen);
 }

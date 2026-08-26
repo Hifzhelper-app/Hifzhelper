@@ -38,9 +38,59 @@ function maktabTodayISO(){
 // maktab tables carry identical columns, so rows pass straight through.
 function maktabCellHtml(type, entries){
   const html = journalCellShorthand(type, entries);
-  // downgrade the badge button to non-interactive text (see header)
-  return html.replace(/<button type="button" class="entry-count-badge" data-count-badge>(\+\d+)<\/button>/, '<span class="entry-count-badge">$1</span>');
+  // V3.74.2: the badge is a real button again. It had been downgraded to a
+  // span, which is precisely WHY tapping it opened the day view — with no
+  // button to catch the tap it fell through to the row. Now it opens a
+  // read-only list of that cell's entries and stops there.
+  return html.replace(
+    /<button type="button" class="entry-count-badge" data-count-badge>(\+\d+)<\/button>/,
+    `<button type="button" class="entry-count-badge" data-entry-peek="${type}">$1</button>`
+  );
 }
+
+// A read-only peek at every entry in one cell — including the one already
+// shown, so the list is the whole truth rather than "the others".
+// Deliberately not tappable: the row still opens the day view, so no route
+// is lost, and this stays a glance rather than a second way in.
+function maktabCloseEntryPeek(){
+  const el = document.getElementById('maktabEntryPeek');
+  if(el) el.remove();
+}
+
+function maktabOpenEntryPeek(btn, type, entries){
+  maktabCloseEntryPeek();
+  const panel = document.createElement('div');
+  panel.id = 'maktabEntryPeek';
+  panel.className = 'maktab-entry-peek';
+  panel.innerHTML = (entries || []).map(e =>
+    `<div class="maktab-entry-peek-row">${journalCellShorthand(type, [e]).replace(/<[^>]+>/g, '')}</div>`
+  ).join('') || '<div class="maktab-entry-peek-row">No entries</div>';
+  document.body.appendChild(panel);
+  const r = btn.getBoundingClientRect();
+  // Anchored to the badge, flipped up when there is no room below —
+  // summary rows sit near the bottom of the card on a short screen.
+  const below = window.innerHeight - r.bottom;
+  panel.style.left = Math.min(r.left, window.innerWidth - panel.offsetWidth - 8) + 'px';
+  if(below < panel.offsetHeight + 12){
+    panel.style.top = (r.top - panel.offsetHeight - 6) + 'px';
+  } else {
+    panel.style.top = (r.bottom + 6) + 'px';
+  }
+}
+
+// One delegated listener: the summary re-renders on every date change, so
+// per-render wiring would leak or go stale.
+document.addEventListener('click', (e) => {
+  const badge = e.target.closest && e.target.closest('[data-entry-peek]');
+  if(badge){
+    e.stopPropagation();   // must NOT fall through to the row's day-view nav
+    const cell = badge.closest('td');
+    const entries = cell && cell._peekEntries;
+    maktabOpenEntryPeek(badge, badge.dataset.entryPeek, entries);
+    return;
+  }
+  if(!e.target.closest || !e.target.closest('#maktabEntryPeek')) maktabCloseEntryPeek();
+});
 
 function maktabSummaryWireDate(){
   const input = document.getElementById('maktabSummaryDatePicker');
@@ -161,6 +211,10 @@ async function renderMaktabSummaryScreen(){
         td.textContent = 'Absent';
       } else {
         td.innerHTML = maktabCellHtml(type, byStudent[type][stu.id]);
+        // V3.74.2: the peek reads its entries from the cell rather than
+        // re-querying — the rows are already here, and re-deriving them
+        // from the DOM would be parsing text back into data.
+        td._peekEntries = byStudent[type][stu.id];
       }
       tr.appendChild(td);
     });

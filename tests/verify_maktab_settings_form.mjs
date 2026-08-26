@@ -99,7 +99,11 @@ check('the truncated heading is given room, by the same rule',
   const dom = new JSDOM('<!doctype html><body><div id="host"></div></body>', { runScripts: 'outside-only' });
   const w = dom.window;
   w.eval('function esc(x){ return String(x == null ? "" : x); }');
-  const body = form.slice(form.indexOf('  host.innerHTML = `\n    <label class="form-label">Maktab name'));
+  // Anchor on `host.innerHTML = \`` alone. The previous version keyed off
+  // the first line of the template ("Maktab name" label markup), so a
+  // layout change broke the TEST rather than revealing a real fault —
+  // three assertions failed for a reason unrelated to what they check.
+  const body = form.slice(form.indexOf('host.innerHTML = `'));
   const tmpl = body.slice(body.indexOf('`') + 1, body.indexOf('`;'));
   w.eval(`const s = { name: 'M', mushaf: '15line_indopak', maktab_day_min: 3, absence_flag_days: 30 };
           document.getElementById('host').innerHTML = \`${tmpl.replace(/\\/g, '\\\\')}\``);

@@ -395,3 +395,39 @@
      cell uses -- not a lookalike, so the two read as one green block and
      stay in step if the palette ever changes. */
 }
+
+/* V3.74.2 — item 9: no border around the haidh control on the summary.
+   It is a BUTTON, not a badge — since V3.73.0 it is the only place haidh
+   is marked, the day cards having lost theirs. So the border goes but the
+   affordance must not: the tap target keeps its full size rather than
+   shrinking to the glyph, and a hover state replaces the border as the
+   signal that it does something. */
+.maktab-haidh-check {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+}
+.maktab-haidh-check:hover { background: var(--surface-track); }
+
+/* V3.74.2 — the multi-entry peek. A floating panel over the row rather than
+   expanding it: summary rows are short and stretching one open would shift
+   every row beneath it. */
+.maktab-entry-peek {
+  position: fixed;
+  z-index: 200;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md, 12px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding: var(--space-sm, 8px);
+  min-width: 160px;
+  max-width: 280px;
+}
+.maktab-entry-peek-row {
+  padding: var(--space-xs, 4px) var(--space-sm, 8px);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.maktab-entry-peek-row + .maktab-entry-peek-row { border-top: 1px solid var(--color-table-border); }
+/* It is a button again (V3.74.2), so it needs to look tappable. */
+.entry-count-badge[data-entry-peek] { cursor: pointer; }

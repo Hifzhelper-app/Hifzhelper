@@ -26,6 +26,26 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.74.2 — UI batch, items 1-11 (2026-08-26)
+
+**Files touched:** `js/auth.js`, `js/maktabSummary.js`, `js/sabaqDhorPage.js`, `js/maktabSettings.js`, `js/adminPage.js`, `css/detail-pages.css`, `css/journal-table.css`, `css/settings.css`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs` (new), `tests/verify_nav.mjs`, `tests/verify_maktab_settings_form.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY.** Item 12 (the Move-to-Dhor rewrite) and 13 (tajweed tags) are NOT in this.
+
+**Three of the eleven change behaviour; the rest are layout.**
+
+**The +1 badge opens a read-only peek (8).** It had been downgraded to a `<span>` in the maktab summary — which is exactly WHY tapping it opened the day view: with no button to catch the tap it fell through to the row. It is a button again, stops propagation, and opens a floating panel listing every entry in that cell including the one already shown. Deliberately not tappable; the row still opens the day view, so no route is lost. Anchored to the badge and flipped above it when there is no room below.
+
+**Move to Dhor gets its own row and a confirmation (10, 11).** The button spans the grid below its portion rather than sharing the middle column, and carries the portion in its label — on its own line it loses the visual tie to the row above, and two movable rows would stack two identical buttons. The confirmation names the portion so a mis-tap on the wrong row is caught before the pool changes. Both survive item 12 unchanged: a per-juz button still sits on its own row and still confirms; only the eligibility rule changes.
+
+**Menu order in three groups (7).** Home/Maktab/Maktab Settings/Admin, then Surahs/Juz Tracker/Timer with the personal screens, then Refresh/Log out. Home, Timer, Refresh and Log out were previously appended as raw HTML AFTER the items, which is why they could not be interleaved; they are now placed by the group builder, keeping their original ids so existing listeners still bind. Empty groups are dropped and dividers appear only BETWEEN survivors — a student sees Home alone in group 1 and gets no stray line under it.
+
+**Layout:** the visibility pill is 240×11 with the thumb radius tied to its height, fixing a thumb that rendered as a circle overlapping "Teachers" (1). Maktab Settings gains spacing between its four settings, a save icon on the name row replacing the bottom text button, and "Mushaf" as a normal label aligned with "Maktab name" rather than a legend inset in a border — plus the numeric labels no longer strand "day"/"days" on a wrapped line (2-4). The Admin header groups its icon and heading left with the close on the right (5), and the id column is hidden while copy, search and tap-to-see keep working (6). The haidh control loses its border but keeps a hover state and its full tap target — it is the only place haidh is marked since V3.73.0 (9).
+
+**Two harnesses needed realigning, and one was a genuine test fault.** `verify_maktab_settings_form.mjs` extracted the template by slicing from the "Maktab name" label markup, so a layout change broke three assertions for a reason unrelated to what they check; it now anchors on `host.innerHTML` alone. Two `verify_nav.mjs` checks pattern-matched the old `visibleNavItems` expression and now assert the rule, with the per-role jsdom runs proving the behaviour.
+
+**Verification: 579 passed, 0 failed across 19 harnesses**, 35 of them new.
+
+---
+
 ## V3.74.1 — Home button goes Home; the menu becomes a right-hand strip (2026-08-26)
 
 **Files touched:** `js/auth.js`, `css/nav.css`, `index.html`, `js/sw.js`, `tests/verify_nav.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY — no worker, no migration.** Supersedes V3.74.0's frontend files; the worker change in V3.74.0 still applies and must be deployed.

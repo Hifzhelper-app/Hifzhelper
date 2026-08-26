@@ -1657,3 +1657,39 @@
 .mk-vis-switch { max-width: 187px; height: 14px; }
 .mk-vis-switch .switch-option { font-size: 10px; padding: 0 4px; }
 .mk-vis-switch .switch-thumb { height: 100%; }
+
+/* V3.74.2 — header row with the icon and heading grouped LEFT.
+   The shared .card-header-row is 10%/70%/20% with the icon centred in its
+   own column, which reads fine on the log cards but leaves an admin-style
+   heading floating away from its icon. auto/1fr/auto puts them together
+   and lets the close button keep the right edge. */
+.card-header-row-left {
+  grid-template-columns: auto 1fr auto;
+}
+.card-header-row-left .card-header-icon { justify-self: start; }
+.card-header-row-left h2 { justify-self: start; }
+
+/* V3.74.2 — item 1: the visibility pill, wider and shorter.
+   The thumb was rendering as a CIRCLE overlapping "Teachers" rather than a
+   pill behind it: it inherited a pill radius sized for a taller track, so
+   at 14px high the radius exceeded half the width. Radius is now tied to
+   the height, and the thumb is inset slightly so the track's own border
+   stays visible around it. */
+.mk-vis-switch { max-width: 240px; height: 11px; }
+.mk-vis-switch .switch-option { font-size: 9px; padding: 0 4px; }
+.mk-vis-switch .switch-thumb {
+  height: 100%;
+  border-radius: 999px;
+  top: 0;
+}
+
+/* V3.74.2 — item 10: Move to Dhor on its own row, spanning the grid rather
+   than sharing the portion's middle column. The label carries the portion
+   ("Move First Half to Dhor") because the button is PER-ROW: on its own
+   line it loses the visual tie to the portion above it, and two movable
+   rows would otherwise stack two identical buttons. */
+.move-to-dhor-row {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin: var(--space-xs, 4px) 0 var(--space-sm, 8px);
+}

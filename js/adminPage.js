@@ -39,7 +39,10 @@ function renderAdminUsersList(){
   list.innerHTML = filtered.map(u => `
     <div class="admin-list-row">
       <button type="button" class="admin-list-open" data-open-user="${u.id}">
-        <span class="mono">${u.id}</span>
+        <!-- V3.74.2: the id is no longer shown in the list. Copy still
+             copies it, search still matches on it, and tapping the name
+             still reveals it — it is simply not on screen by default. -->
+        <span class="mono admin-list-id" hidden>${u.id}</span>
         <span class="admin-list-name ${u.active ? '' : 'inactive'}">${u.name}</span>
       </button>
       <button type="button" class="icon-btn" data-copy-url="${u.id}" aria-label="Copy personal URL"></button>
