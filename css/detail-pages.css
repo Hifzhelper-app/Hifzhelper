@@ -1641,3 +1641,15 @@
 .cb-note-box .cb-teacher-note { border: none; width: 100%; background: transparent; resize: vertical; }
 .mk-vis-switch { margin: 0; }
 .mk-vis-switch .switch-option.active { font-weight: 600; }
+
+/* V3.73.2 — Dhor card spacing and switch size.
+   The note box sat flush against Duration with nothing between them. */
+.cb-note-box { margin-top: var(--space-lg, 20px); }
+
+/* The visibility switch at HALF the .switch-track-small-wide footprint:
+   220px -> 110px, 34px -> 17px. Kept as an override on .mk-vis-switch
+   rather than editing .switch-track-small-wide, which is a shared size
+   variant — narrowing it there would silently shrink any future user. */
+.mk-vis-switch { max-width: 110px; height: 17px; }
+.mk-vis-switch .switch-option { font-size: 10px; padding: 0 2px; }
+.mk-vis-switch .switch-thumb { height: 100%; }

@@ -88,21 +88,39 @@ check('the pool is read for the named student, not the logged-in one',
 check('setup never reaches for an own-only profile call',
   !/apiGetProfile\(\)/.test(setup) && !/apiSaveProfile\(/.test(setup));
 
-// ---------- V3.73.1: the boot close-button list must not name dead screens ----------
-// V3.72.0 deleted the setup screen but left its id in app.js's boot loop,
-// which did an unguarded getElementById and threw — killing startup. Both
-// halves are asserted: the stale id is gone, AND the loop is guarded so the
-// next deleted screen cannot do the same thing.
+// ---------- V3.73.2: the boot close-button LIST IS GONE ----------
+// V3.72.0 deleted a screen but left its id in a hand-written list in
+// app.js, which did an unguarded getElementById and threw — killing the
+// boot. V3.73.1 guarded the loop; V3.73.2 removed the list entirely,
+// because every one of those buttons already carried .screen-close-btn.
+// A query cannot drift. These assert the list does not come back.
 {
   const appSrc = read('js/app.js');
-  const list = appSrc.match(/\['journalCloseBtn'[^\]]*\]/);
-  check('the boot close-button list exists', !!list);
-  const ids = list ? [...list[0].matchAll(/'([A-Za-z]+)'/g)].map(m => m[1]) : [];
-  check('it no longer names the deleted maktabSetupCloseBtn', !ids.includes('maktabSetupCloseBtn'));
-  check('every id it names still exists in the markup',
-    ids.every(id => html.includes(`id="${id}"`)), ids.filter(id => !html.includes(`id="${id}"`)).join(','));
-  check('and the loop is guarded, so a future deletion cannot kill the boot',
-    /const btn = document\.getElementById\(id\);\s*\n\s*if\(!btn\) return;/.test(appSrc));
+  check('close buttons are wired by CLASS, not an id list',
+    /querySelectorAll\('\.screen-close-btn:not\(#logDetailClose\)'\)/.test(appSrc));
+  check('no hand-written close-button id list survives',
+    !/\['journalCloseBtn'/.test(appSrc));
+  check('the deleted screen\'s button is named nowhere in the shipped code',
+    !/maktabSetupCloseBtn/.test(appSrc));
+  // logDetailClose carries the class too but is wired in its own file;
+  // including it would attach a second click handler and navigate twice.
+  check('logDetailClose is excluded so it is not double-wired',
+    /:not\(#logDetailClose\)/.test(appSrc) && /logDetailClose/.test(read('js/logDetailScreen.js')));
+  check('every .screen-close-btn in the markup is a real element the query will find',
+    (html.match(/screen-close-btn/g) || []).length >= 10);
+}
+
+// ---------- V3.73.2: the visibility switch needs its thumb ----------
+// .switch-option.active is color:white, designed to sit on the dark
+// sliding thumb. Ship the switch without the thumb and the SELECTED
+// option is white on white — "Teachers", the default, was invisible.
+{
+  const cp = read('js/commentPrivacy.js');
+  check('the visibility switch renders a thumb', /<div class="switch-thumb"><\/div>/.test(cp));
+  check('the thumb is positioned for the value already selected on render',
+    /moveVisThumb\(vt, vt\.querySelector\('\.switch-option\.active'\)\)/.test(cp));
+  check('and moves when a different option is chosen',
+    /moveVisThumb\(track, btn\)/.test(cp));
 }
 
 console.log(`${pass} passed, ${fail} failed`);

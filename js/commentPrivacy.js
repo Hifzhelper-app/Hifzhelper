@@ -79,6 +79,11 @@ function renderMaktabCommentBlock(containerId, existingEntry){
       <div class="cb-note-head">
         <label>Teacher note</label>
         <div class="switch-track switch-track-small-wide mk-vis-switch" role="radiogroup" aria-label="Teacher note visibility">
+          <!-- V3.73.2: the thumb is REQUIRED. .switch-option.active is
+               color:white, designed to sit on this dark sliding element —
+               without it the selected option is white on white and simply
+               vanishes. "Teachers", being the default, was invisible. -->
+          <div class="switch-thumb"></div>
           ${opt('all', 'Public')}${opt('teachers_only', 'Teachers')}${opt('private', 'Private')}
         </div>
       </div>
@@ -86,16 +91,35 @@ function renderMaktabCommentBlock(containerId, existingEntry){
     </div>
     ${studentNote ? `<div class="mk-student-note"><span class="mk-student-note-label">Student note</span><div class="mk-student-note-text">${esc(studentNote)}</div></div>` : ''}
   `;
+  // V3.73.2: place the thumb under whichever option is already selected.
+  // Without this the thumb sits at its default position while a DIFFERENT
+  // option carries .active — and .switch-option.active is color:white, so
+  // the selected label renders white on white and disappears.
+  const vt = el.querySelector('.mk-vis-switch');
+  if(vt) moveVisThumb(vt, vt.querySelector('.switch-option.active'));
 }
 
 // V3.73.0: wired by DELEGATION on document, once — not per render.
 // renderCommentBlock rewrites innerHTML on every entry load and mode change,
 // so per-render listeners would either leak or silently stop working after a
 // re-render.
+// Positions the thumb over the active option. Index-based rather than
+// measured, so it is correct before layout settles and on re-render.
+function moveVisThumb(track, activeBtn){
+  const opts = [...track.querySelectorAll('.switch-option')];
+  const i = opts.indexOf(activeBtn);
+  const thumb = track.querySelector('.switch-thumb');
+  if(!thumb || i < 0) return;
+  thumb.style.width = (100 / opts.length) + '%';
+  thumb.style.left = (i * 100 / opts.length) + '%';
+}
+
 document.addEventListener('click', (e) => {
   const btn = e.target.closest && e.target.closest('.mk-vis-switch .switch-option');
   if(!btn) return;
-  btn.closest('.mk-vis-switch').querySelectorAll('.switch-option').forEach(b => {
+  const track = btn.closest('.mk-vis-switch');
+  moveVisThumb(track, btn);
+  track.querySelectorAll('.switch-option').forEach(b => {
     const on = b === btn;
     b.classList.toggle('active', on);
     b.setAttribute('aria-checked', on ? 'true' : 'false');

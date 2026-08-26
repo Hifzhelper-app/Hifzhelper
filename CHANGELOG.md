@@ -26,6 +26,24 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.73.2 — Invisible switch option, invisible X, spacing, and the crash list removed (2026-08-26)
+
+**Files touched:** `js/commentPrivacy.js`, `js/app.js`, `css/detail-pages.css`, `css/journal-table.css`, `index.html`, `js/sw.js`, `tests/verify_setup_sheet.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. Supersedes V3.73.0 and V3.73.1 — deploy this one.**
+
+**"Teachers" was invisible on the new switch.** Reported from a screenshot showing only Public and Private. `.switch-option.active` is `color: white`, designed to sit on the dark sliding `.switch-thumb` — and the V3.73.0 markup omitted the thumb. The selected option, which defaults to Teachers, was white on white. **A component reused without the element its styling assumes.** The thumb is now rendered, positioned on load for whatever value is already selected, and moved on selection.
+
+**The Setup sheet's X was invisible although the corner was clickable.** `iconHtml('close')` returns an inline `<svg stroke="currentColor">` with no intrinsic size, so with neither colour nor dimensions set it inherited nothing and drew nothing. Colour and size are set on the button and the svg; the body also gains top padding so the instruction text does not run under it. The button was always there — only the icon was missing, which is exactly why tapping worked.
+
+**The hand-written close-button id list is GONE**, replaced by `querySelectorAll('.screen-close-btn:not(#logDetailClose)')`. Every one of those buttons already carried the class, so the list only ever restated it — and drifted the moment V3.72.0 deleted a screen, throwing on a null and killing the boot. A query cannot drift: delete a screen and its button leaves the set. `#logDetailClose` is excluded because it is wired in its own file and would otherwise navigate twice on one tap. V3.73.1's guard is superseded by removing the thing that needed guarding.
+
+**Spacing:** the note box gains a top margin — it sat flush against Duration. **The visibility switch is halved**, 220px→110px and 34px→17px, as an override on `.mk-vis-switch` rather than an edit to the shared `.switch-track-small-wide` variant, which would silently shrink any future user of it.
+
+**One process note worth recording.** The render-time thumb placement was written with a string replacement that matched nothing and failed silently, so the first attempt shipped a thumb that never moved — the same invisible-option bug in a different form. The harness caught it. An edit that "succeeds" without matching is the failure mode to watch for in this kind of scripted change.
+
+**Verification: 481 passed, 0 failed across 16 harnesses.**
+
+---
+
 ## V3.73.1 — Fixes a boot crash introduced by V3.72.0 (2026-08-26)
 
 **Files touched:** `js/app.js`, `index.html`, `js/sw.js`, `tests/verify_setup_sheet.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. Deploy this with or before V3.73.0 — V3.72.0 alone is broken.**
