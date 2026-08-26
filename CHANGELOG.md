@@ -24,6 +24,30 @@ not an outstanding action — read this block for current state. Mirrored from
 
 Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
+---
+
+## V3.72.0 — Setup takes over the Dhor card's Plan button (2026-08-26)
+
+**Files touched:** `js/maktabSetup.js`, `js/dhorPage.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/app.js`, `index.html`, `css/journal-table.css`, `js/sw.js`, `tests/verify_setup_sheet.mjs` (new), `tests/verify_e1.mjs`, `tests/verify_e2.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY — no worker, no migration.**
+
+**In the maktab the Dhor card's Plan button is now Setup**, opening the juz checkboxes as a sheet over the card. In the personal journal it stays Plan, unchanged. Nothing was lost: the upcoming-plans queue is PJ-only with no maktab table, and since V3.64.0 it had been deliberately showing an empty sheet in the maktab — a dead control became a live one.
+
+**The old full-screen Setup is deleted**, with its route, its heading and the `maktabSetupName` population. The Setup chip is gone from the summary row: Setup configures the Dhor pool and nothing else, so it belongs with Dhor rather than on a row spanning all three log types.
+
+**Closing needs no routing**, which is why this replaced two earlier approaches. A popup via `enterEditScreenMode` and a chip-move were both specced and discarded; each had to answer "where does Setup return to". A sheet leaves the card underneath — same student, same date. The X sits on the card rather than on a screen above it, which is what the full-screen version got wrong.
+
+**Two things deliberately preserved through the move.** The destructive save still names the ajzaa being removed rather than a bare "sure?" — a sheet is easier to open by accident than a screen was. And the pool is still read for the student the context names; the new harness asserts Setup contains no own-only profile call, so the wrong-row class (i) removed cannot creep back in here.
+
+**A time bomb in `verify_e2.mjs`, found and defused.** The haidh-flow test called `maktabMarkHaidhFlow` with no date, so it used the REAL today against a fixture whose last haidh was 2026-08-10. It passed when written and began failing permanently once real time passed the 15-day gap — the confirm correctly stopped firing. Not a code bug. The date parameter exists for exactly this (V3.63.0 added it after hardcoded "today" went wrong); the test was not using it. Now pinned. **Both failures were present in the uploaded repo before any change here**, and had been wrongly attributed to the previous session's abandoned work.
+
+**One `verify_e1.mjs` expectation updated, not worked around** — it asserted the Setup chip in the summary name cell. Names in the second cell and the haidh control staying out of it are still asserted.
+
+**Verification: 474 passed, 0 failed across 16 harnesses**, from a confirmed-green 451 baseline. Cache bump done as its own operation and verified after writing.
+
+**Items 2–4 of the Dhor card list are NOT in this delivery** — the note-visibility switch, dropping the student-note lookup, and the haidh icon leaving the day cards. Specced, unbuilt.
+
+**Note:** the uploaded repo's CHANGELOG topped out at V3.71.0, so **V3.71.1 was never applied** (the Surahs-in-my-Heart harness assertions). Nothing in this delivery depends on it.
+
 
 ---
 

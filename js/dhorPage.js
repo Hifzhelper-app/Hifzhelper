@@ -881,7 +881,27 @@ function savePlanDhorSelection(){
   finish();
 }
 
-document.getElementById('dhorViewPlanBtn').addEventListener('click', () => openPlanDhorModal());
+// V3.72.0: in the maktab this button is SETUP, not Plan. The upcoming-plans
+// queue is a PJ-only concept (no maktab plans table) and was already showing
+// an empty sheet there by design since V3.64.0 — so nothing is lost, and a
+// dead control becomes a live one. In PJ mode it is Plan exactly as before.
+function dhorPlanBtnIsSetup(){
+  return typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+}
+function refreshDhorPlanBtn(){
+  const btn = document.getElementById('dhorViewPlanBtn');
+  if(!btn) return;
+  const setup = dhorPlanBtnIsSetup();
+  btn.textContent = setup ? 'Setup' : 'Plan';
+  btn.setAttribute('aria-label', setup ? 'Student setup — the maktab Dhor pool' : 'Plan Dhor');
+}
+document.getElementById('dhorViewPlanBtn').addEventListener('click', () => {
+  if(dhorPlanBtnIsSetup()){
+    openMaktabStudentSetup({ id: logCtxStudentId(), name: logCtxStudentName() });
+    return;
+  }
+  openPlanDhorModal();
+});
 
 async function openPlanDhorModal(preselectUnits){
   let profile = {};

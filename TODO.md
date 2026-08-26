@@ -8,40 +8,194 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## LIVE ITEMS — the whole action list, in priority order (2026-08-17)
+## LIVE ITEMS — the whole action list, in priority order (2026-08-17, rebuilt)
 
-**If it is not in this table it is not outstanding.** One list, not two — a
-summary kept separately from the detail is a second thing to keep in sync,
-which is the failure CONVENTIONS.md §13 exists to stop. Deliberately **no
-line numbers**: they go stale on the next edit. Headings are unique, so
-search the text.
+**If it is not in this table it is not outstanding.** Rebuilt because the
+previous version had itself gone stale — two items read "say start building"
+after being built, and two carried the number 1. Exactly the failure §13
+exists to stop, in the table that exists to prevent it. Deliberately no line
+numbers; headings are unique, search the text.
 
-| # | Item | Blocked on | Why it sits here |
+| # | Item | Blocked on | Notes |
 | --- | --- | --- | --- |
-| ~~1~~ | ~~**(i) Read-routing rewrite**~~ — *ARCHITECTURE* | **DONE — V3.68.0, 2026-08-17** | The only item producing wrong data **now**: teachers see their own recent entries on a student's card, logged portions grow the teacher's pool instead of the maktab's, the tracker reads the teacher's pool. 16 sites, no schema change, no dependencies, spec ready, harness already written and flips to a permanent guard when done |
-| **2** | **Shared maktab timezone** — *Flagged: Phase 2/Maktab* | One remaining decision (see the entry) | **DECIDED 2026-08-17: canonical timezone is a per-maktab setting, set on the maktab settings screen** (its 5th setting). Promoted from "future-proofing" because that premise expired — (a)–(h) have shipped, and (f)'s haidh propagation counts CALENDAR days, which is exactly what breaks across timezones. Cheapest to settle now: no real users, so nothing is yet recorded against a wrong day boundary |
-| **1** | **(j) Account separation** — *ARCHITECTURE* | Needs "start building (j)" | **User paused testing 2026-08-17 until the maktab/PJ separation is done, so (j) is now the blocking item.** Two decisions landed with that: ADMIN-01 loses its history and becomes the maktab teacher; the PJ icons come out of the maktab. Both in the Open questions below | Unblocks (k). Largest single piece: migration + auth + the device-local switcher |
-| **4** | **updateLog writes an unvalidated date** — *Flagged* | Nothing — scheduled | **DECIDED 2026-08-17: rides along with (j)**, the next worker-touching delivery. Not its own release. Real integrity gap (a bad date is written **and** silently skips attendance sync) but unreachable through the UI — the date picker cannot produce one; it needs a direct API call. Scheduling call, not a product decision |
-| **5** | **(k) Merged journal** — *ARCHITECTURE* | (j) | Depends on (j) settling what a student account is |
-| **6** | **(l) Archive** — *ARCHITECTURE* | (k) | Depends on (k)'s union existing |
-| **7** | **dhorSchedule — 1 left** — *Flagged: dhorSchedule behaviour questions* | Your confirmation | **First one CLOSED 2026-08-17: confirmed intended, code already starts Dhor from the lowest marked juz ascending — proven against the real function, no change needed.** **Final scope 2026-08-17 — much smaller than it looked.** Removing/resetting juz from Dhor is LEGITIMATE (user's call, and it only changes the prepop), so an empty pool with history is a valid state, the Setup-reset path is not a fault, and the emptiness gate is correct as written. All that remains is (A): move the Dhor pool write server-side into the log insert. **Read before scoping (i)** — it removes a site from (i) rather than routing it, and makes (i) worker-touching |
-| **8** | **Settings Haidh heading tweaks** — *Flagged* | Nothing — say "start building" | **Now THREE changes** (2026-08-17): resize + move the checkbox (confirmed not yet done), delete the "Ruling" label, and delete the ruling hint text. The hint deletion has a trap — see the entry; removing the element without its two JS writers reproduces the V3.51.2 blank-fields bug |
-| **9** | **Home header icon removal** — *Flagged* | Nothing — say "start building" | **DECIDED 2026-08-17: remove the whole header row**, not just the icon. `#homeHeaderIcon` is in index.html, js/app.js (×2), css/nav.css |
-| ~~10~~ | ~~**`apiSetAttendance`**~~ — *now "Closed — attendance clients"* | **CLOSED 2026-08-17** | **Was stale — nothing to do.** The function it named was removed back in V3.40.2; every attendance client that exists is live |
+| **1** | **DEPLOY AND VERIFY V3.68.0 → V3.71.0 + the catch-up zip** | **Deployed 2026-08-17. Reads CONFIRMED in production; the pool write is NOT yet confirmed** | **Nothing below can be trusted until this is done.** Worker FIRST (V3.68.0 moved the Dhor pool merge server-side), then frontend, then hard-refresh. V3.68.0 shipped without its cache bump, so a warm-cache browser may never have run its JavaScript at all — that is the likely cause of the "logged for Umme, not in her history" report. Manual checklist in `TESTING.md`. |
+| ~~2~~ | ~~**Run the admin PJ discard**~~ | **DONE — 2026-08-17, verified** | Ran in the D1 console (no local clone, so the wrangler `--file` route did not apply). Removed 21 rows for `ABCDEFG`: 6 sabaq, 4 sabaq dhor, 3 dhor, 7 attendance (7 not 13 because attendance is per DATE, not per log — several logs shared days), 1 position. `reflections` and `plans` were already 0. Profile fields cleared, and the stray haidh mark and known-wrong stored position went with the attendance and position rows. Verified all zeros; account still `ABCDEFG / ADMIN-01 / admin / 1` with `pin_hash` untouched. **Two non-bugs to expect:** ADMIN-01 still shows in the maktab summary with dashes (the roster filter is part of (j)), and its Dhor prepop reports nothing set up (correct — the pool is empty by instruction). |
+| **3** | **(j) Account separation** — *ARCHITECTURE* | **"start building (j)"** | BUILD-READY — every question answered. Plan is in the (j) section: roster filter, create-teaching-profile, switcher, `updateLog` date validation riding along. No migration. Testing stays paused until this lands. |
+| **4** | **Shared maktab timezone** | **"start building"** | DECIDED: a per-maktab setting, the maktab settings screen's 5th. Unbuilt. One sub-decision left — display in the viewer's local time or the maktab's everywhere. |
+| **5** | **(k) Merged journal** | (j) | Union at read time with provenance. |
+| **6** | **(l) Archive** | (k) | 60-day physical copy + re-sync on maktab edit AND delete. |
+| **7** | **Settings Haidh heading tweaks** | **"start building"** | Three changes, fully specced. **Carries a trap** — deleting the hint element without its two JS writers reproduces the V3.51.2 blank-fields bug. Still worth doing: Settings is hidden from teachers but live for students. |
+| ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
+| **9** | **Reword the empty-pool message** | — | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
 
-**Dependency chain:** (i) → (j) → (k) → (l) is fixed. Everything else can be
-slotted between them in any order.
+**Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-**Design — Maktab records (a)–(h): ALL SHIPPED.** That section is kept for
-the design rationale later deliveries still reference — it is not an action.
+**SHIPPED TODAY, no longer actions:** (i) read-routing rewrite (V3.68.0);
+the server-side Dhor pool merge (V3.68.0); Home header row removal (V3.69.0);
+the PJ hidden from teaching profiles (V3.69.0–V3.70.2); the student read-only
+maktab day and the teaching landing screen (V3.71.0). Specs retained in their
+sections as the record of what was agreed and why.
 
-**Corrected on 2026-08-17 — previously listed as open, actually shipped:**
-maktab delivery **(e2)** (its heading read "OPEN … awaiting start building"
-three deliveries after V3.60.0 built it) and the **V3.51.1 edit bottombar
-tweaks** (heading read "awaiting start building" while the body directly
-below recorded all ten items as built and verified). Both now in `SPECS.md`.
-Two false open items and one stale migration instruction, all found in a
-single pass, is what motivated the split.
+**Design — Maktab records (a)–(h): ALL SHIPPED.** Kept for the design
+rationale later deliveries reference — not an action.
+
+## Dhor card UI changes (stated 2026-08-26, NOT BUILT)
+
+Collected together deliberately: these land on the same card as the
+Plan-button takeover above, so they should be ONE delivery to that card, not
+two passes over it.
+
+**1. Note visibility becomes a compact 3-way switch, inside the note box.**
+Today Public / Teachers / Private are three full-size radios sitting above
+the note, too large and visually unconnected to the box they govern.
+
+- **Reuse the existing segmented control** — `.switch-track` +
+  `.switch-option` + sliding thumb, the same component as the
+  Quarter / Half / Juz portion selector (`index.html:521`). Not a new
+  control.
+- **`.switch-track-small-wide` ALREADY EXISTS and is currently UNUSED**
+  (`css/detail-pages.css:827` — 34px tall, `max-width: 220px`, 13px
+  options). It was built as a compact variant and never wired to anything.
+  Use it; no new CSS needed for the sizing.
+- **Place it in the note box** so it reads as belonging to the note. That is
+  semantically right, not merely tidier: the setting governs who can see the
+  NOTE, not the entry.
+
+**CORRECTION to an earlier note in this entry:** I flagged that these labels
+might read wrongly on the PJ card. They do not — the radios are rendered by
+`js/commentPrivacy.js` with `aria-label="Teacher note visibility"`, i.e. they
+govern the TEACHER's note and are maktab-side. No PJ wording problem to
+check.
+
+**Locate when building:** the three radios are not in `index.html` — they are
+rendered from JS, so the markup change is in the notes renderer rather than
+the static card.
+
+**2. THE MAKTAB WILL NOT READ STUDENT NOTES (stated 2026-08-26).** This
+drops one of the three permitted PJ→maktab inputs, leaving two (the sabaq_to
+extension and haidh). Directionally consistent with the separation being
+built — one less place the maktab reaches into her journal.
+
+**What becomes dead and should be deleted, not left dangling:**
+- `js/maktabDay.js:148-154` — the `pjNoteFor` helper, the
+  `setLogCtxPjNotes(...)` call, and the `Promise.all` of **three**
+  `apiGetPJLogsFor` fetches. **Every maktab day-view open currently costs
+  three extra API calls for this feature alone**; removing it is a real
+  latency win, not only tidying.
+- `js/logContext.js:210-211` — `setLogCtxPjNotes`, `logCtxPjNote`, and the
+  `LOG_CTX_PJ_NOTES` state.
+- `js/commentPrivacy.js:65` — the `pjNote` read.
+- `apiGetPJLogsFor` does NOT become dead: `maktabDay.js:121` still uses it
+  for the sabaq_to extension, which stays. Do not delete the client.
+
+**DECISION NEEDED — the plain reading is not the only one.** After this,
+`commentPrivacy.js:66` still falls back to
+`existingEntry.student_comment`: a student note FROZEN onto a saved maktab
+row by an earlier version. That is maktab data now, sitting on a maktab row,
+not a read into her journal. So:
+- **(a)** stop the live PJ lookup, keep showing notes already frozen onto
+  existing maktab rows — the literal reading of "will not read student
+  notes"; or
+- **(b)** also stop displaying those, hiding data already stored on maktab
+  rows.
+**DECIDED 2026-08-26: (a) — leave them.** The data already lives in the
+maktab's own records, and hiding it would mean entries visible today showing
+less tomorrow with nothing explaining why. Going forward it makes no
+difference: once the lookup is gone, no new entry captures a note.
+
+**3. REMOVE THE HAIDH ICON FROM THE DAY CARDS (stated 2026-08-26).** It stays
+on the summary only. The icon sits in the student-name row painted into each
+of the three cards (`js/maktabDay.js:84,100-103`).
+
+**IT IS A CONTROL, NOT A BADGE — say so plainly to anyone building this.**
+`data-haidh-toggle` marks and clears haidh, including the 15-day gap
+`confirm()` at `maktabDay.js:55-57` and the clear-failure alert at `:75`.
+Removing it from the day cards therefore removes **one of the two places a
+teacher can mark haidh**, leaving the summary's leading-column toggle as the
+only one. That is a behaviour change, not a tidy-up.
+
+**Consequence, raised with the user:** a teacher already inside a student's
+cards who needs to mark haidh must back out to the summary, mark it, and come
+back in. Accepted as the cost of having one place to do it rather than two.
+
+**When building:** the toggle FLOW is shared with the summary
+(`maktabDay.js:17` says so explicitly), so delete only the day-card
+rendering and its wiring — not the shared handler, which the summary still
+needs. Check whether the whole name row becomes empty; if the name is the
+only thing left in it, decide whether the row still earns its space, the same
+question the Home header row raised in V3.69.0.
+
+**MORE UI CHANGES EXPECTED FOR THIS CARD** — the user has others to describe.
+Do not start building the Dhor card until the list is complete; that is their
+stated preference (gather the full spec for a well-defined change rather than
+rebuilding after each new detail).
+
+## Maktab Setup takes over the Dhor card's Plan button (stated 2026-08-26, NOT BUILT)
+
+**SUPERSEDES two earlier approaches in this file — do not build either.**
+The popup-via-`enterEditScreenMode` spec and the separate "move the Setup
+chip to the Dhor card" spec are both replaced by this, which does the same
+job with no new UI at all.
+
+**In maktab mode, the Dhor card's "Plan" button becomes "Setup"** and its
+existing slide-up sheet hosts the setup content. In PJ mode Plan is
+untouched.
+
+**This costs nothing, because Plan is ALREADY DEAD in the maktab** — the
+user's instinct, confirmed in the code. `js/dhorPage.js:886` carries a
+V3.64.0 comment stating the upcoming-plans queue is a PJ-only concept (the
+maktab has no plans table — migration 0019's header) AND is auth-token-keyed,
+so in maktab mode it would show the TEACHER's queue on a student's card; it
+was deliberately left at the empty default. So the maktab's Plan button today
+opens a sheet with nothing in it. Repurposing it removes a dead control and
+gains a live one in the same move.
+
+**Everything the earlier specs worried about dissolves:**
+- **Placement** — the button is already on the Dhor card, where Setup
+  belongs. No chip to move off the summary row.
+- **Return path** — a sheet closes back to the card underneath. No routing,
+  no student/date context to carry.
+- **The X** — the sheet already has its own close affordance in the right
+  place. No screen-level close button floating above a card.
+- **The heading** — the sheet is launched from her own Dhor card, so the
+  name needs no repeating, as agreed.
+
+**Still to settle when built:**
+- The old `#screen-maktabSetup` section becomes unreachable once nothing
+  opens it. Delete it with its `.card-header-row`, `maktabSetupName`
+  population and `screen-close-btn`, rather than leaving a second way in.
+- `openPlanDhorModal` currently loads the pool via `logProfile()` for the
+  plan preview; the setup content needs the same pool but for editing.
+  Reuse the routed read — do NOT reintroduce an own-only profile call.
+- Saving REPLACES the pool, so keep the existing explicit confirmation
+  wording; a sheet is easier to open by accident than a screen was.
+
+## FIELD VERIFICATION — V3.71.0 in production (2026-08-17)
+
+**CONFIRMED WORKING by the user, testing as admin against maktab records:**
+Sabaq, Sabaq Dhor and Dhor — entries save and **histories show the STUDENT's
+rows, not the teacher's**. That is delivery (i) working in production, and it
+closes the 2026-08-17 field report ("logged a Dhor for Umme, showed on the
+summary but not in her history"). **Cause confirmed as the missing V3.68.0
+cache bump** — a warm-cache browser was still running V3.67.0 JavaScript, so
+the rails were still calling the own-only client. Not a code defect in
+V3.68.0 itself; a delivery defect in how it shipped.
+
+**STILL UNCONFIRMED: the server-side Dhor pool write.** Working histories
+prove the READS are routed; they say nothing about the pool. V3.68.0 deleted
+the client-side pool write and moved the merge into `handleSaveDhor`, so if
+the WORKER did not deploy alongside the frontend, entries still save and
+histories still look perfect while the pool silently stops growing.
+**The one check that distinguishes it:** after logging a Dhor for a student,
+her Dhor prepop should advance past the portion just logged. If it offers the
+same portion again, the worker is behind.
+
+**Deployment mechanics are undocumented and were being INFERRED.** `SETUP.md`
+is referenced three times in CHANGELOG.md's own header and **does not exist
+in the repo**; there is no CI config, no `.github`, and a Pages GitHub
+integration would live in the Cloudflare dashboard rather than here. So
+whether a repo push deploys the worker too is unknown — write it into
+`SETUP.md` once established, so it stops being guessed at each time.
 
 ## MIGRATION STATUS — hifzhelper-maktab1 (confirmed 2026-08-17)
 
@@ -711,6 +865,37 @@ summary, the multi-student view. Read here as "the maktab screen a teacher
 has", i.e. the summary. If the teaching landing screen really should be a
 journal-shaped view rather than the summary grid, say so, because that is a
 different screen and not one that exists.
+
+### Admin screen — what (j) changes there (from a screenshot, 2026-08-17)
+
+Three things read off the live admin screen, which is where (j)'s account
+creation has to live.
+
+**1. "ADMIN-01" is the NAME, not the id.** The id is `ABCDEFG`. That settles
+the note in the discard script: the script's step 0 (`SELECT id, name, role
+FROM students WHERE role = 'admin'`) will return exactly this, so the
+placeholder stays — nothing needs hardcoding, and the operator confirms the
+id from the same query that finds it.
+
+**2. The create-teaching-profile action belongs on this list.** Each row
+already carries two per-row icons (copy id, share). The agreed flow — "admin
+uses the PJ profile to create a teaching profile" — is naturally a THIRD
+per-row action, not a new screen and not a type choice on the Register form
+above it. That form stays as it is: it registers students.
+
+**3. The list will need a role indicator, and does not have one.** It shows
+id + name only. After (j) it holds roughly twice as many rows —
+`ABCDEFG`/`ABCDEFGTEACHER` and so on — with nothing distinguishing a teaching
+account from a student. Two consequences to design for:
+- the admin needs to see at a glance which is which (a role chip, or
+  grouping teaching accounts under their student);
+- the row action must not offer "create teaching profile" on a row that is
+  already a teaching account, or that already has one.
+
+**Still open on the scheme:** ADMIN-01 has no separate person behind it — it
+is not derived from anyone's PJ. So it presumably keeps `ABCDEFG` and simply
+loses its journal, rather than becoming `...TEACHER`. Confirm when (j)
+starts; it only matters for consistency of the id convention.
 
 ### (j) build plan — the whole of it, in order
 

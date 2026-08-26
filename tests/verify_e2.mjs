@@ -149,14 +149,22 @@ function makeDayDom(scenario) {
 
 // ---- haidh flow: gap guard, both confirm answers ----
 {
+  // 2026-08-26 fix: this called maktabMarkHaidhFlow with NO date, so it used
+  // the REAL today. With the fixture's last haidh on 2026-08-10 the gap was
+  // 6 days when this was written and passed; once real time moved past the
+  // 15th day the confirm correctly stopped firing and BOTH assertions here
+  // began failing forever — a time bomb, not a code bug. The date parameter
+  // exists precisely for this (V3.63.0 added it after hardcoded "today"
+  // went wrong once the summary gained a picker); the test just was not
+  // using it. Now pinned so the gap is 6 regardless of when it runs.
   const w = makeDayDom({ attendance: [{ date: '2026-08-10', status: 'haidh' }] });
-  await w.eval('maktabMarkHaidhFlow("STU1")');
+  await w.eval('maktabMarkHaidhFlow("STU1", undefined, "2026-08-16")');
   await new Promise(r => setTimeout(r, 0));
   check('haidh flow: gap 6 < 15 → confirm() with the EXACT agreed wording',
     w.eval('confirmCalls[0]') === '15 days has not passed since the last haidh day. Ok to mark as Haidh, cancel to mark absent');
   check('haidh flow: OK → haidh written', w.eval('attendanceSets[0]').status === 'haidh');
   w.eval('confirmAnswer = false');
-  await w.eval('maktabMarkHaidhFlow("STU1")');
+  await w.eval('maktabMarkHaidhFlow("STU1", undefined, "2026-08-16")');
   await new Promise(r => setTimeout(r, 0));
   check('haidh flow: Cancel → absent written', w.eval('attendanceSets[1]').status === 'absent');
 }

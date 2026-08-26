@@ -320,3 +320,23 @@
 /* V3.67.0: derived attendance on the summary */
 .journal-cell-absent { color: #B4534F; font-style: italic; }
 .maktab-row-flagged { background: rgba(255, 212, 0, 0.18); }
+
+/* V3.72.0 — Maktab student setup as a sheet over the Dhor card.
+   Reuses .modal-overlay / .modal-card; only the close button and the card
+   width are specific here. The X sits ON the card, not on a screen above
+   it, which is what the full-screen version got wrong. */
+.maktab-setup-card {
+  position: relative;              /* anchors the close button */
+  max-width: 420px;
+  width: 100%;
+}
+.maktab-setup-close {
+  position: absolute;
+  top: var(--space-sm, 8px);
+  right: var(--space-sm, 8px);
+  background: none;
+  border: none;
+  padding: 4px;
+  line-height: 0;
+  cursor: pointer;
+}

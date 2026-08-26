@@ -84,6 +84,10 @@ async function maktabToggleHaidh(studentId, date, currentlyMarked, onDone){
 // The student name + haidh toggle row, painted into each of the three
 // shared cards. Hidden entirely in PJ mode.
 function maktabPaintNameRows(marked){
+  // V3.72.0: the Dhor card's Plan/Setup button follows the same context this
+  // repaint does, so it is refreshed here rather than from a second hook
+  // that could fall out of step.
+  if(typeof refreshDhorPlanBtn === 'function') refreshDhorPlanBtn();
   ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
     const row = document.getElementById('maktabNameRow_' + type);
     if(!row) return;

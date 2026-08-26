@@ -26,9 +26,34 @@
 
 let maktabSetupStudent = null; // { id, name }
 
+// V3.72.0: Setup opens as a SHEET over the Dhor card, replacing the old
+// full screen. Mirrors the Plan modal's .modal-overlay/.modal-card markup so
+// there is one sheet pattern here, not two.
+//
+// Closing needs no routing at all: the card is still underneath, for the
+// same student and date. That is why this replaced both the popup and the
+// chip-move approaches — they existed to solve a return path this does not
+// have.
+function closeMaktabSetupSheet(){
+  const el = document.getElementById('maktabSetupSheet');
+  if(el) el.remove();
+}
+
 async function openMaktabStudentSetup(student){
   maktabSetupStudent = student;
-  await showScreen('maktabSetup');
+  closeMaktabSetupSheet();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay maktab-setup-modal';
+  overlay.id = 'maktabSetupSheet';
+  overlay.innerHTML = `<div class="modal-card maktab-setup-card">
+    <button type="button" class="maktab-setup-close" id="maktabSetupCloseBtn" aria-label="Close"></button>
+    <div id="maktabSetupBody"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const closeBtn = document.getElementById('maktabSetupCloseBtn');
+  closeBtn.innerHTML = (typeof iconHtml === 'function') ? iconHtml('close') : '\u00d7';
+  closeBtn.addEventListener('click', closeMaktabSetupSheet);
+  await renderMaktabSetupScreen(document.getElementById('maktabSetupBody'));
 }
 
 function maktabJuzUnits(juz){
@@ -47,15 +72,15 @@ function maktabCompletedJuzFromPool(pool){
   return out;
 }
 
-async function renderMaktabSetupScreen(){
-  const host = document.getElementById('maktabSetupBody');
-  const nameEl = document.getElementById('maktabSetupName');
+// V3.72.0: takes its host, so the one renderer serves the sheet. The old
+// full screen is gone; the name heading with it — the sheet opens from her
+// own Dhor card, so the name needs no repeating.
+async function renderMaktabSetupScreen(host){
+  if(!host) return;
   if(!maktabSetupStudent){
     host.innerHTML = '<p class="form-hint">Open a student from the Maktab summary.</p>';
-    if(nameEl) nameEl.textContent = '';
     return;
   }
-  nameEl.textContent = maktabSetupStudent.name;
   host.innerHTML = '<p class="form-hint">Loading\u2026</p>';
 
   let pool = [];
@@ -91,10 +116,10 @@ async function renderMaktabSetupScreen(){
     <button type="button" class="primary-btn" id="maktabSetupSave">Save setup</button>
     <span class="save-status" id="maktabSetupStatus"></span>`;
 
-  document.getElementById('maktabSetupSave').addEventListener('click', () => saveMaktabStudentSetup(pool));
+  document.getElementById('maktabSetupSave').addEventListener('click', () => saveMaktabStudentSetup(pool, host));
 }
 
-async function saveMaktabStudentSetup(existingPool){
+async function saveMaktabStudentSetup(existingPool, host){
   const status = document.getElementById('maktabSetupStatus');
   const ticked = [...document.querySelectorAll('#maktabSetupGrid input[data-juz]:checked')]
     .map(el => Number(el.dataset.juz));

@@ -136,20 +136,13 @@ async function renderMaktabSummaryScreen(){
     const nameSpan = document.createElement('span');
     nameSpan.textContent = stu.name;
     nameTd.appendChild(nameSpan);
-    // V3.66.0: student setup (delivery (h)) — deliberately a small,
-    // explicit control rather than part of the row tap, since saving it
-    // REPLACES her Dhor pool; it must not be reachable by a mis-tap
-    // meant for the day view.
-    const setupBtn = document.createElement('button');
-    setupBtn.type = 'button';
-    setupBtn.className = 'maktab-setup-btn';
-    setupBtn.textContent = 'Setup';
-    setupBtn.setAttribute('aria-label', 'Student setup for ' + stu.name);
-    setupBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openMaktabStudentSetup({ id: stu.id, name: stu.name });
-    });
-    nameTd.appendChild(setupBtn);
+    // V3.72.0: the Setup chip is GONE from this row. Setup opens from the
+    // Dhor card's own button now — it configures the Dhor pool and nothing
+    // else, so it belongs with Dhor rather than on a row spanning all three
+    // log types. The V3.66.0 concern that made it a small explicit control
+    // (saving REPLACES her pool, so it must not be reachable by a mis-tap
+    // meant for the day view) is satisfied differently: it is no longer on
+    // the tappable row at all.
     tr.appendChild(nameTd);
 
     const hasAnyLog = ['sabaq', 'sabaqDhor', 'dhor'].some(t => (byStudent[t][stu.id] || []).length);

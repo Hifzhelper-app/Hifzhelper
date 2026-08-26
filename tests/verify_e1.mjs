@@ -139,9 +139,14 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   check('V3.61.0: leading haidh col — control ONLY for track_haidh student, empty cell otherwise',
     rows[0].cells[0].querySelector('.maktab-haidh-check') === null
     && rows[1].cells[0].querySelector('.maktab-haidh-check') !== null);
-  check('V3.61.0/V3.66.0: names in the SECOND cell, with the Setup control beside them',
+  // V3.72.0 updated this expectation rather than working around it. The
+  // Setup chip left this row: Setup configures the Dhor pool and nothing
+  // else, so it moved to the Dhor card's own button. Names in the second
+  // cell and the haidh control staying OUT of it are unchanged, and both
+  // are still asserted — only the chip's presence changed.
+  check('V3.61.0: names in the SECOND cell, no Setup chip (V3.72.0), no haidh control',
     rows[0].cells[1].textContent.startsWith('Zayd') && rows[1].cells[1].textContent.startsWith('Amina')
-    && rows[0].cells[1].querySelector('.maktab-setup-btn') !== null
+    && rows[0].cells[1].querySelector('.maktab-setup-btn') === null
     && rows[0].cells[1].querySelector('.maktab-haidh-check') === null);
   check('summary: sabaq cell shows PJ shorthand', rows[0].cells[2].textContent.includes('2:1–2:5'));
   check('summary: multi-entry badge DOWNGRADED to plain span', rows[0].cells[2].querySelector('button[data-count-badge]') === null && rows[0].cells[2].textContent.includes('+1'));

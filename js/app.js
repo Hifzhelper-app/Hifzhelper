@@ -66,7 +66,8 @@ async function showScreen(id, param){
   if(id === 'sih') await renderSihScreen();
   if(id === 'maktabSummary') await renderMaktabSummaryScreen();
   if(id === 'maktabSettings') await renderMaktabSettingsScreen();
-  if(id === 'maktabSetup') await renderMaktabSetupScreen();
+  // V3.72.0: the maktabSetup SCREEN is gone — Setup is a sheet over the
+  // Dhor card now, opened from that card's own button.
   if(id === 'maktabJournal') await renderMaktabJournalScreen();
   // V3.41: highlight whichever nav icon matches the screen just shown, in
   // both the dropdown and Home grid -- confirmed in chat. Runs AFTER any
