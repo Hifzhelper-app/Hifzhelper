@@ -1,5 +1,44 @@
 import { validateAttendanceBody, isValidDate, isTeacherOrAbove } from './utils.js';
-import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark, evaluateHaidhRange } from '../../shared/haidhRules.js';
+import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark, evaluateHaidhRange, haidhAddDaysISO } from '../../shared/haidhRules.js';
+
+// V3.76.1 — what counts as EVIDENCE for the run and gap checks.
+// Bug found on device 2026-08-27: a real range 27–31 Aug was refused with
+// "15 days have not passed since the last haidh" although the last real
+// haidh was over three weeks back. The blocker was a PREDICTED day on 5 Sep
+// — four days AHEAD of the range. Both handlers fed every haidh AND
+// predicted-haidh row to the rule, which measures the gap to the nearest
+// mark on either side, so a plan sitting in the future vetoed a fact.
+//
+// A prediction is a plan, not a fact. Rule now: a predicted-haidh row dated
+// AFTER today is never evidence. A predicted day at or before today still
+// is — the app already treats a passed prediction as real (V3.39's lazy
+// auto-confirm; js/haidhDetailScreen.js paints it full shade). Confirmed
+// rows always count. The gap rule is unchanged in the other direction: a
+// prediction placed too soon after a REAL haidh is still refused.
+export function haidhEvidenceDates(rows, todayISO) {
+  return rows.filter((r) => r.status === 'haidh' || r.date <= todayISO).map((r) => r.date);
+}
+
+// V3.76.1 — after a CONFIRMED mark is written, predictions that can no
+// longer be true go. User's call 2026-08-27: "delete predicted rows that
+// fall inside the 14-day window after the newly confirmed range, since they
+// can no longer be true." Window = the day after the run ends through
+// runEnd + HAIDH_GAP_CODE; only 'predicted-haidh' rows, only after today
+// (a passed prediction is history, not a plan). Never touches 'haidh'.
+async function clearSupersededPredictions(env, studentId, runEndISO, todayISO) {
+  const from = haidhAddDaysISO(runEndISO, 1);
+  const to = haidhAddDaysISO(runEndISO, HAIDH_GAP_CODE);
+  const { results } = await env.DB.prepare(
+    `SELECT date FROM attendance WHERE student_id = ? AND status = 'predicted-haidh' AND date >= ? AND date <= ? AND date > ?`
+  ).bind(studentId, from, to, todayISO).all();
+  const dates = results.map((r) => r.date);
+  if (dates.length) {
+    await env.DB.batch(dates.map((d) =>
+      env.DB.prepare(`DELETE FROM attendance WHERE student_id = ? AND date = ? AND status = 'predicted-haidh'`).bind(studentId, d)
+    ));
+  }
+  return dates;
+}
 
 // GET /attendance?month=YYYY-MM (or student_id for a teacher)
 export async function handleGetAttendance(request, env, auth) {
@@ -44,9 +83,10 @@ export async function handleSetAttendance(request, env, auth) {
     const ruling = (student && student.haidh_ruling) || 'hanafi';
 
     const { results } = await env.DB.prepare(
-      `SELECT date FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND date != ?`
+      `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND date != ?`
     ).bind(studentId, body.date).all();
-    const existingDates = results.map(r => r.date);
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const existingDates = haidhEvidenceDates(results, todayISO);   // V3.76.1: future predictions are not evidence
 
     const { runLength, gapDays } = evaluateHaidhMark(existingDates, body.date);
     if (runLength > haidhCodeMaxRunDays(ruling)) {
@@ -62,7 +102,13 @@ export async function handleSetAttendance(request, env, auth) {
      ON CONFLICT(student_id, date) DO UPDATE SET status = excluded.status`
   ).bind(studentId, body.date, body.status).run();
 
-  return { data: { saved: true } };
+  // V3.76.1: a CONFIRMED day supersedes predictions in the window after it.
+  let cleared = [];
+  if (body.status === 'haidh') {
+    cleared = await clearSupersededPredictions(env, studentId, body.date, new Date().toISOString().slice(0, 10));
+  }
+
+  return { data: { saved: true, clearedPredictions: cleared } };
 }
 
 // POST /attendance/mark-range — marks every date from startDate to
@@ -114,11 +160,12 @@ export async function handleMarkHaidhRange(request, env, auth) {
   // exclusion handleSetAttendance does with `date != ?`, generalized to a
   // span).
   const { results } = await env.DB.prepare(
-    `SELECT date FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND (date < ? OR date > ?)`
+    `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND (date < ? OR date > ?)`
   ).bind(studentId, startDate, endDate).all();
-  const existingDates = results.map((r) => r.date);
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const existingDates = haidhEvidenceDates(results, todayISO);   // V3.76.1: future predictions are not evidence
 
-  const { dates, runStart, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
+  const { dates, runStart, runEnd, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
   if (runLength > haidhCodeMaxRunDays(ruling)) {
     return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400 };
   }
@@ -126,7 +173,6 @@ export async function handleMarkHaidhRange(request, env, auth) {
     return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh. Please revise your history.`, status: 400 };
   }
 
-  const todayISO = new Date().toISOString().slice(0, 10);
   const status = runStart <= todayISO ? 'haidh' : 'predicted-haidh';
   const statements = dates.map((date) =>
     env.DB.prepare(
@@ -136,7 +182,11 @@ export async function handleMarkHaidhRange(request, env, auth) {
   );
   await env.DB.batch(statements);
 
-  return { data: { saved: true, count: dates.length, status } };
+  // V3.76.1: a CONFIRMED range supersedes predictions in the window after it.
+  let cleared = [];
+  if (status === 'haidh') cleared = await clearSupersededPredictions(env, studentId, runEnd, todayISO);
+
+  return { data: { saved: true, count: dates.length, status, clearedPredictions: cleared } };
 }
 
 // DELETE /attendance?date=YYYY-MM-DD[&student_id=X] — clears a day back

@@ -85,6 +85,10 @@ list is DROPPED; custom tags in browser storage are NOT imported. Still
 open for delivery 3: timezone display — each viewer's local, or the
 maktab's everywhere (Claude's read: the maktab's everywhere).
 
+**Haidh rule, V3.76.1 (device bug 2026-08-27):** a future PREDICTION never
+vetoes a real mark; a confirmed mark deletes predictions in the 14-day window
+after it (user's call). Worker-side; the browser only surfaces the message.
+
 **Haidh data model, confirmed 2026-08-27 as the design to build on:** there
 is NO maktab-side haidh record. Haidh lives only in the student's PJ
 `attendance` table; the maktab reads it live (one of the two permitted

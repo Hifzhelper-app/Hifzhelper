@@ -120,7 +120,7 @@ function evaluateHaidhRange(existingDates, startDate, endDate) {
   const dates = [];
   for (let d = startDate; d <= endDate; d = haidhAddDaysISO(d, 1)) dates.push(d);
 
-  return { dates, runStart, runLength, gapDays };
+  return { dates, runStart, runEnd, runLength, gapDays };   // runEnd added V3.76.1 (the superseded-prediction window starts after it)
 }
 
 // Works as a plain global-scope script in the browser (file:// safe — no ES module
@@ -130,6 +130,6 @@ if(typeof module !== 'undefined' && module.exports){
   module.exports = {
     HAIDH_OFFICIAL_MAX_DURATION, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE,
     haidhOfficialMaxDuration, haidhCodeMaxRunDays, haidhMinCycleFrequency, evaluateHaidhMark,
-    evaluateHaidhRange
+    evaluateHaidhRange, haidhAddDaysISO
   };
 }

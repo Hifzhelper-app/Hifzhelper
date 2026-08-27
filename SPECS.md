@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.76.1** — Haidh: a future prediction no longer vetoes a real mark; a confirmed mark clears superseded predictions
 - **V3.76.0** — Phase 2: the maktab haidh calendar — built to the spec below
 - **V3.75.0** — Phase 1 of the list of eleven (items 1, 2, 3, 4, 6, 10, 11) — built to the spec below
 - **V3.65.0** — (g) Maktab settings — built to the spec below
@@ -111,6 +112,16 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.76.1 (2026-08-27): Haidh — a future prediction no longer vetoes a real mark
+
+Worker only (plus version stamp). The device case and the decision are in `CHANGELOG.md`.
+
+| Rule | Was | Now |
+| --- | --- | --- |
+| Evidence for run/gap checks | every `haidh` and `predicted-haidh` row | `haidh` rows, plus `predicted-haidh` rows dated **today or earlier**; a future prediction is a plan, never evidence |
+| After a CONFIRMED mark is written | nothing | `predicted-haidh` rows in (run end + 1 … run end + 14), future-dated, are DELETED (user's call 2026-08-27); `haidh` rows never touched |
+| A prediction placed too soon after a real haidh | refused | refused (unchanged) |
 
 ## Done — V3.76.0 (2026-08-27): Phase 2: the maktab haidh calendar — built to the spec below
 

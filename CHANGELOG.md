@@ -26,6 +26,20 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.76.1 — Haidh: a future prediction no longer vetoes a real mark (2026-08-27)
+
+**Files touched:** `worker/src/attendance.js`, `shared/haidhRules.js`, `js/sw.js`, `index.html` (cache-buster only), `tests/verify_v3761_haidh_predictions.mjs` (new), `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ WORKER CHANGE — DEPLOY THE WORKER; the frontend files carry only the version stamp.** No migration.
+
+**Device report:** marking 27–31 Aug from the new maktab calendar was refused with "15 days have not passed since the last haidh", with the last real haidh more than three weeks back. **Cause:** both attendance handlers fed every `haidh` AND `predicted-haidh` row to the rule, and `evaluateHaidhRange` measures the gap to the nearest mark on *either* side. A predicted day on 5 Sep — four days *ahead* of the range — was the blocker. A plan was vetoing a fact, and the message, written with only a mark behind in mind, pointed the wrong way.
+
+**Rule now (`haidhEvidenceDates`):** a predicted-haidh row dated after today is never evidence for the run or gap checks. A passed prediction still is — the app already treats it as real (V3.39's lazy auto-confirm). Confirmed rows always count. Unchanged in the other direction: a prediction placed too soon after a real haidh is still refused.
+
+**And a confirmed mark supersedes the predictions it contradicts** — user's call: "delete predicted rows that fall inside the 14-day window after the newly confirmed range, since they can no longer be true." `clearSupersededPredictions` deletes `predicted-haidh` rows from the day after the run ends through run end + 14, future-dated only, never a `haidh` row. Applied by both the range write and the single-day POST; the response lists what was cleared (`clearedPredictions`). `evaluateHaidhRange` now also returns `runEnd`, which the window starts after.
+
+**Verification: 690 passed, 0 failed across 22 harnesses.** The new harness reproduces the device case against real SQLite with every date relative to today (so it cannot time-bomb), then proves the rule still refuses in every direction it should: a prediction 3 days after a real haidh, a real range 5 days after a real haidh, a passed prediction as evidence, a confirmed future row as evidence.
+
+---
+
 ## V3.76.0 — Phase 2: the maktab haidh calendar (2026-08-27)
 
 **Files touched:** `worker/src/attendance.js`, `js/api.js`, `js/haidhDetailScreen.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/app.js`, `index.html`, `js/sw.js`, `tests/verify_v3760_phase2.mjs` (new), `tests/verify_e2.mjs`, `tests/verify_e1.mjs`, `tests/verify_v3750_phase1.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** No migration.

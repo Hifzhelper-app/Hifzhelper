@@ -2045,6 +2045,12 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.76.1 — haidh prediction fix (DEPLOY THE WORKER; frontend is the stamp only)
+
+1. **The device case** — Umme, August: with the 5 Sep prediction still there, mark 27–31 Aug. Accepted; on reload the 5 Sep pink square is GONE (it fell inside the 14 days after the range). A prediction further out than 14 days after the range would remain.
+2. **Still refused, correctly** — try to mark a range that starts within 14 days after a REAL period: same message as before.
+3. **Login card** shows 3.76.1 after the frontend upload and a hard refresh.
+
 ## V3.76.0 — Phase 2: the maktab haidh calendar (DEPLOY THE WORKER FIRST, then frontend, hard-refresh)
 
 Cache name is `hifzhelper-v3.76.0`; the login card should show 3.76.0.
