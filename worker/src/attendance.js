@@ -152,6 +152,30 @@ export async function handleMarkHaidhRange(request, env, auth) {
   // hard-wired to the caller.
   const bodyStudentId = body && body.student_id;
   const studentId = isTeacherOrAbove(auth) && bodyStudentId ? String(bodyStudentId) : auth.id;
+
+  // V3.76.2: the teacher's decision on a gap refusal, from the maktab
+  // calendar's three-way bar ("Mark as haidh anyway" / "Mark absent" /
+  // "Adjust dates"). Both flags are teacher-gated exactly like student_id —
+  // a student sending them is ignored, so her own calendar keeps the plain
+  // rules. Neither is a general override: override_gap skips the GAP rule
+  // only (the run cap still refuses, as it always did under the old
+  // confirm), and status:'absent' writes absent rows with no rules at all,
+  // which is what the old single-day flow's Cancel did.
+  const teacherOpts = isTeacherOrAbove(auth);
+  const overrideGap = teacherOpts && body.override_gap === true;
+  const markAbsent = teacherOpts && body.status === 'absent';
+  if (markAbsent) {
+    const dates = [];
+    for (let d = startDate; d <= endDate; d = haidhAddDaysISO(d, 1)) dates.push(d);
+    await env.DB.batch(dates.map((date) =>
+      env.DB.prepare(
+        `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'absent')
+         ON CONFLICT(student_id, date) DO UPDATE SET status = excluded.status`
+      ).bind(studentId, date)
+    ));
+    return { data: { saved: true, count: dates.length, status: 'absent', clearedPredictions: [] } };
+  }
+
   const student = await env.DB.prepare('SELECT haidh_ruling FROM students WHERE id = ?').bind(studentId).first();
   const ruling = (student && student.haidh_ruling) || 'hanafi';
 
@@ -167,10 +191,12 @@ export async function handleMarkHaidhRange(request, env, auth) {
 
   const { dates, runStart, runEnd, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
   if (runLength > haidhCodeMaxRunDays(ruling)) {
-    return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400 };
+    return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400, code: 'haidh_run' };
   }
-  if (gapDays !== null && gapDays < HAIDH_GAP_CODE) {
-    return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh. Please revise your history.`, status: 400 };
+  if (!overrideGap && gapDays !== null && gapDays < HAIDH_GAP_CODE) {
+    // code: the calendar branches on it (V3.76.2) — a gap refusal offers the
+    // teacher her decision; any other refusal is shown as before.
+    return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh. Please revise your history.`, status: 400, code: 'haidh_gap' };
   }
 
   const status = runStart <= todayISO ? 'haidh' : 'predicted-haidh';

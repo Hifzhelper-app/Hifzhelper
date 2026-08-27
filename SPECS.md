@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.76.2** — The teacher's decision on a gap refusal: haidh anyway / absent / adjust, in the maktab calendar
 - **V3.76.1** — Haidh: a future prediction no longer vetoes a real mark; a confirmed mark clears superseded predictions
 - **V3.76.0** — Phase 2: the maktab haidh calendar — built to the spec below
 - **V3.75.0** — Phase 1 of the list of eleven (items 1, 2, 3, 4, 6, 10, 11) — built to the spec below
@@ -112,6 +113,16 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.76.2 (2026-08-27): the teacher's decision on a gap refusal
+
+| Agreed (user, 2026-08-27) | Built as |
+| --- | --- |
+| "The teacher can decide whether to mark absent or not" — the override V3.76.0 dropped comes back | on a gap refusal in maktab mode, a decision bar replaces the confirm bar in place |
+| A third choice: go back and adjust the dates | **Adjust dates** — confirm bar returns, selection kept; tapping a day does the same |
+| Two outcomes as before | **Mark as haidh anyway** → `override_gap` (gap rule only; run cap still refuses); **Mark absent** → `status: 'absent'`, no rules |
+| Teachers only; the student's own calendar unchanged | both flags ignored for a student in the worker; PJ path never shows the bar |
+| Not a browser dialog | the calendar's existing bar, three buttons, stacked |
 
 ## Done — V3.76.1 (2026-08-27): Haidh — a future prediction no longer vetoes a real mark
 

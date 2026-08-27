@@ -2045,6 +2045,17 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.76.2 — the teacher's decision bar (DEPLOY THE WORKER FIRST, then frontend, hard-refresh)
+
+Cache name is `hifzhelper-v3.76.2`; the login card should show 3.76.2.
+
+1. **Maktab calendar, a range starting within 14 days of a real period** → Confirm. Instead of the red line, the bar under the calendar changes to the message plus three buttons; the selected days stay highlighted.
+2. **Adjust dates** → the Cancel / Confirm bar returns, selection still there. Tapping any day while the decision bar is up does the same and starts a fresh selection.
+3. **Mark as haidh anyway** → the range is written as haidh (yellow on the summary for those dates).
+4. **Mark absent** → the range is written absent; nothing yellow. (Her PJ calendar shows nothing for those days — absent is not painted there.)
+5. **A range longer than her ruling allows** → the plain red line, no decision bar; and if you reach it via "haidh anyway" it is still refused.
+6. **Her own calendar** (log in as her): the same gap case is the plain red line. No decision bar.
+
 ## V3.76.1 — haidh prediction fix (DEPLOY THE WORKER; frontend is the stamp only)
 
 1. **The device case** — Umme, August: with the 5 Sep prediction still there, mark 27–31 Aug. Accepted; on reload the 5 Sep pink square is GONE (it fell inside the 14 days after the range). A prediction further out than 14 days after the range would remain.

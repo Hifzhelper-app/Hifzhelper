@@ -85,6 +85,7 @@ function calDom() {
     <button id="haidhCalPrevBtn"></button><span id="haidhCalMonthLabel"></span><button id="haidhCalNextBtn"></button>
     <div id="haidhCalWeekdays"></div><div id="haidhCalGrid"></div>
     <div id="haidhRangeBar" class="hidden"><span id="haidhRangeBarText"></span><button id="haidhRangeCancelBtn"></button><button id="haidhRangeConfirmBtn"></button></div>
+    <div id="haidhRangeDecision" class="hidden"><span id="haidhRangeDecisionText"></span><button id="haidhDecisionAdjustBtn"></button><button id="haidhDecisionAbsentBtn"></button><button id="haidhDecisionHaidhBtn"></button></div>
     <div id="haidhCalError"></div></body>`, { runScripts: 'dangerously', url: 'https://x/' });
   const w = dom.window;
   w.eval(`
@@ -117,7 +118,7 @@ const dayBtn = (w, iso) => [...w.document.querySelectorAll('.haidh-cal-day')].fi
   const code = calSrc.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   check('cal: every attendance touch goes through haidhCalClient() — no direct call survives outside it',
     (code.match(/apiGetAttendance\(\)|apiDeleteAttendance\(|apiMarkHaidhRange\(/g) || []).length === 3
-    && (code.match(/haidhCalClient\(\)\./g) || []).length === 3);
+    && (code.match(/haidhCalClient\(\)\./g) || []).length === 4);   // 4 since V3.76.2: haidhDecide() is the fourth caller
 }
 
 { // PJ path — unchanged
@@ -184,7 +185,7 @@ check('day: the toggle flow is deleted, not left dangling', !/function maktabTog
 check('app: showScreen keeps the context for the maktab-opened calendar and drops it otherwise',
   /const keepsMaktabCtx = id === 'logDetail' \|\| !!\(id === 'haidhDetail' && param && typeof param === 'object' && param\.maktab === true\);/.test(appSrc)
   && /if\(!keepsMaktabCtx && typeof exitMaktabDay === 'function'\) exitMaktabDay\(\);/.test(appSrc));
-check('api: apiMarkHaidhRangeFor posts student_id with the range', /function apiMarkHaidhRangeFor\(studentId, startDate, endDate\)\{[\s\S]{0,200}student_id: studentId, startDate, endDate/.test(apiSrc));
+check('api: apiMarkHaidhRangeFor posts student_id with the range', /function apiMarkHaidhRangeFor\(studentId, startDate, endDate, opts\)\{[\s\S]{0,200}student_id: studentId, startDate, endDate/.test(apiSrc));   // opts since V3.76.2
 check('html: the heading is id\'d for the name', /<h2 id="haidhDetailTitle">Haidh<\/h2>/.test(html));
 
 // showScreen's keep/drop, driven: simulate the exit hook and call the real predicate line

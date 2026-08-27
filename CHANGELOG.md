@@ -26,6 +26,20 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.76.2 — The teacher's decision on a gap refusal (2026-08-27)
+
+**Files touched:** `worker/src/attendance.js`, `worker/src/utils.js`, `worker/src/index.js`, `js/api.js`, `js/haidhDetailScreen.js`, `index.html`, `css/haidh.css`, `js/sw.js`, `tests/verify_v3762_haidh_decision.mjs` (new), `tests/verify_v3760_phase2.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** No migration.
+
+**What the old toggle had, and V3.76.0 dropped, comes back — as three choices instead of two, and in the page instead of a dialog.** User, 2026-08-27: "the teacher can decide whether to mark absent or not", then asked for a way back to the dates. On a gap refusal in maktab mode the confirm bar is replaced, in place, by a decision bar carrying the worker's message and three buttons: **Mark as haidh anyway** (resubmits the same range with `override_gap`), **Mark absent** (resubmits with `status: 'absent'`), **Adjust dates** (back to the confirm bar, selection kept). Tapping a day while deciding counts as adjusting. Not a browser `confirm()`: it cannot offer three, cannot be styled, and on a phone it covers the dates being decided about.
+
+**Worker.** `mark-range` honours `override_gap` — skipping the *gap* rule only; the run cap still refuses, as the old confirm never overrode it either — and `status: 'absent'`, which writes absent rows with no rules, as the old single-day Cancel did. Both are teacher-gated exactly like `student_id`: a student sending them is ignored and her own calendar keeps the plain rules. Refusals now carry a machine-readable `code` (`haidh_gap`, `haidh_run`) via `error()`/`respond()`, and `apiFetch` attaches it to the thrown error, so the calendar branches on *which* rule refused rather than matching prose. Bodies without a code are byte-identical to before.
+
+**The student's own calendar is unchanged**: a gap refusal there is the plain message, and the own-endpoint call never carries a flag — both asserted.
+
+**Verification: 715 passed, 0 failed across 23 harnesses.** The worker side runs against real SQLite (teacher override honoured, student's ignored, absent rows written, run cap still refuses under override); the calendar side drives the real screen through every branch — decision bar up with selection kept, each of the three buttons, a second refusal on "haidh anyway", a non-gap refusal, and the PJ path.
+
+---
+
 ## V3.76.1 — Haidh: a future prediction no longer vetoes a real mark (2026-08-27)
 
 **Files touched:** `worker/src/attendance.js`, `shared/haidhRules.js`, `js/sw.js`, `index.html` (cache-buster only), `tests/verify_v3761_haidh_predictions.mjs` (new), `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ WORKER CHANGE — DEPLOY THE WORKER; the frontend files carry only the version stamp.** No migration.

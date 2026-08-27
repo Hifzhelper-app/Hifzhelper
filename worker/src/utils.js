@@ -19,8 +19,10 @@ export function json(data, status = 200) {
 // Per CONVENTIONS.md principle 3 (no silent fallbacks): every error path
 // returns a real status code and message — never an empty 200 that looks
 // like "no data yet".
-export function error(message, status = 400) {
-  return json({ error: message }, status);
+// V3.76.2: an optional machine-readable code rides alongside the message,
+// so a client can branch on WHICH rule refused without matching prose.
+export function error(message, status = 400, code) {
+  return json(code ? { error: message, code } : { error: message }, status);
 }
 
 export function isValidDate(str) {

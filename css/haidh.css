@@ -95,6 +95,11 @@
   border-radius: var(--radius-sm);
 }
 .haidh-range-bar-actions { display: flex; gap: var(--space-sm); flex: 0 0 auto; }
+/* V3.76.2: the decision bar carries a sentence and THREE buttons, so it
+   stacks — text on top, buttons wrapping beneath — where the two-button
+   bar sits on one line. */
+.haidh-range-decision { flex-direction: column; align-items: stretch; }
+.haidh-range-decision .haidh-range-bar-actions { flex-wrap: wrap; justify-content: flex-end; }
 .haidh-range-confirm-btn, .haidh-range-cancel-btn {
   display: inline-flex;
   align-items: center;

@@ -25,7 +25,7 @@ import { handleListUsers, handleResetPin, handleChangeRole, handleRegisterStuden
 // sure nothing throws past this point without becoming a real error response
 // (CONVENTIONS.md principle 3: no silent fallbacks).
 function respond(result) {
-  if (result.error) return error(result.error, result.status || 400);
+  if (result.error) return error(result.error, result.status || 400, result.code);   // V3.76.2: code passes through
   return json(result.data);
 }
 

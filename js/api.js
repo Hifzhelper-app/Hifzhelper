@@ -78,7 +78,9 @@ async function apiFetch(path, options = {}){
 
   if(!response.ok){
     if(response.status === 401){ clearToken(); }
-    throw new Error((body && body.error) || `Request failed (${response.status})`);
+    const err = new Error((body && body.error) || `Request failed (${response.status})`);
+    if(body && body.code) err.code = body.code;   // V3.76.2: which rule refused, when the worker says
+    throw err;
   }
   return body;
 }
@@ -242,8 +244,14 @@ function apiSetAttendanceFor(studentId, date, status){
 // V3.76.0 (Phase 2): the range write for a named student — the maktab's
 // haidh calendar marks a range as the student's own does. Teacher-gated in
 // the worker; a student's own id passes, anyone else's is ignored.
-function apiMarkHaidhRangeFor(studentId, startDate, endDate){
-  return apiFetch('/attendance/mark-range', { method: 'POST', body: JSON.stringify({ student_id: studentId, startDate, endDate }) });
+// V3.76.2: opts = { overrideGap: true } (teacher decides to mark haidh
+// despite the gap) or { status: 'absent' } (teacher marks the range absent
+// instead). Both teacher-gated in the worker; a student's flag is ignored.
+function apiMarkHaidhRangeFor(studentId, startDate, endDate, opts){
+  const body = { student_id: studentId, startDate, endDate };
+  if(opts && opts.overrideGap) body.override_gap = true;
+  if(opts && opts.status) body.status = opts.status;
+  return apiFetch('/attendance/mark-range', { method: 'POST', body: JSON.stringify(body) });
 }
 
 // ---------- derived maktab attendance (V3.67.0, delivery (f)) ----------

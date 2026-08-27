@@ -61,7 +61,7 @@ groups and the roster filter are one pass over that screen instead of two.
 | 2 | Move to Dhor — HIDDEN until all four quarters complete, then "Move Juz N to Dhor". No disabled state, no "(2 of 4 complete)". User's call, reversing V3.74.3's visible-but-inactive (Claude's own reasoning) | 1 | **BUILT V3.75.0** |
 | 3 | PTP (Public/Teachers/Private) pill — shorter | 1 | **BUILT V3.75.0** — root cause: settings.css's base `.switch-track{height:42px}` loads later and beat the single-class rule; V3.74.4's 20px never applied. Now `.cb-note-box .mk-vis-switch`. **Lands at 20px — say if a different height is wanted** |
 | 4 | `+1` badge wired directly | 1 | **BUILT V3.75.0** — delegated listener ran AFTER the row's, so the day view opened anyway; now on the button |
-| 5 | Attendance page: the summary's haidh icon becomes a LINK to the student's haidh calendar — the existing Haidh screen SHARED under the maktab log context (Option A reuse, as the day view). Haidh marked as a RANGE (user's call 2026-08-27), under the worker's rules; the single-day toggle flow deleted. The day-card toggle had already gone in V3.73.0 | 2 | **BUILT V3.76.0** — worker + frontend (mark-range gained the teacher override; the "frontend only" note was wrong for the range write). **Behaviour change:** a teacher no longer gets a confirm-to-override on the 14-day gap; the worker refuses and says why |
+| 5 | Attendance page: the summary's haidh icon becomes a LINK to the student's haidh calendar — the existing Haidh screen SHARED under the maktab log context (Option A reuse, as the day view). Haidh marked as a RANGE (user's call 2026-08-27), under the worker's rules; the single-day toggle flow deleted. The day-card toggle had already gone in V3.73.0 | 2 | **BUILT V3.76.0** — worker + frontend (mark-range gained the teacher override; the "frontend only" note was wrong for the range write). ~~Behaviour change: a teacher no longer gets a confirm-to-override on the 14-day gap~~ — override restored as a three-way decision in V3.76.2 |
 | 6 | Surface the worker's real error (the fixed alert made the 2026-08-26 haidh failure unreadable) | 1 | **BUILT V3.75.0** — both haidh alerts + summary load failure carry `e.message` |
 | 7 | Tajweed tags (was 13) — maktab-stored rows with IDs, entries reference the ID, rename propagates, retire replaces delete; schema, worker endpoints, admin screen, clearing the old column. **Only irreversible item.** OPEN: existing word-tags on live rows must convert to IDs one-way — unmatched words go where?; custom tags in browser storage — import on first load or lose | 4 | NOT BUILT — needs those two answers first |
 | 8 | Groups — one group per student (column on the student row, not a join table). Names defined in Maktab Settings; assigned per student in their profile by admin. For ordering and filtering the summary: ordered by group, then alphabetically; groups separated visually by a SPACE between them (no heading rows, no labels). Retire-not-delete (same shape as tags). Teacher-to-group assignment noted as possible later, NOT built. OPEN: where ungrouped students sit — last, or under "Unassigned". Note: `<tr>` takes no margin — spacer row or bottom padding on the group's last row | 3 | NOT BUILT — "start building phase 3" |
@@ -84,6 +84,11 @@ heading. Tags — a word on an existing entry that matches no tag in the new
 list is DROPPED; custom tags in browser storage are NOT imported. Still
 open for delivery 3: timezone display — each viewer's local, or the
 maktab's everywhere (Claude's read: the maktab's everywhere).
+
+**Haidh, V3.76.2:** the teacher's override is BACK, as a three-way decision bar
+in the maktab calendar (haidh anyway / absent / adjust dates) on a gap
+refusal — `override_gap` skips the gap rule only; teachers only; the
+student's own calendar keeps the plain rules.
 
 **Haidh rule, V3.76.1 (device bug 2026-08-27):** a future PREDICTION never
 vetoes a real mark; a confirmed mark deletes predictions in the 14-day window

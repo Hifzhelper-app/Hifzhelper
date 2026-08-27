@@ -67,14 +67,54 @@ function haidhCalClient(){
     return {
       get:       ()           => apiGetAttendanceFor(id),
       clear:     (date)       => apiClearAttendanceFor(id, date),
-      markRange: (start, end) => apiMarkHaidhRangeFor(id, start, end),
+      markRange: (start, end, opts) => apiMarkHaidhRangeFor(id, start, end, opts),   // opts: V3.76.2 teacher decision
     };
   }
   return {
     get:       ()           => apiGetAttendance(),
     clear:     (date)       => apiDeleteAttendance(date),
-    markRange: (start, end) => apiMarkHaidhRange(start, end),
+    markRange: (start, end) => apiMarkHaidhRange(start, end),   // the student's own: no decision, the rules stand
   };
+}
+
+// V3.76.2: the teacher's decision bar. Shown ONLY in maktab mode, ONLY on a
+// gap refusal (the worker says which rule refused via e.code — no prose
+// matching). It replaces the confirm bar in place, over the still-pending
+// selection, and offers the old confirm's two outcomes plus the way back:
+//   Mark as haidh anyway → resubmit with override_gap (worker skips the gap
+//                          rule only; the run cap still refuses)
+//   Mark absent          → the range written as 'absent' (what the old
+//                          Cancel did)
+//   Adjust dates         → back to the confirm bar, selection kept
+// Never a browser confirm(): it cannot offer three, cannot be styled, and on
+// a phone it covers the dates being decided about.
+function haidhShowDecision(message){
+  document.getElementById('haidhRangeBar').classList.add('hidden');
+  const bar = document.getElementById('haidhRangeDecision');
+  document.getElementById('haidhRangeDecisionText').textContent = message;
+  bar.classList.remove('hidden');
+}
+function haidhHideDecision(){
+  document.getElementById('haidhRangeDecision').classList.add('hidden');
+}
+async function haidhDecide(opts){
+  const bounds = haidhPendingRangeBounds();
+  if(!bounds) return;
+  const errEl = document.getElementById('haidhCalError');
+  errEl.textContent = '';
+  try{
+    await haidhCalClient().markRange(bounds[0], bounds[1], opts);
+    haidhHideDecision();
+    haidhClearPendingRange();
+    await loadHaidhCalAttendance();
+    renderHaidhCalGrid();
+  } catch(e){
+    // A second refusal (e.g. the run cap on "haidh anyway") is shown as the
+    // plain error, with the selection kept, as everywhere else.
+    haidhHideDecision();
+    renderHaidhRangeBar();
+    errEl.textContent = e.message;
+  }
 }
 
 // V3.40.3 bug fix: build a YYYY-MM-DD string from a LOCAL calendar date
@@ -193,12 +233,14 @@ function renderHaidhRangeBar(){
 function haidhClearPendingRange(){
   haidhRangeStart = null;
   haidhRangeEnd = null;
+  haidhHideDecision();   // V3.76.2: a decision cannot outlive its selection
   renderHaidhRangeBar();
 }
 
 async function onHaidhCalDayTap(dateISO){
   const errEl = document.getElementById('haidhCalError');
   errEl.textContent = '';
+  haidhHideDecision();   // V3.76.2: tapping a day IS adjusting — the confirm bar comes back below
   const status = haidhCalAttendance[dateISO];
 
   // Tapping an already-confirmed/planned day OUTSIDE of an active
@@ -251,6 +293,14 @@ async function onHaidhRangeConfirm(){
     // selection is deliberately kept (not cleared) on failure, so the
     // student can see exactly what was rejected and adjust it directly
     // rather than having to re-select from scratch.
+    // V3.76.2: in maktab mode a GAP refusal is the teacher's decision, not
+    // a dead end — the decision bar replaces the confirm bar, selection
+    // kept. Any other refusal, and every refusal on the student's own
+    // calendar, is the plain message as before.
+    if(e && e.code === 'haidh_gap' && typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
+      haidhShowDecision(e.message);
+      return;
+    }
     errEl.textContent = e.message;
   }
 }
@@ -320,6 +370,14 @@ document.getElementById('haidhRangeCancelBtn').addEventListener('click', () => {
   renderHaidhCalGrid();
 });
 document.getElementById('haidhRangeConfirmBtn').addEventListener('click', onHaidhRangeConfirm);
+
+// V3.76.2: the decision bar's three buttons.
+document.getElementById('haidhDecisionAdjustBtn').addEventListener('click', () => {
+  haidhHideDecision();
+  renderHaidhRangeBar();   // the selection is still pending — the confirm bar returns
+});
+document.getElementById('haidhDecisionAbsentBtn').addEventListener('click', () => haidhDecide({ status: 'absent' }));
+document.getElementById('haidhDecisionHaidhBtn').addEventListener('click', () => haidhDecide({ overrideGap: true }));
 
 async function renderHaidhDetailScreen(param){
   document.getElementById('haidhDetailHeaderIcon').innerHTML = iconHtml('haidh');
