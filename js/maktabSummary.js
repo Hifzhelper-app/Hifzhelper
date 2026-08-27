@@ -78,17 +78,12 @@ function maktabOpenEntryPeek(btn, type, entries){
   }
 }
 
-// One delegated listener: the summary re-renders on every date change, so
-// per-render wiring would leak or go stale.
+// V3.75.0 (item 4): this listener only CLOSES the peek now. Opening moved
+// onto the badge button itself (see the render below) — delegated here it
+// ran after the <tr>'s own click handler and could not stop the day view
+// opening. A badge click never reaches document (the button stops it), so
+// the click-away close cannot fire against the badge that just opened it.
 document.addEventListener('click', (e) => {
-  const badge = e.target.closest && e.target.closest('[data-entry-peek]');
-  if(badge){
-    e.stopPropagation();   // must NOT fall through to the row's day-view nav
-    const cell = badge.closest('td');
-    const entries = cell && cell._peekEntries;
-    maktabOpenEntryPeek(badge, badge.dataset.entryPeek, entries);
-    return;
-  }
   if(!e.target.closest || !e.target.closest('#maktabEntryPeek')) maktabCloseEntryPeek();
 });
 
@@ -122,14 +117,22 @@ async function renderMaktabSummaryScreen(){
   // V3.59.1: respond() UNWRAPS on the worker (json(result.data)) -- the
   // response body IS the payload, no {data:...} envelope on the wire.
   // Shape-guarded so ANY malformed response renders the error row.
-  let data;
+  let data, loadErr = null;
   try {
     data = await apiMaktabSummary(date);
   } catch (e) {
     data = null;
+    loadErr = e;
   }
   if (!data || !Array.isArray(data.students)) {
-    host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">Could not load the maktab summary.</td></tr>';
+    // V3.75.0 (item 6): carry the worker's message rather than a fixed
+    // line. Set via textContent, so a message containing markup is text.
+    const td = document.createElement('td');
+    td.colSpan = 5;
+    td.className = 'journal-cell journal-cell-empty';
+    td.textContent = 'Could not load the maktab summary: ' + ((loadErr && loadErr.message) || 'unexpected response');
+    host.innerHTML = '';
+    const tr = document.createElement('tr'); tr.appendChild(td); host.appendChild(tr);
     return;
   }
   maktabSummaryData = data;
@@ -215,6 +218,21 @@ async function renderMaktabSummaryScreen(){
         // re-querying — the rows are already here, and re-deriving them
         // from the DOM would be parsing text back into data.
         td._peekEntries = byStudent[type][stu.id];
+        // V3.75.0 (item 4): wired DIRECTLY on the badge. V3.74.2 handled it
+        // by delegation on document, but the row's day-view handler is on
+        // the <tr> itself — so during bubbling the row fired FIRST and
+        // opened the day view, and the stopPropagation at document level
+        // came too late to matter. A listener on the button runs before
+        // the tap ever reaches the row. The rows are rebuilt on every
+        // render, so this cannot leak: the old buttons go with the old
+        // rows.
+        const peekBtn = td.querySelector('[data-entry-peek]');
+        if(peekBtn){
+          peekBtn.addEventListener('click', (e) => {
+            e.stopPropagation();   // must NOT reach the row's day-view nav
+            maktabOpenEntryPeek(peekBtn, type, td._peekEntries);
+          });
+        }
       }
       tr.appendChild(td);
     });

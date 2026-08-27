@@ -91,8 +91,14 @@ check('the settings body uses .screen-content, which carries the 30/50 cap',
   check('four screens carry the card pattern and all are covered by the one rule',
     carded.length === 4, carded.join(','));
 }
-check('the truncated heading is given room, by the same rule',
-  /\.screen:has\(> \.screen-content\) \.card-header-row \{ grid-template-columns: 1fr auto; \}/.test(read('css/base.css')));
+// V3.75.0: the base.css grid line was REMOVED — at three classes it forced a
+// two-column grid onto every three-child header (Admin, Tadabbur, Haidh) and
+// stranded their close buttons. The truncation fix was only ever the h2 wrap
+// line, which stays; Maktab Settings' own 1fr/auto rule lives in settings.css.
+check('the truncated heading is given room — h2 wrap in base.css, columns in settings.css',
+  /\.screen:has\(> \.screen-content\) \.card-header-row h2 \{ white-space: normal; \}/.test(read('css/base.css'))
+  && /#screen-maktabSettings \.card-header-row \{ grid-template-columns: 1fr auto; \}/.test(read('css/settings.css'))
+  && !/\.screen:has\(> \.screen-content\) \.card-header-row \{[^}]*grid-template-columns/.test(read('css/base.css')));
 
 // ---------- it renders ----------
 {

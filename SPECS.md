@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.75.0** — Phase 1 of the list of eleven (items 1, 2, 3, 4, 6, 10, 11) — built to the spec below
 - **V3.65.0** — (g) Maktab settings — built to the spec below
 - **V3.66.0** — (h) Maktab position + student setup — built to the spec below
 - **V3.67.0** — (f) Derived attendance — built to the spec below. THE MAKTAB DELIVERY SET (a)-(h) IS NOW COMPLETE
@@ -109,6 +110,24 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.75.0 (2026-08-26): Phase 1 of the list of eleven (items 1, 2, 3, 4, 6, 10, 11) — built to the spec below
+
+Seven small frontend fixes, the first of four phases (full list and the
+user's phase order in `TODO.md`, "The list of eleven"). No schema, no worker.
+
+| # | Agreed | Built as |
+| --- | --- | --- |
+| 1 | Admin header: icon and heading grouped left, close on the right | `#screen-admin .card-header-row { auto 1fr auto }` in `admin.css`; dead `.card-header-row-left` deleted; base.css's blanket `grid-template-columns: 1fr auto` removed (it also broke Tadabbur and Haidh) |
+| 2 | Move to Dhor hidden until all four quarters complete; then "Move Juz N to Dhor"; no disabled state, no count | render filters `o.enabled`; handler still guards |
+| 3 | PTP pill shorter | `.cb-note-box .mk-vis-switch` so the 20px height beats settings.css's base rule; 20px is the intended-but-never-delivered V3.74.4 height |
+| 4 | `+1` badge wired directly | listener on the badge button; document listener closes only |
+| 6 | Surface the worker's real error | `e.message` on both haidh alerts and the summary load row |
+| 10 | Teacher name in the History rail | `.rail-card-teacher` under any entry with `teacher_name`, escaped |
+| 11 | Spacing above the note boxes | `.cb-note-box { margin-top: var(--space-md) }` |
+
+Root causes for 1, 3 and 4 are in `CHANGELOG.md` V3.75.0; all three were
+rules that existed but never won.
 
 ## Done — V3.65.0 (2026-08-16): (g) Maktab settings — built to the spec below
 

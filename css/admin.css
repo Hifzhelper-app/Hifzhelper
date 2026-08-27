@@ -10,6 +10,19 @@
    30/50 cap instead -- same gap Haidh had, confirmed against the code
    on request before this fix. */
 
+/* V3.75.0 — item 1: icon and heading grouped LEFT, close on the right.
+   The V3.74.2 attempt (.card-header-row-left, auto/1fr/auto) NEVER took
+   effect: base.css's `.screen:has(> .screen-content) .card-header-row
+   { grid-template-columns: 1fr auto }` matches this screen too, and at
+   three classes of specificity it beat the single class regardless of
+   source order. The two-column grid it forced onto a three-child header
+   is what stranded the close button on a second row, centred. That class
+   is now deleted (see css/detail-pages.css, V3.75.0); this id-scoped rule
+   outranks the base one by construction. */
+#screen-admin .card-header-row { grid-template-columns: auto 1fr auto; }
+#screen-admin .card-header-row .card-header-icon { justify-self: start; }
+#screen-admin .card-header-row h2 { justify-self: start; }
+
 .admin-register-box {
   background: var(--color-surface);
   border: 1px solid var(--color-table-border);

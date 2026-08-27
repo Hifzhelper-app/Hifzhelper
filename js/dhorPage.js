@@ -1499,6 +1499,7 @@ async function renderRecentEntries(type, railId, onRowClick){
             <div class="rail-card-date">${r.date}</div>
             <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
             ${type === 'dhor' && r.lap_times && r.lap_times.length > 0 ? `<div class="rail-card-laps">${r.lap_times.map(formatDhorDuration).join(' · ')}</div>` : ''}
+            ${r.teacher_name ? `<div class="rail-card-teacher">${railEscape(r.teacher_name)}</div>` : ''}
           </div>
           ${EDIT_HANDLERS[type] ? `<button type="button" class="history-entry-edit-btn" data-index="${i}" aria-label="Edit"></button>` : ''}
         </div>`).join('') || '<div class="form-hint">Nothing logged yet.</div>'}
@@ -1526,6 +1527,13 @@ async function renderRecentEntries(type, railId, onRowClick){
     document.getElementById('historyPopupCloseBtn').addEventListener('click', () => overlay.remove());
   });
 }
+// V3.75.0 (item 10): maktab rows carry teacher_name (provenance — who
+// confirmed the entry). The History rail shows it under the entry when it
+// is present. PJ rows have no such field, so nothing changes there; and
+// once (k) merges maktab entries into the journal, the same line becomes
+// the provenance marker with no further change here. Escaped: the name is
+// free text from registration.
+function railEscape(v){ const d = document.createElement('span'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
 function describeEntryForRail(type, r){
   if(type === 'dhor') return `${describeDhorSegment(r.segment_from, r.segment_to, r.ref || dhorCurrentRef)} · ${r.mistakes||0} mistakes${r.duration_seconds?` · ${Math.round(r.duration_seconds/60)} min`:''}`;
   if(type === 'sabaq') return `${r.sabaq_from}-${r.sabaq_to}${r.line_count?` · ${r.line_count} lines`:''}${r.page_count?` · ${r.page_count} pages`:''}`;

@@ -26,6 +26,32 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.75.0 — Phase 1 of the list of eleven: items 1, 2, 3, 4, 6, 10, 11 (2026-08-26)
+
+**Files touched:** `css/admin.css`, `css/base.css`, `css/detail-pages.css`, `index.html`, `js/maktabSummary.js`, `js/maktabDay.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `js/sw.js`, `tests/verify_v3750_phase1.mjs` (new), `tests/verify_v3742_ui.mjs`, `tests/verify_maktab_settings_form.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. No schema, no worker.**
+
+**Three of the seven fix V3.74.x changes that never took effect.** All three lost the cascade or the event order, and all three were green in the harness because the harness asserted the rule *existed*, not that it *won*.
+
+**Admin header (1).** `.card-header-row-left` (V3.74.2) never applied: base.css's `.screen:has(> .screen-content) .card-header-row { grid-template-columns: 1fr auto }` matches at three classes and beat it regardless of file order. That forced a two-column grid onto a three-child header, which is why the close button sat centred on a row of its own. The class is deleted; Admin now carries an id-scoped rule in `admin.css`. **Wider than Admin:** the same base rule matched every card screen with a direct `.screen-content` — and Tadabbur and Haidh both have three-child headers. Both have been broken the same way since V3.74.2, unseen because they are student screens and testing is paused. The grid line is removed from base.css (the `h2 { white-space: normal }` that actually fixed the truncation stays; Maktab Settings keeps its own 1fr/auto rule in settings.css). A new check derives the affected set from the real `index.html` and asserts it is exactly Admin, Tadabbur, Haidh.
+
+**Move to Dhor hidden until eligible (2).** User's call, reversing V3.74.3's visible-but-disabled button with its "(2 of 4 complete)" count — "nothing on screen that can't be used". The render filters to `enabled` options; the label is "Move Juz N to Dhor"; `moveJuzToDhor` still re-checks eligibility so hiding is not the only guard. Driven test: an ineligible juz renders no button, an eligible one renders exactly one.
+
+**The pill is 20px tall now, really (3).** V3.74.4 fixed the width (an explicit `width` where `max-width` had been a no-op) but the *height* was a second no-op nobody noticed: the base `.switch-track { height: 42px }` lives in `settings.css`, which `index.html` loads AFTER `detail-pages.css`. One class against one class, so source order won and the track stayed 42px. Selector is now `.cb-note-box .mk-vis-switch`; the harness asserts the specificity relationship and that the load order really is the trap it looks like. Same cascade lesson as CONVENTIONS (d). *20px is the height V3.74.4 intended and never delivered — adjust once seen.*
+
+**The +1 badge opens the peek and only the peek (4).** V3.74.2 wired it by delegation on `document`, but the row's day-view handler is attached to the `<tr>` itself — so during bubbling the row fired first, opened the day view, and the `stopPropagation` at document level came too late to matter. The listener is on the badge button now; the document listener only closes. Driven test: badge tap → no `openMaktabDay`, peek open with every entry; row tap → day view.
+
+**The worker's real error is shown (6).** `apiFetch` already threw `body.error` as `e.message`; both haidh alerts and the summary load failure replaced it with a fixed sentence — which is why the 2026-08-26 haidh failure could not be read. All three carry the message now (the summary one via `textContent`, so markup in a message renders as text). Driven with rejecting stubs.
+
+**Teacher name in the History rail (10).** Maktab rows carry `teacher_name` (provenance); the rail shows it under the entry when present, escaped. PJ rows have no such field and are unchanged. When (k) merges maktab entries into the journal this line becomes the provenance marker with no further change.
+
+**Spacing above the note box (11).** `margin-top: var(--space-md)` on `.cb-note-box`, the same token the PJ's `.notes-header-row` already uses, so both modes of the card sit their notes at one height.
+
+**Harness realignment:** four V3.74.2 assertions pinned the replaced behaviour (the delegated stop, the disabled state, the dead class, the `^`-anchored pill selector) and one in `verify_maktab_settings_form.mjs` pinned the removed base.css grid line. Each now asserts the new rule and says why.
+
+**Verification: 640 passed, 0 failed across 20 harnesses** (596 before; 44 new). **Also recorded:** the full list of eleven and the four-phase plan into `TODO.md` — the docs-only V3.74.6 meant to carry it was never built.
+
+---
+
 ## V3.74.5 — URGENT: repairs Sabaq Dhor, broken by V3.74.3 (2026-08-26)
 
 **Files touched:** `js/sabaqDhorPage.js`, `index.html`, `js/sw.js`, `tests/verify_v3742_ui.mjs`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. V3.74.3 and V3.74.4 are BROKEN — deploy this one.**

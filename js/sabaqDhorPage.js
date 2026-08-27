@@ -104,12 +104,17 @@ function renderSabaqDhorRows(){
 
   // V3.74.3: ONE move option per juz, on its own row, rendered from the
   // juz rather than from any row — so roll-up state cannot make it appear
-  // or vanish. Disabled until all four quarters are complete, and shown
-  // while disabled on purpose: it tells the teacher the option exists and
-  // what it is waiting for.
-  const moveHtml = sabaqDhorMoveOptions.map(o => `
-    <button type="button" class="move-to-dhor-btn move-to-dhor-row" data-juz="${o.juz}"${o.enabled ? '' : ' disabled'}>
-      Move ${o.label} to Dhor${o.enabled ? '' : ` (${o.completeQuarters} of 4 complete)`}
+  // or vanish.
+  // V3.75.0 (item 2): HIDDEN until all four quarters are complete, then
+  // shown as "Move Juz N to Dhor". The V3.74.3 visible-but-disabled state
+  // with its "(2 of 4 complete)" count was Claude's own reasoning, not the
+  // user's — user's call 2026-08-26: nothing on screen that can't be used.
+  // computeSabaqDhorMoveOptions still returns the ineligible ones (the
+  // eligibility rule is unchanged, and moveJuzToDhor still re-checks
+  // opt.enabled); only the render filters them out.
+  const moveHtml = sabaqDhorMoveOptions.filter(o => o.enabled).map(o => `
+    <button type="button" class="move-to-dhor-btn move-to-dhor-row" data-juz="${o.juz}">
+      Move ${o.label} to Dhor
     </button>
   `).join('');
 

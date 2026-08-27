@@ -867,6 +867,7 @@
 .rail-card-date { font-size: 11px; color: var(--color-ink-faint); margin-bottom: 4px; }
 .rail-card-body { font-size: 13px; }
 .rail-card-laps { font-size: 12px; color: var(--color-ink-faint); margin-top: 2px; }
+.rail-card-teacher { font-size: 12px; color: var(--color-ink-faint); margin-top: 2px; }   /* V3.75.0 item 10: the confirming teacher, maktab rows only */
 
 /* History button (V3.18.0) -- compact, dark green (Evergreen), type-
    specific text ("Sabaq History" etc. -- js/dhorPage.js). The last-2-
@@ -1629,26 +1630,21 @@
 .log-detail-readonly .card-header-save-wrap,
 .log-detail-readonly .edit-delete-btn { display: none; }
 
-/* V3.74.2 — header row with the icon and heading grouped LEFT.
-   The shared .card-header-row is 10%/70%/20% with the icon centred in its
-   own column, which reads fine on the log cards but leaves an admin-style
-   heading floating away from its icon. auto/1fr/auto puts them together
-   and lets the close button keep the right edge.
-   (Restored V3.74.4 — a span replacement for the switch rules reached past
-   its intended end and deleted this. Second time that has happened; the
-   harness caught it, which is why the assertion existed.) */
-.card-header-row-left {
-  grid-template-columns: auto 1fr auto;
-}
-.card-header-row-left .card-header-icon { justify-self: start; }
-.card-header-row-left h2 { justify-self: start; }
+/* V3.75.0 — .card-header-row-left (V3.74.2) DELETED. It never had any
+   effect: base.css's `.screen:has(> .screen-content) .card-header-row`
+   outranks a single class, so the Admin header kept the two-column grid
+   and its close button fell onto a second row. The Admin layout now lives
+   in css/admin.css as an id-scoped rule, which wins by construction. */
 
 /* Note-visibility switch, inside the note box (V3.73.0, resized V3.74.4).
    Reuses .switch-track / .switch-option; the box groups label, switch and
    textarea so the control reads as governing the note.
    No display:none on individual controls -- hiding some children of a
    shared grid is what scrambled auto-placement in the V3.45.6-.11 saga. */
-.cb-note-box { border: 1px solid var(--line, #d9d9d9); border-radius: 12px; padding: var(--space-sm, 8px); }
+/* V3.75.0 (item 11): margin-top so the box stands off the section above it —
+   the same --space-md the PJ's .notes-header-row already carries, so the
+   two modes of the card sit their notes at the same height. */
+.cb-note-box { border: 1px solid var(--line, #d9d9d9); border-radius: 12px; padding: var(--space-sm, 8px); margin-top: var(--space-md, 16px); }
 .cb-note-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm, 8px); margin-bottom: var(--space-xs, 4px); }
 .cb-note-head label { margin: 0; }
 .cb-note-box .cb-teacher-note { border: none; width: 100%; background: transparent; resize: vertical; }
@@ -1663,8 +1659,16 @@
    240 were all no-ops. It needs an explicit WIDTH.
 
    flex: 0 0 auto stops the .cb-note-head flex row shrinking it back below
-   the width set here, which would undo the fix from the other direction. */
-.mk-vis-switch {
+   the width set here, which would undo the fix from the other direction.
+
+   V3.75.0 (item 3) — and the reason the HEIGHT never changed either: the
+   base `.switch-track { height: 42px }` lives in css/settings.css, which
+   index.html loads AFTER this file. One class against one class, so
+   source order decided it and the base rule won every time. The width
+   worked only because the base rule sets none. Selector is now two
+   classes (.cb-note-box .mk-vis-switch), which outranks the base rule
+   wherever it is loaded. Same cascade trap as CONVENTIONS lesson (d). */
+.cb-note-box .mk-vis-switch {
   width: 240px;
   flex: 0 0 auto;
   height: 20px;

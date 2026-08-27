@@ -244,6 +244,13 @@ input, select, textarea {
   .screen:has(> .screen-content) > .screen-content { width: 100%; }
 }
 /* Headings truncated ("Maktab Set…", and Admin's title pushed off-centre)
-   because the header row's first column was sized for a short title. */
-.screen:has(> .screen-content) .card-header-row { grid-template-columns: 1fr auto; }
+   because the header row's first column was sized for a short title.
+   V3.75.0 (item 1): the grid-template-columns line that used to sit here
+   is REMOVED. At three classes of specificity it matched every header row
+   on every card screen and forced a TWO-column grid onto headers with
+   THREE children (icon, heading, close) — Admin, Tadabbur and Haidh — so
+   the close button wrapped onto a second row, centred. Only the wrap fix
+   below was ever needed here; the two screens that want 1fr/auto (Maktab
+   Settings, css/settings.css) and auto/1fr/auto (Admin, css/admin.css)
+   carry their own id-scoped rules. */
 .screen:has(> .screen-content) .card-header-row h2 { white-space: normal; }

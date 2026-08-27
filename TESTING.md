@@ -2045,6 +2045,19 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.75.0 — Phase 1: what to look at on the device (frontend only, hard-refresh first)
+
+Cache name is `hifzhelper-v3.75.0`; the login card should show 3.75.0.
+
+1. **Admin** — icon and "Admin" together on the left, the X on the SAME row at the right (it was on its own row below, centred).
+2. **Tadabbur and Haidh** (student account) — same: the X on the header row, not stranded below. Both were broken since V3.74.2.
+3. **Sabaq Dhor card** — a juz with fewer than four complete quarters shows NO Move button at all. At four it appears as "Move Juz N to Dhor". Confirm still fires; cancel does nothing.
+4. **Teacher note pill** (Public/Teachers/Private) — visibly shorter, a flat pill not a tall track. It lands at 20px; say if you want another height.
+5. **Summary `+1`** — tap it: a small list of that cell's entries opens and the day view does NOT. Tap elsewhere: it closes. Tap the row: the day view opens as before.
+6. **Haidh failure** — if marking haidh fails, the alert now ends with the worker's reason (e.g. the role or tracking message) instead of a bare "Could not save".
+7. **History rail** (maktab day view) — each entry shows the confirming teacher's name under it. Nothing new on a student's own PJ.
+8. **Note box** — sits a clear gap below the section above it.
+
 ## V3.68.0 — delivery (i): what the harnesses CANNOT check
 
 381 automated checks cover the pool-merge logic, the routing scan and the

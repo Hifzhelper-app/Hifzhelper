@@ -35,12 +35,15 @@ const st = read('css/settings.css');
 // sizes to its content, so they capped it and never widened it — both were
 // no-ops. This asserts an explicit width, and that max-width has not crept
 // back, because that is the mistake that made it look like nothing changed.
+// V3.75.0: selector became .cb-note-box .mk-vis-switch (two classes) — the
+// height had ALSO been a no-op, losing on source order to settings.css's
+// base .switch-track. verify_v3750_phase1.mjs asserts the specificity.
 check('1: the pill sets an explicit WIDTH, not max-width',
   /\.mk-vis-switch \{[\s\S]{0,140}width: 240px;/.test(dp) && !/\.mk-vis-switch \{[\s\S]{0,140}max-width/.test(dp));
 check('1: and will not be shrunk back by the flex row it sits in',
   /\.mk-vis-switch \{[\s\S]{0,140}flex: 0 0 auto;/.test(dp));
-check('1: exactly ONE .mk-vis-switch rule — three generations had stacked up',
-  (dp.match(/^\.mk-vis-switch \{/gm) || []).length === 1, String((dp.match(/^\.mk-vis-switch \{/gm) || []).length));
+check('1: exactly ONE .mk-vis-switch rule — three generations had stacked up (V3.75.0: qualified by .cb-note-box)',
+  (dp.match(/\.mk-vis-switch \{/g) || []).length === 1, String((dp.match(/\.mk-vis-switch \{/g) || []).length));
 check('1: the thumb radius is tied to the height, so it is a pill not a circle',
   /\.mk-vis-switch \.switch-thumb \{[\s\S]{0,140}border-radius: 999px/.test(dp));
 check('1: the options cannot hold the track taller than its set height',
@@ -57,9 +60,13 @@ check('4: the numeric labels no longer strand their unit on a wrapped line',
   /#maktabSettingsBody \.form-label input\[type="number"\][\s\S]{0,140}width: auto/.test(st));
 
 // ---------- 5-6: admin ----------
-check('5: the admin header groups icon and heading left', /card-header-row card-header-row-left/.test(html));
-check('5: with an auto/1fr/auto grid, not the shared 10/70/20',
-  /\.card-header-row-left \{[\s\S]{0,80}grid-template-columns: auto 1fr auto/.test(dp));
+// V3.75.0: .card-header-row-left NEVER took effect (lost to base.css's
+// :has() rule) and is deleted; the layout is an id-scoped rule in
+// css/admin.css. These now assert THAT, and that the dead class stays gone.
+check('5: the admin header groups icon and heading left — id-scoped rule in admin.css',
+  /#screen-admin \.card-header-row \{ grid-template-columns: auto 1fr auto; \}/.test(read('css/admin.css')));
+check('5: the dead .card-header-row-left class is gone from the markup and the CSS',
+  !/class="[^"]*card-header-row-left/.test(html) && !/^\.card-header-row-left/m.test(dp));
 check('5: the close label no longer claims to exit Home',
   !/id="adminCloseBtn" aria-label="Exit to Home"/.test(html));
 check('6: the id is hidden in the list', /class="mono admin-list-id" hidden/.test(admin));
@@ -95,7 +102,10 @@ check('6: but the id is still RENDERED, so copy and search still have it',
 // ---------- 8: the peek ----------
 check('8: the badge is a BUTTON again — as a span the tap fell through to the row',
   /data-entry-peek="\$\{type\}"/.test(summary) && !/<span class="entry-count-badge">\$1<\/span>/.test(summary));
-check('8: and the tap is stopped from reaching the row', /e\.stopPropagation\(\);/.test(summary));
+// V3.75.0: the stop is on the BUTTON's own listener now — delegated on
+// document it ran after the <tr> handler and the day view opened anyway.
+check('8: and the tap is stopped from reaching the row — on the badge itself',
+  /peekBtn\.addEventListener\('click', \(e\) => \{\n\s*e\.stopPropagation\(\);/.test(summary));
 check('8: the list is read-only — no navigation from inside the panel',
   !/maktab-entry-peek[\s\S]{0,600}showScreen\(/.test(summary));
 check('8: it lists EVERY entry, including the one already on screen',
@@ -129,9 +139,12 @@ check('10: the button is on its own row spanning the grid', /\.move-to-dhor-row 
     /const fullyMoved = allUnits\.every[\s\S]{0,120}if\(fullyMoved\) return \[\]/.test(pos));
 
   check('12: the button is rendered from the juz, NOT from a row — roll-up cannot hide it',
-    /sabaqDhorMoveOptions\.map\(o =>/.test(sd) && /data-juz="\$\{o\.juz\}"/.test(sd));
-  check('12: it is shown disabled before four, with the count, rather than appearing from nowhere',
-    /o\.enabled \? '' : ' disabled'/.test(sd) && /\$\{o\.completeQuarters\} of 4 complete/.test(sd));
+    /sabaqDhorMoveOptions\.filter\(o => o\.enabled\)\.map\(o =>/.test(sd) && /data-juz="\$\{o\.juz\}"/.test(sd));
+  // V3.75.0 (item 2) REVERSED this: hidden until eligible, user's call —
+  // "nothing on screen that can't be used". The disabled state and the
+  // count were Claude's own reasoning, not the user's.
+  check('12→V3.75.0: HIDDEN before four — the render filters to enabled options',
+    /sabaqDhorMoveOptions\.filter\(o => o\.enabled\)\.map\(/.test(sd) && !/' disabled'/.test(sd));
   check('12: moving takes all four quarters', /pool\.concat\(opt\.units\)/.test(sd));
   check('11: it confirms first, naming the juz and saying it leaves Sabaq Dhor',
     /confirm\(`Move all four quarters of Juz \$\{juz\}/.test(sd) && /no longer appear in Sabaq Dhor/.test(sd));

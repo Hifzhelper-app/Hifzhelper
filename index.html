@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.74.5"></script>
+<script src="js/pwaManifest.js?v=3.75.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.74.5">
-<link rel="stylesheet" href="css/base.css?v=3.74.5">
-<link rel="stylesheet" href="css/nav.css?v=3.74.5">
-<link rel="stylesheet" href="css/journal-table.css?v=3.74.5">
-<link rel="stylesheet" href="css/components.css?v=3.74.5">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.74.5">
-<link rel="stylesheet" href="css/settings.css?v=3.74.5">
-<link rel="stylesheet" href="css/admin.css?v=3.74.5">
-<link rel="stylesheet" href="css/haidh.css?v=3.74.5">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.74.5">
-<link rel="stylesheet" href="css/sih.css?v=3.74.5">
+<link rel="stylesheet" href="css/tokens.css?v=3.75.0">
+<link rel="stylesheet" href="css/base.css?v=3.75.0">
+<link rel="stylesheet" href="css/nav.css?v=3.75.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.75.0">
+<link rel="stylesheet" href="css/components.css?v=3.75.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.75.0">
+<link rel="stylesheet" href="css/settings.css?v=3.75.0">
+<link rel="stylesheet" href="css/admin.css?v=3.75.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.75.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.75.0">
+<link rel="stylesheet" href="css/sih.css?v=3.75.0">
 </head>
 <body>
 
@@ -849,11 +849,13 @@
 
     <!-- Admin screen -->
     <section class="screen hidden" id="screen-admin">
-      <!-- V3.74.2: icon and heading together on the LEFT, close on the
-           right. The shared .card-header-row grid is 10%/70%/20%, which
-           centred the icon in its own column and pushed the heading away
-           from it; .card-header-row-left overrides that to auto/1fr/auto. -->
-      <div class="card-header-row card-header-row-left">
+      <!-- Icon and heading together on the LEFT, close on the right.
+           V3.75.0: the layout is an id-scoped rule in css/admin.css
+           (#screen-admin .card-header-row, auto/1fr/auto). The V3.74.2
+           class .card-header-row-left was deleted — base.css's :has()
+           rule always outranked it, which is why the close button had
+           been sitting on a row of its own. -->
+      <div class="card-header-row">
         <span class="card-header-icon" id="adminHeaderIcon"></span>
         <h2>Admin</h2>
         <button type="button" class="screen-close-btn" id="adminCloseBtn" aria-label="Close"></button>
@@ -1131,37 +1133,37 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.74.5"></script>
-<script src="shared/haidhRules.js?v=3.74.5"></script>
-<script src="js/icons.js?v=3.74.5"></script>
-<script src="js/customDate.js?v=3.74.5"></script>
-<script src="js/api.js?v=3.74.5"></script>
-<script src="js/logContext.js?v=3.74.5"></script>
-<script src="js/uiSwitch.js?v=3.74.5"></script>
-<script src="js/position.js?v=3.74.5"></script>
-<script src="js/auth.js?v=3.74.5"></script>
-<script src="js/home.js?v=3.74.5"></script>
-<script src="js/tajweed.js?v=3.74.5"></script>
-<script src="js/commentPrivacy.js?v=3.74.5"></script>
-<script src="js/session-timer.js?v=3.74.5"></script>
-<script src="js/journal.js?v=3.74.5"></script>
-<script src="js/maktabSummary.js?v=3.74.5"></script>
-<script src="js/maktabSettings.js?v=3.74.5"></script>
-<script src="js/maktabSetup.js?v=3.74.5"></script>
-<script src="js/maktabDay.js?v=3.74.5"></script>
-<script src="js/maktabJournal.js?v=3.74.5"></script>
-<script src="js/dhorPage.js?v=3.74.5"></script>
-<script src="js/sabaqPage.js?v=3.74.5"></script>
-<script src="js/sabaqDhorPage.js?v=3.74.5"></script>
-<script src="js/reflectionCard.js?v=3.74.5"></script>
-<script src="js/logDetailScreen.js?v=3.74.5"></script>
-<script src="js/haidhDetailScreen.js?v=3.74.5"></script>
-<script src="js/kaabaTracker.js?v=3.74.5"></script>
-<script src="js/juzTrackerScreen.js?v=3.74.5"></script>
-<script src="js/sihScreen.js?v=3.74.5"></script>
-<script src="js/settingsScreen.js?v=3.74.5"></script>
-<script src="js/adminPage.js?v=3.74.5"></script>
-<script src="js/versionStamp.js?v=3.74.5"></script>
-<script src="js/app.js?v=3.74.5"></script>
+<script src="shared/data.js?v=3.75.0"></script>
+<script src="shared/haidhRules.js?v=3.75.0"></script>
+<script src="js/icons.js?v=3.75.0"></script>
+<script src="js/customDate.js?v=3.75.0"></script>
+<script src="js/api.js?v=3.75.0"></script>
+<script src="js/logContext.js?v=3.75.0"></script>
+<script src="js/uiSwitch.js?v=3.75.0"></script>
+<script src="js/position.js?v=3.75.0"></script>
+<script src="js/auth.js?v=3.75.0"></script>
+<script src="js/home.js?v=3.75.0"></script>
+<script src="js/tajweed.js?v=3.75.0"></script>
+<script src="js/commentPrivacy.js?v=3.75.0"></script>
+<script src="js/session-timer.js?v=3.75.0"></script>
+<script src="js/journal.js?v=3.75.0"></script>
+<script src="js/maktabSummary.js?v=3.75.0"></script>
+<script src="js/maktabSettings.js?v=3.75.0"></script>
+<script src="js/maktabSetup.js?v=3.75.0"></script>
+<script src="js/maktabDay.js?v=3.75.0"></script>
+<script src="js/maktabJournal.js?v=3.75.0"></script>
+<script src="js/dhorPage.js?v=3.75.0"></script>
+<script src="js/sabaqPage.js?v=3.75.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.75.0"></script>
+<script src="js/reflectionCard.js?v=3.75.0"></script>
+<script src="js/logDetailScreen.js?v=3.75.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.75.0"></script>
+<script src="js/kaabaTracker.js?v=3.75.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.75.0"></script>
+<script src="js/sihScreen.js?v=3.75.0"></script>
+<script src="js/settingsScreen.js?v=3.75.0"></script>
+<script src="js/adminPage.js?v=3.75.0"></script>
+<script src="js/versionStamp.js?v=3.75.0"></script>
+<script src="js/app.js?v=3.75.0"></script>
 </body>
 </html>

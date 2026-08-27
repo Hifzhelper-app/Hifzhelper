@@ -59,7 +59,10 @@ async function maktabMarkHaidhFlow(studentId, onDone, date){
   try{
     await apiSetAttendanceFor(studentId, target, status);
   } catch(e){
-    alert('Could not save the attendance mark.');
+    // V3.75.0 (item 6): show the worker's real error. apiFetch already
+    // throws body.error as e.message; a fixed sentence here threw that
+    // away — which is why the 2026-08-26 haidh failure was unreadable.
+    alert('Could not save the attendance mark: ' + ((e && e.message) || 'unknown error'));
     return;
   }
   if(onDone) await onDone();
@@ -72,7 +75,7 @@ async function maktabToggleHaidh(studentId, date, currentlyMarked, onDone){
     try{
       await apiClearAttendanceFor(studentId, date);
     } catch(e){
-      alert('Could not clear the haidh mark.');
+      alert('Could not clear the haidh mark: ' + ((e && e.message) || 'unknown error'));   // V3.75.0 item 6
       return;
     }
     if(onDone) await onDone();
