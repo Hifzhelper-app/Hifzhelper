@@ -111,6 +111,21 @@
 /* Inactive students: greyed-out name instead of a separate "Inactive"
    text label — keeps the row compact (V3.4.1). */
 .admin-list-name.inactive { color: var(--color-ink-faint); }
+/* V3.77.0 (j): a role chip on teaching and admin rows. After (j) the list
+   holds a teaching row for every teacher alongside her student row, with
+   the same name plus "(Teacher)" — the chip is the at-a-glance signal. A
+   plain student row carries none, so the common case stays quiet. */
+.admin-role-chip {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 button.secondary.danger {
   color: var(--color-error);

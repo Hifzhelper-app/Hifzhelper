@@ -119,8 +119,13 @@ async function updateLog(env, table, id, studentId, updates, authId, contentFiel
   if (!row) return { error: 'Not found', status: 404 };
   if (row.student_id !== studentId) return { error: 'Not authorized', status: 403 };
 
+  // V3.77.0 (j, rode along as scheduled 2026-08-17): a bad date used to be
+  // BOTH stored (through the contentFields branch below) AND silently skip
+  // the attendance sync (dateChanging false). Refuse it instead.
+  if ('date' in updates && !isValidDate(updates.date)) return { error: 'date must be YYYY-MM-DD', status: 400 };
+
   const oldDate = row.date;
-  const dateChanging = trackAttendance && 'date' in updates && isValidDate(updates.date) && updates.date !== oldDate;
+  const dateChanging = trackAttendance && 'date' in updates && updates.date !== oldDate;
 
   const setClauses = [];
   const values = [];

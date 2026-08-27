@@ -20,13 +20,13 @@ numbers; headings are unique, search the text.
 | --- | --- | --- | --- |
 | **1** | **DEPLOY AND VERIFY V3.68.0 → V3.71.0 + the catch-up zip** | **Deployed 2026-08-17. Reads CONFIRMED in production; the pool write is NOT yet confirmed** | **Nothing below can be trusted until this is done.** Worker FIRST (V3.68.0 moved the Dhor pool merge server-side), then frontend, then hard-refresh. V3.68.0 shipped without its cache bump, so a warm-cache browser may never have run its JavaScript at all — that is the likely cause of the "logged for Umme, not in her history" report. Manual checklist in `TESTING.md`. |
 | ~~2~~ | ~~**Run the admin PJ discard**~~ | **DONE — 2026-08-17, verified** | Ran in the D1 console (no local clone, so the wrangler `--file` route did not apply). Removed 21 rows for `ABCDEFG`: 6 sabaq, 4 sabaq dhor, 3 dhor, 7 attendance (7 not 13 because attendance is per DATE, not per log — several logs shared days), 1 position. `reflections` and `plans` were already 0. Profile fields cleared, and the stray haidh mark and known-wrong stored position went with the attendance and position rows. Verified all zeros; account still `ABCDEFG / ADMIN-01 / admin / 1` with `pin_hash` untouched. **Two non-bugs to expect:** ADMIN-01 still shows in the maktab summary with dashes (the roster filter is part of (j)), and its Dhor prepop reports nothing set up (correct — the pool is empty by instruction). |
-| **3** | **(j) Account separation** — *ARCHITECTURE* | **"start building (j)"** | BUILD-READY — every question answered. Plan is in the (j) section: roster filter, create-teaching-profile, switcher, `updateLog` date validation riding along. No migration. Testing stays paused until this lands. |
+| ~~3~~ | ~~**(j) Account separation**~~ | **BUILT — V3.77.0, 2026-08-27** | Roster filter, create-teaching-profile (`<id>TEACHER`, no PIN until first login), the device-local switcher with PIN every time, `updateLog` date validation. No migration. **Testing resumes.** Design and plan retained in the (j) sections below as the record. |
 | **4** | **Shared maktab timezone** | **"start building"** | DECIDED: a per-maktab setting, the maktab settings screen's 5th. Unbuilt. One sub-decision left — display in the viewer's local time or the maktab's everywhere. |
-| **5** | **(k) Merged journal** | (j) | Union at read time with provenance. |
+| **5** | **(k) Merged journal** | "start building (k)" — (j) has landed | Union at read time with provenance. Its own decisions still to make: how provenance is shown; the maktab-only filter. |
 | **6** | **(l) Archive** | (k) | 60-day physical copy + re-sync on maktab edit AND delete. |
 | **7** | **Settings Haidh heading tweaks** | **"start building"** | Three changes, fully specced. **Carries a trap** — deleting the hint element without its two JS writers reproduces the V3.51.2 blank-fields bug. Still worth doing: Settings is hidden from teachers but live for students. |
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
-| **10** | **The list of eleven — remaining: groups, search, tags (+ timezone)** | (j) first, then "start building 3" | Phases 1 and 2 shipped (V3.75.0, V3.76.0). Revised plan and the answers given are in the section below (search "The list of eleven"). One question left: timezone display. |
+| **10** | **The list of eleven — remaining: groups, search, tags (+ timezone)** | "start building 3" — (j) has landed | Phases 1 and 2 shipped (V3.75.0, V3.76.0). Revised plan and the answers given are in the section below (search "The list of eleven"). One question left: timezone display. |
 | **9** | **Reword the empty-pool message** | — | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
@@ -71,8 +71,7 @@ groups and the roster filter are one pass over that screen instead of two.
 
 **Plan as REVISED 2026-08-27 (user's), three deliveries, in order:**
 1. **Phase 2** — item 5. **BUILT V3.76.0.**
-2. **(j) Account separation** — worker + frontend, no migration. Resumes
-   testing. Next: "start building (j)".
+2. **(j) Account separation** — **BUILT V3.77.0.** Testing resumes.
 3. **Groups + tags + shared timezone** — every schema change in ONE
    migration set and one console session: items 8, 9, 7 and the timezone
    setting (a fifth `maktab_settings` column). Tags' destructive step (clear
@@ -785,7 +784,7 @@ it is server-scoped to her own rows — `js/maktabJournal.js:28` sends no
 if that scoping ever changes the suite fails and the item must come off her
 nav.
 
-### (j) — answers so far and what they imply (2026-08-17, NOT BUILT)
+### (j) — answers so far and what they imply (2026-08-17) — BUILT V3.77.0, 2026-08-27
 
 **ANSWERED: a teaching account NEVER gets a personal journal.** User,
 2026-08-17: *"no the teaching acc does not get a pj — user will have
@@ -959,7 +958,7 @@ is not derived from anyone's PJ. So it presumably keeps `ABCDEFG` and simply
 loses its journal, rather than becoming `...TEACHER`. Confirm when (j)
 starts; it only matters for consistency of the id convention.
 
-### (j) build plan — the whole of it, in order
+### (j) build plan — the whole of it, in order — BUILT V3.77.0 (steps 1–4; step 5 was run 2026-08-17). ADMIN-01 keeps `ABCDEFG`.
 
 1. **Roster filter.** `handleMaktabSummary` (`worker/src/maktabLog.js:62`)
    gains `AND role = 'student'`. Without it every teaching account appears in

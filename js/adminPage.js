@@ -44,6 +44,7 @@ function renderAdminUsersList(){
              still reveals it — it is simply not on screen by default. -->
         <span class="mono admin-list-id" hidden>${u.id}</span>
         <span class="admin-list-name ${u.active ? '' : 'inactive'}">${u.name}</span>
+        ${u.role !== 'student' ? `<span class="admin-role-chip">${u.role}</span>` : ''}
       </button>
       <button type="button" class="icon-btn" data-copy-url="${u.id}" aria-label="Copy personal URL"></button>
       ${canShare ? `<button type="button" class="icon-btn" data-share-url="${u.id}" aria-label="Share personal URL"></button>` : ''}
@@ -77,9 +78,25 @@ function renderAdminUsersList(){
 document.getElementById('admin_search').addEventListener('input', renderAdminUsersList);
 
 // ---------- user detail card ----------
+// V3.77.0 (j): the teaching id is the student's id + 'TEACHER' (worker
+// convention, admin.js). The list is the only place both rows are visible,
+// so "has a teaching profile" is computed here from it — nothing in the
+// data links the two rows.
+const TEACHING_ID_SUFFIX = 'TEACHER';
+function teachingProfileFor(studentId){
+  return adminUsers.find(u => u.id === studentId + TEACHING_ID_SUFFIX) || null;
+}
+function isTeachingId(id){ return typeof id === 'string' && id.endsWith(TEACHING_ID_SUFFIX) && id.length > TEACHING_ID_SUFFIX.length; }
+
 function openUserCard(id){
   const user = adminUsers.find(u => u.id === id);
   if(!user) return;
+  // V3.77.0 (j): the create action is offered ONLY on an active student row
+  // that has no teaching profile yet — never on a teaching account, never
+  // twice (both also refused by the worker).
+  const teaching = user.role === 'student' ? teachingProfileFor(user.id) : null;
+  const canCreateTeaching = user.role === 'student' && user.active && !teaching;
+  const derivedFrom = isTeachingId(user.id) ? adminUsers.find(u => u.id === user.id.slice(0, -TEACHING_ID_SUFFIX.length)) : null;
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -109,8 +126,29 @@ function openUserCard(id){
       <button class="secondary" id="uc_reset_pin">Reset PIN</button>
       <button class="secondary danger" id="uc_delete">Delete user</button>
     </div>
+    ${canCreateTeaching ? `<div class="modal-actions"><button class="secondary" id="uc_create_teaching">Create teaching profile</button></div>` : ''}
+    ${teaching ? `<div class="form-hint" id="uc_teaching_note">Teaching profile: <span class="mono">${teaching.id}</span>${teaching.active ? '' : ' (inactive)'}</div>` : ''}
+    ${derivedFrom ? `<div class="form-hint" id="uc_derived_note">Teaching profile of ${derivedFrom.name} (<span class="mono">${derivedFrom.id}</span>)</div>` : ''}
   </div>`;
   document.body.appendChild(overlay);
+
+  // V3.77.0 (j): create the teaching profile from this student's row.
+  const createBtn = document.getElementById('uc_create_teaching');
+  if(createBtn){
+    createBtn.addEventListener('click', async () => {
+      const errEl = document.getElementById('uc_error');
+      errEl.textContent = '';
+      if(!confirm(`Create a teaching profile for ${user.name}? Her teaching ID will be ${user.id}${TEACHING_ID_SUFFIX}. She sets its PIN on first login.`)) return;
+      try{
+        const result = await apiAdminCreateTeachingProfile(user.id);
+        overlay.remove();
+        await loadAdminUsers();
+        showBanner(`Teaching profile created: ${result.id}`);
+      } catch(e){
+        errEl.textContent = "Couldn't create the teaching profile: " + e.message;
+      }
+    });
+  }
 
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
   overlay.querySelector('.close-btn').addEventListener('click', () => overlay.remove());

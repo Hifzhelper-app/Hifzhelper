@@ -147,6 +147,8 @@ async function bootApp(){
     // verified profile is known, remember its ID even if that login happened
     // before V3.8.1's apiLogin() persistence existed.
     rememberLoginId(profile.id);
+    // V3.77.0 (j): this account is now one the device knows, for the switcher.
+    rememberKnownAccount({ id: profile.id, name: profile.name, role: profile.role });
     currentUser = { name: profile.name || '', role: profile.role || 'student', trackHaidh: !!profile.track_haidh };
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();

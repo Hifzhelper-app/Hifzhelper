@@ -136,6 +136,44 @@ export async function handleDeleteUser(request, env, auth) {
 // PIN or deactivate action instead of routing through email. force:true
 // bypasses surfacing the match and auto-numbers the new record's name to
 // keep it distinguishable (same helper/behavior as self-registration).
+// POST /admin/create-teaching-profile — body: { id } (a STUDENT's id).
+// V3.77.0 (j) Account separation. A person who teaches holds TWO unlinked
+// accounts: her PJ (student) account and a teaching account with no
+// journal at all. The teaching id is DERIVED — PJ id + 'TEACHER' — so she
+// has one code to remember (user, 2026-08-17). The row starts with no PIN;
+// she sets it on first login exactly as every student does (separate PIN,
+// user's call). Nothing links the two rows in the data: the suffix is a
+// convention, not a foreign key, and the worker never compares them.
+// Guards: source must exist, be active, and be a student; the derived id
+// must not exist yet; a teaching account cannot be derived from.
+export const TEACHING_ID_SUFFIX = 'TEACHER';
+export function teachingIdFor(studentId) { return String(studentId) + TEACHING_ID_SUFFIX; }
+export async function handleCreateTeachingProfile(request, env, auth) {
+  const denied = requireAdmin(auth);
+  if (denied) return denied;
+  let body;
+  try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
+  const sourceId = body && body.id ? String(body.id).trim() : '';
+  if (!sourceId) return { error: 'id is required', status: 400 };
+
+  const source = await env.DB.prepare('SELECT id, name, role, active FROM students WHERE id = ?').bind(sourceId).first();
+  if (!source) return { error: 'Not found', status: 404 };
+  if (source.role !== 'student') return { error: 'A teaching profile is created from a STUDENT account', status: 400 };
+  if (!source.active) return { error: 'That student account is inactive', status: 400 };
+
+  const id = teachingIdFor(sourceId);
+  const existing = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(id).first();
+  if (existing) return { error: `A teaching profile already exists for ${source.name} (${id})`, status: 409 };
+
+  const name = `${source.name} (Teacher)`;
+  const today = new Date().toISOString().slice(0, 10);
+  await env.DB.prepare(
+    'INSERT INTO students (id, name, role, created_date, active) VALUES (?, ?, ?, ?, 1)'
+  ).bind(id, name, 'teacher', today).run();
+
+  return { data: { id, name, role: 'teacher', derived_from: sourceId } };
+}
+
 export async function handleRegisterStudent(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;

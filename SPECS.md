@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.77.0** — (j) Account separation — built to the 2026-08-17 plan
 - **V3.76.2** — The teacher's decision on a gap refusal: haidh anyway / absent / adjust, in the maktab calendar
 - **V3.76.1** — Haidh: a future prediction no longer vetoes a real mark; a confirmed mark clears superseded predictions
 - **V3.76.0** — Phase 2: the maktab haidh calendar — built to the spec below
@@ -113,6 +114,20 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.77.0 (2026-08-27): (j) Account separation — built to the 2026-08-17 plan
+
+The design, the answers and the plan are in `TODO.md` (the ARCHITECTURE section, "(j) — answers so far", "(j) build plan"); kept there as the record. What was built, against each step:
+
+| Plan step | Built as |
+| --- | --- |
+| 1. Roster filter | `AND role = 'student'` on the summary roster AND the derived-attendance roster |
+| 2. Create-teaching-profile, admin-only, from a student row, id = PJ id + `TEACHER`, no PIN, no journal columns, guarded against twice / from a teaching account | `POST /admin/create-teaching-profile`; name `<name> (Teacher)` (Claude's choice for "derived from the student's" — the auth band and greeting then say which account she is in) |
+| 3. The switcher — pre-filled id, PIN prompt | known-accounts store (id/name/role only), chips screen, menu item, forget per chip |
+| 4. `updateLog` date validation | refuses a malformed date with 400 |
+| 5. Run the discard SQL | done 2026-08-17 |
+
+Settled at build time, as the TODO left open: **ADMIN-01 keeps `ABCDEFG`** (the create action refuses an admin source; it is not derived from anyone's PJ). The admin list gained a role chip rather than grouping teaching rows under their student.
 
 ## Done — V3.76.2 (2026-08-27): the teacher's decision on a gap refusal
 

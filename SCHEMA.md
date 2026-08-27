@@ -17,7 +17,7 @@ human-readable reference for the same thing.
 |---|---|---|
 | `id` | TEXT (PK) | Random code, not sequential (e.g. `K7M2QX`). Used to log in. |
 | `name` | TEXT | Display name. |
-| `role` | TEXT | `student` or `teacher`. |
+| `role` | TEXT | `student` / `teacher` / `admin` (`admin` added in migration 0007). **V3.77.0 (j), no migration:** a teaching account is a row with role `teacher` (or `admin`) and NO journal — the PJ screens are gated off it and the maktab roster (`handleMaktabSummary`, derived attendance) selects `role = 'student'` only. A person who teaches AND does hifz holds two unlinked rows. **Convention, not a key:** the teaching id is the PJ id + `TEACHER` (`K7M2QX` → `K7M2QXTEACHER`), created by `POST /admin/create-teaching-profile`; nothing in the data links the two rows and the worker never compares them. ADMIN-01 keeps its own id (`ABCDEFG`). |
 | `pin_hash` | TEXT | Set on first login, not at creation. Never store the raw PIN — this is `salt:hash`, see `worker/src/auth.js`. |
 | `created_date` | TEXT | `YYYY-MM-DD`. |
 | `active` | INTEGER | `1`/`0`. Disable without deleting history. |

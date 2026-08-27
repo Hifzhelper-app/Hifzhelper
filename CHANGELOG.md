@@ -26,6 +26,28 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.77.0 — (j) Account separation (2026-08-27)
+
+**Files touched:** `worker/src/maktabLog.js`, `worker/src/maktabAttendance.js`, `worker/src/logHelpers.js`, `worker/src/admin.js`, `worker/src/index.js`, `js/api.js`, `js/app.js`, `js/auth.js`, `js/adminPage.js`, `js/icons.js`, `css/admin.css`, `css/components.css`, `index.html`, `js/sw.js`, `tests/verify_v3770_account_separation.mjs` (new), `tests/verify_e1.mjs`, `tests/verify_v3742_ui.mjs`, `SCHEMA.md`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** **No migration.** The ADMIN-01 discard (step 5 of the plan) was run on 2026-08-17; nothing to run now.
+
+**Built to the plan recorded on 2026-08-17, in its order.**
+
+**1. The roster filter.** `handleMaktabSummary` and the derived-attendance roster both select `role = 'student'`. Teaching and admin rows are rows in the same table with no journal; without the filter every one of them sat in the summary as a girl to be logged against — which is exactly how ADMIN-01 had been appearing with dashes. It no longer does.
+
+**2. Create teaching profile.** `POST /admin/create-teaching-profile { id }`, admin-only. From an active student row it inserts `<id>TEACHER`, role `teacher`, name `<name> (Teacher)`, active, **no PIN** — she sets it on first login through the create-PIN screen every student takes, so the separate PIN (user's call) costs no mechanism. Refused: a teaching or admin source, an inactive source, a second attempt (409, naming the existing id), an unknown id. Nothing in the data links the two rows; the suffix is a convention the worker never compares. On the admin screen: a role chip on teacher/admin rows (student rows stay quiet); the student's card gets **Create teaching profile** only when active and without one; a student who has one shows its id instead; a teaching row shows whose it is and never offers the action.
+
+**3. The switcher.** Device-local, PIN always, as agreed on 2026-08-16. The device records the accounts that have signed in on it — id, name, role, never a PIN or token (a harness feeds a PIN in and proves it is dropped). **Switch account** sits in the menu between Refresh and Log out: it clears the token, sets a session flag and reloads; the login router sees the flag and shows the accounts as chips. Tapping a chip makes that id the remembered one and goes straight to its PIN screen — or to create-PIN on a teaching account's first login. A × on each chip forgets it on this device. "Use another ID" on the PIN screens now offers the chips first when the device knows any, and the switch screen's own "Use another ID" goes to the plain ID+PIN screen.
+
+**4. `updateLog` date validation.** A malformed date used to be both stored and to silently skip the attendance sync. It is refused (400) now.
+
+**Kept deliberately:** `handleSave`'s `student_id === auth.id` guard in `maktabLog.js` — an authorization check, defence in depth, unreachable through the UI now that teaching rows are off the roster; asserted present so a tidy-up does not remove it.
+
+**Verification: 758 passed, 0 failed across 24 harnesses** (43 new). Two old assertions realigned: the e1 roster expectation (it had counted the teacher and admin rows as students, which was the bug) and the V3.74.2 menu-tail check.
+
+**Testing resumes with this delivery**, per the 2026-08-17 note that paused it pending (j).
+
+---
+
 ## V3.76.2 — The teacher's decision on a gap refusal (2026-08-27)
 
 **Files touched:** `worker/src/attendance.js`, `worker/src/utils.js`, `worker/src/index.js`, `js/api.js`, `js/haidhDetailScreen.js`, `index.html`, `css/haidh.css`, `js/sw.js`, `tests/verify_v3762_haidh_decision.mjs` (new), `tests/verify_v3760_phase2.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** No migration.

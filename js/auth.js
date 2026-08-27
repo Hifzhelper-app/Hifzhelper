@@ -120,6 +120,7 @@ function visibleNavGroups(){
 
   const g4 = [
     { id: 'refresh', label: 'Refresh', icon: 'refresh', raw: 'refreshBtn' },
+    { id: 'switchAccount', label: 'Switch account', icon: 'switchAccount', raw: 'switchAccountBtn' },   // V3.77.0 (j)
     { id: 'logout', label: 'Log out', icon: 'logout', raw: 'logoutBtn' },
   ];
   // g3 (the PJ screens) folds into the personal-tools group; a student
@@ -214,6 +215,14 @@ function setupAuthBandAndDropdown(){
     clearToken();
     location.reload();
   });
+  // V3.77.0 (j): log out, then land on the switcher instead of the PIN
+  // screen for the account just left. The token goes first — the switcher
+  // never carries a session across accounts.
+  document.getElementById('switchAccountBtn').addEventListener('click', () => {
+    clearToken();
+    requestAccountSwitch();
+    location.reload();
+  });
   document.getElementById('refreshBtn').addEventListener('click', () => {
     closeAuthDropdown();
     location.reload();
@@ -253,7 +262,7 @@ const CREATE_PIN_IDS = ['cr_pin_1','cr_pin_2','cr_pin_3','cr_pin_4'];
 const CONFIRM_PIN_IDS = ['cf_pin_1','cf_pin_2','cf_pin_3','cf_pin_4'];
 
 // ---------- screen switching ----------
-const ALL_LOGIN_SCREENS = ['loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen'];
+const ALL_LOGIN_SCREENS = ['loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen','loginScreenSwitch'];   // loginScreenSwitch: V3.77.0 (j)
 function hideAllLoginScreens(){
   ALL_LOGIN_SCREENS.forEach(id => { document.getElementById(id).classList.add('hidden'); });
 }
@@ -274,6 +283,13 @@ let activeLoginId = null;
 // fetch it depends on); a missing/unknown/inactive ID still falls back to the
 // plain ID+PIN screen.
 async function routeToLoginScreen(){
+  // V3.77.0 (j): "Switch account" from the menu reloads with this flag set —
+  // show the device's known accounts before anything else. Consumed on read
+  // so a plain refresh afterwards routes normally.
+  if(consumeAccountSwitchRequest() && getKnownAccounts().length){
+    showSwitchScreen();
+    return;
+  }
   const pathId = getPathLoginId();
   const candidateId = pathId || getRememberedLoginId();
   if(candidateId){
@@ -327,13 +343,68 @@ function showRegisterScreen(){
 
 document.getElementById('showRegisterBtn').addEventListener('click', showRegisterScreen);
 document.getElementById('showLoginBtn').addEventListener('click', routeToLoginScreen);
+
+// ---------- V3.77.0 (j): the switcher ----------
+// Device-local, PIN always (agreed 2026-08-16). A chip per account that has
+// signed in here; tapping it makes that id the remembered one and routes to
+// the PIN screen — the same personal/create-PIN screens every login uses.
+// A teacher who also does hifz therefore moves between her two unlinked
+// accounts with one tap and four digits, never typing an id.
+function showSwitchScreen(){
+  hideAllLoginScreens();
+  renderSwitchAccountList();
+  document.getElementById('loginScreenSwitch').classList.remove('hidden');
+}
+function renderSwitchAccountList(){
+  const host = document.getElementById('switchAccountList');
+  const accounts = getKnownAccounts();
+  if(!accounts.length){
+    host.innerHTML = '<div class="switch-account-empty">No accounts have signed in on this device yet.</div>';
+    return;
+  }
+  host.innerHTML = accounts.map(a => `
+    <div class="switch-account-row">
+      <button type="button" class="switch-account-chip" data-switch-id="${a.id}">
+        <span class="switch-account-name">${escapeHtmlForSwitch(a.name)}</span>
+        ${a.role !== 'student' ? `<span class="switch-account-role">${escapeHtmlForSwitch(a.role)}</span>` : ''}
+      </button>
+      <button type="button" class="icon-btn switch-account-forget" data-forget-id="${a.id}" aria-label="Forget ${escapeHtmlForSwitch(a.name)} on this device">${iconHtml('close')}</button>
+    </div>
+  `).join('');
+  host.querySelectorAll('[data-switch-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.switchId;
+      rememberLoginId(id);
+      replaceUrlWithLoginId(id);
+      routeToLoginScreen();   // lookup → PIN screen (or create-PIN on a teaching account's first login)
+    });
+  });
+  host.querySelectorAll('[data-forget-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.forgetId;
+      forgetKnownAccount(id);
+      if(getRememberedLoginId() === id) forgetRememberedLoginId();
+      renderSwitchAccountList();
+    });
+  });
+}
+function escapeHtmlForSwitch(v){ const d = document.createElement('span'); d.textContent = v == null ? '' : String(v); return d.innerHTML; }
+
+// "Use another ID" from the PIN screens: with known accounts on the device,
+// offer them first; otherwise the plain ID+PIN screen as before.
 function switchLoginAccount(){
   clearToken();
   forgetRememberedLoginId();
+  if(getKnownAccounts().length){
+    showSwitchScreen();
+    return;
+  }
   window.location.replace('/');
 }
 document.getElementById('personalSwitchAccountBtn').addEventListener('click', switchLoginAccount);
 document.getElementById('createPinSwitchAccountBtn').addEventListener('click', switchLoginAccount);
+// From the switch screen, the plain ID+PIN screen is one link away.
+document.getElementById('switchUseAnotherIdBtn').addEventListener('click', () => { window.location.replace('/'); });
 
 // ---------- fallback screen: ID + PIN, auto-submits on the 4th PIN digit ----------
 setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {

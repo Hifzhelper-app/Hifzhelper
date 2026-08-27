@@ -132,7 +132,7 @@ export async function handleMaktabAttendance(request, env, auth) {
   const isMaktabDay = maktabDays.includes(date);
 
   const { results: students } = await env.DB.prepare(
-    'SELECT id, haidh_ruling FROM students WHERE active = 1'
+    'SELECT id, haidh_ruling FROM students WHERE active = 1 AND role = \'student\''   // V3.77.0 (j): same roster rule as the summary
   ).all();
   const logged = await loadLoggedPairs(env);
   const { results: haidhRows } = await env.DB.prepare(

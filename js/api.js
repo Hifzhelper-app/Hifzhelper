@@ -37,6 +37,35 @@ function forgetRememberedLoginId(){
   try{ localStorage.removeItem(REMEMBERED_ID_KEY); } catch(e){ /* nothing else to clear */ }
 }
 
+// V3.77.0 (j): the accounts that have SIGNED IN on this device — id, name,
+// role. Never a PIN, never a token: the switcher pre-fills the id and asks
+// for the PIN every time (maktab devices get shared). Device-local, no
+// endpoint, nothing links the accounts in the data. "Forget" removes one.
+const KNOWN_ACCOUNTS_KEY = 'hh_known_accounts';
+function getKnownAccounts(){
+  try{
+    const list = JSON.parse(localStorage.getItem(KNOWN_ACCOUNTS_KEY) || '[]');
+    return Array.isArray(list) ? list.filter(a => a && typeof a.id === 'string' && a.id) : [];
+  } catch(e){ return []; }
+}
+function rememberKnownAccount(account){
+  if(!account || !account.id) return;
+  const entry = { id: String(account.id), name: String(account.name || account.id), role: String(account.role || 'student') };
+  const list = getKnownAccounts().filter(a => a.id !== entry.id);
+  list.unshift(entry);   // most recent first
+  try{ localStorage.setItem(KNOWN_ACCOUNTS_KEY, JSON.stringify(list.slice(0, 12))); } catch(e){ /* switcher degrades to the plain ID screen */ }
+}
+function forgetKnownAccount(id){
+  try{ localStorage.setItem(KNOWN_ACCOUNTS_KEY, JSON.stringify(getKnownAccounts().filter(a => a.id !== id))); } catch(e){ /* nothing else to clear */ }
+}
+// The dropdown's "Switch account" reloads into the switcher; this flag is
+// how the login router knows. sessionStorage: it must not survive the tab.
+const SWITCH_FLAG_KEY = 'hh_switch_accounts';
+function requestAccountSwitch(){ try{ sessionStorage.setItem(SWITCH_FLAG_KEY, '1'); } catch(e){} }
+function consumeAccountSwitchRequest(){
+  try{ const v = sessionStorage.getItem(SWITCH_FLAG_KEY); sessionStorage.removeItem(SWITCH_FLAG_KEY); return v === '1'; } catch(e){ return false; }
+}
+
 // One shared interpretation of the current URL for auth.js and app.js.
 // Existing home-screen installs may continue opening /index.html even after
 // the manifest changes to /, so both forms deliberately mean "no ID in the
@@ -190,6 +219,7 @@ function apiSaveProfile(profile){ return apiFetch('/profile', { method: 'POST', 
 function apiAdminListUsers(){ return apiFetch('/admin/users'); }
 function apiAdminResetPin(id){ return apiFetch('/admin/reset-pin', { method: 'POST', body: JSON.stringify({ id }) }); }
 function apiAdminChangeRole(id, role){ return apiFetch('/admin/change-role', { method: 'POST', body: JSON.stringify({ id, role }) }); }
+function apiAdminCreateTeachingProfile(id){ return apiFetch('/admin/create-teaching-profile', { method: 'POST', body: JSON.stringify({ id }) }); }   // V3.77.0 (j)
 function apiAdminRegisterStudent(name, whatsapp_number, force){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force }) }); }
 function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminDeleteUser(id){ return apiFetch('/admin/users?id=' + encodeURIComponent(id), { method: 'DELETE' }); }

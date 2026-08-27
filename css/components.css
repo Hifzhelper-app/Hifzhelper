@@ -21,6 +21,42 @@
   border-color: var(--color-accent);
 }
 
+/* V3.77.0 (j): the switch-account chips. One row per known account: name,
+   a small role tag for non-students, and a forget (×) on the right. */
+.switch-account-list { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-md); }
+.switch-account-row { display: flex; align-items: center; gap: var(--space-sm); }
+.switch-account-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  background: var(--color-surface, #fff);
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+.switch-account-chip .switch-account-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.switch-account-chip .switch-account-role {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  color: var(--color-ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.switch-account-forget { flex: 0 0 auto; }
+.switch-account-forget svg { width: 16px; height: 16px; }
+.switch-account-empty { font-size: 13px; color: var(--color-ink-faint); }
+
 .login-links {
   display: flex;
   justify-content: space-between;

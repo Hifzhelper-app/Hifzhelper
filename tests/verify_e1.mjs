@@ -53,7 +53,12 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   check('summary: student → 403', s403.status === 403);
 
   const r = (await handleMaktabSummary(get(`date=${TODAY}`), env, TCH2)).data;
-  check('roster: active only, ordered by name', r.students.length === 5 && r.students[0].name === 'Admin One' && !r.students.find(x => x.id === 'OLD1'));
+  // V3.77.0 (j): STUDENTS only — the teaching and admin rows (TCH1, TCH2,
+  // ADM1) no longer appear as girls to be logged against. The fixture has
+  // exactly two active students.
+  check('roster: active STUDENTS only, ordered by name (teaching/admin rows excluded — V3.77.0)',
+    r.students.length === 2 && r.students[0].name === 'Amina' && r.students[1].name === 'Zayd'
+    && !r.students.find(x => x.id === 'OLD1') && !r.students.find(x => ['TCH1','TCH2','ADM1'].includes(x.id)));
   check('roster: id+name+mushaf+track_haidh only (no whatsapp/pin leakage)', Object.keys(r.students[0]).sort().join(',') === 'id,mushaf,name,track_haidh');
   check('date filter: only today rows', r.sabaq.length === 2 && r.dhor.length === 1 && r.sabaq_dhor.length === 0);
   check('rows carry student_id for grouping', r.sabaq.every(x => x.student_id) && r.dhor[0].student_id === 'STU2');

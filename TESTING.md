@@ -2045,6 +2045,18 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.77.0 — (j) Account separation (DEPLOY THE WORKER FIRST, then frontend, hard-refresh)
+
+Cache name is `hifzhelper-v3.77.0`; the login card should show 3.77.0. No migration; the ADMIN-01 discard was run on 17 Aug.
+
+1. **Summary** (as ADMIN-01): ADMIN-01 no longer appears as a student row. Only real students, alphabetical.
+2. **Admin list**: ADMIN-01's row carries an `admin` chip; student rows carry none.
+3. **Create a teaching profile**: open a student who teaches (say Umme) → **Create teaching profile** → confirm. Banner names the new id (`<her id>TEACHER`); the list now has "Umme (Teacher)" with a `teacher` chip. Open Umme again: the button is gone, her card notes the teaching id. Open the teaching row: it names whose it is, no button.
+4. **Her first teaching login**: from the menu → **Switch account** → the chips (this device knows only the accounts that have signed in here, so the new one is not there yet) → **Use another ID** → type the teaching id → the create-PIN screen. Set a PIN. She lands on the summary; the menu has no PJ items.
+5. **Switch account** now shows both her chips, the teaching one tagged `teacher`. Tap the student chip → PIN screen for it (PIN asked every time). Tap × on a chip → gone from this device only.
+6. **The teaching account has no journal**: no Summary/Detail/Tadabbur/Settings/Haidh in its menu; the student row is unchanged.
+7. **updateLog**: not reachable from the UI (the date pickers only produce valid dates) — worker-tested.
+
 ## V3.76.2 — the teacher's decision bar (DEPLOY THE WORKER FIRST, then frontend, hard-refresh)
 
 Cache name is `hifzhelper-v3.76.2`; the login card should show 3.76.2.

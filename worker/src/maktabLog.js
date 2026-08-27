@@ -60,7 +60,10 @@ async function handleMaktabSummary(request, env, auth) {
   // V3.61.0: + track_haidh — haidh controls render ONLY for students
   // who opted in (Settings), same flag that gates the PJ's Haidh nav.
   const students = (await env.DB.prepare(
-    'SELECT id, name, mushaf, track_haidh FROM students WHERE active = 1 ORDER BY name'
+    // V3.77.0 (j): teaching accounts are rows in this table with no journal
+    // — without the role filter every one of them would sit in the summary
+    // as a student to be logged against (ADMIN-01 did, with dashes).
+    'SELECT id, name, mushaf, track_haidh FROM students WHERE active = 1 AND role = \'student\' ORDER BY name'
   ).all()).results;
 
   async function dayRows(table, cfg) {
