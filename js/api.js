@@ -239,6 +239,12 @@ function apiClearAttendanceFor(studentId, date){
 function apiSetAttendanceFor(studentId, date, status){
   return apiFetch('/attendance', { method: 'POST', body: JSON.stringify({ student_id: studentId, date, status }) });
 }
+// V3.76.0 (Phase 2): the range write for a named student — the maktab's
+// haidh calendar marks a range as the student's own does. Teacher-gated in
+// the worker; a student's own id passes, anyone else's is ignored.
+function apiMarkHaidhRangeFor(studentId, startDate, endDate){
+  return apiFetch('/attendance/mark-range', { method: 'POST', body: JSON.stringify({ student_id: studentId, startDate, endDate }) });
+}
 
 // ---------- derived maktab attendance (V3.67.0, delivery (f)) ----------
 function apiGetMaktabAttendance(date){

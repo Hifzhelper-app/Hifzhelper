@@ -11,10 +11,11 @@
 //
 // What remains here is only what is genuinely maktab-only:
 //   - opening the shared screen with the right context,
-//   - painting the student-name row + haidh toggle into each card,
+//   - painting the student-name row into each card,
 //   - clearing the context on exit (the leakage hazard -- see
 //     logContext.js's header),
-//   - the haidh toggle flow itself, shared with the summary.
+//   - opening the shared haidh CALENDAR for a student (V3.76.0; the
+//     single-day toggle flow that used to live here is gone).
 //
 // Sabaq prepop deliberately needs NO code here any more: the PJ's own
 // renderSabaqScreen computes the frontier from logClient('sabaq').get(),
@@ -33,55 +34,23 @@ function maktabTodayISO(){
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-// ---- haidh gap check (pure, harness-tested) ----
-function maktabHaidhGapDays(attendanceRows, todayIso){
-  const prior = (attendanceRows || [])
-    .filter(r => (r.status === 'haidh' || r.status === 'predicted-haidh') && r.date < todayIso)
-    .map(r => r.date).sort();
-  if(!prior.length) return null;
-  const last = prior[prior.length - 1];
-  return Math.round((new Date(todayIso + 'T00:00:00Z') - new Date(last + 'T00:00:00Z')) / 86400000);
-}
-
-// Marking runs the 15-day guard with the exact confirmed wording. Takes
-// the date it should mark -- V3.63.0 fixed it hardcoding today, which
-// went wrong once the summary gained a date picker.
-async function maktabMarkHaidhFlow(studentId, onDone, date){
-  const target = date || maktabTodayISO();
-  let rows = [];
-  try{ rows = await apiGetAttendanceFor(studentId); } catch(e){ rows = []; }
-  if(!Array.isArray(rows)) rows = [];
-  const gap = maktabHaidhGapDays(rows, target);
-  let status = 'haidh';
-  if(gap != null && gap < HAIDH_GAP_OFFICIAL){
-    status = confirm('15 days has not passed since the last haidh day. Ok to mark as Haidh, cancel to mark absent') ? 'haidh' : 'absent';
-  }
-  try{
-    await apiSetAttendanceFor(studentId, target, status);
-  } catch(e){
-    // V3.75.0 (item 6): show the worker's real error. apiFetch already
-    // throws body.error as e.message; a fixed sentence here threw that
-    // away — which is why the 2026-08-26 haidh failure was unreadable.
-    alert('Could not save the attendance mark: ' + ((e && e.message) || 'unknown error'));
-    return;
-  }
-  if(onDone) await onDone();
-}
-
-// Un-ticking CLEARS the day back to unset rather than writing 'absent':
-// 'absent' is a different claim, and the maktab derives absence anyway.
-async function maktabToggleHaidh(studentId, date, currentlyMarked, onDone){
-  if(currentlyMarked){
-    try{
-      await apiClearAttendanceFor(studentId, date);
-    } catch(e){
-      alert('Could not clear the haidh mark: ' + ((e && e.message) || 'unknown error'));   // V3.75.0 item 6
-      return;
-    }
-    if(onDone) await onDone();
-    return;
-  }
-  await maktabMarkHaidhFlow(studentId, onDone, date);
+// V3.76.0 (Phase 2): the haidh TOGGLE flow is GONE — maktabHaidhGapDays,
+// maktabMarkHaidhFlow and maktabToggleHaidh (V3.61.0–V3.63.0, the single-day
+// mark with its client-side 15-day confirm and the "cancel to mark absent"
+// branch). Haidh is marked from the shared calendar now, as a RANGE, under
+// the worker's rules (run cap, 14-day gap, whole range rejected on failure)
+// — the same rules the student's own calendar has always had. A teacher no
+// longer gets a confirm-to-override on the gap; the worker refuses and says
+// why. Deleted rather than left dangling: nothing calls them.
+//
+// The summary's haidh icon is a LINK to that calendar:
+function openMaktabHaidhCalendar(student, date){
+  maktabDayStudent = student;
+  maktabDayDate = date || maktabTodayISO();
+  setMaktabLogContext(student, maktabDayDate);
+  // { maktab: true } tells showScreen to KEEP the context (js/app.js); the
+  // date opens the calendar on the month of the summary's picked day.
+  return showScreen('haidhDetail', { maktab: true, date: maktabDayDate });
 }
 
 // The student name + haidh toggle row, painted into each of the three
@@ -109,9 +78,9 @@ function maktabPaintNameRows(marked){
     // to mark, and a teacher already inside a student's cards now backs out
     // to the summary to do it. Accepted as the cost of one place, not two.
     //
-    // maktabToggleHaidh, maktabMarkHaidhFlow and the gap check are NOT
-    // deleted — the summary's toggle still uses them; this file's header
-    // records that the flow is shared. Only the rendering and wiring went.
+    // V3.76.0: the flow those controls shared (maktabToggleHaidh,
+    // maktabMarkHaidhFlow, the gap check) is now deleted too — the summary
+    // icon became a link to the shared haidh calendar.
   });
 }
 

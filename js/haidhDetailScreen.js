@@ -42,6 +42,15 @@
 // run/gap-scanning logic in two places.
 // ============================================================
 
+// V3.76.0 (Phase 2): the screen is SHARED with the maktab, the way the day
+// view is (V3.64.0, Option A — reuse, not copy). Opened from the summary's
+// haidh icon under a maktab log context, it shows that student's calendar
+// and writes through the teacher-gated *For endpoints; opened from the nav
+// it is the student's own, exactly as before. Every read and write goes
+// through haidhCalClient() below — the ONE place the mode is consulted, so
+// no call site can forget it. The rules are the worker's either way (run
+// cap, 14-day gap, whole range rejected on failure).
+
 let haidhCalViewYear = null;
 let haidhCalViewMonth = null; // 0-indexed, matches JS Date
 let haidhCalAttendance = {};  // date (YYYY-MM-DD) -> 'haidh' | 'predicted-haidh'
@@ -49,6 +58,24 @@ let haidhRangeStart = null;   // pending range being built, not yet saved
 let haidhRangeEnd = null;
 
 function haidhTodayISO(){ return new Date().toISOString().slice(0,10); }
+
+// V3.76.0: the calendar's three touches on the attendance table, routed by
+// log context — mirrors logClient() in js/logContext.js.
+function haidhCalClient(){
+  if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
+    const id = logCtxStudentId();
+    return {
+      get:       ()           => apiGetAttendanceFor(id),
+      clear:     (date)       => apiClearAttendanceFor(id, date),
+      markRange: (start, end) => apiMarkHaidhRangeFor(id, start, end),
+    };
+  }
+  return {
+    get:       ()           => apiGetAttendance(),
+    clear:     (date)       => apiDeleteAttendance(date),
+    markRange: (start, end) => apiMarkHaidhRange(start, end),
+  };
+}
 
 // V3.40.3 bug fix: build a YYYY-MM-DD string from a LOCAL calendar date
 // directly, never via .toISOString() -- new Date(y,m,d) is local
@@ -80,7 +107,7 @@ async function loadHaidhCalAttendance(){
   // undefined out of an array every time, which is the real reason
   // nothing ever showed on the calendar (confirmed live in console:
   // apiGetAttendance() itself returns the real rows correctly).
-  const data = await apiGetAttendance();
+  const data = await haidhCalClient().get();   // V3.76.0: routed by context
   haidhCalAttendance = {};
   (data || []).forEach(row => {
     if(row.status === 'haidh' || row.status === 'predicted-haidh') haidhCalAttendance[row.date] = row.status;
@@ -182,7 +209,7 @@ async function onHaidhCalDayTap(dateISO){
   // TODO.md).
   if(status && haidhRangeStart == null){
     try{
-      await apiDeleteAttendance(dateISO);
+      await haidhCalClient().clear(dateISO);   // V3.76.0: routed by context
       await loadHaidhCalAttendance();
       renderHaidhCalGrid();
     } catch(e){
@@ -214,7 +241,7 @@ async function onHaidhRangeConfirm(){
   const errEl = document.getElementById('haidhCalError');
   errEl.textContent = '';
   try{
-    await apiMarkHaidhRange(bounds[0], bounds[1]);
+    await haidhCalClient().markRange(bounds[0], bounds[1]);   // V3.76.0: routed by context
     haidhClearPendingRange();
     await loadHaidhCalAttendance();
     renderHaidhCalGrid();
@@ -300,7 +327,16 @@ async function renderHaidhDetailScreen(param){
   // V3.40.2: a pending, unsaved selection from a previous visit to this
   // screen shouldn't carry over silently.
   haidhClearPendingRange();
-  const jumpDate = (typeof param === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(param)) ? param : haidhTodayISO();
+  // V3.76.0: param is either the PJ's jump date (a string, as before) or
+  // the maktab opener's { maktab: true, date } — see openMaktabHaidhCalendar
+  // in js/maktabDay.js. The heading carries the student's name in maktab
+  // mode, since the calendar is hers, not the teacher's; and reverts to the
+  // plain "Haidh" on the next PJ visit so nothing leaks between modes.
+  const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+  const titleEl = document.getElementById('haidhDetailTitle');
+  if(titleEl) titleEl.textContent = inMaktab ? 'Haidh — ' + logCtxStudentName() : 'Haidh';
+  const rawDate = (param && typeof param === 'object') ? param.date : param;
+  const jumpDate = (typeof rawDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(rawDate)) ? rawDate : haidhTodayISO();
   const [y, m] = jumpDate.split('-').map(Number);
   haidhCalViewYear = y;
   haidhCalViewMonth = m - 1;

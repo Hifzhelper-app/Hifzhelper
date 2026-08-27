@@ -2045,6 +2045,18 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.76.0 — Phase 2: the maktab haidh calendar (DEPLOY THE WORKER FIRST, then frontend, hard-refresh)
+
+Cache name is `hifzhelper-v3.76.0`; the login card should show 3.76.0.
+
+1. **Worker first.** Until the worker is deployed, confirming a range from the maktab calendar writes it on the TEACHER's own attendance (the old handler ignored `student_id`). Deploy the worker, then the frontend.
+2. **Summary → haidh icon** (a tracking student, any date on the picker) — opens a calendar headed "Haidh — <her name>", on the month of the picked date, showing HER marks. The row tap still opens the day view.
+3. **Mark a range** — tap first day, tap last day, "Confirm as haidh" (or "Predict as haidh" if entirely future). Back on the summary the icon shows marked for any date inside the range; her own PJ calendar (log in as her) shows the same days.
+4. **Clear one day** — tap a marked day with no pending selection: it clears, and the summary follows.
+5. **The refusal** — try a range starting within 14 days of an earlier mark: the calendar's red line shows the worker's message and the selection stays so you can adjust it. This replaces the old "15 days has not passed… cancel to mark absent" confirm — there is no override now.
+6. **Context does not leak** — from the maktab calendar press X (Home), then open any PJ screen as a student account: plain "Haidh" heading, her own data.
+7. **Student's own calendar** (nav → Haidh) — unchanged: own data, own writes.
+
 ## V3.75.0 — Phase 1: what to look at on the device (frontend only, hard-refresh first)
 
 Cache name is `hifzhelper-v3.75.0`; the login card should show 3.75.0.

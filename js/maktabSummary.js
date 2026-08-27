@@ -14,9 +14,10 @@
 //     grid for it, and the picked date FOLLOWS THROUGH to the day
 //     view (backfill/corrections -- confirmed).
 //   - Haidh control moved to its own NARROW LEADING column: a small
-//     haidh icon acting as the haidh checkbox, so the controls line
-//     up on the extreme left instead of trailing variable-length
-//     names. Rendered ONLY for students with track_haidh (the same
+//     haidh icon (V3.76.0: a LINK to the student's haidh calendar,
+//     showing the date's state; it was the haidh checkbox until then),
+//     so the controls line up on the extreme left instead of trailing
+//     variable-length names. Rendered ONLY for students with track_haidh (the same
 //     Settings opt-in that gates the PJ's Haidh nav item) -- the
 //     GLOBAL haidh-gating rule. It sits inside the whole-row tap
 //     target, so it stops propagation -- the one deliberate
@@ -162,9 +163,15 @@ async function renderMaktabSummaryScreen(){
     const tr = document.createElement('tr');
     tr.className = 'maktab-summary-row';
 
-    // V3.61.0: leading narrow haidh column -- small haidh icon as the
-    // checkbox, ONLY for haidh-tracking students (empty cell otherwise
-    // so the grid stays aligned).
+    // V3.61.0: leading narrow haidh column -- small haidh icon, ONLY for
+    // haidh-tracking students (empty cell otherwise so the grid stays
+    // aligned).
+    // V3.76.0 (Phase 2): it is a LINK now, not a toggle. It still shows the
+    // date's state (.marked), but tapping it opens the shared haidh calendar
+    // for this student, on the month of the picked date, where haidh is
+    // marked as a range. The single-day toggle with its 15-day confirm is
+    // deleted (js/maktabDay.js). stopPropagation stays: the row itself
+    // still opens the day view.
     const haidhTd = document.createElement('td');
     haidhTd.className = 'maktab-haidh-col';
     if(stu.track_haidh){
@@ -172,13 +179,10 @@ async function renderMaktabSummaryScreen(){
       btn.type = 'button';
       btn.className = 'maktab-haidh-check' + (haidhByStudent[stu.id] ? ' marked' : '');
       btn.innerHTML = iconHtml('haidh');
-      btn.setAttribute('aria-pressed', haidhByStudent[stu.id] ? 'true' : 'false');
-      btn.setAttribute('aria-label', (haidhByStudent[stu.id] ? 'Clear haidh mark for ' : 'Mark haidh for ') + stu.name);
-      // V3.63.0: the summary control is the same TOGGLE as the day
-      // view's, and it marks the DATE ON SCREEN, not today.
+      btn.setAttribute('aria-label', 'Open haidh calendar for ' + stu.name);
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        maktabToggleHaidh(stu.id, date, !!haidhByStudent[stu.id], () => renderMaktabSummaryScreen());
+        openMaktabHaidhCalendar(stu, date);
       });
       haidhTd.appendChild(btn);
     }

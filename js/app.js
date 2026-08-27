@@ -56,7 +56,11 @@ async function showScreen(id, param){
   // V3.64.0: leaving the shared day view drops any maktab context, so the
   // next PJ visit can't inherit a student's state (the one real hazard of
   // reusing the screen — see js/logContext.js).
-  if(id !== 'logDetail' && typeof exitMaktabDay === 'function') exitMaktabDay();
+  // V3.76.0: the haidh calendar is the second shared screen. Opened by the
+  // maktab (param { maktab: true }) it must KEEP the context; opened from
+  // the nav (a string date, or nothing) it drops it like every other screen.
+  const keepsMaktabCtx = id === 'logDetail' || !!(id === 'haidhDetail' && param && typeof param === 'object' && param.maktab === true);
+  if(!keepsMaktabCtx && typeof exitMaktabDay === 'function') exitMaktabDay();
   if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
   if(id === 'settings') await renderSettingsScreen();

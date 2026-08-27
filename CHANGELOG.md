@@ -26,6 +26,26 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.76.0 — Phase 2: the maktab haidh calendar (2026-08-27)
+
+**Files touched:** `worker/src/attendance.js`, `js/api.js`, `js/haidhDetailScreen.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/app.js`, `index.html`, `js/sw.js`, `tests/verify_v3760_phase2.mjs` (new), `tests/verify_e2.mjs`, `tests/verify_e1.mjs`, `tests/verify_v3750_phase1.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** No migration.
+
+**The summary's haidh icon is a link to the student's haidh calendar, and haidh is marked there as a range.** The earlier note that Phase 2 was frontend-only was wrong in one respect: the worker served another student's attendance for reading, marking and clearing a *single day*, but `POST /attendance/mark-range` — the range write the student's own calendar uses — was still hard-wired to the caller. It now carries the same one-line teacher override the single-day handlers have had since V3.40.2/V3.63.0 (`isTeacherOrAbove(auth) && body.student_id`); a student sending someone else's id is ignored, never a wrong-row write. Proven against a real SQLite attendance table.
+
+**The calendar is shared, not copied** — the same choice as the day view (V3.64.0, Option A). `js/haidhDetailScreen.js` gains one `haidhCalClient()` that routes its three attendance touches (read, clear one day, mark a range) by log context: the PJ's own endpoints when opened from the nav, the `*For` endpoints with the student's id when opened from the summary. That is the only place the mode is consulted, so no call site can forget it; a harness check counts direct calls in code and finds none outside it. The heading carries the student's name in maktab mode and reverts to "Haidh" on the next PJ visit.
+
+**`showScreen` keeps the maktab context for the calendar.** It dropped the context for every screen but `logDetail`, which would have cleared it before the calendar rendered. The opener passes `{ maktab: true, date }`; a string date or nothing (the nav) still drops it, so a student visiting her own calendar after a read-only maktab view cannot inherit that state.
+
+**The single-day toggle flow is deleted**, not left dangling: `maktabHaidhGapDays`, `maktabMarkHaidhFlow`, `maktabToggleHaidh` and the summary's `aria-pressed` wiring. **One behaviour change to know about:** those carried a client-side 15-day confirm ("Ok to mark as Haidh, cancel to mark absent") that let a teacher override the gap. The range write applies the worker's rules — run cap, 14-day gap, whole range rejected on failure — exactly as the student's calendar always has, and the refusal is shown verbatim in the calendar's error line. A teacher no longer gets a confirm-to-override. Chosen with the range ("as the student has it") on 2026-08-27.
+
+**Item 6's haidh error path moved with the flow.** The two alerts fixed in V3.75.0 were in the deleted functions; the surviving path is the calendar's own `#haidhCalError`, which has always shown `e.message`. The V3.75.0 and e2 harness blocks that drove the deleted flow now assert the deletion is complete; the new harness drives the calendar's error line under maktab context.
+
+**Two stale TODO headings corrected:** "Dhor card UI changes" and "Maktab Setup takes over the Plan button" still read NOT BUILT two and four deliveries after they shipped (V3.72.0–V3.74.2). The revised three-delivery plan, the answers given for groups and tags, and the confirmation that there is no maktab-side haidh record (a teacher's mark IS a PJ attendance row) are recorded in TODO.md.
+
+**Verification: 668 passed, 0 failed across 21 harnesses** (640 before; 34 new, 6 retired with the flow).
+
+---
+
 ## V3.75.0 — Phase 1 of the list of eleven: items 1, 2, 3, 4, 6, 10, 11 (2026-08-26)
 
 **Files touched:** `css/admin.css`, `css/base.css`, `css/detail-pages.css`, `index.html`, `js/maktabSummary.js`, `js/maktabDay.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `js/sw.js`, `tests/verify_v3750_phase1.mjs` (new), `tests/verify_v3742_ui.mjs`, `tests/verify_maktab_settings_form.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. FRONTEND ONLY. No schema, no worker.**

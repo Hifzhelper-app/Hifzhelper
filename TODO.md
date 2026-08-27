@@ -26,7 +26,7 @@ numbers; headings are unique, search the text.
 | **6** | **(l) Archive** | (k) | 60-day physical copy + re-sync on maktab edit AND delete. |
 | **7** | **Settings Haidh heading tweaks** | **"start building"** | Three changes, fully specced. **Carries a trap** — deleting the hint element without its two JS writers reproduces the V3.51.2 blank-fields bug. Still worth doing: Settings is hidden from teachers but live for students. |
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
-| **10** | **The list of eleven — phases 2, 3, 4** | Phase 2: "start building phase 2" | Phase 1 shipped as V3.75.0. Full table in its own section below (search "The list of eleven"). Phase 4 needs two answers first. |
+| **10** | **The list of eleven — remaining: groups, search, tags (+ timezone)** | (j) first, then "start building 3" | Phases 1 and 2 shipped (V3.75.0, V3.76.0). Revised plan and the answers given are in the section below (search "The list of eleven"). One question left: timezone display. |
 | **9** | **Reword the empty-pool message** | — | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
@@ -61,7 +61,7 @@ groups and the roster filter are one pass over that screen instead of two.
 | 2 | Move to Dhor — HIDDEN until all four quarters complete, then "Move Juz N to Dhor". No disabled state, no "(2 of 4 complete)". User's call, reversing V3.74.3's visible-but-inactive (Claude's own reasoning) | 1 | **BUILT V3.75.0** |
 | 3 | PTP (Public/Teachers/Private) pill — shorter | 1 | **BUILT V3.75.0** — root cause: settings.css's base `.switch-track{height:42px}` loads later and beat the single-class rule; V3.74.4's 20px never applied. Now `.cb-note-box .mk-vis-switch`. **Lands at 20px — say if a different height is wanted** |
 | 4 | `+1` badge wired directly | 1 | **BUILT V3.75.0** — delegated listener ran AFTER the row's, so the day view opened anyway; now on the button |
-| 5 | Attendance page: a new screen with the calendar, opened from the summary's haidh icon (icon becomes a link); the day-card haidh toggle and marker removed. Frontend only — the worker already serves another student's attendance. Changes how haidh is marked | 2 | NOT BUILT — "start building phase 2" |
+| 5 | Attendance page: the summary's haidh icon becomes a LINK to the student's haidh calendar — the existing Haidh screen SHARED under the maktab log context (Option A reuse, as the day view). Haidh marked as a RANGE (user's call 2026-08-27), under the worker's rules; the single-day toggle flow deleted. The day-card toggle had already gone in V3.73.0 | 2 | **BUILT V3.76.0** — worker + frontend (mark-range gained the teacher override; the "frontend only" note was wrong for the range write). **Behaviour change:** a teacher no longer gets a confirm-to-override on the 14-day gap; the worker refuses and says why |
 | 6 | Surface the worker's real error (the fixed alert made the 2026-08-26 haidh failure unreadable) | 1 | **BUILT V3.75.0** — both haidh alerts + summary load failure carry `e.message` |
 | 7 | Tajweed tags (was 13) — maktab-stored rows with IDs, entries reference the ID, rename propagates, retire replaces delete; schema, worker endpoints, admin screen, clearing the old column. **Only irreversible item.** OPEN: existing word-tags on live rows must convert to IDs one-way — unmatched words go where?; custom tags in browser storage — import on first load or lose | 4 | NOT BUILT — needs those two answers first |
 | 8 | Groups — one group per student (column on the student row, not a join table). Names defined in Maktab Settings; assigned per student in their profile by admin. For ordering and filtering the summary: ordered by group, then alphabetically; groups separated visually by a SPACE between them (no heading rows, no labels). Retire-not-delete (same shape as tags). Teacher-to-group assignment noted as possible later, NOT built. OPEN: where ungrouped students sit — last, or under "Unassigned". Note: `<tr>` takes no margin — spacer row or bottom padding on the group's last row | 3 | NOT BUILT — "start building phase 3" |
@@ -69,13 +69,30 @@ groups and the roster filter are one pass over that screen instead of two.
 | 10 | Teacher name in the History rail | 1 | **BUILT V3.75.0** — shown under any entry carrying `teacher_name` |
 | 11 | Spacing above the note boxes | 1 | **BUILT V3.75.0** — `--space-md`, matching the PJ notes header |
 
-**Phase 2 — item 5. Phase 3 — items 8, 9 (schema addition, Maktab Settings,
-student profile, summary ordering, search; same screen, same delivery).
-Phase 4 — item 7.** Phases 3 and 4 both add schema; 4 is the only one that
-discards data. Retained decisions above are the user's; the OPEN questions
-are the ones that were raised and not answered.
+**Plan as REVISED 2026-08-27 (user's), three deliveries, in order:**
+1. **Phase 2** — item 5. **BUILT V3.76.0.**
+2. **(j) Account separation** — worker + frontend, no migration. Resumes
+   testing. Next: "start building (j)".
+3. **Groups + tags + shared timezone** — every schema change in ONE
+   migration set and one console session: items 8, 9, 7 and the timezone
+   setting (a fifth `maktab_settings` column). Tags' destructive step (clear
+   the old word column) is its OWN migration file, run only after converted
+   tags are seen on a real entry.
 
-## Dhor card UI changes (stated 2026-08-26, NOT BUILT)
+**Answers given 2026-08-27:** groups — ungrouped students sit LAST, no
+heading. Tags — a word on an existing entry that matches no tag in the new
+list is DROPPED; custom tags in browser storage are NOT imported. Still
+open for delivery 3: timezone display — each viewer's local, or the
+maktab's everywhere (Claude's read: the maktab's everywhere).
+
+**Haidh data model, confirmed 2026-08-27 as the design to build on:** there
+is NO maktab-side haidh record. Haidh lives only in the student's PJ
+`attendance` table; the maktab reads it live (one of the two permitted
+PJ→maktab inputs) and derives its own attendance at read time. A teacher's
+mark IS a PJ row. A maktab-side haidh/attendance table would be a design
+change (which side wins, derivation rewritten) — not decided, not built.
+
+## Dhor card UI changes (stated 2026-08-26) — BUILT, V3.73.0–V3.74.2 [heading corrected V3.76.0: it still read NOT BUILT two deliveries after it shipped]
 
 Collected together deliberately: these land on the same card as the
 Plan-button takeover above, so they should be ONE delivery to that card, not
@@ -166,7 +183,7 @@ Do not start building the Dhor card until the list is complete; that is their
 stated preference (gather the full spec for a well-defined change rather than
 rebuilding after each new detail).
 
-## Maktab Setup takes over the Dhor card's Plan button (stated 2026-08-26, NOT BUILT)
+## Maktab Setup takes over the Dhor card's Plan button (stated 2026-08-26) — BUILT, V3.72.0 (`dhorPlanBtnIsSetup`, `#screen-maktabSetup` deleted) [heading corrected V3.76.0]
 
 **SUPERSEDES two earlier approaches in this file — do not build either.**
 The popup-via-`enterEditScreenMode` spec and the separate "move the Setup

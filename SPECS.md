@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.76.0** — Phase 2: the maktab haidh calendar — built to the spec below
 - **V3.75.0** — Phase 1 of the list of eleven (items 1, 2, 3, 4, 6, 10, 11) — built to the spec below
 - **V3.65.0** — (g) Maktab settings — built to the spec below
 - **V3.66.0** — (h) Maktab position + student setup — built to the spec below
@@ -110,6 +111,20 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.76.0 (2026-08-27): Phase 2: the maktab haidh calendar — built to the spec below
+
+Item 5 of the list of eleven. Worker + frontend, no migration.
+
+| Agreed | Built as |
+| --- | --- |
+| The summary's haidh icon becomes a link to the student's calendar (user, 2026-08-26) | `openMaktabHaidhCalendar(stu, date)` in `js/maktabDay.js`; icon keeps showing the picked date's state (`.marked`), opens the calendar on that date's month |
+| The calendar is the existing Haidh screen, shared under the maktab log context, like the day view (Claude's proposal, accepted 2026-08-27) | `haidhCalClient()` routes read / clear / mark-range by `logCtxIsMaktab()`; heading "Haidh — <name>" in maktab mode |
+| Haidh marked as a RANGE, as the student has it (user, 2026-08-27) | `apiMarkHaidhRangeFor` → `POST /attendance/mark-range` with `student_id`; the worker's rules apply to the named student |
+| The single-day toggle removed (user, 2026-08-26) | `maktabHaidhGapDays` / `maktabMarkHaidhFlow` / `maktabToggleHaidh` deleted; the day-card toggle had already gone in V3.73.0 |
+| Data model stays as agreed 2026-08-16: haidh is a PJ attendance row, the maktab reads it live (confirmed 2026-08-27) | nothing maktab-side is written; derived attendance unchanged |
+
+**Consequence stated at build time:** no client-side 15-day confirm-to-override any more — the worker refuses a range inside the 14-day gap and the calendar shows why.
 
 ## Done — V3.75.0 (2026-08-26): Phase 1 of the list of eleven (items 1, 2, 3, 4, 6, 10, 11) — built to the spec below
 

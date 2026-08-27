@@ -164,7 +164,7 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
       sabaq_dhor: [], dhor: [], attendance: [],
     };
     function apiMaktabSummary(){ return Promise.resolve(SUMMARY_PAYLOAD); }
-    function maktabMarkHaidhFlow(){ } function maktabToggleHaidh(){ }
+    function openMaktabHaidhCalendar(){ }
     var openedWith = null;
     function openMaktabDay(student, date){ openedWith = { student, date }; return Promise.resolve(); }
     function apiGetMaktabAttendance(){ return Promise.resolve({ isMaktabDay: true, attendance: {} }); }
@@ -190,30 +190,13 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
 
 // ---------- 6: the worker's real error is shown ----------
 {
-  check('6: neither haidh alert is a fixed sentence any more',
-    !/alert\('Could not save the attendance mark\.'\)/.test(day) && !/alert\('Could not clear the haidh mark\.'\)/.test(day));
-  check('6: the summary load failure carries the message too', /Could not load the maktab summary: ' \+ \(\(loadErr && loadErr\.message\)/.test(summary));
-  // Drive the real flows with a rejecting API and capture what alert() shows.
-  const dom = new JSDOM('<!DOCTYPE html><body></body>', { runScripts: 'dangerously', url: 'https://x/' });
-  const w = dom.window;
-  w.eval(`
-    var HAIDH_GAP_OFFICIAL = 15;
-    window.confirm = () => true;
-    var alerts = [];
-    window.alert = (m) => { alerts.push(String(m)); };
-    function maktabTodayISO(){ return '2026-08-26'; }
-    function logCtxIsMaktab(){ return true; }
-    function iconHtml(){ return ''; }
-    function apiGetAttendanceFor(){ return Promise.resolve([]); }
-    function apiSetAttendanceFor(){ return Promise.reject(new Error('Haidh tracking is not enabled for this student')); }
-    function apiClearAttendanceFor(){ return Promise.reject(new Error('Attendance row not found')); }
-  `);
-  w.eval(day);
-  await w.eval('maktabMarkHaidhFlow("STU1", undefined, "2026-08-26")');
-  await w.eval('maktabToggleHaidh("STU1", "2026-08-26", true)');
-  const alerts = w.eval('alerts');
-  check('6: driven — the mark failure shows the worker\'s message', alerts.length >= 1 && /Haidh tracking is not enabled for this student/.test(alerts[0]), alerts.join(' | '));
-  check('6: driven — the clear failure shows its message too', alerts.length === 2 && /Attendance row not found/.test(alerts[1]), alerts.join(' | '));
+  // V3.76.0 (Phase 2) superseded the two haidh alerts this block used to
+  // drive: the single-day toggle flow was deleted with them. The surviving
+  // haidh error path is the calendar's own #haidhCalError, which has always
+  // shown e.message verbatim — verify_v3760_phase2.mjs drives it in maktab
+  // mode. What stays here is the summary load failure, which is unchanged.
+  check('6: the deleted flow left no fixed-sentence alert behind', !/alert\('Could not/.test(day));
+  check('6: the summary load failure carries the message', /Could not load the maktab summary: ' \+ \(\(loadErr && loadErr\.message\)/.test(summary));
   // and the summary: a rejecting API renders the message into the error row
   const dom2 = new JSDOM('<!DOCTYPE html><body><input id="maktabSummaryDatePicker"><table><tbody id="maktabSummaryBody"></tbody></table></body>', { runScripts: 'dangerously', url: 'https://x/' });
   const w2 = dom2.window;

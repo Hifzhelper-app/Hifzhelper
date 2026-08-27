@@ -93,7 +93,7 @@ const todayISO = new Date().toISOString().slice(0, 10);
 // covered by verify_context.mjs (context routing, notes block, name row)
 // plus the PJ's existing harnesses. What remains here is what is still
 // genuinely maktab-only code: the haidh gap maths, the toggle semantics,
-// and the mark flow's branches.
+// (V3.76.0: the mark flow is gone; see the block at the end).
 const { JSDOM } = await import('jsdom');
 const read = (p) => fs.readFileSync(ROOT + p, 'utf8');
 
@@ -118,62 +118,21 @@ function makeDayDom(scenario) {
   return w;
 }
 
-// ---- pure: haidh gap ----
+// ---- V3.76.0 (Phase 2): the single-day toggle flow is DELETED ----
+// The blocks that used to live here drove maktabHaidhGapDays,
+// maktabToggleHaidh and maktabMarkHaidhFlow (the gap confirm with its
+// agreed wording, the cancel-to-absent branch, the picker-date fix). Haidh
+// is marked from the shared calendar as a RANGE now, under the worker's
+// rules; verify_v3760_phase2.mjs drives that. What remains here asserts
+// the deletion is complete — a stray survivor would be dead code with a
+// confirm() in it.
 {
   const w = makeDayDom({});
-  const gap = (rows) => w.eval(`maktabHaidhGapDays(${JSON.stringify(rows)}, '2026-08-16')`);
-  check('gap: no prior haidh → null', gap([]) === null && gap([{ date: '2026-08-20', status: 'haidh' }]) === null);
-  check('gap: counts from the LAST prior haidh day', gap([
-    { date: '2026-07-01', status: 'haidh' }, { date: '2026-08-10', status: 'haidh' }, { date: '2026-08-12', status: 'present' },
-  ]) === 6);
-  check('gap: predicted-haidh counts too', gap([{ date: '2026-08-14', status: 'predicted-haidh' }]) === 2);
-}
-
-// ---- V3.63.0: toggle semantics — off clears, on marks the SHOWN date ----
-{
-  const w = makeDayDom({ attendance: [{ date: '2026-08-01', status: 'haidh' }] });
-  w.eval('var cleared = []; function apiClearAttendanceFor(id, date){ cleared.push({ id, date }); return Promise.resolve({ deleted: true }); }');
-  await w.eval("maktabToggleHaidh('STU1', '2026-08-01', true)");
-  await new Promise(r => setTimeout(r, 0));
-  check('toggle OFF: clears that date back to unset (never writes absent)',
-    w.eval('cleared[0]').date === '2026-08-01' && w.eval('attendanceSets.length') === 0);
-}
-{
-  const w = makeDayDom({ attendance: [] });
-  w.eval('function apiClearAttendanceFor(){ return Promise.resolve({}); }');
-  await w.eval("maktabToggleHaidh('STU1', '2026-08-01', false)");
-  await new Promise(r => setTimeout(r, 0));
-  check('toggle ON: marks the DATE ON SCREEN, not today (V3.61.0 picker regression)',
-    w.eval('attendanceSets[0]').date === '2026-08-01' && w.eval('attendanceSets[0]').status === 'haidh');
-}
-
-// ---- haidh flow: gap guard, both confirm answers ----
-{
-  // 2026-08-26 fix: this called maktabMarkHaidhFlow with NO date, so it used
-  // the REAL today. With the fixture's last haidh on 2026-08-10 the gap was
-  // 6 days when this was written and passed; once real time moved past the
-  // 15th day the confirm correctly stopped firing and BOTH assertions here
-  // began failing forever — a time bomb, not a code bug. The date parameter
-  // exists precisely for this (V3.63.0 added it after hardcoded "today"
-  // went wrong once the summary gained a picker); the test just was not
-  // using it. Now pinned so the gap is 6 regardless of when it runs.
-  const w = makeDayDom({ attendance: [{ date: '2026-08-10', status: 'haidh' }] });
-  await w.eval('maktabMarkHaidhFlow("STU1", undefined, "2026-08-16")');
-  await new Promise(r => setTimeout(r, 0));
-  check('haidh flow: gap 6 < 15 → confirm() with the EXACT agreed wording',
-    w.eval('confirmCalls[0]') === '15 days has not passed since the last haidh day. Ok to mark as Haidh, cancel to mark absent');
-  check('haidh flow: OK → haidh written', w.eval('attendanceSets[0]').status === 'haidh');
-  w.eval('confirmAnswer = false');
-  await w.eval('maktabMarkHaidhFlow("STU1", undefined, "2026-08-16")');
-  await new Promise(r => setTimeout(r, 0));
-  check('haidh flow: Cancel → absent written', w.eval('attendanceSets[1]').status === 'absent');
-}
-{
-  const w = makeDayDom({ attendance: [{ date: '2026-01-01', status: 'haidh' }] });
-  await w.eval('maktabMarkHaidhFlow("STU1")');
-  await new Promise(r => setTimeout(r, 0));
-  check('haidh flow: gap ≥ 15 → no confirm, straight to haidh',
-    w.eval('confirmCalls.length') === 0 && w.eval('attendanceSets[0]').status === 'haidh');
+  for (const fn of ['maktabHaidhGapDays', 'maktabMarkHaidhFlow', 'maktabToggleHaidh']) {
+    check(`V3.76.0: ${fn} is gone from maktabDay.js`, w.eval(`typeof ${fn}`) === 'undefined');
+  }
+  check('V3.76.0: openMaktabHaidhCalendar replaces them', w.eval('typeof openMaktabHaidhCalendar') === 'function');
+  check('V3.76.0: no confirm() left in maktabDay.js', !/confirm\(/.test(read('js/maktabDay.js')));
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

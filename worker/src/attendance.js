@@ -97,7 +97,15 @@ export async function handleMarkHaidhRange(request, env, auth) {
     return { error: 'startDate and endDate (YYYY-MM-DD, startDate on or before endDate) are required', status: 400 };
   }
 
-  const studentId = auth.id;
+  // V3.76.0 (Phase 2): the teacher override handleSetAttendance and
+  // handleDeleteAttendance have carried since V3.40.2/V3.63.0 — same
+  // one-line shape, same isTeacherOrAbove gate. A student sending
+  // student_id is ignored (falls back to her own id), never a wrong-row
+  // write. The maktab's haidh calendar marks a RANGE now, as the student's
+  // own calendar does, and this was the one attendance route still
+  // hard-wired to the caller.
+  const bodyStudentId = body && body.student_id;
+  const studentId = isTeacherOrAbove(auth) && bodyStudentId ? String(bodyStudentId) : auth.id;
   const student = await env.DB.prepare('SELECT haidh_ruling FROM students WHERE id = ?').bind(studentId).first();
   const ruling = (student && student.haidh_ruling) || 'hanafi';
 

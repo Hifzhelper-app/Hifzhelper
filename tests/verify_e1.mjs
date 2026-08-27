@@ -109,8 +109,7 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
     function apiGetMaktabSabaq(){ return Promise.resolve([ { date: '2026-08-16', sabaq_from: '2:1', sabaq_to: '2:5', teacher_feedback: null } ]); }
     function apiGetMaktabSabaqDhor(){ return Promise.resolve([]); }
     function apiGetMaktabDhor(){ return Promise.resolve([ { date: '2026-08-15', segment_from: 3, segment_to: 4 } ]); }
-    function maktabMarkHaidhFlow(){ /* exercised in verify_e2 */ }
-    function maktabToggleHaidh(){ /* exercised in verify_e2 */ }
+    function openMaktabHaidhCalendar(){ /* V3.76.0: the haidh icon is a link; verify_v3760_phase2 drives it */ }
     // V3.64.0: the row tap opens the PJ's own day view with a maktab
     // context (openMaktabDay), not a maktab screen of its own.
     var openedWith = null;
