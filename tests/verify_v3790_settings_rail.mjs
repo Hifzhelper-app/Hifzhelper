@@ -104,30 +104,45 @@ const S = { name: 'M', mushaf: '13line', maktab_day_min: 1, absence_flag_days: 3
 const G = [{ id: 1, name: 'Alif', description: 'seniors', retired: 0 }, { id: 2, name: 'Baa', description: null, retired: 1 }];
 const T = [{ id: 1, name: 'Substitution', major: 1, retired: 0 }, { id: 6, name: 'Madd', major: 0, retired: 0 }];
 
-{ // the timezone control stages; Save commits
+{ // V3.85.0: the ONE-FIELD timezone control — field shows the staged
+  // zone; tapping opens the chooser; every stage action closes it and
+  // repaints the field (the user's lingering-device-button bug gone by
+  // construction). Staging semantics unchanged: Save commits.
   const w = dom(S, JSON.parse(JSON.stringify(G)), JSON.parse(JSON.stringify(T)));
   await w.eval('renderMaktabSettingsScreen()'); await tick(); await tick();
-  check('tz: unset shows "Not set" and offers the device zone', /Not set/.test(w.document.getElementById('mset_tz_current').textContent)
-    && /Asia\/Karachi/.test(w.document.getElementById('mset_tz_device').textContent));
+  const field = () => w.document.getElementById('mset_tz_field');
+  const chooser = () => w.document.getElementById('mset_tz_chooser');
+  check('tz: unset shows "Not set" in the single field; chooser closed', field().textContent === 'Not set' && chooser().classList.contains('hidden'));
+  field().click();
+  check('tz: tapping the field opens the chooser with the device offer and a filled datalist',
+    !chooser().classList.contains('hidden')
+    && /Asia\/Karachi/.test(w.document.getElementById('mset_tz_device').textContent)
+    && !w.document.getElementById('mset_tz_device').classList.contains('hidden')
+    && w.document.getElementById('mset_tz_zones').children.length > 0
+    && w.document.getElementById('mset_tz_clear').classList.contains('hidden'));   // nothing staged yet → no clear
   w.document.getElementById('mset_tz_device').click();
-  check('tz: one tap STAGES the device zone (no write yet)', w.document.getElementById('mset_timezone').value === 'Asia/Karachi'
-    && w.document.getElementById('mset_tz_current').textContent === 'Asia/Karachi'
+  check('tz: the device option STAGES (no write) and the chooser CLOSES — nothing lingers on screen',
+    w.document.getElementById('mset_timezone').value === 'Asia/Karachi'
+    && field().textContent === 'Asia/Karachi'
+    && chooser().classList.contains('hidden')
     && w.eval('calls.filter(c => c[0] === "save").length') === 0);
-  check('tz: the device button hides once staged; clear appears', w.document.getElementById('mset_tz_device').classList.contains('hidden')
+  field().click();
+  check('tz: reopened with the device zone already staged, the device offer is HIDDEN and clear shows',
+    w.document.getElementById('mset_tz_device').classList.contains('hidden')
     && !w.document.getElementById('mset_tz_clear').classList.contains('hidden'));
   w.document.getElementById('mset_save').click(); await tick(); await tick(); await tick();
   const saved = w.eval('calls.find(c => c[0] === "save")');
-  check('tz: Save commits the staged zone with the other four fields', saved && saved[1].timezone === 'Asia/Karachi' && saved[1].mushaf === '13line' && saved[1].name === 'M', JSON.stringify(saved));
+  check('tz: Save commits the staged zone with the other fields', saved && saved[1].timezone === 'Asia/Karachi' && saved[1].mushaf === '13line' && saved[1].name === 'M', JSON.stringify(saved));
   check('tz: MAKTAB_TIMEZONE updated for the session', w.eval('MAKTAB_TIMEZONE') === 'Asia/Karachi');
   w.document.getElementById('mset_tz_clear').click();
-  check('tz: clear stages empty (device-day behaviour) until Save', w.document.getElementById('mset_timezone').value === '' && /Not set/.test(w.document.getElementById('mset_tz_current').textContent));
-  w.document.getElementById('mset_tz_other_toggle').click();
-  check('tz: the type-ahead reveals with a filled datalist', !w.document.getElementById('mset_tz_other_row').classList.contains('hidden')
-    && w.document.getElementById('mset_tz_zones').children.length > 0);
+  check('tz: clear stages empty and closes; the field reads Not set', w.document.getElementById('mset_timezone').value === '' && field().textContent === 'Not set' && chooser().classList.contains('hidden'));
+  field().click();
   w.document.getElementById('mset_tz_other').value = 'Europe/London';
   w.document.getElementById('mset_tz_other').dispatchEvent(new w.Event('change', { bubbles: true }));
-  check('tz: typing a zone stages it and folds the row away', w.document.getElementById('mset_timezone').value === 'Europe/London'
-    && w.document.getElementById('mset_tz_other_row').classList.contains('hidden'));
+  check('tz: typing a zone stages it, closes the chooser, repaints the field',
+    w.document.getElementById('mset_timezone').value === 'Europe/London'
+    && field().textContent === 'Europe/London'
+    && chooser().classList.contains('hidden'));
 }
 
 { // the lists: inline instant commit, no Save anywhere near them

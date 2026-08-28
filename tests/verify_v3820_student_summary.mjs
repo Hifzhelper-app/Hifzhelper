@@ -1,10 +1,13 @@
 // ============================================================
-// verify_v3820_student_summary.mjs — V3.82.0: the STUDENT SUMMARY card.
+// verify_v3820_student_summary.mjs — REWRITTEN for V3.85.0.
 //
-// The fourth card on the log-detail rail, maktab mode only: the PJ
-// journal LAYOUT over the MAKTAB'S entries for the student ONLY — the
-// maktab's own record, independent of the (k) merge. Name tap on the
-// maktab summary opens it; each log cell routes to its own card.
+// V3.82.0 built the student summary as a fourth rail card; the user's
+// feedback revised it to a STANDALONE page ("copied from the student's
+// PJ" — the PJ Journal PAGE's layout; "the maktab only sees maktab
+// data"). This harness now pins the revised world: the rail is back to
+// THREE cards, the page exists with the PJ layout (expanded days +
+// rollups + Load more), the name tap opens the PAGE, the attendance
+// icon navigates, and rows tap through to the day view.
 // ============================================================
 
 import fs from 'fs';
@@ -18,117 +21,108 @@ let pass = 0, fail = 0;
 const check = (l, c, x = '') => { if (c) pass++; else { fail++; console.log('FAIL:', l, x); } };
 
 const html = read('index.html');
-const detailSrc = read('js/logDetailScreen.js');
 const daySrc = read('js/maktabDay.js');
+const detailSrc = read('js/logDetailScreen.js');
 const summarySrc = read('js/maktabSummary.js');
+const appSrc = read('js/app.js');
 
-// ---------- markup ----------
-check('html: the 4th dot exists, labelled Summary, hidden by default',
-  /<button type="button" class="dot" data-index="3" id="logDetailSummaryDot" hidden>Summary<\/button>/.test(html));
-check('html: the 4th card exists at the rail\'s end, hidden by default, with the journal table',
-  /id="card-studentSummary" hidden/.test(html) && /id="studentSummaryBody"/.test(html) && /id="maktabNameRow_studentSummary"/.test(html));
+// ---------- the rail is back to three ----------
 {
   const rail = html.slice(html.indexOf('id="logDetailRail"'), html.indexOf('</section>', html.indexOf('id="logDetailRail"')));
-  check('html: the rail holds exactly four cards, summary last',
-    (rail.match(/log-detail-card/g) || []).length === 4 && rail.indexOf('card-studentSummary') > rail.indexOf('card-dhor'));
+  check('rail: exactly THREE cards again — the summary card is gone', (rail.match(/log-detail-card/g) || []).length === 3 && !/card-studentSummary/.test(rail));
 }
+check('rail: the fourth dot is gone', !/logDetailSummaryDot/.test(html));
+check('rail: the card order is back to three', /const LOG_DETAIL_CARD_ORDER = \['sabaq', 'sabaqDhor', 'dhor'\];/.test(detailSrc));
+check('rail: the dots hidden-card guard STAYS (correct in general)', /if\(card\.hidden\) return;/.test(detailSrc));
+check('rail: the name-row painter is back to three', /\['sabaq', 'sabaqDhor', 'dhor'\]\.forEach\(type => \{   \/\/ V3\.85\.0/.test(daySrc));
 
-// ---------- the card order + the maktab-only toggle ----------
-check('order: studentSummary is the fourth entry', /const LOG_DETAIL_CARD_ORDER = \['sabaq', 'sabaqDhor', 'dhor', 'studentSummary'\];/.test(detailSrc));
-check('toggle: card, dot and the has-summary class all follow the maktab context',
-  /summaryCard\.hidden = !inMaktab;/.test(detailSrc) && /summaryDot\.hidden = !inMaktab;/.test(detailSrc)
-  && /classList\.toggle\('has-summary', inMaktab\)/.test(detailSrc)
-  && /if\(inMaktab && typeof renderStudentSummaryCard === 'function'\) await renderStudentSummaryCard\(\);/.test(detailSrc));
-check('css: the desktop grid holds four when the summary shows', /\.log-detail-rail\.has-summary \{ grid-template-columns: repeat\(4, 1fr\); \}/.test(read('css/detail-pages.css')));
-check('name rows: the painter covers the fourth card', /\['sabaq', 'sabaqDhor', 'dhor', 'studentSummary'\]\.forEach/.test(daySrc));
+// ---------- the standalone page ----------
+check('page: the screen exists with header, attendance icon, close, and the PJ table shape',
+  /id="screen-studentSummary"/.test(html) && /id="studentSummaryTitle"/.test(html)
+  && /id="studentSummaryAttendanceBtn"/.test(html) && /id="studentSummaryCloseBtn"/.test(html)
+  && /id="studentSummaryTbody"/.test(html));
+check('page: registered as a built screen that KEEPS the maktab context',
+  /studentSummary: true \}/.test(appSrc)
+  && /id === 'studentSummary'/.test(appSrc.match(/const keepsMaktabCtx =[^\n]*/)[0])
+  && /if\(id === 'studentSummary'\) await renderStudentSummaryScreen\(\);/.test(appSrc));
+check('summary: the NAME tap opens the standalone PAGE now',
+  /nameTd\.addEventListener\('click', \(e\) => \{\n\s*e\.stopPropagation\(\);\n\s*openStudentSummaryPage\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date\);/.test(summarySrc));
+check('summary: each log cell still routes to its OWN card', /openMaktabDay\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date, type\);/.test(summarySrc));
 
-// ---------- the dots guard, driven: a hidden card can never go active ----------
-{
+// ---------- the page renderer, driven ----------
+function pageDom(dates) {
   const dom = new JSDOM(`<!DOCTYPE html><body>
-    <div id="logDetailDots"><button class="dot" data-index="0"></button><button class="dot" data-index="1"></button><button class="dot" data-index="2"></button><button class="dot" data-index="3"></button></div>
-    <div id="logDetailRail"><div id="c0"></div><div id="c1"></div><div id="c2"></div><div id="c3" hidden></div></div>
-    </body>`, { runScripts: 'dangerously' });
-  const w = dom.window;
-  // rail at x=0; visible cards at 120/240/360 (card 0 in view); the hidden
-  // card rects to 0,0 — exactly the phantom that would win without the guard.
-  w.document.getElementById('logDetailRail').getBoundingClientRect = () => ({ left: 100 });
-  w.document.getElementById('c0').getBoundingClientRect = () => ({ left: 100 });
-  w.document.getElementById('c1').getBoundingClientRect = () => ({ left: 480 });
-  w.document.getElementById('c2').getBoundingClientRect = () => ({ left: 860 });
-  w.document.getElementById('c3').getBoundingClientRect = () => ({ left: 0 });
-  const a = detailSrc.indexOf('function updateLogDetailDots');
-  const b = detailSrc.indexOf("document.getElementById('logDetailRail').addEventListener");
-  w.eval(detailSrc.slice(a, b));
-  w.eval('updateLogDetailDots()');
-  const active = [...w.document.querySelectorAll('.dot')].map(d => d.classList.contains('active'));
-  check('dots: the hidden summary card is skipped — card 0 is active, not the phantom', JSON.stringify(active) === '[true,false,false,false]', JSON.stringify(active));
-}
-
-// ---------- the renderer, driven ----------
-function cardDom() {
-  const dom = new JSDOM('<!DOCTYPE html><body><span id="studentSummaryHeaderIcon"></span><table><tbody id="studentSummaryBody"></tbody></table></body>', { runScripts: 'dangerously', url: 'https://x/' });
+    <span id="studentSummaryHeaderIcon"></span><h2 id="studentSummaryTitle"></h2>
+    <button id="studentSummaryAttendanceBtn"></button><button id="studentSummaryCloseBtn"></button>
+    <table><tbody id="studentSummaryTbody"></tbody></table></body>`, { runScripts: 'dangerously', url: 'https://x/' });
   const w = dom.window;
   w.eval(`
-    var calls = [], opened = [];
-    var CTX = { id: 'STU2', name: 'Umme', track: true };
-    var currentUser = { id: 'TCH1', name: 'Teacher' };
-    function logCtxStudentId(){ return CTX.id; }
-    function logCtxStudentName(){ return CTX.name; }
-    function logCtxTrackHaidh(){ return CTX.track; }
-    var SABAQ = [{ date: '2026-08-27', id: 1 }, { date: '2026-08-25', id: 2 }];
-    var SDHOR = [{ date: '2026-08-27', id: 3 }];
-    var DHOR = [{ date: '2026-08-26', id: 4 }, { date: '2026-08-26', id: 5 }];
-    function apiGetMaktabSabaq(id){ calls.push(['sabaq', id]); return Promise.resolve(SABAQ); }
-    function apiGetMaktabSabaqDhor(id){ calls.push(['sdhor', id]); return Promise.resolve(SDHOR); }
-    function apiGetMaktabDhor(id){ calls.push(['dhor', id]); return Promise.resolve(DHOR); }
-    function iconHtml(){ return 'i'; }
+    var calls = [], opened = [], attOpened = [], screens = [];
+    var currentUser = { id: 'TCH1' };
+    function logCtxStudentId(){ return 'STU2'; }
+    function logCtxStudentName(){ return 'Umme'; }
+    function logCtxTrackHaidh(){ return true; }
+    function logCtxDate(){ return '2026-08-27'; }
+    var DATES = ${JSON.stringify(dates)};
+    function rowsFor(){ return DATES.map((d, i) => ({ date: d, id: i + 1, sabaq_from: '2:1', sabaq_to: '2:5' })); }
+    function apiGetMaktabSabaq(id, since){ calls.push(['sabaq', id, since]); return Promise.resolve(rowsFor()); }
+    function apiGetMaktabSabaqDhor(id, since){ calls.push(['sdhor', id, since]); return Promise.resolve([]); }
+    function apiGetMaktabDhor(id, since){ calls.push(['dhor', id, since]); return Promise.resolve([]); }
+    function iconHtml(n){ return '[' + n + ']'; }
     function formatDateCell(d){ return d; }
-    function maktabCellHtml(type, entries){ return (entries || []).length ? type + ':' + entries.length : ''; }
-    function openMaktabDay(student, date, card){ opened.push([student.id, student.name, student.track_haidh, date, card]); }
+    function journalCellShorthand(type, entries){ return (entries || []).length ? type + ':' + entries.length : '—'; }
+    function renderJournalRollupRow(from, to){ const tr = document.createElement('tr'); tr.className = 'journal-rollup-row'; tr.textContent = from + '..' + to; return tr; }
+    function openMaktabDay(stu, date){ opened.push([stu.id, date]); }
+    function openMaktabAttendancePage(stu, date){ attOpened.push([stu.id, date]); }
+    function showScreen(id){ screens.push(id); return Promise.resolve(); }
+    function setMaktabLogContext(){}
+    function maktabTodayISO(){ return '2026-08-28'; }
   `);
-  const a = daySrc.indexOf('async function renderStudentSummaryCard');
+  const a = daySrc.indexOf('const SS_EXPANDED_DAYS');
   w.eval(daySrc.slice(a));
   return w;
 }
 const tick = () => new Promise(r => setTimeout(r, 0));
+const manyDates = Array.from({ length: 24 }, (_, i) => {
+  const d = new Date('2026-08-28T00:00:00Z'); d.setUTCDate(d.getUTCDate() - i * 2); return d.toISOString().slice(0, 10);
+});
 
-{ // teacher viewing a student: For-style calls, rows newest first, tap-through
-  const w = cardDom();
-  await w.eval('renderStudentSummaryCard()'); await tick();
-  check('card: a teacher\'s view passes the student\'s id to all three GETs',
-    JSON.stringify(w.eval('calls.map(c => c[1])')) === '["STU2","STU2","STU2"]');
-  const rows = [...w.document.querySelectorAll('#studentSummaryBody tr')];
-  check('card: one row per date, newest first', rows.length === 3
-    && rows.map(r => r.cells[0].textContent).join(' ') === '2026-08-27 2026-08-26 2026-08-25');
-  check('card: the three cells use the shared cell renderer (counts visible)',
-    rows[0].cells[1].innerHTML === 'sabaq:1' && rows[0].cells[2].innerHTML === 'sabaqDhor:1'
-    && rows[1].cells[3].innerHTML === 'dhor:2' && rows[2].cells[2].innerHTML === '');
-  rows[1].click();
-  check('card: tapping a row opens that DAY\'s cards for the ctx student',
-    JSON.stringify(w.eval('opened[0]')) === JSON.stringify(['STU2', 'Umme', true, '2026-08-26', 'sabaq']));
+{ // teacher view: For-calls with a window, 10 expanded + rollups + Load more
+  const w = pageDom(manyDates);
+  await w.eval('renderStudentSummaryScreen()'); await tick();
+  check('page: teacher fetches pass the student id AND a since window',
+    w.eval('calls').every(c => c[1] === 'STU2' && /^\d{4}-\d{2}-\d{2}$/.test(c[2])));
+  check('page: the header carries her name and the attendance icon', w.document.getElementById('studentSummaryTitle').textContent === 'Umme'
+    && w.document.getElementById('studentSummaryAttendanceBtn').innerHTML === '[attendance]');
+  const rows = [...w.document.querySelectorAll('#studentSummaryTbody tr')];
+  const expanded = rows.filter(r => r.querySelector('.cell-date'));
+  const rollups = rows.filter(r => r.className === 'journal-rollup-row');
+  check('page: the PJ layout — 10 expanded days, the rest rolled up, newest first',
+    expanded.length === 10 && rollups.length >= 2
+    && expanded[0].querySelector('.cell-date').textContent === manyDates[0], `${expanded.length}/${rollups.length}`);
+  check('page: Load more exists and widens the window on tap', !!w.document.getElementById('studentSummaryLoadMore'));
+  const before = w.eval('calls.length');
+  w.document.getElementById('studentSummaryLoadMore').click(); await tick(); await tick();
+  check('page: Load more refetches with an older since', w.eval('calls.length') === before + 3
+    && w.eval('calls')[before][2] < w.eval('calls')[0][2]);
+  expanded[1].click();
+  check('page: a row tap opens that DAY\'s log cards', JSON.stringify(w.eval('opened[0]')) === JSON.stringify(['STU2', manyDates[1]]));
+  w.document.getElementById('studentSummaryAttendanceBtn').click();
+  check('page: the attendance icon opens her attendance page on the ctx date', JSON.stringify(w.eval('attOpened[0]')) === '["STU2","2026-08-27"]');
+  w.document.getElementById('studentSummaryCloseBtn').click();
+  check('page: close returns to the maktab summary', w.eval('screens').includes('maktabSummary'));
 }
-{ // the student's own read-only path: no id passed (own-scoped endpoints)
-  const w = cardDom();
-  w.eval("currentUser = { id: 'STU2', name: 'Umme' };");
-  await w.eval('renderStudentSummaryCard()'); await tick();
-  check('card: her own view calls WITHOUT a student_id', w.eval('calls.every(c => c[1] === undefined)') === true);
+{ // her own read-only path: no student_id
+  const w = pageDom(['2026-08-27']);
+  w.eval("currentUser = { id: 'STU2' };");
+  await w.eval('renderStudentSummaryScreen()'); await tick();
+  check('page: her own view calls WITHOUT a student_id', w.eval('calls').every(c => c[1] === undefined));
 }
 { // empty state
-  const w = cardDom();
-  w.eval('SABAQ = []; SDHOR = []; DHOR = [];');
-  await w.eval('renderStudentSummaryCard()'); await tick();
-  check('card: the empty state reads as the maktab journal\'s does', /No maktab entries yet\./.test(w.document.getElementById('studentSummaryBody').textContent));
+  const w = pageDom([]);
+  await w.eval('renderStudentSummaryScreen()'); await tick();
+  check('page: the empty state names the maktab record', /No maktab entries yet\./.test(w.document.getElementById('studentSummaryTbody').textContent));
 }
-
-// ---------- routing pins ----------
-check('summary: the NAME tap opens the summary card with the picked date',
-  /nameTd\.addEventListener\('click', \(e\) => \{\n\s*e\.stopPropagation\(\);\n\s*openMaktabDay\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date, 'studentSummary'\);/.test(summarySrc));
-check('summary: each log cell routes to its OWN card', /td\.addEventListener\('click', \(e\) => \{\n\s*e\.stopPropagation\(\);\n\s*openMaktabDay\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date, type\);/.test(summarySrc));
-check('summary: the whole-row tap keeps its old target (day view, default card)',
-  /tr\.addEventListener\('click', \(\) => openMaktabDay\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date\)\);/.test(summarySrc));
-check('day: openMaktabDay takes initialCard, defaulting to sabaq',
-  /async function openMaktabDay\(student, date, initialCard\)\{/.test(daySrc)
-  && /await showScreen\('logDetail', initialCard \|\| 'sabaq'\);/.test(daySrc));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

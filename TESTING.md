@@ -2045,6 +2045,16 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.85.0 — the batch of four (WORKER FIRST, then frontend; no migration)
+
+Cache name is `hifzhelper-v3.85.0`; the login card should show 3.85.0.
+
+1. **Summary → tap a name**: a full-page summary opens — her name in the header, the PJ journal's shape (recent days, weekly rollups, Load more), maktab entries only. The day rail is back to THREE cards. Tap a date row → that day's cards; tap the attendance icon in the header → her attendance page.
+2. **Maktab Settings → General**: rows read label-left like the schematic. Time Zone is one field — tap it, pick the device zone or type one: the chooser CLOSES and the field shows the choice; nothing about the device's zone stays on screen. Save; reload; the zone holds.
+3. **Attendance page**: the data sits on a card; the range reads "Choose a custom date range from … to …". With min-students above your logging, the card now SAYS "No maktab days in this period (fewer than N students logged per day)".
+4. **Any log card**: the History button now sits at the BOTTOM below Notes, next to a new "Notes history" button — one list of your notes and teacher feedback by date. On the Dhor card, Plan/Add-Juz moved up beside the date.
+5. **Privacy spot-check**: a private note never shows in a teacher's Notes history; teachers_only feedback never shows in the student's.
+
 ## V3.84.0 — the header-cell search (FRONTEND ONLY — upload, hard-refresh)
 
 Cache name is `hifzhelper-v3.84.0`; the login card should show 3.84.0.

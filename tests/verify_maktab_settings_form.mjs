@@ -53,9 +53,11 @@ check('an unchecked group falls back rather than sending undefined',
 
 // ---------- wording ----------
 check('the legend explains what the mushaf governs', /counting lines and pages/.test(form));
-check('maktab-day label reworded', /Minimum no of students to mark a Hifz maktab day/.test(form));
-check('inactivity label reworded, with the unit after the field',
-  /Students will be flagged as inactive after[\s\S]{0,200}> days/.test(form));
+// V3.85.0: reworded again to the user's schematic — narrow label-left
+// rows with the small numeric input on the right; no trailing unit word.
+check('maktab-day label follows the schematic', /Minimum number of students on a maktab day/.test(form));
+check('inactivity label follows the schematic (small input right, no stranded unit)',
+  /No\. of inactive maktab days before flagging a student/.test(form) && /class="mset-num" id="mset_absence"/.test(form));
 check('the explanatory hints are gone', !/Every student in the maktab follows this mushaf/.test(form)
   && !/A date counts as a maktab day once/.test(form));
 check('loading and error states are NOT treated as explanatory text',

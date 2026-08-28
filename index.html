@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.84.0"></script>
+<script src="js/pwaManifest.js?v=3.85.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.84.0">
-<link rel="stylesheet" href="css/base.css?v=3.84.0">
-<link rel="stylesheet" href="css/nav.css?v=3.84.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.84.0">
-<link rel="stylesheet" href="css/components.css?v=3.84.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.84.0">
-<link rel="stylesheet" href="css/settings.css?v=3.84.0">
-<link rel="stylesheet" href="css/admin.css?v=3.84.0">
-<link rel="stylesheet" href="css/haidh.css?v=3.84.0">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.84.0">
-<link rel="stylesheet" href="css/sih.css?v=3.84.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.85.0">
+<link rel="stylesheet" href="css/base.css?v=3.85.0">
+<link rel="stylesheet" href="css/nav.css?v=3.85.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.85.0">
+<link rel="stylesheet" href="css/components.css?v=3.85.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.85.0">
+<link rel="stylesheet" href="css/settings.css?v=3.85.0">
+<link rel="stylesheet" href="css/admin.css?v=3.85.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.85.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.85.0">
+<link rel="stylesheet" href="css/sih.css?v=3.85.0">
 </head>
 <body>
 
@@ -250,6 +250,33 @@
       </div>
     </section>
 
+    <!-- V3.85.0 (user's V3.82 revision, confirmed 2026-08-28): the STUDENT
+         SUMMARY is a STANDALONE page, not a rail card — "copied from the
+         student's PJ": the PJ Journal PAGE's layout (expanded recent days
+         + weekly rollups + Load more) over the MAKTAB'S OWN entries only
+         ("the maktab only sees maktab data"). Opened by the name tap on
+         the maktab summary; rows tap through to that day's log cards; the
+         attendance icon in the header opens her attendance page. -->
+    <section class="screen hidden" id="screen-studentSummary">
+      <div class="card-header-row">
+        <span class="card-header-icon" id="studentSummaryHeaderIcon"></span>
+        <h2 id="studentSummaryTitle">Summary</h2>
+        <button type="button" class="icon-btn att-nav-btn" id="studentSummaryAttendanceBtn" aria-label="Attendance"></button>
+        <button type="button" class="screen-close-btn" id="studentSummaryCloseBtn" aria-label="Back to summary"></button>
+      </div>
+      <div class="journal-header-row">
+        <div class="journal-header-cell col-date">Date</div>
+        <div class="journal-header-cell col-log"><span>Sabaq</span></div>
+        <div class="journal-header-cell col-log"><span>Sabaq Dhor</span></div>
+        <div class="journal-header-cell col-log"><span>Dhor</span></div>
+      </div>
+      <div class="journal-wrap">
+        <table class="journal-table">
+          <tbody id="studentSummaryTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- Maktab day view — (e1) PLACEHOLDER ONLY. The real 3-card entry
          screen (student name above Sabaq/Sabaq Dhor/Dhor cards, prepop,
          teacher notes, haidh entry) is delivery (e2). This exists so the
@@ -321,10 +348,6 @@
           <button type="button" class="dot" data-index="0">Sabaq</button>
           <button type="button" class="dot" data-index="1">SDhor</button>
           <button type="button" class="dot" data-index="2">Dhor</button>
-          <!-- V3.82.0: the student summary — maktab mode only (js toggles
-               hidden). The maktab's OWN record of the student in the PJ
-               journal layout, independent of the (k) merge. -->
-          <button type="button" class="dot" data-index="3" id="logDetailSummaryDot" hidden>Summary</button>
         </div>
         <button type="button" class="log-detail-close screen-close-btn" id="logDetailClose" aria-label="Exit to Home"></button>
       </div>
@@ -356,7 +379,7 @@
               <span class="edit-date-slot" id="sabaqEditDateSlot"></span>
               <button type="button" class="edit-close-btn" id="sabaqEditCloseBtn" aria-label="Cancel edit"></button>
             </div>
-            <div class="card-date-row"><input type="date" id="sabaq_date" class="card-header-date"><div class="history-container" id="sabaqRecentRail"></div></div>
+            <div class="card-date-row"><input type="date" id="sabaq_date" class="card-header-date"></div>
             <!-- V3.50.0 (confirmed in chat): the standalone "Confirm
                  selection" label row is gone -- Sabaq from/to now sit
                  inside one bordered group styled to Sabaq Dhor's own
@@ -412,6 +435,12 @@
             <label>Tajweed</label>
             <div id="sabaqTajweedPicker"></div>
             <div id="sabaqCommentBlock"></div>
+            <!-- V3.85.0 (user, 2026-08-28): BOTH history buttons live at
+                 the bottom of the page, below the notes. -->
+            <div class="card-history-bottom">
+              <div class="history-container" id="sabaqRecentRail"></div>
+              <button type="button" class="history-btn notes-history-btn" id="sabaqNotesHistoryBtn">Notes history</button>
+            </div>
             <div class="form-error" id="sabaqError"></div>
             <!-- V3.51.0 (confirmed in chat): Confirm changes (grey until any
                  field differs from the loaded entry, green when dirty,
@@ -454,7 +483,7 @@
               <span class="edit-date-slot" id="sabaqDhorEditDateSlot"></span>
               <button type="button" class="edit-close-btn" id="sabaqDhorEditCloseBtn" aria-label="Cancel edit"></button>
             </div>
-            <div class="card-date-row"><input type="date" id="sabaqDhor_date" class="card-header-date"><div class="history-container" id="sabaqDhorRecentRail"></div></div>
+            <div class="card-date-row"><input type="date" id="sabaqDhor_date" class="card-header-date"></div>
 
             <!-- V3.19.0: "Sections to revise" removed; "Confirm Sabaq
                  Dhor" (V3.45.5, was "Mark sections revised") now labels
@@ -490,6 +519,11 @@
               <div><label>Tajweed</label><div id="sabaqDhorTajweedPicker"></div></div>
             </div>
             <div id="sabaqDhorCommentBlock"></div>
+            <!-- V3.85.0: both history buttons at the bottom, below Notes. -->
+            <div class="card-history-bottom">
+              <div class="history-container" id="sabaqDhorRecentRail"></div>
+              <button type="button" class="history-btn notes-history-btn" id="sabaqDhorNotesHistoryBtn">Notes history</button>
+            </div>
             <div class="form-error" id="sabaqDhorError"></div>
             <!-- V3.51.0 (confirmed in chat): Confirm changes (grey until any
                  field differs from the loaded entry, green when dirty,
@@ -539,7 +573,9 @@
                  bottom of the card, below Notes; the History button here
                  picks up the same general .history-btn sizing the other
                  two cards use. -->
-            <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"><div class="history-container" id="dhorRecentRail"></div></div>
+            <!-- V3.85.0 (user): the Add-Juz/Plan button and History SWAP —
+                 Plan rides the date row now; History moved below Notes. -->
+            <div class="card-date-row"><input type="date" id="dhor_date" class="card-header-date"><button type="button" class="dhor-row2-btn" id="dhorViewPlanBtn">Plan</button></div>
             <!-- Row 3: Amount as a 3-way switch (was a dropdown), reusing
                  the same .switch-track/.switch-option pattern already
                  used elsewhere (e.g. Dhor Schedule's own granularity
@@ -658,13 +694,14 @@
               <div id="dhorLapRollupList" class="hidden"></div>
             </div>
             <div id="dhorCommentBlock"></div>
-            <!-- V3.50.2 (confirmed in chat): the Plan button's new home --
-                 moved out of Row 2 to the bottom of the card, below
-                 Notes, at 30% width left-aligned. Same id, so
-                 js/dhorPage.js's wiring is untouched; keeps its
-                 .dhor-row2-btn styling (that class's rules stand alone
-                 in css/detail-pages.css and don't require the old row). -->
-            <button type="button" class="dhor-row2-btn" id="dhorViewPlanBtn">Plan</button>
+            <!-- V3.85.0: the V3.50.2 bottom Plan button moved UP to the
+                 date row (the user's swap); both history buttons sit here
+                 now, below the notes. Same ids throughout — wiring in
+                 js/dhorPage.js untouched. -->
+            <div class="card-history-bottom">
+              <div class="history-container" id="dhorRecentRail"></div>
+              <button type="button" class="history-btn notes-history-btn" id="dhorNotesHistoryBtn">Notes history</button>
+            </div>
             <div class="form-error" id="dhorError"></div>
             <!-- V3.51.0 (confirmed in chat): Confirm changes (grey until any
                  field differs from the loaded entry, green when dirty,
@@ -678,25 +715,6 @@
               </div>
               <button type="button" class="edit-delete-btn" id="dhorEditDeleteBtn">Delete</button>
             </div>
-          </div>
-        </div>
-
-        <!-- V3.82.0: the STUDENT SUMMARY card — the fourth on the rail,
-             maktab mode only (hidden in the PJ; renderLogDetailScreen
-             toggles). The PJ journal LAYOUT over the MAKTAB'S entries for
-             this student ONLY — the maktab reading its own truth,
-             independent of the (k) merge. Rows tap through to that day's
-             cards, like the student's own Maktab Journal does. -->
-        <div class="log-detail-card detail-page" id="card-studentSummary" hidden>
-          <div class="card-scroll">
-            <div class="maktab-name-row" id="maktabNameRow_studentSummary" hidden></div>
-            <div class="card-header-row">
-              <span class="card-header-icon" id="studentSummaryHeaderIcon"></span>
-              <h3 class="student-summary-title">Summary</h3>
-            </div>
-            <table class="journal-table">
-              <tbody id="studentSummaryBody"></tbody>
-            </table>
           </div>
         </div>
 
@@ -788,15 +806,19 @@
         <h2 id="attendanceTitle">Attendance</h2>
         <button type="button" class="screen-close-btn" id="haidhDetailCloseBtn" aria-label="Exit to Home"></button>
       </div>
-      <div class="att-block">
+      <!-- V3.85.0 (user, 2026-08-28): ALL attendance data on ONE card;
+           the custom range reads as a sentence. The haidh block below
+           gets its own second card (recorded assumption). -->
+      <div class="att-card att-block">
         <div class="att-percent-row">
           <span class="att-percent" id="attPercent">&ndash;</span>
           <span class="att-count" id="attCount"></span>
         </div>
         <div class="att-period" id="attPeriod"></div>
         <div class="att-custom-row">
+          <span class="att-custom-sentence">Choose a custom date range from</span>
           <input type="date" id="attFrom" aria-label="From">
-          <span class="att-custom-dash">&ndash;</span>
+          <span class="att-custom-sentence">to</span>
           <input type="date" id="attTo" aria-label="To">
           <button type="button" class="secondary" id="attApply">Apply</button>
           <button type="button" class="link-btn hidden" id="attReset">back to default</button>
@@ -806,7 +828,7 @@
         <div class="form-error" id="attError"></div>
       </div>
       <!-- the haidh calendar, for haa'idah only (js toggles) -->
-      <div id="attHaidhBlock">
+      <div id="attHaidhBlock" class="att-card">
       <div class="att-haidh-heading">
         <span class="card-header-icon" id="haidhDetailHeaderIcon"></span>
         <!-- V3.76.0: id'd so the maktab opener can put the student's name in
@@ -1250,37 +1272,37 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.84.0"></script>
-<script src="shared/haidhRules.js?v=3.84.0"></script>
-<script src="js/icons.js?v=3.84.0"></script>
-<script src="js/customDate.js?v=3.84.0"></script>
-<script src="js/api.js?v=3.84.0"></script>
-<script src="js/logContext.js?v=3.84.0"></script>
-<script src="js/uiSwitch.js?v=3.84.0"></script>
-<script src="js/position.js?v=3.84.0"></script>
-<script src="js/auth.js?v=3.84.0"></script>
-<script src="js/home.js?v=3.84.0"></script>
-<script src="js/tajweed.js?v=3.84.0"></script>
-<script src="js/commentPrivacy.js?v=3.84.0"></script>
-<script src="js/session-timer.js?v=3.84.0"></script>
-<script src="js/journal.js?v=3.84.0"></script>
-<script src="js/maktabSummary.js?v=3.84.0"></script>
-<script src="js/maktabSettings.js?v=3.84.0"></script>
-<script src="js/maktabSetup.js?v=3.84.0"></script>
-<script src="js/maktabDay.js?v=3.84.0"></script>
-<script src="js/maktabJournal.js?v=3.84.0"></script>
-<script src="js/dhorPage.js?v=3.84.0"></script>
-<script src="js/sabaqPage.js?v=3.84.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.84.0"></script>
-<script src="js/reflectionCard.js?v=3.84.0"></script>
-<script src="js/logDetailScreen.js?v=3.84.0"></script>
-<script src="js/haidhDetailScreen.js?v=3.84.0"></script>
-<script src="js/kaabaTracker.js?v=3.84.0"></script>
-<script src="js/juzTrackerScreen.js?v=3.84.0"></script>
-<script src="js/sihScreen.js?v=3.84.0"></script>
-<script src="js/settingsScreen.js?v=3.84.0"></script>
-<script src="js/adminPage.js?v=3.84.0"></script>
-<script src="js/versionStamp.js?v=3.84.0"></script>
-<script src="js/app.js?v=3.84.0"></script>
+<script src="shared/data.js?v=3.85.0"></script>
+<script src="shared/haidhRules.js?v=3.85.0"></script>
+<script src="js/icons.js?v=3.85.0"></script>
+<script src="js/customDate.js?v=3.85.0"></script>
+<script src="js/api.js?v=3.85.0"></script>
+<script src="js/logContext.js?v=3.85.0"></script>
+<script src="js/uiSwitch.js?v=3.85.0"></script>
+<script src="js/position.js?v=3.85.0"></script>
+<script src="js/auth.js?v=3.85.0"></script>
+<script src="js/home.js?v=3.85.0"></script>
+<script src="js/tajweed.js?v=3.85.0"></script>
+<script src="js/commentPrivacy.js?v=3.85.0"></script>
+<script src="js/session-timer.js?v=3.85.0"></script>
+<script src="js/journal.js?v=3.85.0"></script>
+<script src="js/maktabSummary.js?v=3.85.0"></script>
+<script src="js/maktabSettings.js?v=3.85.0"></script>
+<script src="js/maktabSetup.js?v=3.85.0"></script>
+<script src="js/maktabDay.js?v=3.85.0"></script>
+<script src="js/maktabJournal.js?v=3.85.0"></script>
+<script src="js/dhorPage.js?v=3.85.0"></script>
+<script src="js/sabaqPage.js?v=3.85.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.85.0"></script>
+<script src="js/reflectionCard.js?v=3.85.0"></script>
+<script src="js/logDetailScreen.js?v=3.85.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.85.0"></script>
+<script src="js/kaabaTracker.js?v=3.85.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.85.0"></script>
+<script src="js/sihScreen.js?v=3.85.0"></script>
+<script src="js/settingsScreen.js?v=3.85.0"></script>
+<script src="js/adminPage.js?v=3.85.0"></script>
+<script src="js/versionStamp.js?v=3.85.0"></script>
+<script src="js/app.js?v=3.85.0"></script>
 </body>
 </html>

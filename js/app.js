@@ -37,7 +37,7 @@ function showWelcome(name){
 // object below, where the // swallowed every entry after it and the
 // unclosed brace broke the whole file — the same one-line-comment trap
 // as the fixture repair, now guarded by tests/verify_syntax.mjs.)
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true, juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true };
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true, juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true, studentSummary: true };   // studentSummary: V3.85.0, the standalone page
 const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
@@ -64,7 +64,10 @@ async function showScreen(id, param){
   // V3.76.0: the haidh calendar is the second shared screen. Opened by the
   // maktab (param { maktab: true }) it must KEEP the context; opened from
   // the nav (a string date, or nothing) it drops it like every other screen.
-  const keepsMaktabCtx = id === 'logDetail' || !!(id === 'attendancePage' && param && typeof param === 'object' && param.maktab === true);   // V3.80.0: was haidhDetail
+  // V3.80.0: attendancePage was haidhDetail. V3.85.0: studentSummary
+  // keeps the ctx too (the standalone page renders from it). No trailing
+  // comment on the line below — harnesses slice it (the V3.82.1 lesson).
+  const keepsMaktabCtx = id === 'logDetail' || id === 'studentSummary' || !!(id === 'attendancePage' && param && typeof param === 'object' && param.maktab === true);
   if(!keepsMaktabCtx && typeof exitMaktabDay === 'function') exitMaktabDay();
   if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
@@ -74,6 +77,7 @@ async function showScreen(id, param){
   if(id === 'juzTracker') await renderJuzTrackerScreen();
   if(id === 'sih') await renderSihScreen();
   if(id === 'maktabSummary') await renderMaktabSummaryScreen();
+  if(id === 'studentSummary') await renderStudentSummaryScreen();   // V3.85.0
   if(id === 'maktabSettings') await renderMaktabSettingsScreen();
   // V3.72.0: the maktabSetup SCREEN is gone — Setup is a sheet over the
   // Dhor card now, opened from that card's own button.

@@ -435,9 +435,12 @@ async function loadAttendancePeriod(){
   }
   attPageData = d;
   document.getElementById('attPercent').textContent = d.percent === null ? '–' : d.percent + '%';
+  // V3.85.0: an EMPTY period is named, not left as a bare line — the
+  // user's "0 maktab days" report was the min-students threshold doing
+  // its job, and this wording makes that self-explaining forever.
   document.getElementById('attCount').textContent = d.maktab_days
     ? `present ${d.present_days} of ${d.maktab_days} maktab days`
-    : 'no maktab days in this period';
+    : `No maktab days in this period (fewer than ${d.maktab_day_min || '?'} students logged per day).`;
   const label = d.source === 'term' ? ' (current term)' : d.source === '4w' ? ' (last 4 weeks)' : ' (custom)';
   document.getElementById('attPeriod').textContent = `${d.from} – ${d.to}${label}`;
   document.getElementById('attFrom').value = d.from;

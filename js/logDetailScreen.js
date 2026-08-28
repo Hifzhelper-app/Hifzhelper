@@ -12,10 +12,10 @@
 // card at all (index.html/js/dhorPage.js), relocated to a truly
 // top-level, always-mounted element outside the whole screen-swapping
 // system. The rail is exactly 3 cards now.
-// V3.82.0: 'studentSummary' is the FOURTH card — maktab mode only; the
-// PJ hides both the card and its dot (renderLogDetailScreen below), and
-// the dots driver skips hidden cards so the phantom can never go active.
-const LOG_DETAIL_CARD_ORDER = ['sabaq', 'sabaqDhor', 'dhor', 'studentSummary'];
+// V3.85.0: back to THREE cards — the student summary is a STANDALONE
+// page now (the user's V3.82 revision), not a rail card. The dots
+// driver's hidden-card guard below stays: correct in general.
+const LOG_DETAIL_CARD_ORDER = ['sabaq', 'sabaqDhor', 'dhor'];
 
 // V3.12.0: header icons (display only, no click action) + save-button
 // icons for all 3 real cards, injected once here rather than per-render
@@ -164,15 +164,6 @@ async function renderLogDetailScreen(initialCard){
     renderSabaqDhorScreen(),
     renderDhorScreen()
   ]);
-
-  // V3.82.0: the summary card and dot exist only under a maktab context.
-  const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
-  const summaryCard = document.getElementById('card-studentSummary');
-  const summaryDot = document.getElementById('logDetailSummaryDot');
-  if(summaryCard) summaryCard.hidden = !inMaktab;
-  if(summaryDot) summaryDot.hidden = !inMaktab;
-  document.getElementById('logDetailRail').classList.toggle('has-summary', inMaktab);
-  if(inMaktab && typeof renderStudentSummaryCard === 'function') await renderStudentSummaryCard();
 
   const rail = document.getElementById('logDetailRail');
   const startIndex = Math.max(0, LOG_DETAIL_CARD_ORDER.indexOf(initialCard));

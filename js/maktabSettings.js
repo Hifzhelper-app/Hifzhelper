@@ -46,69 +46,71 @@ async function renderMaktabSettingsScreen(){
 
   // ---------- card 1: GENERAL (form + Save, as always) ----------
   general.innerHTML = `
-    <div class="mset-name-row">
-      <label class="form-label mset-name-field">Maktab name
-        <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
-      </label>
-      <!-- V3.74.2: save as an icon, matching the Dhor card's pattern. -->
+    <!-- V3.85.0: rebuilt to the user's schematic (2026-08-28) —
+         label-left / control-right rows; SAVE stays top-right; the
+         timezone is ONE field (tap to open the chooser), which also
+         removes the standing "Use this device's timezone" button the
+         user reported lingering after choosing another zone. -->
+    <div class="mset-row mset-name-row">
+      <span class="mset-row-label">Maktab Name</span>
+      <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
       <button type="button" class="mset-save-btn" id="mset_save" aria-label="Save settings">
         <span class="mset-save-icon" id="mset_save_icon"></span><span>SAVE</span>
       </button>
+      <span class="mset-save-status" id="mset_status"></span>
     </div>
 
-    <!-- V3.79.0: the option-3 timezone control. #mset_timezone is the
-         STAGED value (hidden input, same id Save has read since
-         V3.78.0); everything visible below just stages into it. -->
     <input type="hidden" id="mset_timezone" value="${esc(s.timezone || '')}">
-    <div class="form-label">Maktab timezone</div>
-    <div class="mset-tz-box">
-      <div class="mset-tz-current" id="mset_tz_current"></div>
+    <div class="mset-row">
+      <span class="mset-row-label">Time Zone</span>
+      <button type="button" class="mset-tz-field" id="mset_tz_field"></button>
+    </div>
+    <div class="mset-tz-chooser hidden" id="mset_tz_chooser">
       <button type="button" class="secondary" id="mset_tz_device"></button>
-      <button type="button" class="link-btn" id="mset_tz_other_toggle">choose a different zone</button>
-      <div class="mset-tz-other-row hidden" id="mset_tz_other_row">
+      <div class="mset-tz-other-row" id="mset_tz_other_row">
         <input type="text" id="mset_tz_other" list="mset_tz_zones" placeholder="Start typing a zone\u2026" autocomplete="off">
         <datalist id="mset_tz_zones"></datalist>
       </div>
-      <button type="button" class="link-btn hidden" id="mset_tz_clear">clear (each device uses its own day)</button>
+      <button type="button" class="link-btn" id="mset_tz_clear">clear (each device uses its own day)</button>
     </div>
 
-    <!-- V3.74.2: was a <legend>; now a normal label outside the group. -->
-    <div class="form-label mset-mushaf-label">Mushaf
-      <span class="mset-legend-note">(counting lines and pages, and determining boundaries for juz)</span>
-    </div>
-    <fieldset class="mset-mushaf">
-      ${[
-        ['13line', '13 line indopak', 'quarter and half from the ruku'],
-        ['15line_madani', '15 line madani', 'maqra (sabaq dhor only), rub and hizb'],
-        ['15line_indopak', '15 line indopak', 'quarter and half from the ruku'],
-      ].map(([value, name, detail]) => `
-        <label class="mset-mushaf-opt">
-          <input type="radio" name="mset_mushaf" value="${value}"${s.mushaf === value ? ' checked' : ''}>
-          <span class="mset-mushaf-name">${name}</span>
-          <span class="mset-mushaf-detail">${detail}</span>
-        </label>`).join('')}
-    </fieldset>
-
-    <label class="form-label">Minimum no of students to mark a Hifz maktab day
-      <input type="number" id="mset_day_min" min="1" inputmode="numeric" value="${esc(s.maktab_day_min)}">
-    </label>
-
-    <label class="form-label">Students will be flagged as inactive after
-      <input type="number" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}"> days
-    </label>
-
-    <!-- V3.80.0: the current term — the DEFAULT period the attendance
-         page calculates over ("the easiest way to set term dates"). -->
-    <div class="form-label">Current term
-      <span class="mset-legend-note">(the default attendance period)</span>
-    </div>
-    <div class="mset-term-row">
-      <input type="date" id="mset_term_from" value="${esc(s.term_from || '')}" aria-label="Term from">
-      <span>&ndash;</span>
-      <input type="date" id="mset_term_to" value="${esc(s.term_to || '')}" aria-label="Term to">
+    <div class="mset-row mset-row-top">
+      <span class="mset-row-label">Mushaf
+        <span class="mset-legend-note">(counting lines and pages, and determining boundaries for juz)</span>
+      </span>
+      <fieldset class="mset-mushaf">
+        ${[
+          ['13line', '13 line indopak', 'quarter and half from the ruku'],
+          ['15line_madani', '15 line madani', 'maqra (sabaq dhor only), rub and hizb'],
+          ['15line_indopak', '15 line indopak', 'quarter and half from the ruku'],
+        ].map(([value, name, detail]) => `
+          <label class="mset-mushaf-opt">
+            <input type="radio" name="mset_mushaf" value="${value}"${s.mushaf === value ? ' checked' : ''}>
+            <span class="mset-mushaf-name">${name}</span>
+            <span class="mset-mushaf-detail">${detail}</span>
+          </label>`).join('')}
+      </fieldset>
     </div>
 
-    <span class="save-status" id="mset_status"></span>`;
+    <div class="mset-row mset-row-narrow">
+      <span class="mset-row-label">Minimum number of students on a maktab day</span>
+      <input type="number" class="mset-num" id="mset_day_min" min="1" inputmode="numeric" value="${esc(s.maktab_day_min)}">
+    </div>
+    <div class="mset-row mset-row-narrow">
+      <span class="mset-row-label">No. of inactive maktab days before flagging a student</span>
+      <input type="number" class="mset-num" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}">
+    </div>
+
+    <div class="mset-row mset-row-narrow">
+      <span class="mset-row-label">Current term
+        <span class="mset-legend-note">(the default attendance period)</span>
+      </span>
+      <span class="mset-term-row">
+        <input type="date" id="mset_term_from" value="${esc(s.term_from || '')}" aria-label="Term from">
+        <span>&ndash;</span>
+        <input type="date" id="mset_term_to" value="${esc(s.term_to || '')}" aria-label="Term to">
+      </span>
+    </div>`;
 
   // ---------- cards 2 + 3: the two instant-commit lists ----------
   document.getElementById('msetCardTajweed').innerHTML = `
@@ -179,53 +181,52 @@ function msetDeviceZone(){
   try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || null; }
   catch(e){ return null; }
 }
+// V3.85.0: ONE Time Zone field. The field shows the staged zone (or
+// "Not set"); tapping it toggles the chooser (device zone, type-ahead,
+// clear). Every stage action CLOSES the chooser and repaints the field —
+// nothing stays on screen advertising the device's zone, which is the
+// user's reported bug with the old standing button. Staging semantics
+// unchanged: everything writes the hidden #mset_timezone; General's
+// Save commits; the worker validates.
 function renderMsetTimezoneControl(){
   const staged = document.getElementById('mset_timezone').value;
-  const current = document.getElementById('mset_tz_current');
-  current.textContent = staged ? staged : 'Not set — each device uses its own day.';
-  const deviceBtn = document.getElementById('mset_tz_device');
-  const dz = msetDeviceZone();
-  if(dz && dz !== staged){
-    deviceBtn.textContent = `Use this device's timezone (${dz})`;
-    deviceBtn.classList.remove('hidden');
-    if(!deviceBtn._wired){
-      deviceBtn._wired = true;
-      deviceBtn.addEventListener('click', () => {
-        document.getElementById('mset_timezone').value = msetDeviceZone() || '';
-        renderMsetTimezoneControl();
-      });
-    }
-  } else {
-    deviceBtn.classList.add('hidden');
-  }
-  const clearBtn = document.getElementById('mset_tz_clear');
-  clearBtn.classList.toggle('hidden', !staged);
-  if(!clearBtn._wired){
-    clearBtn._wired = true;
-    clearBtn.addEventListener('click', () => {
-      document.getElementById('mset_timezone').value = '';
-      renderMsetTimezoneControl();
-    });
-  }
-  const toggle = document.getElementById('mset_tz_other_toggle');
-  if(!toggle._wired){
-    toggle._wired = true;
-    toggle.addEventListener('click', () => {
-      const row = document.getElementById('mset_tz_other_row');
-      row.classList.toggle('hidden');
-      if(!row.classList.contains('hidden')){
+  const field = document.getElementById('mset_tz_field');
+  const chooser = document.getElementById('mset_tz_chooser');
+  field.textContent = staged ? staged : 'Not set';
+  const stage = (v) => {
+    document.getElementById('mset_timezone').value = v;
+    chooser.classList.add('hidden');
+    renderMsetTimezoneControl();
+  };
+  if(!field._wired){
+    field._wired = true;
+    field.addEventListener('click', () => {
+      chooser.classList.toggle('hidden');
+      if(!chooser.classList.contains('hidden')){
+        // the device-zone offer lives INSIDE the chooser only, and only
+        // when it would change anything
+        const dz = msetDeviceZone();
+        const cur = document.getElementById('mset_timezone').value;
+        const deviceBtn = document.getElementById('mset_tz_device');
+        if(dz && dz !== cur){
+          deviceBtn.textContent = `Use this device's timezone (${dz})`;
+          deviceBtn.classList.remove('hidden');
+        } else {
+          deviceBtn.classList.add('hidden');
+        }
+        document.getElementById('mset_tz_clear').classList.toggle('hidden', !cur);
         msetFillZoneDatalist();
         document.getElementById('mset_tz_other').focus();
       }
     });
+    document.getElementById('mset_tz_device').addEventListener('click', () => stage(msetDeviceZone() || ''));
+    document.getElementById('mset_tz_clear').addEventListener('click', () => stage(''));
     // typing a full, known zone stages it; the worker validates again on Save
     document.getElementById('mset_tz_other').addEventListener('change', () => {
       const v = document.getElementById('mset_tz_other').value.trim();
       if(!v) return;
-      document.getElementById('mset_timezone').value = v;
       document.getElementById('mset_tz_other').value = '';
-      document.getElementById('mset_tz_other_row').classList.add('hidden');
-      renderMsetTimezoneControl();
+      stage(v);
     });
   }
 }

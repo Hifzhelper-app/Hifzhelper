@@ -1407,10 +1407,7 @@
     overflow: visible;
     scroll-snap-type: none;
   }
-  /* V3.82.0: with the student-summary card visible (maktab mode) the
-     desktop grid holds four. The V3.45.8 lesson above cuts both ways:
-     the column count must follow the real card count. */
-  .log-detail-rail.has-summary { grid-template-columns: repeat(4, 1fr); }
+
   /* Dots row is hidden entirely at this breakpoint (all 3 cards already
      visible in the grid, nothing to indicate a position within) -- same
      auth-band-only calculation as .editing-active uses everywhere,
@@ -1747,7 +1744,25 @@
 .maktab-search-result:last-child { border-bottom: none; }
 .maktab-search-empty { font-size: 13px; color: var(--color-ink-faint); padding: 10px 12px; }
 
-/* V3.82.0: the student-summary card */
-#card-studentSummary .student-summary-title { margin: 0; font-size: 17px; }
-#card-studentSummary .journal-table { width: 100%; }
-#card-studentSummary[hidden] { display: none; }
+/* V3.85.0: the standalone student-summary page */
+#screen-studentSummary .journal-header-row { margin-top: var(--space-sm); }
+.att-nav-btn { background: none; border: none; padding: 4px; cursor: pointer; margin-left: auto; }
+.att-nav-btn svg, .att-nav-btn .icon { width: 22px; height: 22px; }
+#screen-studentSummary .screen-close-btn { margin-left: var(--space-sm); }
+
+/* V3.85.0: the attendance page's two cards */
+.att-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin: var(--space-sm) 0 var(--space-md);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.att-custom-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.att-custom-sentence { font-size: 13px; }
+
+/* V3.85.0: both history buttons at the card bottom, below Notes */
+.card-history-bottom { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-sm) 0; }
+.notes-kind { font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .04em; }
+.notes-kind-feedback { color: var(--accent, #2f7d5d); }

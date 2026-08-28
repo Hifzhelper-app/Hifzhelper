@@ -409,3 +409,26 @@
 /* V3.80.0: the term selector on the General card */
 .mset-term-row { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
 .mset-term-row input[type="date"] { flex: 0 1 auto; min-width: 0; }
+
+/* ============================================================
+   V3.85.0 — the General card to the user's schematic: label-left /
+   control-right rows; one Time Zone field; small numeric inputs. */
+.mset-row { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-md) 0; }
+.mset-row-label { flex: 0 0 38%; font-weight: 600; }
+.mset-row > input[type="text"], .mset-row .mset-tz-field { flex: 1 1 auto; min-width: 0; }
+.mset-row-top { align-items: flex-start; }
+.mset-row .mset-mushaf { flex: 1 1 auto; margin: 0; }
+.mset-row-narrow .mset-row-label { flex: 1 1 auto; font-weight: 500; }
+.mset-row-narrow .mset-num { flex: 0 0 72px; width: 72px; text-align: center; }
+.mset-name-row .mset-save-btn { margin-left: var(--space-sm); }
+.mset-tz-field {
+  text-align: left; cursor: pointer;
+  border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
+  background: var(--color-surface, #fff); padding: 8px 10px; font: inherit;
+}
+.mset-tz-chooser { margin: 0 0 var(--space-md) 38%; padding-left: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); align-items: flex-start; }
+.mset-term-row { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+@media (max-width: 560px){
+  .mset-row-label { flex-basis: 42%; }
+  .mset-tz-chooser { margin-left: 0; }
+}

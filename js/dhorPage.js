@@ -1638,6 +1638,50 @@ async function renderRecentEntries(type, railId, onRowClick){
     document.getElementById('historyPopupCloseBtn').addEventListener('click', () => overlay.remove());
   });
 }
+// ============================================================
+// V3.85.0: NOTES HISTORY — the user's option (c): ONE interleaved rail
+// across dates of entry notes + teacher feedback, like the entry-history
+// rail. NO new endpoint and NO new visibility logic: the rows come from
+// the same logClient(type).get() the History rail reads, and the worker
+// has ALREADY applied the privacy rules per viewer (student_comment
+// privacy + teacher_feedback_visibility), in PJ merged mode and maktab
+// mode alike — so whatever note/feedback text is present here is exactly
+// what this viewer is allowed to see.
+// ============================================================
+async function openNotesHistory(type){
+  const client = logClient(type);
+  let rows = [];
+  try{ rows = await client.get(); } catch(e){ rows = []; }
+  rows = rows.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id||0) - (a.id||0));
+  const items = [];
+  rows.forEach(r => {
+    if(r.student_comment) items.push({ date: r.date, kind: 'Note', text: r.student_comment, teacher: null });
+    if(r.teacher_feedback) items.push({ date: r.date, kind: 'Feedback', text: r.teacher_feedback, teacher: r.teacher_name || null });
+  });
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay history-popup-modal';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" id="notesHistoryCloseBtn">&times;</button>
+    <h2>Notes history</h2>
+    <div class="history-full-list">
+      ${items.slice(0, 80).map(it => `<div class="history-entry-row">
+        <div class="history-entry-content">
+          <div class="rail-card-date">${it.date} · <span class="notes-kind notes-kind-${it.kind.toLowerCase()}">${it.kind}</span></div>
+          <div class="rail-card-body">${railEscape(it.text)}</div>
+          ${it.teacher ? `<div class="rail-card-teacher">${railEscape(it.teacher)}</div>` : ''}
+        </div>
+      </div>`).join('') || '<div class="form-hint">No notes or feedback yet.</div>'}
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.getElementById('notesHistoryCloseBtn').addEventListener('click', () => overlay.remove());
+}
+['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
+  const btn = document.getElementById(type + 'NotesHistoryBtn');
+  if(btn) btn.addEventListener('click', () => openNotesHistory(type));
+});
+
 // V3.75.0 (item 10): maktab rows carry teacher_name (provenance — who
 // confirmed the entry). The History rail shows it under the entry when it
 // is present. PJ rows have no such field, so nothing changes there; and

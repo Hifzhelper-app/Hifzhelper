@@ -21,8 +21,8 @@ numbers; headings are unique, search the text.
 | **1** | **DEPLOY AND VERIFY V3.68.0 → V3.71.0 + the catch-up zip** | **Deployed 2026-08-17. Reads CONFIRMED in production; the pool write is NOT yet confirmed** | **Nothing below can be trusted until this is done.** Worker FIRST (V3.68.0 moved the Dhor pool merge server-side), then frontend, then hard-refresh. V3.68.0 shipped without its cache bump, so a warm-cache browser may never have run its JavaScript at all — that is the likely cause of the "logged for Umme, not in her history" report. Manual checklist in `TESTING.md`. |
 | ~~2~~ | ~~**Run the admin PJ discard**~~ | **DONE — 2026-08-17, verified** | Ran in the D1 console (no local clone, so the wrangler `--file` route did not apply). Removed 21 rows for `ABCDEFG`: 6 sabaq, 4 sabaq dhor, 3 dhor, 7 attendance (7 not 13 because attendance is per DATE, not per log — several logs shared days), 1 position. `reflections` and `plans` were already 0. Profile fields cleared, and the stray haidh mark and known-wrong stored position went with the attendance and position rows. Verified all zeros; account still `ABCDEFG / ADMIN-01 / admin / 1` with `pin_hash` untouched. **Two non-bugs to expect:** ADMIN-01 still shows in the maktab summary with dashes (the roster filter is part of (j)), and its Dhor prepop reports nothing set up (correct — the pool is empty by instruction). |
 | ~~3~~ | ~~**(j) Account separation**~~ | **BUILT — V3.77.0, 2026-08-27** | Roster filter, create-teaching-profile (`<id>TEACHER`, no PIN until first login), the device-local switcher with PIN every time, `updateLog` date validation. No migration. **Testing resumes.** Design and plan retained in the (j) sections below as the record. |
-| **4** | **Shared maktab timezone** | **"start building"** | DECIDED: a per-maktab setting, the maktab settings screen's 5th. Unbuilt. One sub-decision left — display in the viewer's local time or the maktab's everywhere. |
-| **5** | **(k) Merged journal** | "start building (k)" — (j) has landed | Union at read time with provenance. Its own decisions still to make: how provenance is shown; the maktab-only filter. |
+| ~~4~~ | ~~**Shared maktab timezone**~~ | **BUILT — V3.78.0 (delivery 3), 2026-08-27** | Per-maktab setting; everyone sees maktab time. This row had gone stale — struck 2026-08-28. |
+| ~~5~~ | ~~**(k) Merged journal**~~ | **BUILT — V3.83.0, 2026-08-28** | Union at read time; provenance = teacher line; marker Option A live (B/C staged). Row struck 2026-08-28. |
 | **6** | **(l) Archive** | (k) | 60-day physical copy + re-sync on maktab edit AND delete. |
 | **7** | **Settings Haidh heading tweaks** | **"start building"** | Three changes, fully specced. **Carries a trap** — deleting the hint element without its two JS writers reproduces the V3.51.2 blank-fields bug. Still worth doing: Settings is hidden from teachers but live for students. |
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
@@ -57,7 +57,7 @@ after it):
    reads stay pure; prepop/frontier/tracker consume the merge. Marker
    choice + the build interpretation both still open to the user's veto.
    (l) Archive is now unblocked.
-4. **Notes History + button moves** — ANSWERED 2026-08-28: option (c),
+4. ~~**Notes History + button moves**~~ **BUILT V3.85.0.** Spec: option (c),
    ONE INTERLEAVED RAIL across dates of entry notes + teacher feedback,
    like the entry-history rail. Visibility rules UNCHANGED and do the
    filtering per viewer: the maktab sees PJ notes marked visible to it
@@ -65,8 +65,7 @@ after it):
    her own notes + feedback visible to her. Layout: BOTH history buttons
    move to the bottom of the page below the notes; on the dhor page the
    Add-Juz and History buttons swap. BUILD-READY.
-5. ~~**Student summary page**~~ BUILT V3.82.0 — **then REVISED by the
-   user's V3.82 feedback (2026-08-28, "don't build" until confirmed):**
+5. ~~**Student summary page**~~ **REVISION BUILT V3.85.0 (2026-08-28)** — standalone page, PJ layout, maktab data only, attendance icon, rail back to 3. Original revision spec kept below as the record:
    (a) NOT a rail card — a STANDALONE page "copied from the student's
    PJ"; the 4th card + dot come OFF the rail (back to 3). CONFIRMED by
    the user 2026-08-28 ("the maktab only sees maktab data"): the PJ
@@ -86,8 +85,9 @@ after it):
    tap-to-reveal (Claude's settled choice, open to veto); V3.78.0
    semantics kept. User checking.
 
-7. **Settings General card — schematic rework (user, 2026-08-28,
-   screenshots provided; "don't build" ritual applies):** label-left /
+7. ~~**Settings General card — schematic rework**~~ **BUILT V3.85.0
+   (2026-08-28)** — schematic rows; one tz field (lingering device
+   button gone); save-status crash caught and fixed. Spec kept:** label-left /
    control-right rows per the schematic: Maktab Name [input]; Time Zone
    [ONE compact field — shows the staged zone or "Not set"; tapping it
    opens the chooser (use-device-zone, type-ahead, clear) and closes on
@@ -101,8 +101,9 @@ after it):
    user (device zone still on screen after choosing another). The
    single-field control removes the standing button entirely.
 
-8. **Attendance "0 maktab days" report (user, 2026-08-28) — DIAGNOSED,
-   almost certainly NOT a code bug:** a date only counts as a maktab day
+8. ~~**Attendance "0 maktab days" report**~~ **VERIFIED CORRECT by the
+   user (2026-08-28); the explanatory empty-period message BUILT
+   V3.85.0.** Diagnosis kept:** a date only counts as a maktab day
    when ≥ maktab_day_min DISTINCT students have maktab logs on it
    (loadMaktabDays, HAVING n >= min). The user's settings show min = 3;
    test logging for 1–2 students therefore yields ZERO maktab days, so
@@ -112,7 +113,9 @@ after it):
    maktab days, say so explicitly — "No maktab days in this period
    (fewer than N students logged per day)" — instead of a bare dash.
 
-9. **Attendance page — card container (user, 2026-08-28):** all the
+9. ~~**Attendance page — card container**~~ **BUILT V3.85.0
+   (2026-08-28)** — one card for the data (+ the haidh card), the
+   sentence-style custom range. Spec kept:** all the
    attendance data (% present, the count/period line, the custom
    from–to controls, the absent-days history) sits neatly on ONE card
    container, matching the app's existing card styling, instead of
@@ -121,7 +124,9 @@ after it):
    [date]". The haidh calendar + ranges below keep
    their own block (presumably a second card — confirm at build).
 
-10. **Note-history button on the log cards** — the user flagged it absent
+10. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
+   (2026-08-28)** — option (c) interleaved rail; both history buttons
+   below Notes; the dhor swap. Original note:** — the user flagged it absent
    on V3.82: correct, it is queue item 4 (notes history + button moves,
    option (c), BUILD-READY) and simply not yet built. No spec change.
 

@@ -186,7 +186,7 @@ check('day: the opener sets the maktab context and passes { maktab: true, date }
   && /function openMaktabHaidhCalendar\(student, date\)\{\n\s*openMaktabAttendancePage\(student, date\);\n\}/.test(daySrc));
 check('day: the toggle flow is deleted, not left dangling', !/function maktabToggleHaidh|function maktabMarkHaidhFlow|function maktabHaidhGapDays/.test(daySrc));
 check('app: showScreen keeps the context for the maktab-opened page and drops it otherwise (attendancePage since V3.80.0)',
-  /const keepsMaktabCtx = id === 'logDetail' \|\| !!\(id === 'attendancePage' && param && typeof param === 'object' && param\.maktab === true\);/.test(appSrc)
+  /const keepsMaktabCtx = id === 'logDetail' \|\| id === 'studentSummary' \|\| !!\(id === 'attendancePage' && param && typeof param === 'object' && param\.maktab === true\);/.test(appSrc)
   && /if\(!keepsMaktabCtx && typeof exitMaktabDay === 'function'\) exitMaktabDay\(\);/.test(appSrc));
 check('api: apiMarkHaidhRangeFor posts student_id with the range', /function apiMarkHaidhRangeFor\(studentId, startDate, endDate, opts\)\{[\s\S]{0,200}student_id: studentId, startDate, endDate/.test(apiSrc));   // opts since V3.76.2
 check('html: the heading is id\'d for the name (an h3 inside the attendance page since V3.80.0)', /<h3 class="att-haidh-title" id="haidhDetailTitle">Haidh<\/h3>/.test(html));

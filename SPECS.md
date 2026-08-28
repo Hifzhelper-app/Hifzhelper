@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.85.0** — The batch of four: standalone student summary page; settings General schematic; attendance cards + empty-period message; notes history + button moves
 - **V3.84.0** — Summary search relocated into the green Student header cell (tap-to-reveal)
 - **V3.83.0** — (k) The merge: one-way maktab → PJ union at read time; personal entries marked; ownership governs writes
 - **V3.82.0** — The student summary card: 4th on the rail, maktab's own record in the PJ layout
@@ -121,6 +122,15 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.85.0 (2026-08-28): the batch of four
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| Student summary = standalone page copied from the PJ; maktab data only; attendance icon; off the rail | screen-studentSummary: PJ layout (10 expanded + rollups + Load more) over the maktab GETs; rail back to 3 cards; name tap opens it; header attendance icon → her attendance page |
+| Settings General per the schematic; the device zone must not linger | label-left rows; ONE tz field, chooser closes on every stage action; small numeric inputs; SAVE top-right |
+| Attendance data neatly on a card; custom range as a sentence | .att-card for the data + a second for haidh; "Choose a custom date range from [date] to [date]"; empty period named with the min-students threshold |
+| Notes history option (c); both history buttons to the bottom; dhor Add-Juz/History swap | one interleaved read-only rail per card from the existing GETs (privacy already server-side); card-history-bottom below Notes; Plan on the dhor date row |
 
 ## Done — V3.84.0 (2026-08-28): the header-cell search
 

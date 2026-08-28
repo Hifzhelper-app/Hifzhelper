@@ -238,14 +238,23 @@ function apiMaktabSummary(date){
 }
 // student_id optional: omitted = own logs (the student Maktab Journal);
 // passed = a teacher reading a specific student ((e2) day view reuse).
-function apiGetMaktabSabaq(studentId){
-  return apiFetch('/maktab/sabaq' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
+function apiGetMaktabSabaq(studentId, since){   // since: V3.85.0, the summary page's window
+  const q = [];
+  if(studentId) q.push('student_id=' + encodeURIComponent(studentId));
+  if(since) q.push('since=' + encodeURIComponent(since));
+  return apiFetch('/maktab/sabaq' + (q.length ? '?' + q.join('&') : ''));
 }
-function apiGetMaktabSabaqDhor(studentId){
-  return apiFetch('/maktab/sabaq-dhor' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
+function apiGetMaktabSabaqDhor(studentId, since){   // since: V3.85.0, the summary page's window
+  const q = [];
+  if(studentId) q.push('student_id=' + encodeURIComponent(studentId));
+  if(since) q.push('since=' + encodeURIComponent(since));
+  return apiFetch('/maktab/sabaq-dhor' + (q.length ? '?' + q.join('&') : ''));
 }
-function apiGetMaktabDhor(studentId){
-  return apiFetch('/maktab/dhor' + (studentId ? '?student_id=' + encodeURIComponent(studentId) : ''));
+function apiGetMaktabDhor(studentId, since){   // since: V3.85.0, the summary page's window
+  const q = [];
+  if(studentId) q.push('student_id=' + encodeURIComponent(studentId));
+  if(since) q.push('since=' + encodeURIComponent(since));
+  return apiFetch('/maktab/dhor' + (q.length ? '?' + q.join('&') : ''));
 }
 
 // ---------- maktab write path + prepop fetches (V3.60.0, delivery (e2)) ----------

@@ -64,7 +64,7 @@ function maktabPaintNameRows(marked){
   // repaint does, so it is refreshed here rather than from a second hook
   // that could fall out of step.
   if(typeof refreshDhorPlanBtn === 'function') refreshDhorPlanBtn();
-  ['sabaq', 'sabaqDhor', 'dhor', 'studentSummary'].forEach(type => {   // studentSummary: V3.82.0
+  ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {   // V3.85.0: back to 3 — the summary is a page
     const row = document.getElementById('maktabNameRow_' + type);
     if(!row) return;
     if(!logCtxIsMaktab()){ row.hidden = true; row.innerHTML = ''; return; }
@@ -168,43 +168,72 @@ function exitMaktabDay(){
 }
 
 // ============================================================
-// V3.82.0: the STUDENT SUMMARY card — the maktab's own record of the
-// student, in the PJ journal layout, independent of the (k) merge.
-// Data: the three maktab GETs, which already take a teacher's
-// student_id override; a student viewing her own (the read-only
-// maktab-journal path) calls without one, since the student-scoped
-// endpoints refuse a student naming ids. Rows tap through to that
-// day's cards — the same behaviour her own Maktab Journal has.
+// V3.85.0: the STUDENT SUMMARY as a STANDALONE PAGE (the user's V3.82
+// revision, confirmed 2026-08-28: "the maktab only sees maktab data").
+// "Copied from the student's PJ" = the PJ Journal PAGE's layout —
+// expanded recent days, weekly rollup rows, Load more — reusing the
+// journal's own row/rollup renderers, but over the MAKTAB'S entries for
+// this student ONLY, read-only. Rows tap through to that day's log
+// cards; the header's attendance icon opens her attendance page.
+// Data: the three maktab GETs (student_id in teacher mode; her own
+// read-only path calls without one).
 // ============================================================
-async function renderStudentSummaryCard(){
-  const host = document.getElementById('studentSummaryBody');
-  if(!host) return;
-  const icon = document.getElementById('studentSummaryHeaderIcon');
-  if(icon && typeof iconHtml === 'function') icon.innerHTML = iconHtml('journal');
-  host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
+const SS_EXPANDED_DAYS = 10;
+const SS_DEFAULT_DAYS = 90;
+const SS_LOAD_MORE_DAYS = 28;
+let ssTotalDays = SS_DEFAULT_DAYS;
+
+async function openStudentSummaryPage(student, date){
+  setMaktabLogContext(student, date || maktabTodayISO());
+  ssTotalDays = SS_DEFAULT_DAYS;
+  await showScreen('studentSummary');
+}
+
+async function renderStudentSummaryScreen(){
+  const tbody = document.getElementById('studentSummaryTbody');
+  if(!tbody) return;
+  document.getElementById('studentSummaryTitle').textContent = logCtxStudentName() || 'Summary';
+  const hIcon = document.getElementById('studentSummaryHeaderIcon');
+  if(hIcon && typeof iconHtml === 'function') hIcon.innerHTML = iconHtml('journal');
+  const attBtn = document.getElementById('studentSummaryAttendanceBtn');
+  if(attBtn){
+    if(typeof iconHtml === 'function') attBtn.innerHTML = iconHtml('attendance');
+    attBtn.onclick = () => {
+      const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
+      openMaktabAttendancePage(student, logCtxDate());
+    };
+  }
+  const closeBtn = document.getElementById('studentSummaryCloseBtn');
+  if(closeBtn) closeBtn.onclick = () => showScreen('maktabSummary');
+
+  const since = (() => { const d = new Date(); d.setDate(d.getDate() - ssTotalDays); return d.toISOString().slice(0,10); })();
   const id = logCtxStudentId();
   const own = (typeof currentUser !== 'undefined' && currentUser && currentUser.id === id);
   let sabaq, sabaqDhor, dhor;
   try{
     [sabaq, sabaqDhor, dhor] = await Promise.all([
-      apiGetMaktabSabaq(own ? undefined : id),
-      apiGetMaktabSabaqDhor(own ? undefined : id),
-      apiGetMaktabDhor(own ? undefined : id),
+      apiGetMaktabSabaq(own ? undefined : id, since),
+      apiGetMaktabSabaqDhor(own ? undefined : id, since),
+      apiGetMaktabDhor(own ? undefined : id, since),
     ]);
   } catch(e){
-    host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Could not load the maktab record.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Could not load the maktab record.</td></tr>';
     return;
   }
   const days = {};
-  const add = (rows, type) => (Array.isArray(rows) ? rows : []).forEach(r => {
-    (days[r.date] = days[r.date] || { sabaq: [], sabaqDhor: [], dhor: [] })[type].push(r);
+  const bucket = (rows, key) => (Array.isArray(rows) ? rows : []).forEach(r => {
+    (days[r.date] = days[r.date] || { sabaq: [], sabaqDhor: [], dhor: [] })[key].push(r);
   });
-  add(sabaq, 'sabaq'); add(sabaqDhor, 'sabaqDhor'); add(dhor, 'dhor');
-  const dates = Object.keys(days).sort().reverse();
-  host.innerHTML = '';
-  dates.forEach(date => {
+  bucket(sabaq, 'sabaq'); bucket(sabaqDhor, 'sabaqDhor'); bucket(dhor, 'dhor');
+
+  const allDates = Object.keys(days).sort().reverse();
+  tbody.innerHTML = '';
+  if(!allDates.length){
+    tbody.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">No maktab entries yet.</td></tr>';
+    return;
+  }
+  const rowFor = (date) => {
     const tr = document.createElement('tr');
-    tr.className = 'maktab-journal-row';
     const dateTd = document.createElement('td');
     dateTd.className = 'cell-date';
     dateTd.innerHTML = formatDateCell(date);
@@ -212,16 +241,44 @@ async function renderStudentSummaryCard(){
     ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
       const td = document.createElement('td');
       td.className = 'journal-cell';
-      td.innerHTML = maktabCellHtml(type, days[date][type]);
+      td.innerHTML = journalCellShorthand(type, days[date][type]);
       tr.appendChild(td);
     });
     tr.addEventListener('click', () => {
       const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
-      openMaktabDay(student, date, 'sabaq');
+      openMaktabDay(student, date);
     });
-    host.appendChild(tr);
-  });
-  if(!dates.length){
-    host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">No maktab entries yet.</td></tr>';
+    return tr;
+  };
+  const expanded = allDates.slice(0, SS_EXPANDED_DAYS);
+  const rest = allDates.slice(SS_EXPANDED_DAYS);
+  expanded.forEach(date => tbody.appendChild(rowFor(date)));
+  // the PJ journal's own rolling-7-day buckets, verbatim shape
+  if(rest.length){
+    let bucketStart = null, bucketDates = [];
+    const flush = () => {
+      if(bucketDates.length) tbody.appendChild(renderJournalRollupRow(bucketDates[bucketDates.length - 1], bucketDates[0]));
+      bucketDates = [];
+    };
+    const oldestExpanded = expanded.length ? new Date(expanded[expanded.length - 1] + 'T00:00:00') : new Date();
+    rest.forEach(date => {
+      const d = new Date(date + 'T00:00:00');
+      const daysFromBoundary = Math.floor((oldestExpanded - d) / 86400000);
+      const idx = Math.floor((daysFromBoundary - 1) / 7);
+      if(bucketStart !== idx){ flush(); bucketStart = idx; }
+      bucketDates.push(date);
+    });
+    flush();
   }
+  const more = document.createElement('tr');
+  const moreTd = document.createElement('td');
+  moreTd.colSpan = 4;
+  moreTd.className = 'journal-load-more-cell';
+  moreTd.innerHTML = '<button type="button" id="studentSummaryLoadMore">Load more</button>';
+  more.appendChild(moreTd);
+  tbody.appendChild(more);
+  document.getElementById('studentSummaryLoadMore').addEventListener('click', async () => {
+    ssTotalDays += SS_LOAD_MORE_DAYS;
+    await renderStudentSummaryScreen();
+  });
 }

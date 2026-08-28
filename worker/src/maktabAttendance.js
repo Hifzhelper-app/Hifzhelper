@@ -250,6 +250,7 @@ export async function handleAttendancePage(request, env, auth) {
   return { data: {
     student_id: studentId, from, to, source,
     maktab_days: periodDays.length, present_days, percent,
+    maktab_day_min: settings.maktab_day_min,   // V3.85.0: lets the page explain an EMPTY period
     absent_dates, haidh_ranges,
     track_haidh: !!student.track_haidh,
     term_from: settings.term_from || null, term_to: settings.term_to || null,

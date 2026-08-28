@@ -55,7 +55,7 @@ check('3: save is an icon on the name row', /class="mset-save-btn" id="mset_save
 check('3: and the bottom text button is GONE, not a second way to save',
   !/class="primary-btn" id="mset_save"/.test(settings));
 check('3: the icon comes from the shared set', /iconHtml\('save'\)/.test(settings));
-check('4: Mushaf is a normal label, not a fieldset legend', /class="form-label mset-mushaf-label"/.test(settings) && !/<legend>Mushaf/.test(settings));
+check('4: Mushaf is a normal label, not a fieldset legend (V3.85.0: the label is the row-label of the schematic grid)', /class="mset-row-label">Mushaf/.test(settings) && !/<legend>Mushaf/.test(settings));
 check('4: the numeric labels no longer strand their unit on a wrapped line',
   /#maktabSettingsBody \.form-label input\[type="number"\][\s\S]{0,140}width: auto/.test(st));
 
