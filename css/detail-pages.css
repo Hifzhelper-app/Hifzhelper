@@ -1407,6 +1407,10 @@
     overflow: visible;
     scroll-snap-type: none;
   }
+  /* V3.82.0: with the student-summary card visible (maktab mode) the
+     desktop grid holds four. The V3.45.8 lesson above cuts both ways:
+     the column count must follow the real card count. */
+  .log-detail-rail.has-summary { grid-template-columns: repeat(4, 1fr); }
   /* Dots row is hidden entirely at this breakpoint (all 3 cards already
      visible in the grid, nothing to indicate a position within) -- same
      auth-band-only calculation as .editing-active uses everywhere,
@@ -1717,3 +1721,8 @@
 .maktab-search-result { display: block; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--color-table-border); font: inherit; font-size: 14px; padding: 10px 12px; cursor: pointer; color: var(--color-ink); }
 .maktab-search-result:last-child { border-bottom: none; }
 .maktab-search-empty { font-size: 13px; color: var(--color-ink-faint); padding: 10px 12px; }
+
+/* V3.82.0: the student-summary card */
+#card-studentSummary .student-summary-title { margin: 0; font-size: 17px; }
+#card-studentSummary .journal-table { width: 100%; }
+#card-studentSummary[hidden] { display: none; }

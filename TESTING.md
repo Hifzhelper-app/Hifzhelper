@@ -2045,6 +2045,20 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.82.1 — hotfix (upload this build; replaces V3.80.0–V3.82.0 uploads)
+
+Cache name is `hifzhelper-v3.82.1`; login card shows 3.82.1. The app loading AT ALL past the login screen is the test — then run the V3.80.0, V3.81.0 and V3.82.0 checklists below against this build.
+
+## V3.82.0 — the student summary card (FRONTEND ONLY — upload, hard-refresh)
+
+Cache name is `hifzhelper-v3.82.0`; the login card should show 3.82.0.
+
+1. **Summary → tap a student's NAME**: the day rail opens on a fourth card — "Summary", her maktab record by date, newest first. Swipe left: Dhor, Sabaq Dhor, Sabaq are all there; four dots now.
+2. **Tap her SABAQ cell** instead: the rail opens on the Sabaq card. Sabaq Dhor and Dhor cells likewise. Tapping the row anywhere else: Sabaq, as before.
+3. **On the summary card, tap a date row**: the rail jumps to that day's cards (the date pills follow).
+4. **Your own PJ day cards**: three cards, three dots — no summary card outside the maktab.
+5. **A student's Maktab Journal → tap a day**: she gets the fourth card too, read-only.
+
 ## V3.81.0 — the dhor juz-range (FRONTEND ONLY — upload, hard-refresh)
 
 Cache name is `hifzhelper-v3.81.0`; the login card should show 3.81.0.

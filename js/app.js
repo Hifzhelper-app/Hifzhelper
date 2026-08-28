@@ -32,7 +32,12 @@ function showWelcome(name){
 // component owns all of its own behavior) -- SCREENS_BUILT still needs the
 // entry so it doesn't fall to the "coming soon" placeholder, but showScreen()
 // below needs no dedicated branch for it, unlike every other built screen.
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true,   // V3.80.0: was haidhDetail — the calendar lives inside the attendance page now juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true };
+// V3.80.0: attendancePage was haidhDetail — the calendar lives inside the
+// attendance page now. (V3.82.1: this note used to sit INLINE in the
+// object below, where the // swallowed every entry after it and the
+// unclosed brace broke the whole file — the same one-line-comment trap
+// as the fixture repair, now guarded by tests/verify_syntax.mjs.)
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true, juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true };
 const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){

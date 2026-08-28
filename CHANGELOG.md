@@ -26,6 +26,32 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.82.1 — HOTFIX: app.js broken since V3.80.0 (2026-08-28)
+
+**Files touched:** `js/app.js`, `js/sw.js`, `index.html` (?v only), `tests/verify_syntax.mjs` (new), `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY. Upload this INSTEAD of V3.80.0/V3.81.0/V3.82.0 — all three zips carried the break.**
+
+**The bug (reported live: `SyntaxError: Unexpected identifier 'SCREEN_LABELS'` at app.js:36):** the V3.80.0 haidhDetail→attendancePage rename placed its explanatory comment INLINE in the single-line `SCREENS_BUILT` object literal, so the `//` swallowed every entry after it — `juzTracker` through `maktabSetup` AND the closing `};`. The unclosed object made the entire file unparseable, killing the app at load. It is the same one-line-comment trap already hit once in a test fixture during the V3.80.0 build (recorded there); this time it landed in shipped code. The comment now lives on its own lines above the object.
+
+**Why 29 green harnesses missed a file that didn't parse:** every harness string-slices regions of source or drives extracted functions — none parsed the shipped files WHOLE. New permanent gate: `tests/verify_syntax.mjs` runs `node --check` over every `js/*.js` and `shared/*.js` (34 scripts; the worker's ESM files were never exposed — miniflare parses them whole in every worker harness). It fails today's bug retroactively and any future scripted-edit breakage of this class.
+
+**Verification: 951 passed, 0 failed across 30 harnesses** (34 new: every shipped script parsed whole, plus the walker's own sanity check).
+
+---
+
+## V3.82.0 — The student summary card (2026-08-28)
+
+**Files touched:** `js/logDetailScreen.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `index.html`, `css/detail-pages.css`, `js/sw.js`, `tests/verify_v3820_student_summary.mjs` (new), `TODO.md`, `SPECS.md`, `TESTING.md`. **FRONTEND ONLY — no worker change, no migration** (the three maktab GETs already take a teacher's student_id).
+
+**A FOURTH card on the day rail — maktab mode only:** the student summary, the PJ journal LAYOUT over the MAKTAB'S entries for that student ONLY — the maktab reading its own record, INDEPENDENT of the (k) merge (the user's correction, 2026-08-28). One row per date, newest first, the shared journal cells; tapping a row opens that day's log cards, exactly as the student's own Maktab Journal does. In the PJ the card and its dot are hidden, and the dots driver now skips hidden cards — a display:none card rects to 0,0 and would otherwise always claim the active dot. The desktop grid grows to four columns only when the card shows (the V3.45.8 lesson applied forward: column count follows real card count).
+
+**Cell-level routing on the maktab summary** (user: name → summary, "student sabaq --> sabaq etc"): tapping a student's NAME opens her summary card; tapping her Sabaq / Sabaq Dhor / Dhor cell opens that card; the whole-row tap keeps its old target (day view on Sabaq). The picked date carries through every route, and `openMaktabDay` gained an `initialCard` parameter defaulting to 'sabaq' so every existing caller is byte-for-byte unchanged. The entry-peek badge still wins over the cell (it already stops propagation first).
+
+**Her own read-only path benefits too:** a student opening a day from her Maktab Journal now sees the summary card as the fourth card, read-only, fetched without a student_id (the student-scoped endpoints refuse a student naming ids — the card routes own vs For accordingly).
+
+**Verification: 917 passed, 0 failed across 29 harnesses** (18 new: the markup, the four-card order, the maktab-only toggle, the dots phantom-card guard driven with fake rects, the renderer driven in both modes plus empty state, and every routing pin). No existing pins needed realignment.
+
+---
+
 ## V3.81.0 — Dhor juz-range: one Save, one sitting, one entry per juz (2026-08-28)
 
 **Files touched:** `js/dhorPage.js`, `index.html`, `js/sw.js`, `tests/verify_v3810_juz_range.mjs` (new), `TODO.md`, `SPECS.md`, `TESTING.md`. **FRONTEND ONLY — no worker change, no migration.** The fan-out is N standard saves through the existing endpoint, so the worker's per-save pool merge and duplicate detection apply to each juz unchanged.

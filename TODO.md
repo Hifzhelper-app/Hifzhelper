@@ -76,14 +76,9 @@ after it):
    her own notes + feedback visible to her. Layout: BOTH history buttons
    move to the bottom of the page below the notes; on the dhor page the
    Add-Juz and History buttons swap. BUILD-READY.
-5. **Student summary page** — a NEW FOURTH card on the maktab day rail.
-   From the maktab summary, tapping the student's NAME opens it; tapping
-   her sabaq cell opens the sabaq card (etc.) as now. ANSWERED
-   2026-08-28: the PJ journal LAYOUT showing the MAKTAB'S entries for her
-   ONLY — the maktab's own record of the student, INDEPENDENT of the (k)
-   merge (corrected from an earlier merged reading). Existing
-   note-visibility rules keep governing what shows. Consequence: no
-   dependency on (k) — this item can be built before or after the merge.
+5. ~~**Student summary page**~~ **BUILT V3.82.0 (2026-08-28)** — the 4th
+   rail card, maktab's own record in the PJ layout; name tap opens it,
+   log cells route to their own cards; independent of (k); frontend only.
 
 ## The ATTENDANCE PAGE — BUILT V3.80.0 (2026-08-28; the original list-of-11 intent behind item 5)
 

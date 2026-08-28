@@ -64,7 +64,7 @@ function maktabPaintNameRows(marked){
   // repaint does, so it is refreshed here rather than from a second hook
   // that could fall out of step.
   if(typeof refreshDhorPlanBtn === 'function') refreshDhorPlanBtn();
-  ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
+  ['sabaq', 'sabaqDhor', 'dhor', 'studentSummary'].forEach(type => {   // studentSummary: V3.82.0
     const row = document.getElementById('maktabNameRow_' + type);
     if(!row) return;
     if(!logCtxIsMaktab()){ row.hidden = true; row.innerHTML = ''; return; }
@@ -114,7 +114,10 @@ async function maktabExtendSabaqToFromPJ(){
 }
 
 // Entry point from the summary's row tap.
-async function openMaktabDay(student, date){
+// V3.82.0: initialCard — the summary's cells route to their own card
+// (name → studentSummary, sabaq cell → sabaq, and so on); default stays
+// 'sabaq', the behaviour every existing caller had.
+async function openMaktabDay(student, date, initialCard){
   maktabDayStudent = student;
   maktabDayDate = date || maktabTodayISO();
   setMaktabLogContext(student, maktabDayDate);
@@ -138,7 +141,7 @@ async function openMaktabDay(student, date){
     setLogCtxPool(blob && Array.isArray(blob.baselineSelection) ? blob.baselineSelection : []);
   } catch(e){ setLogCtxPool([]); }
 
-  await showScreen('logDetail', 'sabaq');
+  await showScreen('logDetail', initialCard || 'sabaq');
 
   // date: every card's own date control, set to the day being logged
   ['sabaq_date', 'sabaqDhor_date', 'dhor_date'].forEach(id => {
@@ -162,4 +165,63 @@ function exitMaktabDay(){
   maktabDayStudent = null;
   maktabDayDate = null;
   maktabPaintNameRows(false);
+}
+
+// ============================================================
+// V3.82.0: the STUDENT SUMMARY card — the maktab's own record of the
+// student, in the PJ journal layout, independent of the (k) merge.
+// Data: the three maktab GETs, which already take a teacher's
+// student_id override; a student viewing her own (the read-only
+// maktab-journal path) calls without one, since the student-scoped
+// endpoints refuse a student naming ids. Rows tap through to that
+// day's cards — the same behaviour her own Maktab Journal has.
+// ============================================================
+async function renderStudentSummaryCard(){
+  const host = document.getElementById('studentSummaryBody');
+  if(!host) return;
+  const icon = document.getElementById('studentSummaryHeaderIcon');
+  if(icon && typeof iconHtml === 'function') icon.innerHTML = iconHtml('journal');
+  host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
+  const id = logCtxStudentId();
+  const own = (typeof currentUser !== 'undefined' && currentUser && currentUser.id === id);
+  let sabaq, sabaqDhor, dhor;
+  try{
+    [sabaq, sabaqDhor, dhor] = await Promise.all([
+      apiGetMaktabSabaq(own ? undefined : id),
+      apiGetMaktabSabaqDhor(own ? undefined : id),
+      apiGetMaktabDhor(own ? undefined : id),
+    ]);
+  } catch(e){
+    host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Could not load the maktab record.</td></tr>';
+    return;
+  }
+  const days = {};
+  const add = (rows, type) => (Array.isArray(rows) ? rows : []).forEach(r => {
+    (days[r.date] = days[r.date] || { sabaq: [], sabaqDhor: [], dhor: [] })[type].push(r);
+  });
+  add(sabaq, 'sabaq'); add(sabaqDhor, 'sabaqDhor'); add(dhor, 'dhor');
+  const dates = Object.keys(days).sort().reverse();
+  host.innerHTML = '';
+  dates.forEach(date => {
+    const tr = document.createElement('tr');
+    tr.className = 'maktab-journal-row';
+    const dateTd = document.createElement('td');
+    dateTd.className = 'cell-date';
+    dateTd.innerHTML = formatDateCell(date);
+    tr.appendChild(dateTd);
+    ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
+      const td = document.createElement('td');
+      td.className = 'journal-cell';
+      td.innerHTML = maktabCellHtml(type, days[date][type]);
+      tr.appendChild(td);
+    });
+    tr.addEventListener('click', () => {
+      const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
+      openMaktabDay(student, date, 'sabaq');
+    });
+    host.appendChild(tr);
+  });
+  if(!dates.length){
+    host.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">No maktab entries yet.</td></tr>';
+  }
 }

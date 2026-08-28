@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.82.0** — The student summary card: 4th on the rail, maktab's own record in the PJ layout
 - **V3.81.0** — Dhor juz-range: one Save fans out to per-juz entries; time/mistakes divided, tags duplicated
 - **V3.80.0** — The attendance page: % present over the term, absent history, the haidh calendar inside
 - **V3.79.0** — Maktab Settings as a 3-card rail; group descriptions; one-tap timezone
@@ -118,6 +119,15 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.82.0 (2026-08-28): the student summary card
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| A new 4th page on the day rail | `card-studentSummary`, maktab mode only; PJ hides card + dot; 4-up desktop grid when visible |
+| The PJ journal layout, the MAKTAB'S entries only — independent of (k) | the three maktab GETs (student_id in teacher mode, own otherwise), grouped by date, shared journal cells; rows tap through to that day's cards |
+| Summary name tap → the summary card; sabaq cell → sabaq etc | cell-level routing with stopPropagation; row tap unchanged; `openMaktabDay(student, date, initialCard)` |
+| Note-visibility rules unchanged | the card reads the same endpoints the journal does — privacy applied server-side as always |
 
 ## Done — V3.81.0 (2026-08-28): the dhor juz-range
 

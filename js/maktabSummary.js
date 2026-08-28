@@ -260,6 +260,14 @@ async function renderMaktabSummaryScreen(){
     const nameSpan = document.createElement('span');
     nameSpan.textContent = stu.name;
     nameTd.appendChild(nameSpan);
+    // V3.82.0: tapping the NAME opens her STUDENT SUMMARY card (the
+    // fourth on the rail); the rest of the row keeps opening the day
+    // view on Sabaq as before, and each log cell routes to its own card
+    // (wired below). stopPropagation keeps the row handler out of it.
+    nameTd.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openMaktabDay({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date, 'studentSummary');
+    });
     // V3.72.0: the Setup chip is GONE from this row. Setup opens from the
     // Dhor card's own button now — it configures the Dhor pool and nothing
     // else, so it belongs with Dhor rather than on a row spanning all three
@@ -305,6 +313,13 @@ async function renderMaktabSummaryScreen(){
           });
         }
       }
+      // V3.82.0: the cell routes to ITS OWN card — sabaq cell to the
+      // Sabaq card and so on (user: "student sabaq --> sabaq etc").
+      // The peek badge above already stops propagation before this.
+      td.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openMaktabDay({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date, type);
+      });
       tr.appendChild(td);
     });
 
