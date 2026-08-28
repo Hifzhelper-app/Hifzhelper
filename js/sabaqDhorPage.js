@@ -396,7 +396,7 @@ function loadSabaqDhorEntryForEdit(entry){
   sabaqDhorEditingId = entry.id;
   document.getElementById('sabaqDhor_date').value = entry.date;
   document.getElementById('sabaqDhor_mistakes').value = entry.mistakes || 0;
-  sabaqDhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
+  sabaqDhorSelectedTags = (entry.tajweed_tag_ids || '').split(',').filter(Boolean);
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
   renderCommentBlock('sabaqDhorCommentBlock', entry);
   // V3.51.0 (confirmed in chat): the RANGE is editable now -- ayah-level
@@ -486,7 +486,7 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
       from_surah: editFrom.surah, from_ayah: editFrom.ayah,
       to_surah: editTo.surah, to_ayah: editTo.ayah,
       mistakes: parseInt(document.getElementById('sabaqDhor_mistakes').value) || 0,
-      tajweed_tags: sabaqDhorSelectedTags.join(','),
+      tajweed_tag_ids: sabaqDhorSelectedTags.join(','),
       ...readCommentBlock('sabaqDhorCommentBlock')
     };
     try{
@@ -516,7 +516,7 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     from_surah: range.fromSurah, from_ayah: range.fromAyah,
     to_surah: range.toSurah, to_ayah: range.toAyah,
     mistakes: parseInt(document.getElementById('sabaqDhor_mistakes').value) || 0,
-    tajweed_tags: sabaqDhorSelectedTags.join(','),
+    tajweed_tag_ids: sabaqDhorSelectedTags.join(','),
     ...readCommentBlock('sabaqDhorCommentBlock')
   };
   try{

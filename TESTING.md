@@ -2045,6 +2045,17 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.78.0 — delivery 3 (⚠ MIGRATION 0022 in the D1 console FIRST, then worker, then frontend; 0023 LATER)
+
+Cache name is `hifzhelper-v3.78.0`; the login card should show 3.78.0.
+
+1. **Old tags survived**: open an old entry that had tajweed tags — the picker shows the same names (now backed by IDs). **Only after this is seen**, run migration 0023 by hand.
+2. **Maktab Settings**: the timezone select (pick your zone), the Groups list, the Tajweed tags list. Add a group; add a tag; rename a tag by tapping its name — reopen any entry using it and the new name shows. Retire a tag — it vanishes from the picker on fresh entries but stays on the old entry.
+3. **Groups on the summary**: assign two students to a group on their Admin cards. The summary re-orders — grouped students first (alphabetical within), a clear gap between groups, ungrouped last.
+4. **Search**: type part of a name above the summary; pick her — the day view opens on the summary's date (set the picker to yesterday first to see the date carry).
+5. **Timezone in effect**: with the zone set, the summary's default day and the haidh calendars' "today" follow the maktab's clock on any device (visible if a device's zone differs; otherwise trust the harness).
+6. **Student side**: her PJ cards' picker offers the same tags; she cannot see Maktab Settings.
+
 ## V3.77.0 — (j) Account separation (DEPLOY THE WORKER FIRST, then frontend, hard-refresh)
 
 Cache name is `hifzhelper-v3.77.0`; the login card should show 3.77.0. No migration; the ADMIN-01 discard was run on 17 Aug.

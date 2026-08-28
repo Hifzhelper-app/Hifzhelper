@@ -6,7 +6,7 @@ const TABLE = 'sabaq_log';
 // trio (migration 0015) -- each a combined "surah:ayah" text string,
 // letting one entry span multiple surahs directly, which the old single
 // surah column (shared by both ayah numbers) couldn't represent.
-const FIELDS = ['sabaq_from', 'sabaq_to', 'tajweed_tags', 'line_count', 'page_count'];
+const FIELDS = ['sabaq_from', 'sabaq_to', 'tajweed_tag_ids', 'line_count', 'page_count'];
 // V3.51.0 (confirmed in chat): 'date' is editable on update only -- a
 // separate whitelist, NOT added to FIELDS, which insertLog consumes
 // positionally (the V3.44.1 reflections.js lesson).
@@ -40,7 +40,7 @@ export async function handleSaveSabaq(request, env, auth) {
   if (err) return { error: err, status: 400 };
 
   const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
-  const values = [body.sabaq_from ?? null, body.sabaq_to ?? null, body.tajweed_tags ?? null, body.line_count ?? null, body.page_count ?? null];
+  const values = [body.sabaq_from ?? null, body.sabaq_to ?? null, body.tajweed_tag_ids ?? null, body.line_count ?? null, body.page_count ?? null];
   const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values, body.force);
 
   // V3.45.15: guarded on result.id now -- when insertLog returns early
@@ -79,7 +79,7 @@ export async function handleSaveSabaq(request, env, auth) {
   return { data: result };
 }
 
-// PATCH /sabaq — any subset of sabaq_from/sabaq_to/tajweed_tags,
+// PATCH /sabaq — any subset of sabaq_from/sabaq_to/tajweed_tag_ids,
 // student_comment (+ student_comment_private), teacher_feedback
 // (+ teacher_feedback_visibility). Corrects a mistake, adds a comment, or
 // both. Frontend should confirm before a content edit; not enforced here.

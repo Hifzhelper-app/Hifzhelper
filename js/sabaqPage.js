@@ -246,7 +246,7 @@ function loadSabaqEntryForEdit(entry, isLatest){
   renderVerseRefField('to');
   document.getElementById('sabaq_line_count').value = entry.line_count || '';
   document.getElementById('sabaq_page_count').value = entry.page_count || '';
-  sabaqSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
+  sabaqSelectedTags = (entry.tajweed_tag_ids || '').split(',').filter(Boolean);
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', entry);
   // V3.51.0: heading date is the card's own control, relocated into the
@@ -345,7 +345,7 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     sabaq_to: formatVerseRef(to.surah, to.ayah),
     line_count: parseInt(document.getElementById('sabaq_line_count').value) || null,
     page_count: parseInt(document.getElementById('sabaq_page_count').value) || null,
-    tajweed_tags: sabaqSelectedTags.join(','),
+    tajweed_tag_ids: sabaqSelectedTags.join(','),
     ...readCommentBlock('sabaqCommentBlock')
   };
   try{

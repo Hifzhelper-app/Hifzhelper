@@ -49,6 +49,10 @@ const MAKTAB_REACHABLE = new Set([
 const NOT_STUDENT_SCOPED = [
   /^\/auth/, /^\/admin/,
   /^\/maktab\/settings/, /^\/maktab\/summary/, /^\/maktab\/attendance/,
+  // V3.78.0: the two admin-managed lists are maktab-global — a tag or a
+  // group belongs to the maktab, not to any student, so "whose?" never
+  // arises regardless of log context.
+  /^\/tajweed-tags/, /^\/maktab-groups/,
 ];
 
 // Call sites that ARE own-only clients but are correct as they stand.

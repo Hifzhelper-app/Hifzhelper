@@ -67,13 +67,166 @@ async function renderMaktabSettingsScreen(){
       <input type="number" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}"> days
     </label>
 
-    <span class="save-status" id="mset_status"></span>`;
+    <!-- V3.78.0: the fifth setting (decided 2026-08-17). Everyone sees
+         maktab time (user, 2026-08-27): with a zone chosen, "today" for
+         every user — summaries, calendars, the worker's own haidh
+         decisions — is the maktab's calendar day wherever their device
+         sits. "Not set" keeps each device on its own day, as before. -->
+    <label class="form-label">Maktab timezone
+      <select id="mset_timezone"></select>
+    </label>
+
+    <span class="save-status" id="mset_status"></span>
+
+    <!-- V3.78.0 (items 7 + 8): the two admin-managed lists. One shape,
+         instantiated twice: named rows referenced by ID from elsewhere, so
+         RENAME propagates and RETIRE replaces delete (nothing that is
+         referenced ever dangles). Groups order and filter the summary;
+         tags are the tajweed vocabulary every card's picker offers. -->
+    <div class="form-label mset-list-label">Groups
+      <span class="mset-legend-note">(one per student, assigned on her Admin card; the summary orders by group)</span>
+    </div>
+    <div class="mset-list" id="msetGroupsList"></div>
+    <div class="mset-list-add">
+      <input type="text" id="mset_group_new" maxlength="40" placeholder="New group name">
+      <button type="button" class="secondary" id="mset_group_add">Add group</button>
+    </div>
+
+    <div class="form-label mset-list-label">Tajweed tags
+      <span class="mset-legend-note">(&bull; marks a major tag; retiring keeps it on old entries)</span>
+    </div>
+    <div class="mset-list" id="msetTagsList"></div>
+    <div class="mset-list-add">
+      <input type="text" id="mset_tag_new" maxlength="40" placeholder="New tag name">
+      <label class="mset-major-check"><input type="checkbox" id="mset_tag_new_major"> major</label>
+      <button type="button" class="secondary" id="mset_tag_add">Add tag</button>
+    </div>
+    <div class="form-error" id="mset_list_error"></div>`;
+
+  renderMsetTimezoneSelect(s.timezone);
+  await renderMsetLists();
 
   // V3.74.2: the save icon, drawn from the shared set like every other.
   const si = document.getElementById('mset_save_icon');
   if(si && typeof iconHtml === 'function') si.innerHTML = iconHtml('save');
 
   document.getElementById('mset_save').addEventListener('click', saveMaktabSettingsScreen);
+}
+
+// V3.78.0: the timezone select — every IANA zone the browser knows, or a
+// short common list where Intl.supportedValuesOf is missing. Set via
+// textContent-safe option construction, current value selected, '' = not set.
+function renderMsetTimezoneSelect(current){
+  const sel = document.getElementById('mset_timezone');
+  let zones = [];
+  try{ zones = Intl.supportedValuesOf('timeZone'); }
+  catch(e){ zones = ['Africa/Johannesburg', 'Africa/Nairobi', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dubai', 'Europe/London', 'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'UTC']; }
+  const opts = [['', 'Not set (each device uses its own day)']].concat(zones.map(z => [z, z]));
+  sel.innerHTML = '';
+  for(const [value, label] of opts){
+    const o = document.createElement('option');
+    o.value = value;
+    o.textContent = label;
+    if((current || '') === value) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+
+// V3.78.0: the two list managers. Same renderer twice — a row per entry
+// with rename (tap the name), the major toggle (tags only), and
+// retire/restore. All writes go straight to the worker and re-render, so
+// what is on screen is always what is stored.
+async function renderMsetLists(){
+  const errEl = document.getElementById('mset_list_error');
+  errEl.textContent = '';
+  let groups, tags;
+  try{
+    [groups, tags] = await Promise.all([apiGetMaktabGroups(), apiGetTajweedTags()]);
+  } catch(e){
+    errEl.textContent = 'Could not load the lists: ' + e.message;
+    return;
+  }
+  renderMsetList('msetGroupsList', groups, {
+    rename: (id, name) => apiUpdateMaktabGroup(id, { name }),
+    retire: (id, retired) => apiUpdateMaktabGroup(id, { retired }),
+  });
+  renderMsetList('msetTagsList', tags, {
+    rename: (id, name) => apiUpdateTajweedTag(id, { name }),
+    retire: (id, retired) => apiUpdateTajweedTag(id, { retired }),
+    toggleMajor: (id, major) => apiUpdateTajweedTag(id, { major }),
+  });
+}
+
+function renderMsetList(hostId, rows, ops){
+  const host = document.getElementById(hostId);
+  const errEl = document.getElementById('mset_list_error');
+  host.innerHTML = '';
+  if(!rows.length){
+    host.innerHTML = '<div class="mset-list-empty">None yet.</div>';
+    return;
+  }
+  const act = async (fn) => {
+    errEl.textContent = '';
+    try{ await fn(); await renderMsetLists(); }
+    catch(e){ errEl.textContent = e.message; }
+  };
+  rows.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'mset-list-row' + (row.retired ? ' retired' : '');
+    const nameBtn = document.createElement('button');
+    nameBtn.type = 'button';
+    nameBtn.className = 'mset-list-name';
+    nameBtn.textContent = row.name + (row.major ? ' •' : '');
+    nameBtn.title = 'Rename';
+    nameBtn.addEventListener('click', () => {
+      const name = prompt('Rename "' + row.name + '" to:', row.name);
+      if(name && name.trim() && name.trim() !== row.name) act(() => ops.rename(row.id, name.trim()));
+    });
+    div.appendChild(nameBtn);
+    if(ops.toggleMajor){
+      const mj = document.createElement('button');
+      mj.type = 'button';
+      mj.className = 'link-btn';
+      mj.textContent = row.major ? 'make minor' : 'make major';
+      mj.addEventListener('click', () => act(() => ops.toggleMajor(row.id, !row.major)));
+      div.appendChild(mj);
+    }
+    const rt = document.createElement('button');
+    rt.type = 'button';
+    rt.className = 'link-btn';
+    rt.textContent = row.retired ? 'restore' : 'retire';
+    rt.addEventListener('click', () => act(() => ops.retire(row.id, !row.retired)));
+    div.appendChild(rt);
+    host.appendChild(div);
+  });
+  // the add buttons are outside the list; wire once per render pass
+  wireMsetAdd('mset_group_add', 'mset_group_new', null, (name) => apiCreateMaktabGroup(name));
+  wireMsetAdd('mset_tag_add', 'mset_tag_new', 'mset_tag_new_major', (name, major) => apiCreateTajweedTag(name, major));
+}
+
+function wireMsetAdd(btnId, inputId, majorId, create){
+  const btn = document.getElementById(btnId);
+  if(!btn || btn._wired) return;
+  btn._wired = true;
+  btn.addEventListener('click', async () => {
+    const errEl = document.getElementById('mset_list_error');
+    errEl.textContent = '';
+    const input = document.getElementById(inputId);
+    const name = input.value.trim();
+    if(!name) return;
+    const major = majorId ? document.getElementById(majorId).checked : undefined;
+    try{
+      await create(name, major);
+      input.value = '';
+      if(majorId) document.getElementById(majorId).checked = false;
+      await renderMsetLists();
+      // the picker vocabulary is session-cached; a new tag should be
+      // offerable without a reload
+      if(typeof loadTajweedVocabulary === 'function') await loadTajweedVocabulary();
+    } catch(e){
+      errEl.textContent = e.message;
+    }
+  });
 }
 
 async function saveMaktabSettingsScreen(){
@@ -86,6 +239,7 @@ async function saveMaktabSettingsScreen(){
     mushaf: (document.querySelector('input[name="mset_mushaf"]:checked') || {}).value || '13line',
     maktab_day_min: Number(document.getElementById('mset_day_min').value),
     absence_flag_days: Number(document.getElementById('mset_absence').value),
+    timezone: document.getElementById('mset_timezone').value,   // '' clears (V3.78.0)
   };
   status.textContent = 'Saving\u2026';
   try{
@@ -98,5 +252,8 @@ async function saveMaktabSettingsScreen(){
   // the cache so the change takes effect without a reload
   invalidateMaktabSettings();
   await loadMaktabSettings(true);
+  // V3.78.0: the timezone applies to this session immediately, without a
+  // reload — appTodayISO reads this.
+  MAKTAB_TIMEZONE = payload.timezone || null;
   status.textContent = 'Saved \u2713';
 }

@@ -63,7 +63,13 @@ async function handleMaktabSummary(request, env, auth) {
     // V3.77.0 (j): teaching accounts are rows in this table with no journal
     // — without the role filter every one of them would sit in the summary
     // as a student to be logged against (ADMIN-01 did, with dashes).
-    'SELECT id, name, mushaf, track_haidh FROM students WHERE active = 1 AND role = \'student\' ORDER BY name'
+    // V3.78.0 (item 8): each student carries her group; ordered by group
+    // name (ungrouped LAST — user's call), then by name within a group.
+    // The frontend draws a gap where group_name changes.
+    `SELECT s.id, s.name, s.mushaf, s.track_haidh, s.group_id, g.name AS group_name
+     FROM students s LEFT JOIN maktab_groups g ON g.id = s.group_id
+     WHERE s.active = 1 AND s.role = 'student'
+     ORDER BY (g.name IS NULL), g.name, s.name`
   ).all()).results;
 
   async function dayRows(table, cfg) {
@@ -110,17 +116,17 @@ export { handleMaktabSummary, handleMaktabDhorDefault };
 const CONFIG = {
   sabaq: {
     table: 'maktab_sabaq_log',
-    fields: ['sabaq_from', 'sabaq_to', 'tajweed_tags', 'line_count', 'page_count'],
+    fields: ['sabaq_from', 'sabaq_to', 'tajweed_tag_ids', 'line_count', 'page_count'],
     validate(body) { return null; },
   },
   sabaqDhor: {
     table: 'maktab_sabaq_dhor_log',
-    fields: ['zone', 'tajweed_tags', 'mistakes', 'from_surah', 'from_ayah', 'to_surah', 'to_ayah'],
+    fields: ['zone', 'tajweed_tag_ids', 'mistakes', 'from_surah', 'from_ayah', 'to_surah', 'to_ayah'],
     validate(body) { return null; },
   },
   dhor: {
     table: 'maktab_dhor_log',
-    fields: ['segment_from', 'segment_to', 'ref', 'tajweed_tags', 'mistakes', 'duration_seconds', 'lap_times'],
+    fields: ['segment_from', 'segment_to', 'ref', 'tajweed_tag_ids', 'mistakes', 'duration_seconds', 'lap_times'],
     validate(body) {
       if (body.ref != null && !['waterval', 'uthmani'].includes(body.ref)) return 'ref must be waterval or uthmani';
       if (body.segment_from != null && !isInRange(body.segment_from, 1, 240)) return 'segment_from out of range';

@@ -57,7 +57,13 @@ let haidhCalAttendance = {};  // date (YYYY-MM-DD) -> 'haidh' | 'predicted-haidh
 let haidhRangeStart = null;   // pending range being built, not yet saved
 let haidhRangeEnd = null;
 
-function haidhTodayISO(){ return new Date().toISOString().slice(0,10); }
+function haidhTodayISO(){
+  // V3.78.0: the maktab's day when the timezone is set (everyone sees
+  // maktab time). The old toISOString() was UTC — the very date-shift
+  // class the shared timezone exists to end.
+  if(typeof appTodayISO === 'function') return appTodayISO();
+  return new Date().toISOString().slice(0,10);
+}
 
 // V3.76.0: the calendar's three touches on the attendance table, routed by
 // log context — mirrors logClient() in js/logContext.js.

@@ -12,6 +12,13 @@ export async function handleGetProfile(request, env, auth) {
     'FROM students WHERE id = ?'
   ).bind(auth.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
+  // V3.78.0: the maktab timezone rides on the profile — every client
+  // (students included) learns the shared day boundary at boot without a
+  // second request or a wider settings read.
+  try {
+    const ms = await env.DB.prepare('SELECT timezone FROM maktab_settings WHERE id = 1').first();
+    row.maktab_timezone = ms && ms.timezone ? ms.timezone : null;
+  } catch (e) { row.maktab_timezone = null; }
   // baseline_selection and dhor_days_of_week are stored as JSON strings —
   // parse them back to real arrays for the client rather than making every
   // caller do it.

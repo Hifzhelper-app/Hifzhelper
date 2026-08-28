@@ -95,6 +95,10 @@ function openUserCard(id){
   // that has no teaching profile yet — never on a teaching account, never
   // twice (both also refused by the worker).
   const teaching = user.role === 'student' ? teachingProfileFor(user.id) : null;
+  // V3.78.0 (item 8): her group, assigned here (names are defined on
+  // Maktab Settings). Loaded async after the card renders; the select
+  // stays disabled until the list arrives.
+
   const canCreateTeaching = user.role === 'student' && user.active && !teaching;
   const derivedFrom = isTeachingId(user.id) ? adminUsers.find(u => u.id === user.id.slice(0, -TEACHING_ID_SUFFIX.length)) : null;
 
@@ -107,6 +111,8 @@ function openUserCard(id){
     <input type="text" id="uc_name" value="${user.name}">
     <label>WhatsApp number</label>
     <input type="text" id="uc_whatsapp" value="${user.whatsapp_number || ''}">
+    ${user.role === 'student' ? `<label>Group</label>
+    <select id="uc_group" disabled><option>Loading…</option></select>` : ''}
     <label>Role</label>
     <select id="uc_role">
       <option value="student" ${user.role==='student'?'selected':''}>Student</option>
@@ -150,6 +156,26 @@ function openUserCard(id){
     });
   }
 
+  // V3.78.0: populate the group select — live groups plus, if she is in a
+  // retired one, that group (kept selectable so Save doesn't silently move
+  // her; the worker refuses ASSIGNING a retired group to someone new).
+  if(user.role === 'student'){
+    apiGetMaktabGroups().then(groups => {
+      const sel = document.getElementById('uc_group');
+      if(!sel) return;
+      sel.innerHTML = '';
+      const opts = [{ id: '', name: 'No group' }].concat(groups.filter(g => !g.retired || g.id === user.group_id));
+      for(const g of opts){
+        const o = document.createElement('option');
+        o.value = String(g.id);
+        o.textContent = g.name + (g.retired ? ' (retired)' : '');
+        if(String(user.group_id ?? '') === String(g.id)) o.selected = true;
+        sel.appendChild(o);
+      }
+      sel.disabled = false;
+    }).catch(() => { /* the select stays disabled; nothing to save then */ });
+  }
+
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
   overlay.querySelector('.close-btn').addEventListener('click', () => overlay.remove());
   document.getElementById('uc_cancel').addEventListener('click', () => overlay.remove());
@@ -169,6 +195,11 @@ function openUserCard(id){
       if(newName !== user.name) fields.name = newName;
       if(newWhatsapp !== (user.whatsapp_number || '')) fields.whatsapp_number = newWhatsapp;
       if(newActive !== !!user.active) fields.active = newActive;
+      // V3.78.0: the group, only if the select loaded and the value changed
+      const groupSel = document.getElementById('uc_group');
+      if(groupSel && !groupSel.disabled && groupSel.value !== String(user.group_id ?? '')){
+        fields.group_id = groupSel.value === '' ? null : Number(groupSel.value);
+      }
       if(Object.keys(fields).length) await apiAdminUpdateUser(user.id, fields);
       if(newRole !== user.role) await apiAdminChangeRole(user.id, newRole);
       overlay.remove();

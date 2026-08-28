@@ -27,7 +27,7 @@ const MUSHAFS = ['13line', '15line_madani', '15line_indopak'];
 export async function handleGetMaktabSettings(request, env, auth) {
   if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone FROM maktab_settings WHERE id = 1'
   ).first();
   if (!row) return { error: 'Maktab settings row is missing — run migration 0020', status: 500 };
   return { data: row };
@@ -57,6 +57,20 @@ export async function handleSaveMaktabSettings(request, env, auth) {
     if (trimmed.length > 60) return { error: 'name must be 60 characters or fewer', status: 400 };
     updates.push('name = ?'); values.push(trimmed);
   }
+  // V3.78.0: the maktab timezone — fifth setting, decided 2026-08-17;
+  // everyone sees maktab time (user, 2026-08-27). An IANA zone name,
+  // validated by actually constructing a formatter with it; empty clears
+  // back to "not set" (device/UTC behaviour).
+  if (body.timezone !== undefined) {
+    if (body.timezone === null || body.timezone === '') {
+      updates.push('timezone = NULL');
+    } else {
+      if (typeof body.timezone !== 'string') return { error: 'timezone must be text', status: 400 };
+      try { new Intl.DateTimeFormat('en-CA', { timeZone: body.timezone }); }
+      catch (e) { return { error: `Unknown timezone: ${body.timezone}`, status: 400 }; }
+      updates.push('timezone = ?'); values.push(body.timezone);
+    }
+  }
   if (updates.length === 0) return { error: 'No valid fields to update', status: 400 };
 
   updates.push('updated_at = ?');
@@ -64,7 +78,7 @@ export async function handleSaveMaktabSettings(request, env, auth) {
   await env.DB.prepare(`UPDATE maktab_settings SET ${updates.join(', ')} WHERE id = 1`).bind(...values).run();
 
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone FROM maktab_settings WHERE id = 1'
   ).first();
   return { data: row };
 }
@@ -74,7 +88,7 @@ export async function handleSaveMaktabSettings(request, env, auth) {
 // the row's shape, rather than each module writing its own SELECT.
 export async function readMaktabSettings(env) {
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone FROM maktab_settings WHERE id = 1'
   ).first();
   return row || { mushaf: '13line', maktab_day_min: 3, absence_flag_days: 30, name: '' };
 }

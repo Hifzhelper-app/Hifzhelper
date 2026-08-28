@@ -30,15 +30,16 @@ const TODAY = new Date().toISOString().slice(0, 10);
 function makeDb() {
   const db = new DatabaseSync(':memory:');
   db.exec(`
-    CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('student','teacher','admin')),
+    CREATE TABLE maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '');
+  CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('student','teacher','admin')),
       pin_hash TEXT, created_date TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, whatsapp_number TEXT, gender TEXT,
-      setup_complete INTEGER DEFAULT 0, mushaf TEXT DEFAULT '13line', track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi');
+      setup_complete INTEGER DEFAULT 0, mushaf TEXT DEFAULT '13line', track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi', group_id INTEGER);
     CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
-    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT);
+    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT);
     INSERT INTO maktab_settings (id) VALUES (1);
-    CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tags TEXT, line_count INTEGER, page_count INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-    CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, zone TEXT, tajweed_tags TEXT, mistakes INTEGER, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-    CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tags TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+    CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+    CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, zone TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+    CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
     CREATE TABLE sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, date TEXT NOT NULL, entered_by TEXT, sabaq_from TEXT, sabaq_to TEXT, created_at TEXT);
     INSERT INTO students (id, name, role, created_date, active) VALUES
       ('K7M2QX','Umme','student','2026-01-01',1),
@@ -130,6 +131,7 @@ function adminDom(users) {
     function apiAdminUpdateUser(){ return Promise.resolve({}); } function apiAdminChangeRole(){ return Promise.resolve({}); }
     function apiAdminResetPin(){ return Promise.resolve({}); } function apiAdminDeleteUser(){ return Promise.resolve({}); }
     function apiAdminRegisterStudent(){ return Promise.resolve({}); }
+    function apiGetMaktabGroups(){ return Promise.resolve([]); }   // V3.78.0: the card's group select
   `);
   w.eval(adminSrc);
   return w;
@@ -240,7 +242,7 @@ check('router: the switch flag is checked first and only honoured with known acc
 check('boot: the signed-in account is recorded for the switcher', /rememberKnownAccount\(\{ id: profile\.id, name: profile\.name, role: profile\.role \}\)/.test(read('js/app.js')));
 check('html: the switch screen and its list exist', /id="loginScreenSwitch"/.test(read('index.html')) && /id="switchAccountList"/.test(read('index.html')));
 check('icons: switchAccount icon exists', /switchAccount: '<svg/.test(read('js/icons.js')));
-check('worker: the summary roster query filters on role', /WHERE active = 1 AND role = \\'student\\' ORDER BY name/.test(read('worker/src/maktabLog.js')));
+check('worker: the summary roster query filters on role (V3.78.0: with the group join)', /WHERE s\.active = 1 AND s\.role = 'student'/.test(read('worker/src/maktabLog.js')));
 check('worker: handleSave\'s self-log guard is KEPT (defence in depth, deliberately)', /body\.student_id === auth\.id/.test(read('worker/src/maktabLog.js')));
 
 console.log(`${pass} passed, ${fail} failed`);

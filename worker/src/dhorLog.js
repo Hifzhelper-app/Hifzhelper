@@ -5,9 +5,9 @@ import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
 const TABLE = 'dhor_log';
 // duration_seconds (renamed from minutes) + lap_times (JSON array of true
 // per-section durations, seconds) — the timer/lap feature. lap_times uses
-// the same "variable-length list as one column" pattern as tajweed_tags,
+// the same "variable-length list as one column" pattern as tajweed_tag_ids,
 // not numbered columns or a separate table.
-const FIELDS = ['segment_from', 'segment_to', 'ref', 'tajweed_tags', 'mistakes', 'duration_seconds', 'lap_times'];
+const FIELDS = ['segment_from', 'segment_to', 'ref', 'tajweed_tag_ids', 'mistakes', 'duration_seconds', 'lap_times'];
 // V3.51.0 (confirmed in chat): 'date' is editable on update only -- a
 // separate whitelist, NOT added to FIELDS, which insertLog consumes
 // positionally (the V3.44.1 reflections.js lesson).
@@ -52,7 +52,7 @@ export async function handleSaveDhor(request, env, auth) {
   const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
   const values = [
     body.segment_from ?? null, body.segment_to ?? null, body.ref ?? null,
-    body.tajweed_tags ?? null, body.mistakes ?? null,
+    body.tajweed_tag_ids ?? null, body.mistakes ?? null,
     body.duration_seconds ?? null,
     body.lap_times != null ? JSON.stringify(body.lap_times) : null
   ];

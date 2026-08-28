@@ -30,8 +30,9 @@ let maktabDayStudent = null; // { id, name, mushaf, track_haidh }
 let maktabDayDate = null;    // ISO -- follows the summary's date picker
 
 function maktabTodayISO(){
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  // V3.78.0: the maktab's day (appTodayISO, js/logContext.js), not the
+  // device's — with no timezone set it falls back to the device day.
+  return appTodayISO();
 }
 
 // V3.76.0 (Phase 2): the haidh TOGGLE flow is GONE — maktabHaidhGapDays,

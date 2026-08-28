@@ -26,6 +26,24 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.78.0 — Delivery 3: groups, tajweed tags, the maktab timezone (2026-08-27)
+
+**Files touched:** `worker/migrations/0022_groups_tags_timezone.sql` (new), `worker/migrations/0023_clear_tajweed_words.sql` (new, run LATER), `worker/src/lists.js` (new), `worker/src/index.js`, `worker/src/maktabSettings.js`, `worker/src/maktabLog.js`, `worker/src/admin.js`, `worker/src/utils.js`, `worker/src/attendance.js`, `worker/src/profile.js`, `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `js/tajweed.js` (rewritten), `js/api.js`, `js/app.js`, `js/logContext.js`, `js/maktabDay.js`, `js/haidhDetailScreen.js`, `js/maktabSummary.js`, `js/maktabSettings.js`, `js/adminPage.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `index.html`, `css/settings.css`, `css/detail-pages.css`, `js/sw.js`, `tests/verify_v3780_delivery3.mjs` (new), nine fixture upgrades, `SCHEMA.md`, `TODO.md`, `SPECS.md`, `TESTING.md`.
+
+**⚠ DEPLOYMENT ORDER: run migration 0022 in the D1 console FIRST, then deploy the worker, then the frontend.** Migration **0023 is separate and destructive** — run it only after verifying converted tags on a real entry (open an old entry that had tags; the picker should show them). Until then the old word column sits untouched as the fallback record.
+
+**Item 7 — tajweed tags are maktab-stored rows now.** `tajweed_tags` table, seeded with the eleven defaults; entries hold CSVs of IDs (`tajweed_tag_ids` on all six log tables), so RENAMING a tag propagates to every entry that ever used it and RETIRE replaces delete. 0022 converts existing word-tags to IDs in place (a recursive-CTE split + join per table); words matching no tag are DROPPED, and device-local custom browser tags are NOT imported — both the user's calls. The picker offers live tags plus any retired tag the open entry already has, and lost its "+ add": additions are admin work on Maktab Settings now. The vocabulary loads once at boot for every role (students' PJ cards carry the same picker).
+
+**Item 8 — groups.** `maktab_groups` table + `students.group_id` (one group per student — a column, not a join table). Names are managed on Maktab Settings (add, rename-by-tap, retire/restore); assignment is a select on the student's Admin card (a retired group can't be newly assigned; students already in one keep pointing at it). The summary is ordered by group name, alphabetical within, UNGROUPED LAST, with a tall spacer row where the group changes — the gap alone carries the meaning, no heading rows.
+
+**Item 9 — summary search.** A search box above the table: typing lists matching students (with their group); picking one opens her DAY VIEW carrying the summary's picked date, exactly as the row tap does. A way TO a student, not a filter — the table never changes shape.
+
+**The timezone — everyone sees maktab time (user, 2026-08-27).** `maktab_settings.timezone` (IANA zone, the screen's fifth setting, validated by constructing a formatter; empty clears). It rides on `GET /profile`, so every client learns it at boot; `appTodayISO()` (frontend) and `maktabTodayISO(env)` (worker) resolve "today" in that zone — the summary's default day, the maktab day view, the haidh calendars, and the worker's own confirmed-vs-predicted and superseded-prediction decisions all fall on the maktab's calendar day for every user everywhere. Unset = NULL = each device's own day, exactly as before, until the admin picks a zone.
+
+**Verification: 812 passed, 0 failed across 25 harnesses** (54 new: 0022 and 0023 run whole against real SQLite over data with every edge — unknown words, whitespace, NULL/empty; the list endpoints with their gates; the roster order `Amina,Basheera,Zaynab,Aaliyah,Umme`; group assignment rules; timezone save/validate/clear and both today helpers; the picker, the gap rows and the search driven in jsdom). Nine existing fixtures gained the 0022 columns; two assertions realigned (e1's roster-shape leakage check now names the group fields; the (j) harness's roster-query regex).
+
+---
+
 ## V3.77.0 — (j) Account separation (2026-08-27)
 
 **Files touched:** `worker/src/maktabLog.js`, `worker/src/maktabAttendance.js`, `worker/src/logHelpers.js`, `worker/src/admin.js`, `worker/src/index.js`, `js/api.js`, `js/app.js`, `js/auth.js`, `js/adminPage.js`, `js/icons.js`, `css/admin.css`, `css/components.css`, `index.html`, `js/sw.js`, `tests/verify_v3770_account_separation.mjs` (new), `tests/verify_e1.mjs`, `tests/verify_v3742_ui.mjs`, `SCHEMA.md`, `TODO.md`, `SPECS.md`, `TESTING.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ MIXED WORKER + FRONTEND — DEPLOY THE WORKER FIRST.** **No migration.** The ADMIN-01 discard (step 5 of the plan) was run on 2026-08-17; nothing to run now.

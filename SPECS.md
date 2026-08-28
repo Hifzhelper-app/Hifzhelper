@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.78.0** — Delivery 3: groups on the summary, tajweed tags as ID rows, the maktab timezone
 - **V3.77.0** — (j) Account separation — built to the 2026-08-17 plan
 - **V3.76.2** — The teacher's decision on a gap refusal: haidh anyway / absent / adjust, in the maktab calendar
 - **V3.76.1** — Haidh: a future prediction no longer vetoes a real mark; a confirmed mark clears superseded predictions
@@ -114,6 +115,16 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.78.0 (2026-08-27): delivery 3 — groups, tags, timezone
+
+| Agreed | Built as |
+| --- | --- |
+| Tags: maktab-stored, ID-referenced, rename propagates, retire not delete (2026-08-26) | `tajweed_tags` table + `tajweed_tag_ids` CSV on all six log tables; managed on Maktab Settings; picker loses "+ add" |
+| Unmatched words dropped; browser custom tags not imported; destructive clear is its own migration run after verification (2026-08-27) | 0022 converts in place (drops unknowns); 0023 clears the word columns, run later by hand |
+| Groups: one per student, names in Maktab Settings, assigned on her admin card, summary ordered by group with a SPACE between groups, ungrouped last (2026-08-26) | `maktab_groups` + `students.group_id`; spacer rows, no headings; retired groups keep their students but can't be newly assigned |
+| Search: a way TO a student — pick a result, her day view opens on the summary's picked date (2026-08-26) | search box above the table, ≤8 matches with group names |
+| Timezone: per-maktab setting, fifth on the screen (2026-08-17); **everyone sees maktab time** (2026-08-27) | IANA zone in `maktab_settings`; rides on `/profile`; `appTodayISO()` + worker `maktabTodayISO(env)` govern every "today", NULL = unset = old behaviour |
 
 ## Done — V3.77.0 (2026-08-27): (j) Account separation — built to the 2026-08-17 plan
 

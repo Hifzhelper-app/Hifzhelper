@@ -32,6 +32,14 @@ for (const f of ['0019_maktab_tables.sql', '0020_maktab_settings.sql', '0021_mak
   const noC = mig.split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
   for (const st of noC.split(';').map(s => s.trim()).filter(Boolean)) db.exec(st);
 }
+// V3.78.0 fixture upgrade: the columns/tables migration 0022 adds and the
+// worker now reads (0022 itself is proven whole in verify_v3780).
+db.exec("ALTER TABLE maktab_sabaq_log ADD COLUMN tajweed_tag_ids TEXT");
+db.exec("ALTER TABLE maktab_sabaq_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
+db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
+db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
+try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
+db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
 
 // D1 allows .first()/.all()/.run() directly on a prepared statement with
 // no .bind() when the SQL has no parameters — the worker uses that form

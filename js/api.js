@@ -219,6 +219,13 @@ function apiSaveProfile(profile){ return apiFetch('/profile', { method: 'POST', 
 function apiAdminListUsers(){ return apiFetch('/admin/users'); }
 function apiAdminResetPin(id){ return apiFetch('/admin/reset-pin', { method: 'POST', body: JSON.stringify({ id }) }); }
 function apiAdminChangeRole(id, role){ return apiFetch('/admin/change-role', { method: 'POST', body: JSON.stringify({ id, role }) }); }
+// V3.78.0 (delivery 3): the two admin-managed lists.
+function apiGetTajweedTags(){ return apiFetch('/tajweed-tags'); }
+function apiCreateTajweedTag(name, major){ return apiFetch('/tajweed-tags', { method: 'POST', body: JSON.stringify({ name, major: !!major }) }); }
+function apiUpdateTajweedTag(id, fields){ return apiFetch('/tajweed-tags/update', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
+function apiGetMaktabGroups(){ return apiFetch('/maktab-groups'); }
+function apiCreateMaktabGroup(name){ return apiFetch('/maktab-groups', { method: 'POST', body: JSON.stringify({ name }) }); }
+function apiUpdateMaktabGroup(id, fields){ return apiFetch('/maktab-groups/update', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminCreateTeachingProfile(id){ return apiFetch('/admin/create-teaching-profile', { method: 'POST', body: JSON.stringify({ id }) }); }   // V3.77.0 (j)
 function apiAdminRegisterStudent(name, whatsapp_number, force){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force }) }); }
 function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }

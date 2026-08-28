@@ -135,6 +135,20 @@ function logDhorDefaultEntry(){
 // and reads the real setting instead. Cached for the session: it changes
 // rarely and every card render would otherwise refetch it.
 let MAKTAB_SETTINGS_CACHE = null;
+// V3.78.0: the maktab timezone, set at boot from the profile (js/app.js).
+// Everyone sees maktab time (user, 2026-08-27): with a zone set, "today"
+// everywhere in the app is the maktab's calendar day; unset, the device's
+// own day as before. en-CA formats as YYYY-MM-DD directly.
+let MAKTAB_TIMEZONE = null;
+function appTodayISO(){
+  if(MAKTAB_TIMEZONE){
+    try{ return new Intl.DateTimeFormat('en-CA', { timeZone: MAKTAB_TIMEZONE }).format(new Date()); }
+    catch(e){ /* bad zone: device day below */ }
+  }
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 async function loadMaktabSettings(force){
   if(MAKTAB_SETTINGS_CACHE && !force) return MAKTAB_SETTINGS_CACHE;
   try{

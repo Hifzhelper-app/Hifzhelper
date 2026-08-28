@@ -2,7 +2,7 @@ import { insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided } from './
 import { isValidDate, isTeacherOrAbove } from './utils.js';
 
 const TABLE = 'sabaq_dhor_log';
-const FIELDS = ['zone', 'tajweed_tags', 'mistakes', 'from_surah', 'from_ayah', 'to_surah', 'to_ayah'];
+const FIELDS = ['zone', 'tajweed_tag_ids', 'mistakes', 'from_surah', 'from_ayah', 'to_surah', 'to_ayah'];
 // V3.51.0 (confirmed in chat): 'date' is editable on update only -- a
 // separate whitelist, NOT added to FIELDS, which insertLog consumes
 // positionally (the V3.44.1 reflections.js lesson).
@@ -35,7 +35,7 @@ export async function handleSaveSabaqDhor(request, env, auth) {
 
   const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
   const values = [
-    body.zone ?? null, body.tajweed_tags ?? null, body.mistakes ?? null,
+    body.zone ?? null, body.tajweed_tag_ids ?? null, body.mistakes ?? null,
     body.from_surah ?? null, body.from_ayah ?? null, body.to_surah ?? null, body.to_ayah ?? null
   ];
   const result = await insertLog(env, TABLE, studentId, body.date, auth.id, FIELDS, values, body.force);
@@ -67,7 +67,7 @@ export async function handleSaveSabaqDhor(request, env, auth) {
   return { data: result };
 }
 
-// PATCH /sabaq-dhor — any subset of zone/tajweed_tags/mistakes, and/or
+// PATCH /sabaq-dhor — any subset of zone/tajweed_tag_ids/mistakes, and/or
 // student_comment (+ student_comment_private), teacher_feedback
 // (+ teacher_feedback_visibility).
 export async function handleUpdateSabaqDhor(request, env, auth) {

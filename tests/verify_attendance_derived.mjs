@@ -94,6 +94,16 @@ db.exec(`CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TE
 runMig(db, '0019_maktab_tables.sql');
 runMig(db, '0020_maktab_settings.sql');
 
+// V3.78.0 fixture upgrade: the columns/tables migration 0022 adds and the
+// worker now reads (0022 itself is proven whole in verify_v3780).
+  db.exec("ALTER TABLE maktab_sabaq_log ADD COLUMN tajweed_tag_ids TEXT");
+  db.exec("ALTER TABLE maktab_sabaq_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
+  db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
+  db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
+  try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
+  try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }
+
+
 const DB = { prepare(sql) { return {
   bind(...args) { return {
     async run(){ const i = db.prepare(sql).run(...args); return { meta: { last_row_id: Number(i.lastInsertRowid) } }; },

@@ -1214,7 +1214,7 @@ function loadDhorEntryForEdit(entry){
   dhorEditingId = entry.id;
   document.getElementById('dhor_date').value = entry.date;
   document.getElementById('dhor_mistakes').value = entry.mistakes || 0;
-  dhorSelectedTags = (entry.tajweed_tags || '').split(',').filter(Boolean);
+  dhorSelectedTags = (entry.tajweed_tag_ids || '').split(',').filter(Boolean);
   renderTajweedPicker('dhorTajweedPicker', dhorSelectedTags);
   renderCommentBlock('dhorCommentBlock', entry);
   dhorLapTimes = entry.lap_times || null;
@@ -1322,7 +1322,7 @@ async function saveDhorEdit(){
   const payload = {
     date: document.getElementById('dhor_date').value || todayISO(),
     mistakes: parseInt(document.getElementById('dhor_mistakes').value) || 0,
-    tajweed_tags: dhorSelectedTags.join(','),
+    tajweed_tag_ids: dhorSelectedTags.join(','),
     ...computeDhorDuration(),
     ...readCommentBlock('dhorCommentBlock')
   };
@@ -1394,7 +1394,7 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   const payload = {
     date: document.getElementById('dhor_date').value || todayISO(),
     segment_from, segment_to, ref: dhorCurrentRef,
-    tajweed_tags: dhorRawRange ? '' : dhorSelectedTags.join(','),
+    tajweed_tag_ids: dhorRawRange ? '' : dhorSelectedTags.join(','),
     mistakes: dhorRawRange ? null : (parseInt(document.getElementById('dhor_mistakes').value) || 0),
     ...(dhorRawRange ? { duration_seconds: null, lap_times: null } : computeDhorDuration()),
     ...readCommentBlock('dhorCommentBlock')

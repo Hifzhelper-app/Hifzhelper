@@ -147,6 +147,12 @@ async function bootApp(){
     // verified profile is known, remember its ID even if that login happened
     // before V3.8.1's apiLogin() persistence existed.
     rememberLoginId(profile.id);
+    // V3.78.0: the shared day boundary and the tag vocabulary, for every
+    // role — the PJ cards carry the tajweed picker too. The timezone comes
+    // free on the profile; the vocabulary is one small fetch, awaited so no
+    // card can render its picker before the names exist.
+    MAKTAB_TIMEZONE = profile.maktab_timezone || null;
+    await loadTajweedVocabulary();
     // V3.77.0 (j): this account is now one the device knows, for the switcher.
     rememberKnownAccount({ id: profile.id, name: profile.name, role: profile.role });
     currentUser = { name: profile.name || '', role: profile.role || 'student', trackHaidh: !!profile.track_haidh };

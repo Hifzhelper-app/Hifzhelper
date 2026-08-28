@@ -25,6 +25,24 @@ export function error(message, status = 400, code) {
   return json(code ? { error: message, code } : { error: message }, status);
 }
 
+// V3.78.0: "today" by the MAKTAB's clock. With the timezone set, every
+// date boundary the worker decides — haidh confirmed vs predicted, the
+// superseded-prediction window — falls on the maktab's calendar day for
+// every user everywhere. Unset → UTC, the pre-V3.78.0 behaviour, until the
+// admin picks a zone. en-CA formats as YYYY-MM-DD directly.
+export async function maktabTodayISO(env) {
+  let tz = null;
+  try {
+    const row = await env.DB.prepare('SELECT timezone FROM maktab_settings WHERE id = 1').first();
+    tz = row && row.timezone ? row.timezone : null;
+  } catch (e) { tz = null; }
+  if (tz) {
+    try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date()); }
+    catch (e) { /* bad stored zone: fall through to UTC rather than throw */ }
+  }
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function isValidDate(str) {
   return typeof str === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(str);
 }

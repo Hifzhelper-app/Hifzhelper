@@ -1,5 +1,6 @@
 import { validateAttendanceBody, isValidDate, isTeacherOrAbove } from './utils.js';
 import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark, evaluateHaidhRange, haidhAddDaysISO } from '../../shared/haidhRules.js';
+import { maktabTodayISO } from './utils.js';   // V3.78.0: today by the maktab's clock
 
 // V3.76.1 — what counts as EVIDENCE for the run and gap checks.
 // Bug found on device 2026-08-27: a real range 27–31 Aug was refused with
@@ -85,7 +86,7 @@ export async function handleSetAttendance(request, env, auth) {
     const { results } = await env.DB.prepare(
       `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND date != ?`
     ).bind(studentId, body.date).all();
-    const todayISO = new Date().toISOString().slice(0, 10);
+    const todayISO = await maktabTodayISO(env);   // V3.78.0: the maktab's day, not the server's
     const existingDates = haidhEvidenceDates(results, todayISO);   // V3.76.1: future predictions are not evidence
 
     const { runLength, gapDays } = evaluateHaidhMark(existingDates, body.date);
@@ -105,7 +106,7 @@ export async function handleSetAttendance(request, env, auth) {
   // V3.76.1: a CONFIRMED day supersedes predictions in the window after it.
   let cleared = [];
   if (body.status === 'haidh') {
-    cleared = await clearSupersededPredictions(env, studentId, body.date, new Date().toISOString().slice(0, 10));
+    cleared = await clearSupersededPredictions(env, studentId, body.date, await maktabTodayISO(env));
   }
 
   return { data: { saved: true, clearedPredictions: cleared } };
@@ -186,7 +187,7 @@ export async function handleMarkHaidhRange(request, env, auth) {
   const { results } = await env.DB.prepare(
     `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND (date < ? OR date > ?)`
   ).bind(studentId, startDate, endDate).all();
-  const todayISO = new Date().toISOString().slice(0, 10);
+  const todayISO = await maktabTodayISO(env);   // V3.78.0: the maktab's day, not the server's
   const existingDates = haidhEvidenceDates(results, todayISO);   // V3.76.1: future predictions are not evidence
 
   const { dates, runStart, runEnd, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);

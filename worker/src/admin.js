@@ -18,7 +18,7 @@ export async function handleListUsers(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
   const { results } = await env.DB.prepare(
-    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number FROM students ORDER BY created_date DESC'
+    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id FROM students ORDER BY created_date DESC'
   ).all();
   return { data: results };
 }
@@ -93,6 +93,21 @@ export async function handleUpdateUser(request, env, auth) {
     // keeping whatever PIN was set before deactivation.
     if (!body.active) {
       setClauses.push('pin_hash = NULL', 'failed_attempts = 0', 'locked_until = NULL');
+    }
+  }
+  // V3.78.0 (item 8): the group, assigned on the student's admin card.
+  // null clears; otherwise the id must be a real, non-retired group.
+  if (body.group_id !== undefined) {
+    if (body.group_id === null || body.group_id === '') {
+      setClauses.push('group_id = NULL');
+    } else {
+      const gid = Number(body.group_id);
+      if (!Number.isInteger(gid)) return { error: 'group_id must be a group id or null', status: 400 };
+      const g = await env.DB.prepare('SELECT id, retired FROM maktab_groups WHERE id = ?').bind(gid).first();
+      if (!g) return { error: 'Group not found', status: 404 };
+      if (g.retired) return { error: 'That group is retired', status: 400 };
+      setClauses.push('group_id = ?');
+      values.push(gid);
     }
   }
   if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };

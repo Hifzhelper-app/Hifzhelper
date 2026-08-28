@@ -19,6 +19,7 @@ import { handleGetPosition, handleSavePosition } from './position.js';
 import { handleGetProfile, handleSaveProfile } from './profile.js';
 import { handleGetDhorDefaultEntry, handleGetUpcomingDhorQueue } from './dhorSchedule.js';
 import { handleListUsers, handleCreateTeachingProfile, handleResetPin, handleChangeRole, handleRegisterStudent, handleUpdateUser, handleDeleteUser } from './admin.js';
+import { handleGetTajweedTags, handleCreateTajweedTag, handleUpdateTajweedTag, handleGetMaktabGroups, handleCreateMaktabGroup, handleUpdateMaktabGroup } from './lists.js';   // V3.78.0
 
 // Every handler returns { data } or { error, status } — this file's only job
 // is routing + turning that plain object into a real Response, and making
@@ -127,6 +128,13 @@ export default {
       if (path === '/dhor-schedule/default-entry' && request.method === 'GET') return respond(await handleGetDhorDefaultEntry(request, env, auth));
       if (path === '/dhor-schedule/upcoming' && request.method === 'GET') return respond(await handleGetUpcomingDhorQueue(request, env, auth));
 
+      // V3.78.0 (delivery 3): the two admin-managed lists.
+      if (path === '/tajweed-tags' && request.method === 'GET') return respond(await handleGetTajweedTags(request, env, auth));
+      if (path === '/tajweed-tags' && request.method === 'POST') return respond(await handleCreateTajweedTag(request, env, auth));
+      if (path === '/tajweed-tags/update' && request.method === 'POST') return respond(await handleUpdateTajweedTag(request, env, auth));
+      if (path === '/maktab-groups' && request.method === 'GET') return respond(await handleGetMaktabGroups(request, env, auth));
+      if (path === '/maktab-groups' && request.method === 'POST') return respond(await handleCreateMaktabGroup(request, env, auth));
+      if (path === '/maktab-groups/update' && request.method === 'POST') return respond(await handleUpdateMaktabGroup(request, env, auth));
       if (path === '/admin/users' && request.method === 'GET') return respond(await handleListUsers(request, env, auth));
       if (path === '/admin/reset-pin' && request.method === 'POST') return respond(await handleResetPin(request, env, auth));
       if (path === '/admin/change-role' && request.method === 'POST') return respond(await handleChangeRole(request, env, auth));

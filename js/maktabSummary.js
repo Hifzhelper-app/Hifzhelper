@@ -79,6 +79,54 @@ function maktabOpenEntryPeek(btn, type, entries){
   }
 }
 
+// V3.78.0 (item 9): search-to-student. Rebuilt each render with that
+// render's roster and picked date, so a result always opens the day the
+// summary is showing. The input keeps its text across renders (the render
+// replaces only the results and the handler's data).
+let maktabSearchWired = false;
+function wireMaktabSummarySearch(students, date){
+  const input = document.getElementById('maktabSummarySearch');
+  const results = document.getElementById('maktabSummarySearchResults');
+  if(!input || !results) return;
+  input._students = students;
+  input._date = date;
+  if(maktabSearchWired) return;
+  maktabSearchWired = true;
+  const render = () => {
+    const q = input.value.trim().toLowerCase();
+    if(!q){ results.classList.add('hidden'); results.innerHTML = ''; return; }
+    const matches = (input._students || []).filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
+    results.innerHTML = '';
+    if(!matches.length){
+      const d = document.createElement('div');
+      d.className = 'maktab-search-empty';
+      d.textContent = 'No matching student.';
+      results.appendChild(d);
+    }
+    matches.forEach(stu => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'maktab-search-result';
+      btn.textContent = stu.name + (stu.group_name ? ' · ' + stu.group_name : '');
+      btn.addEventListener('click', () => {
+        input.value = '';
+        results.classList.add('hidden');
+        results.innerHTML = '';
+        openMaktabDay(stu, input._date);
+      });
+      results.appendChild(btn);
+    });
+    results.classList.remove('hidden');
+  };
+  input.addEventListener('input', render);
+  input.addEventListener('focus', render);
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest || (!e.target.closest('.maktab-search-row'))){
+      results.classList.add('hidden');
+    }
+  });
+}
+
 // V3.75.0 (item 4): this listener only CLOSES the peek now. Opening moved
 // onto the badge button itself (see the render below) — delegated here it
 // ran after the <tr>'s own click handler and could not stop the day view
@@ -159,7 +207,24 @@ async function renderMaktabSummaryScreen(){
   } catch(e){ derived = {}; }
 
   host.innerHTML = '';
-  (data.students || []).forEach(stu => {
+  // V3.78.0 (item 8): the worker orders by group name (ungrouped LAST),
+  // then by name. A SPACER ROW is drawn where the group changes — the gap
+  // alone carries the meaning (user's call: no heading rows, no labels),
+  // so it must read as clearly more than the normal row separation
+  // (css: .maktab-group-gap). <tr> takes no margin, hence a row.
+  let prevGroup;
+  (data.students || []).forEach((stu, i) => {
+    const groupKey = stu.group_name || null;
+    if(i > 0 && groupKey !== prevGroup){
+      const gap = document.createElement('tr');
+      gap.className = 'maktab-group-gap';
+      gap.setAttribute('aria-hidden', 'true');
+      const gtd = document.createElement('td');
+      gtd.colSpan = 5;
+      gap.appendChild(gtd);
+      host.appendChild(gap);
+    }
+    prevGroup = groupKey;
     const tr = document.createElement('tr');
     tr.className = 'maktab-summary-row';
 
@@ -252,6 +317,11 @@ async function renderMaktabSummaryScreen(){
     tr.addEventListener('click', () => openMaktabDay({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date));
     host.appendChild(tr);
   });
+  // V3.78.0 (item 9): the search box above the table. Typing lists
+  // matching students; picking one opens her DAY VIEW on the summary's
+  // picked date — the same deliberate date-carry the row tap makes.
+  wireMaktabSummarySearch(data.students || [], date);
+
   if (!(data.students || []).length) {
     host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">No active students.</td></tr>';
   }

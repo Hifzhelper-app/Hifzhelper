@@ -16,6 +16,7 @@ const statements = mig.split('\n').filter(l => !l.trim().startsWith('--')).join(
   .split(';').map(x => x.trim()).filter(Boolean);
 check('0020 is exactly 2 statements (table + defaults row)', statements.length === 2);
 for (const st of statements) db.exec(st);
+db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");   // V3.78.0 (migration 0022)
 
 const DB = { prepare(sql) { return {
   bind(...args) { return {

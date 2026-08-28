@@ -40,6 +40,7 @@ human-readable reference for the same thing.
 | `haidh_period_length` | INTEGER | Added in migration 0011. Same purpose as above. Labeled "How many haidh days per cycle" in Setup as of V3.39. Capped at the student's `haidh_ruling` (10 for hanafi, 15 for shafii — `shared/haidhRules.js`'s `haidhOfficialMaxDuration`). |
 | `haidh_next_expected` | TEXT | Added in migration 0011. `YYYY-MM-DD`. What the Setup screen actually asks the student for; the frontend computes `/attendance/predict`'s own `lastStart` param from this (`lastStart = haidh_next_expected − haidh_cycle_length`) rather than asking for `lastStart` directly. |
 | `haidh_ruling` | TEXT | Added in migration 0018 (V3.39). `hanafi` / `shafii`, `NOT NULL DEFAULT 'hanafi'` — which of the two supported fiqh rulings sets this student's max haidh duration. Defaults silently rather than blocking (confirmed in chat: not a required choice). |
+| `group_id` | INTEGER | Added in migration 0022 (V3.78.0). References `maktab_groups(id)`; NULL = ungrouped (sorted last on the summary). |
 
 ## Tables: `sabaq_log`, `sabaq_dhor_log`, `dhor_log`, `reflections` (V2 — replaces `entries`)
 
@@ -136,6 +137,17 @@ Each mirrors its PJ counterpart's full current column set (the rule: ALL PJ colu
 | `teacher_feedback_visibility` | TEXT | Same enum and semantics as the PJ, but DEFAULT **`'teachers_only'`** here (PJ default is `'all'`) — the one agreed divergence. |
 
 Maktab attendance is NOT a table — it's derived at read time (delivery (f)): present assumed, haidh from the PJ's `attendance`, absent when no maktab log exists on a maktab day (≥N distinct students logged; N is a worker env var). A teacher's save overwrites a haidh mark — log always wins, same as the PJ.
+
+## Tables: `tajweed_tags`, `maktab_groups` (migration 0022 — V3.78.0, delivery 3)
+
+Two instances of one shape: an admin-managed list of named rows referenced by ID, where rename propagates and RETIRE replaces delete.
+
+| Table | Columns | Referenced by |
+|---|---|---|
+| `tajweed_tags` | `id` PK, `name` UNIQUE, `major` (1 blocks the mistakes ring), `retired`, `created_at` | `tajweed_tag_ids` CSV on all six log tables (`sabaq_log`, `sabaq_dhor_log`, `dhor_log`, and the three `maktab_*` logs). Seeded with the eleven defaults; 0022 converted existing word-tags one-way (unmatched words dropped); migration 0023 (run separately, after verification) clears the old `tajweed_tags` word columns |
+| `maktab_groups` | `id` PK, `name` UNIQUE, `retired`, `created_at` | `students.group_id` (one group per student; assigned on the admin card; retired groups keep their students but cannot be newly assigned). The maktab summary orders by group name, ungrouped last |
+
+`maktab_settings` also gained `timezone` (TEXT, IANA zone, NULL = unset) in 0022 — the maktab's canonical day boundary; everyone sees maktab time (V3.78.0).
 
 ## Tables: `maktab_settings`, `maktab_position` (migrations 0020/0021 — Maktab Phase 2)
 
