@@ -12,7 +12,7 @@ import {
   handleGetMaktabPosition, handleSaveMaktabPosition,
 } from './maktabLog.js';
 import { handleGetMaktabSettings, handleSaveMaktabSettings } from './maktabSettings.js';
-import { handleMaktabAttendance } from './maktabAttendance.js';
+import { handleMaktabAttendance, handleAttendancePage } from './maktabAttendance.js';
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
@@ -115,6 +115,7 @@ export default {
 
       if (path === '/attendance' && request.method === 'GET') return respond(await handleGetAttendance(request, env, auth));
       if (path === '/attendance' && request.method === 'POST') return respond(await handleSetAttendance(request, env, auth));
+      if (path === '/attendance/page' && request.method === 'GET') return respond(await handleAttendancePage(request, env, auth));   // V3.80.0
       if (path === '/attendance/mark-range' && request.method === 'POST') return respond(await handleMarkHaidhRange(request, env, auth));
       if (path === '/attendance' && request.method === 'DELETE') return respond(await handleDeleteAttendance(request, env, auth));
       if (path === '/attendance/predict' && request.method === 'POST') return respond(await handlePredictHaidh(request, env, auth));

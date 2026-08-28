@@ -34,7 +34,9 @@ db.exec("ALTER TABLE maktab_sabaq_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
 try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
-try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }
+try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }   // V3.80.0: 0025 rides the same try
 
 
 const DB = { prepare(sql) { return { bind(...args) { return {

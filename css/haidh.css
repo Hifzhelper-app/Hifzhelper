@@ -125,3 +125,21 @@
   background: transparent;
   color: var(--color-ink-soft);
 }
+
+/* V3.80.0: the attendance page (the calendar below it keeps its own
+   rules above). */
+.att-block { margin-bottom: var(--space-lg); }
+.att-percent-row { display: flex; align-items: baseline; gap: var(--space-sm); }
+.att-percent { font-size: 40px; font-weight: 700; color: var(--color-ink); }
+.att-count { font-size: 14px; color: var(--color-ink-soft); }
+.att-period { font-size: 13px; color: var(--color-ink-faint); margin: 4px 0 var(--space-sm); }
+.att-custom-row { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; margin-bottom: var(--space-sm); }
+.att-custom-row input[type="date"] { flex: 0 1 auto; min-width: 0; }
+.att-absent-list { margin-top: var(--space-sm); display: flex; flex-direction: column; gap: 2px; }
+.att-absent-date { font-size: 13px; color: var(--color-ink-soft); font-family: var(--font-mono); }
+.att-haidh-heading { display: flex; align-items: center; gap: var(--space-sm); margin-top: var(--space-lg); }
+.att-haidh-title { margin: 0; font-size: 17px; }
+.att-haidh-ranges { margin-top: var(--space-md); }
+.att-haidh-ranges-title { font-size: 13px; color: var(--color-ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
+.att-haidh-range { font-size: 14px; color: var(--color-ink); font-family: var(--font-mono); }
+#attHaidhBlock.hidden { display: none; }

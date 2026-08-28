@@ -42,7 +42,11 @@ const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
 // female-only gating (a male student's track_haidh can never become true
 // through the normal Setup UI), so gating on this one flag is enough,
 // no separate gender check needed here.
-const HAIDH_NAV_ITEM = { id: 'haidhDetail', label: 'Haidh', icon: 'haidh' };
+// V3.80.0: the Haidh nav item became ATTENDANCE, for EVERY student (the
+// user's attendance-page spec, 2026-08-28) — the haidh calendar lives
+// inside the page now, shown there for haa'idah only. The track_haidh
+// nav gate went with it: attendance is everyone's.
+const ATTENDANCE_NAV_ITEM = { id: 'attendancePage', label: 'Attendance', icon: 'attendance' };
 // V3.59.0 (maktab delivery (e1), confirmed in chat): the maktab summary
 // is teacher+ only (admin counts as teacher everywhere — same hierarchy
 // as the worker's isTeacherOrAbove); the student's own read-only Maktab
@@ -72,9 +76,9 @@ const HIDDEN_PJ_NAV_IDS = new Set([
   'logDetail',    // Detail — the single entry point to the three log cards
   'reflections',  // Tadabbur
   'settings',     // personal Settings
-  'haidhDetail',  // the personal haidh CALENDAR only — see below
+  'attendancePage',  // her personal attendance (and haidh calendar) — see below
 ]);
-// Hiding 'haidhDetail' removes the route to the personal haidh calendar and
+// Hiding 'attendancePage' removes the route to the personal page and
 // NOTHING else. track_haidh keeps its value, the maktab's own haidh marking
 // from (e2) is untouched, and (f)'s derived attendance keeps propagating
 // haidh across maktab days unchanged.
@@ -116,7 +120,7 @@ function visibleNavGroups(){
   // among the personal tools — they are hers, not maktab machinery.
   const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id));
   if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
-  if(currentUser.trackHaidh && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(HAIDH_NAV_ITEM.id))) g3.push(HAIDH_NAV_ITEM);
+  if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
 
   const g4 = [
     { id: 'refresh', label: 'Refresh', icon: 'refresh', raw: 'refreshBtn' },

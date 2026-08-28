@@ -37,7 +37,7 @@ const tracker = read('js/juzTrackerScreen.js');
 const setBlock = auth.match(/const HIDDEN_PJ_NAV_IDS = new Set\(\[([\s\S]*?)\]\)/);
 check('HIDDEN_PJ_NAV_IDS exists', !!setBlock);
 const hidden = setBlock ? [...setBlock[1].matchAll(/'([A-Za-z]+)'/g)].map(m => m[1]) : [];
-for (const id of ['journal', 'logDetail', 'reflections', 'settings', 'haidhDetail']) {
+for (const id of ['journal', 'logDetail', 'reflections', 'settings', 'attendancePage']) {
   check(`'${id}' is hidden`, hidden.includes(id));
 }
 check("'sih' is NOT hidden — never named in chat, and an activity not a journal screen",
@@ -56,8 +56,11 @@ check('hiding is gated on a teaching profile, not applied unconditionally',
   && /hidePJ && HIDDEN_PJ_NAV_IDS\.has\(item\.id\)/.test(auth));
 check('admin counts as a teaching profile (isTeacherOrAbove parity)',
   /function isTeachingProfile\(\)\{[\s\S]{0,160}role === 'teacher'[\s\S]{0,60}role === 'admin'/.test(auth));
-check('the haidh item is gated the same way, not left dangling',
-  /currentUser\.trackHaidh && !\(hidePJ && HIDDEN_PJ_NAV_IDS\.has/.test(auth));
+// V3.80.0: the item became Attendance, for EVERY student — the
+// trackHaidh nav gate went with the rename; the hidePJ gate remains.
+check('the attendance item is gated on hidePJ only (every student gets it)',
+  /if\(!\(hidePJ && HIDDEN_PJ_NAV_IDS\.has\(ATTENDANCE_NAV_ITEM\.id\)\)\) g3\.push\(ATTENDANCE_NAV_ITEM\)/.test(auth)
+  && !/currentUser\.trackHaidh &&/.test(auth));
 check('Maktab Journal goes to students, not teaching profiles',
   /if\(!hidePJ\) g3\.push\(MAKTAB_JOURNAL_NAV_ITEM\)/.test(auth));
 // It is only safe on a student's nav because it is server-scoped to her own
@@ -81,7 +84,7 @@ check('admin still gets Maktab Settings and Admin',
   const ids = () => w.eval('visibleNavItems().map(i => i.id)');
 
   let v = ids();
-  for (const id of ['journal', 'logDetail', 'reflections', 'settings', 'haidhDetail', 'juzTracker', 'sih']) {
+  for (const id of ['journal', 'logDetail', 'reflections', 'settings', 'attendancePage', 'juzTracker', 'sih']) {
     check(`student sees '${id}' — her whole personal journal is back`, v.includes(id), v.join(','));
   }
   check('student sees her own Maktab Journal (V3.70.2 — server-scoped to her rows)',
@@ -92,11 +95,11 @@ check('admin still gets Maktab Settings and Admin',
 
   w.eval('currentUser.role = "teacher"');
   v = ids();
-  for (const id of ['journal', 'logDetail', 'reflections', 'settings', 'haidhDetail', 'maktabJournal']) {
+  for (const id of ['journal', 'logDetail', 'reflections', 'settings', 'attendancePage', 'maktabJournal']) {
     check(`teacher does NOT see '${id}'`, !v.includes(id), v.join(','));
   }
   check('no student screen leaks onto a teaching profile',
-    !v.some(id => ['journal','logDetail','reflections','settings','haidhDetail','maktabJournal'].includes(id)));
+    !v.some(id => ['journal','logDetail','reflections','settings','attendancePage','maktabJournal'].includes(id)));
   check('teacher keeps Juz Tracker and Surahs in my Heart', v.includes('juzTracker') && v.includes('sih'));
   check('teacher gets the Maktab summary', v.includes('maktabSummary'));
   check('teacher gets no admin items', !v.includes('admin') && !v.includes('maktabSettings'));

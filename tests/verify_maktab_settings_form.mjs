@@ -62,8 +62,12 @@ check('loading and error states are NOT treated as explanatory text',
   /Loading/.test(form) && /Could not load the maktab settings/.test(form));
 
 // ---------- the 30/50 cap ----------
-check('the settings body uses .screen-content, which carries the 30/50 cap',
-  /id="maktabSettingsBody"[^>]*>/.test(html) && /class="screen-content" id="maktabSettingsBody"/.test(html));
+// V3.79.0: the settings screen is a 3-card RAIL now (log-detail classes
+// reused), no .screen-content card — the rail carries its own sizing.
+check('the settings screen is the rail: three cards, dots, no old body',
+  /id="msetRail"/.test(html) && !/maktabSettingsBody/.test(html)
+  && ['msetCardGeneral', 'msetCardTajweed', 'msetCardGroups'].every(id => html.includes(`id="${id}"`))
+  && (html.match(/id="msetDots"[\s\S]*?id="msetRail"/) || [''])[0].split('class="dot"').length === 4);
 // The card was already capped; the SECTION painting the olive background
 // was not, so the card floated in a full-width green band. Fixed as a RULE
 // in base.css rather than per screen — four screens had it (maktabSettings,
@@ -88,8 +92,9 @@ check('the settings body uses .screen-content, which carries the 30/50 cap',
       const j = html2.indexOf('<section class="screen', i + 1);
       return html2.slice(i, j > 0 ? j : undefined).includes('class="screen-content"');
     });
-  check('four screens carry the card pattern and all are covered by the one rule',
-    carded.length === 4, carded.join(','));
+  // V3.79.0: maktabSettings left the .screen-content pattern for the rail
+  check('three screens carry the card pattern and all are covered by the one rule (settings moved to the rail V3.79.0)',
+    carded.length === 3 && !carded.includes('maktabSettings'), carded.join(','));
 }
 // V3.75.0: the base.css grid line was REMOVED — at three classes it forced a
 // two-column grid onto every three-child header (Admin, Tadabbur, Haidh) and
@@ -109,7 +114,7 @@ check('the truncated heading is given room — h2 wrap in base.css, columns in s
   // the first line of the template ("Maktab name" label markup), so a
   // layout change broke the TEST rather than revealing a real fault —
   // three assertions failed for a reason unrelated to what they check.
-  const body = form.slice(form.indexOf('host.innerHTML = `'));
+  const body = form.slice(form.indexOf('general.innerHTML = `'));   // V3.79.0: the General card's template
   const tmpl = body.slice(body.indexOf('`') + 1, body.indexOf('`;'));
   w.eval(`const s = { name: 'M', mushaf: '15line_indopak', maktab_day_min: 3, absence_flag_days: 30 };
           document.getElementById('host').innerHTML = \`${tmpl.replace(/\\/g, '\\\\')}\``);

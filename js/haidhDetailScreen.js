@@ -385,6 +385,120 @@ document.getElementById('haidhDecisionAdjustBtn').addEventListener('click', () =
 document.getElementById('haidhDecisionAbsentBtn').addEventListener('click', () => haidhDecide({ status: 'absent' }));
 document.getElementById('haidhDecisionHaidhBtn').addEventListener('click', () => haidhDecide({ overrideGap: true }));
 
+// ============================================================
+// V3.80.0: the ATTENDANCE PAGE. Owns the screen; the haidh calendar
+// below it is rendered by renderHaidhDetailScreen, unchanged, inside
+// #attHaidhBlock (haa'idah only — the worker says via track_haidh).
+//
+// Period: the worker decides — custom from/to when applied here, else
+// the CURRENT TERM (settings, migration 0025), else the last 4 weeks.
+// "Day" = MAKTAB DAY (the user's standing definition); present = a day
+// with activity OR haidh.
+// ============================================================
+function attPageClient(){
+  if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
+    const id = logCtxStudentId();
+    return (from, to) => apiGetAttendancePageFor(id, from, to);
+  }
+  return (from, to) => apiGetAttendancePage(from, to);
+}
+let attCustomPeriod = null;   // { from, to } while the custom option is applied
+
+async function renderAttendancePage(param){
+  const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+  document.getElementById('attendanceHeaderIcon').innerHTML = iconHtml('attendance');
+  document.getElementById('attendanceTitle').textContent = inMaktab ? 'Attendance — ' + logCtxStudentName() : 'Attendance';
+  document.getElementById('attError').textContent = '';
+  attCustomPeriod = null;   // a fresh visit always starts on the default period
+  document.getElementById('attAbsentList').classList.add('hidden');
+  wireAttendancePage();
+  await loadAttendancePeriod();
+
+  // the calendar below, for haa'idah only — attHaidhBlock is toggled by
+  // loadAttendancePeriod from the worker's track_haidh, and the calendar
+  // itself renders exactly as it always has.
+  if(!document.getElementById('attHaidhBlock').classList.contains('hidden')){
+    await renderHaidhDetailScreen(param);
+    await renderAttHaidhRanges();
+  }
+}
+
+async function loadAttendancePeriod(){
+  const errEl = document.getElementById('attError');
+  errEl.textContent = '';
+  let d;
+  try{
+    d = await attPageClient()(attCustomPeriod && attCustomPeriod.from, attCustomPeriod && attCustomPeriod.to);
+  } catch(e){
+    errEl.textContent = e.message;
+    return;
+  }
+  attPageData = d;
+  document.getElementById('attPercent').textContent = d.percent === null ? '–' : d.percent + '%';
+  document.getElementById('attCount').textContent = d.maktab_days
+    ? `present ${d.present_days} of ${d.maktab_days} maktab days`
+    : 'no maktab days in this period';
+  const label = d.source === 'term' ? ' (current term)' : d.source === '4w' ? ' (last 4 weeks)' : ' (custom)';
+  document.getElementById('attPeriod').textContent = `${d.from} – ${d.to}${label}`;
+  document.getElementById('attFrom').value = d.from;
+  document.getElementById('attTo').value = d.to;
+  document.getElementById('attReset').classList.toggle('hidden', d.source !== 'custom');
+  const btn = document.getElementById('attAbsentBtn');
+  btn.textContent = `Show absent days (${d.absent_dates.length})`;
+  const list = document.getElementById('attAbsentList');
+  list.innerHTML = '';
+  d.absent_dates.forEach(date => {
+    const div = document.createElement('div');
+    div.className = 'att-absent-date';
+    div.textContent = date;
+    list.appendChild(div);
+  });
+  if(!d.absent_dates.length){
+    list.innerHTML = '<div class="att-absent-date">No absent days in this period.</div>';
+  }
+  document.getElementById('attHaidhBlock').classList.toggle('hidden', !d.track_haidh);
+}
+let attPageData = null;
+
+async function renderAttHaidhRanges(){
+  const host = document.getElementById('attHaidhRanges');
+  const ranges = (attPageData && attPageData.haidh_ranges) || [];
+  if(!ranges.length){ host.textContent = ''; return; }
+  host.innerHTML = '';
+  const h = document.createElement('div');
+  h.className = 'att-haidh-ranges-title';
+  h.textContent = 'Last haidh';
+  host.appendChild(h);
+  ranges.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'att-haidh-range';
+    div.textContent = r.from === r.to ? r.from : `${r.from} – ${r.to}`;
+    host.appendChild(div);
+  });
+}
+
+let attPageWired = false;
+function wireAttendancePage(){
+  if(attPageWired) return;
+  attPageWired = true;
+  document.getElementById('attApply').addEventListener('click', async () => {
+    const from = document.getElementById('attFrom').value;
+    const to = document.getElementById('attTo').value;
+    const errEl = document.getElementById('attError');
+    if(!from || !to){ errEl.textContent = 'Pick both dates.'; return; }
+    if(from > to){ errEl.textContent = 'From must not be after to.'; return; }
+    attCustomPeriod = { from, to };
+    await loadAttendancePeriod();
+  });
+  document.getElementById('attReset').addEventListener('click', async () => {
+    attCustomPeriod = null;
+    await loadAttendancePeriod();
+  });
+  document.getElementById('attAbsentBtn').addEventListener('click', () => {
+    document.getElementById('attAbsentList').classList.toggle('hidden');
+  });
+}
+
 async function renderHaidhDetailScreen(param){
   document.getElementById('haidhDetailHeaderIcon').innerHTML = iconHtml('haidh');
   document.getElementById('haidhCalError').textContent = '';

@@ -284,6 +284,16 @@ function apiSetAttendanceFor(studentId, date, status){
 // V3.76.2: opts = { overrideGap: true } (teacher decides to mark haidh
 // despite the gap) or { status: 'absent' } (teacher marks the range absent
 // instead). Both teacher-gated in the worker; a student's flag is ignored.
+// V3.80.0: the attendance page. Own vs For, like every student-scoped pair.
+function apiGetAttendancePage(from, to){
+  const qs = (from && to) ? `?from=${from}&to=${to}` : '';
+  return apiFetch('/attendance/page' + qs);
+}
+function apiGetAttendancePageFor(studentId, from, to){
+  const parts = [`student_id=${encodeURIComponent(studentId)}`];
+  if(from && to){ parts.push(`from=${from}`, `to=${to}`); }
+  return apiFetch('/attendance/page?' + parts.join('&'));
+}
 function apiMarkHaidhRangeFor(studentId, startDate, endDate, opts){
   const body = { student_id: studentId, startDate, endDate };
   if(opts && opts.overrideGap) body.override_gap = true;

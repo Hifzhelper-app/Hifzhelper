@@ -2045,6 +2045,28 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.80.0 — the attendance page (⚠ MIGRATION 0025 in the D1 console FIRST, then worker, then frontend)
+
+Cache name is `hifzhelper-v3.80.0`; the login card should show 3.80.0. 0025 is two lines (console-safe copy provided).
+
+1. **Set the term**: Maktab Settings → General → Current term from/to → Save.
+2. **Summary**: every student now carries the attendance icon (not just haa'idah). Tap one → her attendance page: the %, "present N of M maktab days", the period labelled "(current term)".
+3. **Custom period**: change the dates, Apply — the % recalculates, "(custom)" shows, "back to default" returns to the term.
+4. **Absent days**: the button names the count; tapping lists the dates. A day the maktab didn't meet never appears.
+5. **Haa'idah**: the haidh calendar sits below with everything it had (range marking, the teacher's three-way decision), and her last 3 haidh ranges under it. A non-haa'idah page shows no haidh section.
+6. **The student**: her menu shows **Attendance** (every student — the old Haidh item is inside it now). Her own page, her own calendar; no teacher controls.
+7. **The old route**: nothing links to a standalone haidh screen any more; if a bookmark lands oddly, hard-refresh.
+
+## V3.79.0 — the settings rail (⚠ MIGRATION 0024 in the D1 console FIRST, then worker, then frontend)
+
+Cache name is `hifzhelper-v3.79.0`; the login card should show 3.79.0. 0024 is one line: `ALTER TABLE maktab_groups ADD COLUMN description TEXT;` (console-safe copy provided).
+
+1. **The rail**: Maktab Settings opens on General; swipe or tap the pills to reach Tajweed and Groups; the close button exits as before. On a wide screen all three cards sit side by side.
+2. **Timezone, one tap**: General shows the current zone (or "Not set"). Tap "Use this device's timezone (…)" — the shown value changes but nothing saves until SAVE. Save, reload: it stuck. "clear" + Save returns to Not set. "choose a different zone" → type a few letters → pick → Save.
+3. **Tags**: tap into a name, change it, tap away — saved instantly (reopen an entry using that tag: new name). Tap MINOR on a major tag: flips instantly. Tick Retire: struck through, gone from the picker on new entries; untick restores. Add adds instantly, minor by default.
+4. **Groups**: same, plus the description field — type, tap away, reload: still there. It appears nowhere else in the app.
+5. **A duplicate name** (rename a tag to an existing one): the error shows on that card and the old name comes back.
+
 ## V3.78.0 — delivery 3 (⚠ MIGRATION 0022 in the D1 console FIRST, then worker, then frontend; 0023 LATER)
 
 Cache name is `hifzhelper-v3.78.0`; the login card should show 3.78.0.

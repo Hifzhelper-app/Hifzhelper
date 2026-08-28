@@ -68,8 +68,11 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
     if (!direct) continue;
     for (const h of s.querySelectorAll('.card-header-row')) if (h.children.length >= 3) threeChild.push(s.id);
   }
-  check('1: the three-child headers on card screens are exactly Admin, Tadabbur, Haidh (the collateral set)',
-    threeChild.sort().join(',') === 'screen-admin,screen-haidhDetail,screen-reflections', threeChild.join(','));
+  // V3.80.0: the haidh screen became the attendance page and its header
+  // moved inside #attHaidhBlock as an h3 — no longer a .card-header-row
+  // in the collateral set.
+  check('1: the three-child headers on card screens are exactly Admin and Tadabbur (haidh screen absorbed V3.80.0)',
+    threeChild.sort().join(',') === 'screen-admin,screen-reflections', threeChild.join(','));
 }
 
 // ---------- 2: Move to Dhor hidden until eligible ----------

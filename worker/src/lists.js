@@ -87,7 +87,7 @@ export async function handleUpdateTajweedTag(request, env, auth) {
 export async function handleGetMaktabGroups(request, env, auth) {
   if (!auth || (auth.role !== 'teacher' && auth.role !== 'admin')) return { error: 'Not authorized', status: 403 };
   const { results } = await env.DB.prepare(
-    'SELECT id, name, retired FROM maktab_groups ORDER BY retired, name'
+    'SELECT id, name, description, retired FROM maktab_groups ORDER BY retired, name'   // description: V3.79.0, info-only
   ).all();
   return { data: results };
 }
@@ -125,6 +125,16 @@ export async function handleUpdateMaktabGroup(request, env, auth) {
     const clash = await env.DB.prepare('SELECT id FROM maktab_groups WHERE name = ? AND id != ?').bind(name, id).first();
     if (clash) return { error: `A group named "${name}" already exists`, status: 409 };
     sets.push('name = ?'); values.push(name);
+  }
+  // V3.79.0: the info-only description. Empty clears to NULL.
+  if (body.description !== undefined) {
+    if (body.description === null || body.description === '') { sets.push('description = NULL'); }
+    else {
+      if (typeof body.description !== 'string') return { error: 'description must be text', status: 400 };
+      const d = body.description.trim();
+      if (d.length > 200) return { error: 'description must be 200 characters or fewer', status: 400 };
+      sets.push('description = ?'); values.push(d);
+    }
   }
   if (body.retired !== undefined) { sets.push('retired = ?'); values.push(body.retired ? 1 : 0); }
   if (!sets.length) return { error: 'No valid fields to update', status: 400 };

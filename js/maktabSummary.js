@@ -237,20 +237,22 @@ async function renderMaktabSummaryScreen(){
     // marked as a range. The single-day toggle with its 15-day confirm is
     // deleted (js/maktabDay.js). stopPropagation stays: the row itself
     // still opens the day view.
+    // V3.80.0: the leading icon is ATTENDANCE, on EVERY student (was the
+    // haidh icon, haa'idah only) — it opens her attendance page, which
+    // holds the haidh calendar for haa'idah. The haidh 'marked' tint is
+    // kept on the icon so today's state stays visible at a glance.
     const haidhTd = document.createElement('td');
     haidhTd.className = 'maktab-haidh-col';
-    if(stu.track_haidh){
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'maktab-haidh-check' + (haidhByStudent[stu.id] ? ' marked' : '');
-      btn.innerHTML = iconHtml('haidh');
-      btn.setAttribute('aria-label', 'Open haidh calendar for ' + stu.name);
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openMaktabHaidhCalendar(stu, date);
-      });
-      haidhTd.appendChild(btn);
-    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'maktab-haidh-check' + (haidhByStudent[stu.id] ? ' marked' : '');
+    btn.innerHTML = iconHtml('attendance');
+    btn.setAttribute('aria-label', 'Open attendance for ' + stu.name);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openMaktabAttendancePage(stu, date);
+    });
+    haidhTd.appendChild(btn);
     tr.appendChild(haidhTd);
 
     const nameTd = document.createElement('td');

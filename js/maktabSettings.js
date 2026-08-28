@@ -1,48 +1,78 @@
 // ============================================================
-// Hifzhelper -- Maktab settings screen (V3.65.0, delivery (g)).
-// ADMIN ONLY: the nav item is gated on role === 'admin' (js/auth.js,
-// same as the Admin item) and the write endpoint enforces it again
-// server-side with requireAdmin. A teacher never sees this screen --
-// but their cards DO read the mushaf, which is why the GET is teacher+.
+// Hifzhelper -- Maktab settings screen (V3.65.0, delivery (g);
+// restructured V3.79.0 into a THREE-CARD RAIL like the day view —
+// user's schematic 2026-08-28).
 //
-// Four settings, all confirmed in chat 2026-08-16. The two numbers used
-// to be planned as worker env vars; they live here so they change
-// without a redeploy.
+// ADMIN ONLY: the nav item is gated on role === 'admin' (js/auth.js)
+// and the write endpoints enforce it again server-side. A teacher never
+// sees this screen -- but their cards DO read the mushaf, which is why
+// the settings GET is teacher+.
+//
+// Three cards, two save models — both the user's explicit calls:
+//   GENERAL keeps the form + SAVE it has had since V3.65.0 (name,
+//     mushaf, day minimum, absence days, timezone). Nothing commits
+//     until Save.
+//   TAJWEED and GROUPS have NO Save ("keep the existing save, remove
+//     the save from tajweed and groups"): every control commits
+//     INSTANTLY — the MAJOR/MINOR pill and RETIRE checkbox on tap, the
+//     name (and group description) inputs on blur or Enter. A rejection
+//     restores the old value and shows the error against that card.
+//     There is never an unsaved state on a list.
+//
+// The timezone control is option 3 (user, 2026-08-28): current setting
+// + one-tap "Use this device's timezone", with a type-ahead behind
+// "choose a different zone" for the travelling-admin case. It STAGES
+// into the hidden #mset_timezone input; General's Save commits it, and
+// the worker's Intl validation (V3.78.0) remains the backstop.
 // ============================================================
 
 async function renderMaktabSettingsScreen(){
-  const host = document.getElementById('maktabSettingsBody');
-  host.innerHTML = '<p class="form-hint">Loading\u2026</p>';
+  const general = document.getElementById('msetCardGeneral');
+  general.innerHTML = '<p class="form-hint">Loading\u2026</p>';
 
   let s;
   try{
     s = await apiGetMaktabSettings();
   } catch(e){
-    host.innerHTML = '<p class="form-hint">Could not load the maktab settings.</p>';
+    general.innerHTML = '<p class="form-hint">Could not load the maktab settings.</p>';
     return;
   }
   if(!s || typeof s !== 'object'){
-    host.innerHTML = '<p class="form-hint">Could not load the maktab settings.</p>';
+    general.innerHTML = '<p class="form-hint">Could not load the maktab settings.</p>';
     return;
   }
 
   const esc = (v) => { const d = document.createElement('span'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
-  host.innerHTML = `
+
+  // ---------- card 1: GENERAL (form + Save, as always) ----------
+  general.innerHTML = `
     <div class="mset-name-row">
       <label class="form-label mset-name-field">Maktab name
         <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
       </label>
-      <!-- V3.74.2: save moved up here as an icon, matching the Dhor card's
-           icon-plus-SAVE pattern. It REPLACES the text button that used to
-           sit at the bottom — one way to save, not two. -->
+      <!-- V3.74.2: save as an icon, matching the Dhor card's pattern. -->
       <button type="button" class="mset-save-btn" id="mset_save" aria-label="Save settings">
         <span class="mset-save-icon" id="mset_save_icon"></span><span>SAVE</span>
       </button>
     </div>
 
-    <!-- V3.74.2: was a <legend>, which sits inset into the fieldset border
-         at a smaller size — that is why it never lined up with "Maktab
-         name" above. Now a normal label outside the group, same styling. -->
+    <!-- V3.79.0: the option-3 timezone control. #mset_timezone is the
+         STAGED value (hidden input, same id Save has read since
+         V3.78.0); everything visible below just stages into it. -->
+    <input type="hidden" id="mset_timezone" value="${esc(s.timezone || '')}">
+    <div class="form-label">Maktab timezone</div>
+    <div class="mset-tz-box">
+      <div class="mset-tz-current" id="mset_tz_current"></div>
+      <button type="button" class="secondary" id="mset_tz_device"></button>
+      <button type="button" class="link-btn" id="mset_tz_other_toggle">choose a different zone</button>
+      <div class="mset-tz-other-row hidden" id="mset_tz_other_row">
+        <input type="text" id="mset_tz_other" list="mset_tz_zones" placeholder="Start typing a zone\u2026" autocomplete="off">
+        <datalist id="mset_tz_zones"></datalist>
+      </div>
+      <button type="button" class="link-btn hidden" id="mset_tz_clear">clear (each device uses its own day)</button>
+    </div>
+
+    <!-- V3.74.2: was a <legend>; now a normal label outside the group. -->
     <div class="form-label mset-mushaf-label">Mushaf
       <span class="mset-legend-note">(counting lines and pages, and determining boundaries for juz)</span>
     </div>
@@ -67,158 +97,278 @@ async function renderMaktabSettingsScreen(){
       <input type="number" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}"> days
     </label>
 
-    <!-- V3.78.0: the fifth setting (decided 2026-08-17). Everyone sees
-         maktab time (user, 2026-08-27): with a zone chosen, "today" for
-         every user — summaries, calendars, the worker's own haidh
-         decisions — is the maktab's calendar day wherever their device
-         sits. "Not set" keeps each device on its own day, as before. -->
-    <label class="form-label">Maktab timezone
-      <select id="mset_timezone"></select>
-    </label>
-
-    <span class="save-status" id="mset_status"></span>
-
-    <!-- V3.78.0 (items 7 + 8): the two admin-managed lists. One shape,
-         instantiated twice: named rows referenced by ID from elsewhere, so
-         RENAME propagates and RETIRE replaces delete (nothing that is
-         referenced ever dangles). Groups order and filter the summary;
-         tags are the tajweed vocabulary every card's picker offers. -->
-    <div class="form-label mset-list-label">Groups
-      <span class="mset-legend-note">(one per student, assigned on her Admin card; the summary orders by group)</span>
+    <!-- V3.80.0: the current term — the DEFAULT period the attendance
+         page calculates over ("the easiest way to set term dates"). -->
+    <div class="form-label">Current term
+      <span class="mset-legend-note">(the default attendance period)</span>
     </div>
-    <div class="mset-list" id="msetGroupsList"></div>
-    <div class="mset-list-add">
-      <input type="text" id="mset_group_new" maxlength="40" placeholder="New group name">
-      <button type="button" class="secondary" id="mset_group_add">Add group</button>
+    <div class="mset-term-row">
+      <input type="date" id="mset_term_from" value="${esc(s.term_from || '')}" aria-label="Term from">
+      <span>&ndash;</span>
+      <input type="date" id="mset_term_to" value="${esc(s.term_to || '')}" aria-label="Term to">
     </div>
 
+    <span class="save-status" id="mset_status"></span>`;
+
+  // ---------- cards 2 + 3: the two instant-commit lists ----------
+  document.getElementById('msetCardTajweed').innerHTML = `
     <div class="form-label mset-list-label">Tajweed tags
-      <span class="mset-legend-note">(&bull; marks a major tag; retiring keeps it on old entries)</span>
+      <span class="mset-legend-note">(major blocks the mistakes ring; retiring keeps a tag on old entries)</span>
     </div>
-    <div class="mset-list" id="msetTagsList"></div>
     <div class="mset-list-add">
       <input type="text" id="mset_tag_new" maxlength="40" placeholder="New tag name">
-      <label class="mset-major-check"><input type="checkbox" id="mset_tag_new_major"> major</label>
-      <button type="button" class="secondary" id="mset_tag_add">Add tag</button>
+      <button type="button" class="secondary" id="mset_tag_add">Add</button>
     </div>
-    <div class="form-error" id="mset_list_error"></div>`;
+    <div class="mset-list-headers"><span>Retire</span></div>
+    <div class="mset-list" id="msetTagsList"></div>
+    <div class="form-error" id="mset_tag_error"></div>`;
 
-  renderMsetTimezoneSelect(s.timezone);
+  document.getElementById('msetCardGroups').innerHTML = `
+    <div class="form-label mset-list-label">Hifz groups
+      <span class="mset-legend-note">(one per student, assigned on her Admin card; the summary orders by group. Descriptions are info-only — they show here and nowhere else)</span>
+    </div>
+    <div class="mset-list-add">
+      <input type="text" id="mset_group_new" maxlength="40" placeholder="New group name">
+      <button type="button" class="secondary" id="mset_group_add">Add</button>
+    </div>
+    <div class="mset-list-headers"><span>Retire</span></div>
+    <div class="mset-list" id="msetGroupsList"></div>
+    <div class="form-error" id="mset_group_error"></div>`;
+
+  renderMsetTimezoneControl();
   await renderMsetLists();
+  wireMsetRail();
 
-  // V3.74.2: the save icon, drawn from the shared set like every other.
   const si = document.getElementById('mset_save_icon');
   if(si && typeof iconHtml === 'function') si.innerHTML = iconHtml('save');
-
   document.getElementById('mset_save').addEventListener('click', saveMaktabSettingsScreen);
 }
 
-// V3.78.0: the timezone select — every IANA zone the browser knows, or a
-// short common list where Intl.supportedValuesOf is missing. Set via
-// textContent-safe option construction, current value selected, '' = not set.
-function renderMsetTimezoneSelect(current){
-  const sel = document.getElementById('mset_timezone');
+// ---------- the rail's dots, mirroring the day view's driver ----------
+// (log-detail classes are reused for the CSS; the driver can't be shared
+// because it is wired to the other screen's ids at load time.)
+function updateMsetDots(){
+  const rail = document.getElementById('msetRail');
+  const dots = document.querySelectorAll('#msetDots .dot');
+  const cards = Array.from(rail.children);
+  const railLeft = rail.getBoundingClientRect().left;
+  let activeIndex = 0;
+  cards.forEach((card, i) => {
+    if(card.getBoundingClientRect().left <= railLeft + 4) activeIndex = i;
+  });
+  dots.forEach((dot, i) => dot.classList.toggle('active', i === activeIndex));
+}
+let msetRailWired = false;
+function wireMsetRail(){
+  const rail = document.getElementById('msetRail');
+  rail.scrollLeft = 0;   // always open on General
+  updateMsetDots();
+  if(msetRailWired) return;
+  msetRailWired = true;
+  rail.addEventListener('scroll', () => { window.requestAnimationFrame(updateMsetDots); });
+  document.querySelectorAll('#msetDots .dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const card = rail.children[parseInt(dot.dataset.index, 10)];
+      if(card) rail.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    });
+  });
+}
+
+// ---------- the timezone control (option 3) ----------
+function msetDeviceZone(){
+  try{ return Intl.DateTimeFormat().resolvedOptions().timeZone || null; }
+  catch(e){ return null; }
+}
+function renderMsetTimezoneControl(){
+  const staged = document.getElementById('mset_timezone').value;
+  const current = document.getElementById('mset_tz_current');
+  current.textContent = staged ? staged : 'Not set — each device uses its own day.';
+  const deviceBtn = document.getElementById('mset_tz_device');
+  const dz = msetDeviceZone();
+  if(dz && dz !== staged){
+    deviceBtn.textContent = `Use this device's timezone (${dz})`;
+    deviceBtn.classList.remove('hidden');
+    if(!deviceBtn._wired){
+      deviceBtn._wired = true;
+      deviceBtn.addEventListener('click', () => {
+        document.getElementById('mset_timezone').value = msetDeviceZone() || '';
+        renderMsetTimezoneControl();
+      });
+    }
+  } else {
+    deviceBtn.classList.add('hidden');
+  }
+  const clearBtn = document.getElementById('mset_tz_clear');
+  clearBtn.classList.toggle('hidden', !staged);
+  if(!clearBtn._wired){
+    clearBtn._wired = true;
+    clearBtn.addEventListener('click', () => {
+      document.getElementById('mset_timezone').value = '';
+      renderMsetTimezoneControl();
+    });
+  }
+  const toggle = document.getElementById('mset_tz_other_toggle');
+  if(!toggle._wired){
+    toggle._wired = true;
+    toggle.addEventListener('click', () => {
+      const row = document.getElementById('mset_tz_other_row');
+      row.classList.toggle('hidden');
+      if(!row.classList.contains('hidden')){
+        msetFillZoneDatalist();
+        document.getElementById('mset_tz_other').focus();
+      }
+    });
+    // typing a full, known zone stages it; the worker validates again on Save
+    document.getElementById('mset_tz_other').addEventListener('change', () => {
+      const v = document.getElementById('mset_tz_other').value.trim();
+      if(!v) return;
+      document.getElementById('mset_timezone').value = v;
+      document.getElementById('mset_tz_other').value = '';
+      document.getElementById('mset_tz_other_row').classList.add('hidden');
+      renderMsetTimezoneControl();
+    });
+  }
+}
+function msetFillZoneDatalist(){
+  const dl = document.getElementById('mset_tz_zones');
+  if(dl.children.length) return;   // fill once
   let zones = [];
   try{ zones = Intl.supportedValuesOf('timeZone'); }
   catch(e){ zones = ['Africa/Johannesburg', 'Africa/Nairobi', 'Asia/Karachi', 'Asia/Kolkata', 'Asia/Dubai', 'Europe/London', 'America/New_York', 'America/Chicago', 'America/Los_Angeles', 'UTC']; }
-  const opts = [['', 'Not set (each device uses its own day)']].concat(zones.map(z => [z, z]));
-  sel.innerHTML = '';
-  for(const [value, label] of opts){
+  for(const z of zones){
     const o = document.createElement('option');
-    o.value = value;
-    o.textContent = label;
-    if((current || '') === value) o.selected = true;
-    sel.appendChild(o);
+    o.value = z;
+    dl.appendChild(o);
   }
 }
 
-// V3.78.0: the two list managers. Same renderer twice — a row per entry
-// with rename (tap the name), the major toggle (tags only), and
-// retire/restore. All writes go straight to the worker and re-render, so
-// what is on screen is always what is stored.
+// ---------- the two lists: inline rows, instant commit ----------
 async function renderMsetLists(){
-  const errEl = document.getElementById('mset_list_error');
-  errEl.textContent = '';
   let groups, tags;
   try{
     [groups, tags] = await Promise.all([apiGetMaktabGroups(), apiGetTajweedTags()]);
   } catch(e){
-    errEl.textContent = 'Could not load the lists: ' + e.message;
+    const g = document.getElementById('mset_group_error');
+    const t = document.getElementById('mset_tag_error');
+    if(g) g.textContent = 'Could not load: ' + e.message;
+    if(t) t.textContent = 'Could not load: ' + e.message;
     return;
   }
-  renderMsetList('msetGroupsList', groups, {
+  renderMsetList('msetGroupsList', 'mset_group_error', groups, {
     rename: (id, name) => apiUpdateMaktabGroup(id, { name }),
+    describe: (id, description) => apiUpdateMaktabGroup(id, { description }),
     retire: (id, retired) => apiUpdateMaktabGroup(id, { retired }),
   });
-  renderMsetList('msetTagsList', tags, {
+  renderMsetList('msetTagsList', 'mset_tag_error', tags, {
     rename: (id, name) => apiUpdateTajweedTag(id, { name }),
     retire: (id, retired) => apiUpdateTajweedTag(id, { retired }),
     toggleMajor: (id, major) => apiUpdateTajweedTag(id, { major }),
   });
 }
 
-function renderMsetList(hostId, rows, ops){
+function renderMsetList(hostId, errId, rows, ops){
   const host = document.getElementById(hostId);
-  const errEl = document.getElementById('mset_list_error');
+  const errEl = document.getElementById(errId);
   host.innerHTML = '';
   if(!rows.length){
     host.innerHTML = '<div class="mset-list-empty">None yet.</div>';
+    wireMsetAdds();
     return;
   }
+  // One action → one write → re-render, so the screen always shows what
+  // is stored. On failure the error lands against this card and the
+  // re-render restores the stored value.
   const act = async (fn) => {
     errEl.textContent = '';
     try{ await fn(); await renderMsetLists(); }
-    catch(e){ errEl.textContent = e.message; }
+    catch(e){ errEl.textContent = e.message; await renderMsetLists(); }
   };
   rows.forEach(row => {
     const div = document.createElement('div');
     div.className = 'mset-list-row' + (row.retired ? ' retired' : '');
-    const nameBtn = document.createElement('button');
-    nameBtn.type = 'button';
-    nameBtn.className = 'mset-list-name';
-    nameBtn.textContent = row.name + (row.major ? ' •' : '');
-    nameBtn.title = 'Rename';
-    nameBtn.addEventListener('click', () => {
-      const name = prompt('Rename "' + row.name + '" to:', row.name);
-      if(name && name.trim() && name.trim() !== row.name) act(() => ops.rename(row.id, name.trim()));
+
+    // the name: an inline input committing on blur/Enter (V3.79.0 — the
+    // browser rename-prompt is gone)
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.maxLength = 40;
+    nameInput.className = 'mset-name-input';
+    nameInput.value = row.name;
+    nameInput.setAttribute('aria-label', 'Name');
+    nameInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') nameInput.blur(); });
+    nameInput.addEventListener('blur', () => {
+      const name = nameInput.value.trim();
+      if(!name){ nameInput.value = row.name; return; }   // empty: restore, no write
+      if(name !== row.name) act(() => ops.rename(row.id, name));
     });
-    div.appendChild(nameBtn);
-    if(ops.toggleMajor){
-      const mj = document.createElement('button');
-      mj.type = 'button';
-      mj.className = 'link-btn';
-      mj.textContent = row.major ? 'make minor' : 'make major';
-      mj.addEventListener('click', () => act(() => ops.toggleMajor(row.id, !row.major)));
-      div.appendChild(mj);
+    div.appendChild(nameInput);
+
+    // groups: the description, same commit semantics, info-only
+    if(ops.describe){
+      const descInput = document.createElement('input');
+      descInput.type = 'text';
+      descInput.maxLength = 200;
+      descInput.className = 'mset-desc-input';
+      descInput.value = row.description || '';
+      descInput.placeholder = 'description';
+      descInput.setAttribute('aria-label', 'Description');
+      descInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') descInput.blur(); });
+      descInput.addEventListener('blur', () => {
+        const d = descInput.value.trim();
+        if(d !== (row.description || '')) act(() => ops.describe(row.id, d));
+      });
+      div.appendChild(descInput);
     }
-    const rt = document.createElement('button');
-    rt.type = 'button';
-    rt.className = 'link-btn';
-    rt.textContent = row.retired ? 'restore' : 'retire';
-    rt.addEventListener('click', () => act(() => ops.retire(row.id, !row.retired)));
-    div.appendChild(rt);
+
+    // tags: the MAJOR/MINOR pill, committing on tap
+    if(ops.toggleMajor){
+      const pill = document.createElement('div');
+      pill.className = 'mset-major-pill';
+      [['MAJOR', 1], ['MINOR', 0]].forEach(([label, val]) => {
+        const seg = document.createElement('button');
+        seg.type = 'button';
+        seg.textContent = label;
+        seg.className = (row.major ? 1 : 0) === val ? 'active' : '';
+        seg.addEventListener('click', () => {
+          if((row.major ? 1 : 0) !== val) act(() => ops.toggleMajor(row.id, !!val));
+        });
+        pill.appendChild(seg);
+      });
+      div.appendChild(pill);
+    }
+
+    // retire: a checkbox committing on tap; unchecking restores
+    const retire = document.createElement('input');
+    retire.type = 'checkbox';
+    retire.className = 'mset-retire-cb';
+    retire.checked = !!row.retired;
+    retire.setAttribute('aria-label', `Retire ${row.name}`);
+    retire.addEventListener('change', () => act(() => ops.retire(row.id, retire.checked)));
+    div.appendChild(retire);
+
     host.appendChild(div);
   });
-  // the add buttons are outside the list; wire once per render pass
-  wireMsetAdd('mset_group_add', 'mset_group_new', null, (name) => apiCreateMaktabGroup(name));
-  wireMsetAdd('mset_tag_add', 'mset_tag_new', 'mset_tag_new_major', (name, major) => apiCreateTajweedTag(name, major));
+  wireMsetAdds();
 }
 
-function wireMsetAdd(btnId, inputId, majorId, create){
+function wireMsetAdds(){
+  wireMsetAdd('mset_group_add', 'mset_group_new', (name) => apiCreateMaktabGroup(name), 'mset_group_error');
+  wireMsetAdd('mset_tag_add', 'mset_tag_new', (name) => apiCreateTajweedTag(name, false), 'mset_tag_error');
+}
+
+function wireMsetAdd(btnId, inputId, create, errId){
   const btn = document.getElementById(btnId);
   if(!btn || btn._wired) return;
   btn._wired = true;
   btn.addEventListener('click', async () => {
-    const errEl = document.getElementById('mset_list_error');
+    const errEl = document.getElementById(errId);
     errEl.textContent = '';
     const input = document.getElementById(inputId);
     const name = input.value.trim();
     if(!name) return;
-    const major = majorId ? document.getElementById(majorId).checked : undefined;
     try{
-      await create(name, major);
+      await create(name);   // new tags start minor — the pill flips them
       input.value = '';
-      if(majorId) document.getElementById(majorId).checked = false;
       await renderMsetLists();
       // the picker vocabulary is session-cached; a new tag should be
       // offerable without a reload
@@ -239,7 +389,9 @@ async function saveMaktabSettingsScreen(){
     mushaf: (document.querySelector('input[name="mset_mushaf"]:checked') || {}).value || '13line',
     maktab_day_min: Number(document.getElementById('mset_day_min').value),
     absence_flag_days: Number(document.getElementById('mset_absence').value),
-    timezone: document.getElementById('mset_timezone').value,   // '' clears (V3.78.0)
+    timezone: document.getElementById('mset_timezone').value,   // the STAGED value; '' clears (V3.78.0/V3.79.0)
+    term_from: document.getElementById('mset_term_from').value,   // V3.80.0; '' clears
+    term_to: document.getElementById('mset_term_to').value,
   };
   status.textContent = 'Saving\u2026';
   try{

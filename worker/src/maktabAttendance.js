@@ -30,7 +30,7 @@
 //                measures attendance, not biology).
 // ============================================================
 
-import { isTeacherOrAbove } from './utils.js';
+import { isTeacherOrAbove, isValidDate, maktabTodayISO } from './utils.js';
 import { readMaktabSettings } from './maktabSettings.js';
 import { haidhOfficialMaxDuration } from '../../shared/haidhRules.js';
 
@@ -156,4 +156,102 @@ export async function handleMaktabAttendance(request, env, auth) {
     };
   }
   return { data: { date, isMaktabDay, maktabDayCount: maktabDays.length, attendance: out } };
+}
+
+// ============================================================
+// GET /attendance/page[?student_id&from&to] — V3.80.0, the attendance
+// page (the original list-of-11 intent behind item 5, stated in full
+// 2026-08-28). One student's attendance over a PERIOD, computed here so
+// the frontend makes one call, not one per day.
+//
+//   period    = ?from/?to when given (the page's custom option), else the
+//               CURRENT TERM from maktab settings (migration 0025), else
+//               the last 4 weeks ending on the maktab's own today.
+//   "day"     = MAKTAB DAY (the user's standing definition, 2026-08-28);
+//               haidh stays on calendar days — both exactly as
+//               deriveStudentAttendance has always computed them.
+//   present % = days PRESENT OR HAIDH over the period's maktab days
+//               (user: "present = activity logged or haidh").
+//   absent    = the period's maktab days with neither.
+//   haidh_ranges = the last 3 CONFIRMED runs (status 'haidh' only,
+//               consecutive calendar dates), newest first.
+//
+// Auth mirrors the calendar endpoints: a student gets her own page; a
+// teacher passes student_id.
+// ============================================================
+export async function handleAttendancePage(request, env, auth) {
+  if (!auth) return { error: 'Not authenticated', status: 401 };
+  const url = new URL(request.url);
+  const bodyStudentId = url.searchParams.get('student_id');
+  const studentId = isTeacherOrAbove(auth) && bodyStudentId ? String(bodyStudentId) : auth.id;
+
+  const student = await env.DB.prepare(
+    "SELECT id, haidh_ruling, track_haidh FROM students WHERE id = ? AND role = 'student'"
+  ).bind(studentId).first();
+  if (!student) return { error: 'Student not found', status: 404 };
+
+  const settings = await readMaktabSettings(env);
+  const today = await maktabTodayISO(env);
+
+  let from = url.searchParams.get('from');
+  let to = url.searchParams.get('to');
+  let source = 'custom';
+  if (!isValidDate(from) || !isValidDate(to)) {
+    if (settings.term_from && settings.term_to) {
+      from = settings.term_from; to = settings.term_to; source = 'term';
+    } else {
+      const d = new Date(today + 'T00:00:00Z');
+      d.setUTCDate(d.getUTCDate() - 27);
+      from = d.toISOString().slice(0, 10); to = today; source = '4w';
+    }
+  }
+  if (from > to) return { error: 'from must not be after to', status: 400 };
+
+  // Derivation runs over ALL maktab days — haidh propagation on a day
+  // inside the period can depend on a run that began before it — and the
+  // period then filters the result.
+  const allMaktabDays = await loadMaktabDays(env, settings.maktab_day_min);
+  const { results: loggedRows } = await env.DB.prepare(
+    `SELECT DISTINCT date FROM (
+       SELECT date FROM maktab_sabaq_log WHERE student_id = ?
+       UNION ALL SELECT date FROM maktab_sabaq_dhor_log WHERE student_id = ?
+       UNION ALL SELECT date FROM maktab_dhor_log WHERE student_id = ?
+     )`
+  ).bind(studentId, studentId, studentId).all();
+  const { results: haidhRows } = await env.DB.prepare(
+    `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') ORDER BY date`
+  ).bind(studentId).all();
+
+  const derived = deriveStudentAttendance(
+    allMaktabDays,
+    new Set(loggedRows.map(r => r.date)),
+    haidhRows.map(r => r.date),
+    student.haidh_ruling || 'hanafi',
+    settings.absence_flag_days
+  );
+
+  const periodDays = allMaktabDays.filter(d => d >= from && d <= to);
+  const absent_dates = periodDays.filter(d => derived.statuses[d] === 'absent');
+  const present_days = periodDays.length - absent_dates.length;   // present OR haidh, per the spec
+  const percent = periodDays.length ? Math.round((present_days / periodDays.length) * 100) : null;
+
+  // The last 3 CONFIRMED runs, newest first: consecutive calendar dates
+  // of 'haidh' rows only (a prediction is a plan, not history — V3.76.1).
+  const confirmed = haidhRows.filter(r => r.status === 'haidh').map(r => r.date);
+  const ranges = [];
+  for (const d of confirmed) {
+    const last = ranges[ranges.length - 1];
+    const next = last && new Date(new Date(last.to + 'T00:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
+    if (last && d === next) last.to = d;
+    else ranges.push({ from: d, to: d });
+  }
+  const haidh_ranges = ranges.slice(-3).reverse();
+
+  return { data: {
+    student_id: studentId, from, to, source,
+    maktab_days: periodDays.length, present_days, percent,
+    absent_dates, haidh_ranges,
+    track_haidh: !!student.track_haidh,
+    term_from: settings.term_from || null, term_to: settings.term_to || null,
+  } };
 }

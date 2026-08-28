@@ -13,7 +13,7 @@
 // teacher never sees the settings; their cards just read the mushaf.
 // ============================================================
 
-import { isTeacherOrAbove } from './utils.js';
+import { isTeacherOrAbove, isValidDate } from './utils.js';   // isValidDate: V3.80.0 term dates
 
 // V3.74.0: 15line_indopak added. shared/data.js already knew this value
 // (its script ref maps it to 'indopak'); only this whitelist did not, so
@@ -27,7 +27,7 @@ const MUSHAFS = ['13line', '15line_madani', '15line_indopak'];
 export async function handleGetMaktabSettings(request, env, auth) {
   if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to FROM maktab_settings WHERE id = 1'
   ).first();
   if (!row) return { error: 'Maktab settings row is missing — run migration 0020', status: 500 };
   return { data: row };
@@ -61,6 +61,21 @@ export async function handleSaveMaktabSettings(request, env, auth) {
   // everyone sees maktab time (user, 2026-08-27). An IANA zone name,
   // validated by actually constructing a formatter with it; empty clears
   // back to "not set" (device/UTC behaviour).
+  // V3.80.0: the current term — the default attendance period. Each end
+  // validated as a date; empty clears; when both arrive non-empty the
+  // order is enforced.
+  for (const k of ['term_from', 'term_to']) {
+    if (body[k] !== undefined) {
+      if (body[k] === null || body[k] === '') { updates.push(`${k} = NULL`); }
+      else {
+        if (!isValidDate(body[k])) return { error: `${k} must be YYYY-MM-DD`, status: 400 };
+        updates.push(`${k} = ?`); values.push(body[k]);
+      }
+    }
+  }
+  if (body.term_from && body.term_to && isValidDate(body.term_from) && isValidDate(body.term_to) && body.term_from > body.term_to) {
+    return { error: 'term_from must not be after term_to', status: 400 };
+  }
   if (body.timezone !== undefined) {
     if (body.timezone === null || body.timezone === '') {
       updates.push('timezone = NULL');
@@ -78,7 +93,7 @@ export async function handleSaveMaktabSettings(request, env, auth) {
   await env.DB.prepare(`UPDATE maktab_settings SET ${updates.join(', ')} WHERE id = 1`).bind(...values).run();
 
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to FROM maktab_settings WHERE id = 1'
   ).first();
   return { data: row };
 }
@@ -88,7 +103,7 @@ export async function handleSaveMaktabSettings(request, env, auth) {
 // the row's shape, rather than each module writing its own SELECT.
 export async function readMaktabSettings(env) {
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to FROM maktab_settings WHERE id = 1'
   ).first();
   return row || { mushaf: '13line', maktab_day_min: 3, absence_flag_days: 30, name: '' };
 }

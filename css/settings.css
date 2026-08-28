@@ -367,3 +367,45 @@
 .mset-major-check input { width: auto; }
 .mset-list-empty { font-size: 13px; color: var(--color-ink-faint); }
 .tajweed-retired-note { color: var(--color-ink-faint); font-size: 12px; }
+
+/* V3.79.0: the settings rail's own bits (the rail/card/dot sizing comes
+   from the reused log-detail classes in detail-pages.css). */
+.mset-tz-box { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.mset-tz-current { font-size: 14px; color: var(--color-ink); }
+.mset-tz-other-row { width: 100%; }
+.mset-tz-other-row input { width: 100%; box-sizing: border-box; }
+
+/* The list rows: name input, (groups) description input, (tags) the
+   MAJOR/MINOR pill, the retire checkbox. Inputs look quiet until focus. */
+.mset-list-headers { display: flex; justify-content: flex-end; font-size: 11px; color: var(--color-ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-top: var(--space-sm); padding-right: 2px; }
+.mset-name-input, .mset-desc-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-ink);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 4px 6px;
+}
+.mset-desc-input { flex: 1.4; color: var(--color-ink-soft); }
+.mset-name-input:focus, .mset-desc-input:focus { border-color: var(--color-table-border); background: var(--color-surface, #fff); outline: none; }
+.mset-list-row.retired .mset-name-input { color: var(--color-ink-faint); text-decoration: line-through; }
+.mset-major-pill { display: flex; flex: 0 0 auto; border: 1px solid var(--color-table-border); border-radius: 999px; overflow: hidden; }
+.mset-major-pill button {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  padding: 5px 9px;
+  cursor: pointer;
+  color: var(--color-ink-soft);
+}
+.mset-major-pill button.active { background: var(--palette-evergreen); color: white; }
+.mset-retire-cb { flex: 0 0 auto; width: 18px; height: 18px; }
+
+/* V3.80.0: the term selector on the General card */
+.mset-term-row { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.mset-term-row input[type="date"] { flex: 0 1 auto; min-width: 0; }

@@ -45,13 +45,16 @@ function maktabTodayISO(){
 // why. Deleted rather than left dangling: nothing calls them.
 //
 // The summary's haidh icon is a LINK to that calendar:
+// V3.80.0: the summary's per-student icon opens the ATTENDANCE PAGE now
+// (the calendar sits inside it). Same ctx mechanics as the day view.
+function openMaktabAttendancePage(student, date){
+  setMaktabLogContext(student, date || maktabTodayISO());
+  showScreen('attendancePage', { maktab: true, date });
+}
+// V3.76.0 opener, kept as the route in: the calendar has no standalone
+// screen since V3.80.0, so opening "the calendar" means opening the page.
 function openMaktabHaidhCalendar(student, date){
-  maktabDayStudent = student;
-  maktabDayDate = date || maktabTodayISO();
-  setMaktabLogContext(student, maktabDayDate);
-  // { maktab: true } tells showScreen to KEEP the context (js/app.js); the
-  // date opens the calendar on the month of the summary's picked day.
-  return showScreen('haidhDetail', { maktab: true, date: maktabDayDate });
+  openMaktabAttendancePage(student, date);
 }
 
 // The student name + haidh toggle row, painted into each of the three

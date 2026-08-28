@@ -40,6 +40,8 @@ db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
 try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
 db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT");   // V3.80.0 (migration 0025)
 
 // D1 allows .first()/.all()/.run() directly on a prepared statement with
 // no .bind() when the SQL has no parameters — the worker uses that form

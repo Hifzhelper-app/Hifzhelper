@@ -32,7 +32,7 @@ function showWelcome(name){
 // component owns all of its own behavior) -- SCREENS_BUILT still needs the
 // entry so it doesn't fall to the "coming soon" placeholder, but showScreen()
 // below needs no dedicated branch for it, unlike every other built screen.
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, haidhDetail: true, juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true };
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true,   // V3.80.0: was haidhDetail — the calendar lives inside the attendance page now juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true };
 const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
@@ -59,13 +59,13 @@ async function showScreen(id, param){
   // V3.76.0: the haidh calendar is the second shared screen. Opened by the
   // maktab (param { maktab: true }) it must KEEP the context; opened from
   // the nav (a string date, or nothing) it drops it like every other screen.
-  const keepsMaktabCtx = id === 'logDetail' || !!(id === 'haidhDetail' && param && typeof param === 'object' && param.maktab === true);
+  const keepsMaktabCtx = id === 'logDetail' || !!(id === 'attendancePage' && param && typeof param === 'object' && param.maktab === true);   // V3.80.0: was haidhDetail
   if(!keepsMaktabCtx && typeof exitMaktabDay === 'function') exitMaktabDay();
   if(id === 'logDetail') await renderLogDetailScreen(param);
   if(id === 'admin') await renderAdminScreen();
   if(id === 'settings') await renderSettingsScreen();
   if(id === 'reflections') await renderTadabburScreen();
-  if(id === 'haidhDetail') await renderHaidhDetailScreen(param);
+  if(id === 'attendancePage') await renderAttendancePage(param);   // V3.80.0: the page renders the calendar inside itself
   if(id === 'juzTracker') await renderJuzTrackerScreen();
   if(id === 'sih') await renderSihScreen();
   if(id === 'maktabSummary') await renderMaktabSummaryScreen();

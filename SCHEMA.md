@@ -145,9 +145,9 @@ Two instances of one shape: an admin-managed list of named rows referenced by ID
 | Table | Columns | Referenced by |
 |---|---|---|
 | `tajweed_tags` | `id` PK, `name` UNIQUE, `major` (1 blocks the mistakes ring), `retired`, `created_at` | `tajweed_tag_ids` CSV on all six log tables (`sabaq_log`, `sabaq_dhor_log`, `dhor_log`, and the three `maktab_*` logs). Seeded with the eleven defaults; 0022 converted existing word-tags one-way (unmatched words dropped); migration 0023 (run separately, after verification) clears the old `tajweed_tags` word columns |
-| `maktab_groups` | `id` PK, `name` UNIQUE, `retired`, `created_at` | `students.group_id` (one group per student; assigned on the admin card; retired groups keep their students but cannot be newly assigned). The maktab summary orders by group name, ungrouped last |
+| `maktab_groups` | `id` PK, `name` UNIQUE, `description` (migration 0024, V3.79.0 — info-only, shown on the settings Groups card and nowhere else), `retired`, `created_at` | `students.group_id` (one group per student; assigned on the admin card; retired groups keep their students but cannot be newly assigned). The maktab summary orders by group name, ungrouped last |
 
-`maktab_settings` also gained `timezone` (TEXT, IANA zone, NULL = unset) in 0022 — the maktab's canonical day boundary; everyone sees maktab time (V3.78.0).
+`maktab_settings` also gained `timezone` (TEXT, IANA zone, NULL = unset) in 0022, and `term_from`/`term_to` (TEXT dates, NULL = no term) in 0025 (V3.80.0) — the current term, the attendance page's default period — the maktab's canonical day boundary; everyone sees maktab time (V3.78.0).
 
 ## Tables: `maktab_settings`, `maktab_position` (migrations 0020/0021 — Maktab Phase 2)
 

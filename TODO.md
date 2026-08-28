@@ -40,6 +40,142 @@ sections as the record of what was agreed and why.
 **Design — Maktab records (a)–(h): ALL SHIPPED.** Kept for the design
 rationale later deliveries reference — not an action.
 
+## Stated 2026-08-28, NOT BUILT: four further items + agreed build order
+
+Recommended order (agreed rationale: the merge is the foundation; surfaces
+that show history or summaries must read the MERGED journal, so they come
+after it):
+
+1. ~~**V3.79.0 — the settings rail**~~ **BUILT 2026-08-28.**
+2. **Dhor juz-range** — with the dhor selector on juz, a RANGE of juz can
+   be selected. ANSWERED 2026-08-28: **one Save writes the whole range
+   together** — the assumption is the student read the whole range in one
+   sitting. The save fans out to ONE ENTRY PER JUZ (so each can be edited
+   or deleted individually afterwards); recorded TIME and MISTAKES are
+   DIVIDED over the range; TAJWEED TAGS are DUPLICATED onto each juz.
+   Rounding of the division is a build detail (divide evenly, remainder
+   to the earliest entries). BUILD-READY.
+3. **(k) The merge** — **ONE-WAY, maktab → PJ** (user, 2026-08-28): maktab
+   records appear in the student's PJ, with the NON-maktab (personal)
+   entries clearly apparent (the personal ones carry the marker, not the
+   maktab ones). The maktab side gains NOTHING new from PJ — at the
+   moment haidh, sabaq and notes are the ONLY three items the maktab
+   side reads from PJ, and that stays as-is. **The truth principle (user, 2026-08-28, governs the whole
+   merge):** each side owns its truth. Maktab records are the maktab's
+   truth; what is read from PJ (haidh, sabaq, notes — the only three)
+   becomes maktab truth ONLY when confirmed and saved as a maktab record.
+   Her personal dhor is her record of reciting OUTSIDE the maktab — hers,
+   never maktab truth. So: ownership governs WRITES (maktab entries edit
+   only maktab-side; hers are hers; nothing crosses without
+   confirmation). Marker: user leans COLOUR/TINT on the personal entries;
+   Claude to propose options at build. BUILD INTERPRETATION (open to
+   veto): her PJ tracker/prepop/frontier describe what she has RECITED
+   wherever she recited it, so they consume the full merged journal —
+   ownership limits editing, not counting.
+4. **Notes History + button moves** — ANSWERED 2026-08-28: option (c),
+   ONE INTERLEAVED RAIL across dates of entry notes + teacher feedback,
+   like the entry-history rail. Visibility rules UNCHANGED and do the
+   filtering per viewer: the maktab sees PJ notes marked visible to it
+   (the existing third read) + the feedback record; the student sees all
+   her own notes + feedback visible to her. Layout: BOTH history buttons
+   move to the bottom of the page below the notes; on the dhor page the
+   Add-Juz and History buttons swap. BUILD-READY.
+5. **Student summary page** — a NEW FOURTH card on the maktab day rail.
+   From the maktab summary, tapping the student's NAME opens it; tapping
+   her sabaq cell opens the sabaq card (etc.) as now. ANSWERED
+   2026-08-28: the PJ journal LAYOUT showing the MAKTAB'S entries for her
+   ONLY — the maktab's own record of the student, INDEPENDENT of the (k)
+   merge (corrected from an earlier merged reading). Existing
+   note-visibility rules keep governing what shows. Consequence: no
+   dependency on (k) — this item can be built before or after the merge.
+
+## The ATTENDANCE PAGE — BUILT V3.80.0 (2026-08-28; the original list-of-11 intent behind item 5)
+
+The user's recollection of the original discussion — item 5 as recorded
+(haidh icon → haidh calendar link, built V3.76.0) was NARROWER than the
+intent. The full page, stated 2026-08-28:
+
+- **The summary's leading icon changes:** the haidh icon (haa'idah only)
+  is REPLACED by an ATTENDANCE icon on EVERY student, every day. It
+  navigates to the attendance page for that student.
+- **The page contains, top to bottom:**
+  1. **% Present over the last 4 weeks** — present = activity logged OR
+     haidh. Denominator = MAKTAB DAYS in the window.
+  2. A **button showing the history of days absent** (absent = a maktab
+     day with neither activity nor haidh).
+  3. **The haidh calendar below** (haa'idah only — the same shared
+     calendar, reached from here now instead of its own summary icon).
+  4. **Haidh history: the dates of the last 3 haidh ranges.**
+- **DEFINITION (user, 2026-08-28, applies from now on): "day" = MAKTAB
+  DAY** — a day when the minimum number of students had activity logged
+  (the existing derived `isMaktabDay`). **Haidh calculations still use
+  calendar days.**
+
+Implies a worker endpoint computing the window server-side (per-student:
+maktab days in the last 28 calendar days, present count, absent dates,
+haidh ranges) rather than 28 frontend calls.
+
+**Answers (2026-08-28) — built accordingly:**
+1. Non-haidh students: %-present + absent history only (assumption stood).
+2. Absent-days history: the SAME PERIOD as the % calculation (follows
+   from the period model below).
+3. Last-3 haidh ranges: CONFIRMED runs only (assumption stood).
+4. **The student gets this page too** — her own attendance, same layout.
+   Placement (Claude's call at build): a nav item alongside her Maktab
+   journal item, same gating.
+
+**The period model (user, 2026-08-28):**
+- **Maktab Settings (General card) gains "Current term" — a date
+  FROM/TO selector.** That term is the DEFAULT attendance period ("the
+  easiest way to set term dates"). → migration 0025: `term_from`,
+  `term_to` on `maktab_settings` (additive).
+- **The attendance page gains a custom FROM/TO option** to calculate
+  over any period.
+- Fallback while no term is set: the last 4 weeks (the originally
+  stated default).
+
+## Maktab Settings as a 3-card rail + group descriptions — BUILT V3.79.0 (2026-08-28)
+
+From the user's schematic (screenshot, 2026-08-28). Spec retained below as
+the record.
+
+**Maktab Settings becomes a THREE-CARD RAIL like the day view** (user,
+2026-08-28, correcting an earlier typo: "Maktab settings becomes a 3 card
+rail like the day view"): General / Tajweed / Groups as horizontally
+snapped cards with the pill strip on top jumping between them — the same
+rail pattern the maktab day view uses for its cards. The schematic's three
+panels are the three cards:
+- General: maktab name, time zone, mushaf, maktab-day minimum, absence-flag
+  days. One SAVE top right.
+  - **Timezone control (user picked option 3, 2026-08-28):** the V3.78.0
+    400-entry select goes. The card shows the current setting plus a
+    one-tap button "Use this device's timezone (<Intl resolved zone>)";
+    under it, "choose a different zone" reveals a TYPE-AHEAD (text input +
+    datalist of every IANA zone) for the travelling-admin case. Empty
+    still clears to "not set". The worker's Intl validation (V3.78.0)
+    stays the backstop for anything typed.
+- Tajweed: add-row (input + ADD) on top; each tag = editable NAME INPUT +
+  MAJOR/MINOR toggle pill + RETIRE checkbox. **NO Save on this tab**
+  (user, 2026-08-28: "keep the existing save, remove the save from tajweed
+  and groups") — every control commits INSTANTLY: pill and checkbox on
+  tap, name input on blur/Enter (rejection restores the old value, error
+  against the row). The browser rename-prompt goes.
+- Groups: same shape; each group = NAME + **DESCRIPTION** inputs + RETIRE.
+  No Save; same instant-commit semantics.
+
+**Groups gain a description** → migration 0024 (additive:
+`ALTER TABLE maktab_groups ADD COLUMN description TEXT`), worker list
+endpoints carry it, settings tab edits it.
+
+**Questions — all answered:**
+1. ~~"Maktab history becomes a rail"~~ RESOLVED 2026-08-28: a typo — it
+   read "Maktab settings becomes a 3 card rail like the day view". Built
+   into the heading above; no history feature involved.
+2. ~~Description display~~ ANSWERED 2026-08-28: info-only — shown on the
+   Groups card and NOWHERE else (not the admin select, not search results).
+3. ~~Save semantics~~ ANSWERED 2026-08-28: General keeps its Save; the two
+   list tabs have none — instant commit throughout, as above.
+
 ## The list of eleven (stated 2026-08-26) — four phases. PHASE 1 BUILT (V3.75.0); 2, 3, 4 NOT BUILT
 
 Recorded here in V3.75.0. The docs-only V3.74.6 that was meant to carry this

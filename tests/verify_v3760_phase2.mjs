@@ -176,17 +176,20 @@ const dayBtn = (w, iso) => [...w.document.querySelectorAll('.haidh-cal-day')].fi
 }
 
 // ---------- 3: summary icon, opener, routing ----------
-check('summary: the icon opens the calendar with the student and the PICKED date', /openMaktabHaidhCalendar\(stu, date\);/.test(summarySrc));
+check('summary: the icon opens the ATTENDANCE PAGE with the student and the PICKED date (V3.80.0 — the calendar lives inside it)', /openMaktabAttendancePage\(stu, date\);/.test(summarySrc));
 check('summary: no toggle wiring survives', !/maktabToggleHaidh|aria-pressed/.test(summarySrc));
-check('summary: the tap still does not reach the row', /e\.stopPropagation\(\);\n\s*openMaktabHaidhCalendar/.test(summarySrc));
+check('summary: the tap still does not reach the row', /e\.stopPropagation\(\);\n\s*openMaktabAttendancePage/.test(summarySrc));
+// V3.80.0: the opener is openMaktabAttendancePage; the old calendar
+// opener delegates to it, so "open the calendar" still routes correctly.
 check('day: the opener sets the maktab context and passes { maktab: true, date }',
-  /function openMaktabHaidhCalendar\(student, date\)\{[\s\S]{0,400}setMaktabLogContext\(student, maktabDayDate\);[\s\S]{0,400}showScreen\('haidhDetail', \{ maktab: true, date: maktabDayDate \}\)/.test(daySrc));
+  /function openMaktabAttendancePage\(student, date\)\{[\s\S]{0,200}setMaktabLogContext\(student, date \|\| maktabTodayISO\(\)\);[\s\S]{0,120}showScreen\('attendancePage', \{ maktab: true, date \}\)/.test(daySrc)
+  && /function openMaktabHaidhCalendar\(student, date\)\{\n\s*openMaktabAttendancePage\(student, date\);\n\}/.test(daySrc));
 check('day: the toggle flow is deleted, not left dangling', !/function maktabToggleHaidh|function maktabMarkHaidhFlow|function maktabHaidhGapDays/.test(daySrc));
-check('app: showScreen keeps the context for the maktab-opened calendar and drops it otherwise',
-  /const keepsMaktabCtx = id === 'logDetail' \|\| !!\(id === 'haidhDetail' && param && typeof param === 'object' && param\.maktab === true\);/.test(appSrc)
+check('app: showScreen keeps the context for the maktab-opened page and drops it otherwise (attendancePage since V3.80.0)',
+  /const keepsMaktabCtx = id === 'logDetail' \|\| !!\(id === 'attendancePage' && param && typeof param === 'object' && param\.maktab === true\);/.test(appSrc)
   && /if\(!keepsMaktabCtx && typeof exitMaktabDay === 'function'\) exitMaktabDay\(\);/.test(appSrc));
 check('api: apiMarkHaidhRangeFor posts student_id with the range', /function apiMarkHaidhRangeFor\(studentId, startDate, endDate, opts\)\{[\s\S]{0,200}student_id: studentId, startDate, endDate/.test(apiSrc));   // opts since V3.76.2
-check('html: the heading is id\'d for the name', /<h2 id="haidhDetailTitle">Haidh<\/h2>/.test(html));
+check('html: the heading is id\'d for the name (an h3 inside the attendance page since V3.80.0)', /<h3 class="att-haidh-title" id="haidhDetailTitle">Haidh<\/h3>/.test(html));
 
 // showScreen's keep/drop, driven: simulate the exit hook and call the real predicate line
 {
@@ -195,9 +198,9 @@ check('html: the heading is id\'d for the name', /<h2 id="haidhDetailTitle">Haid
   const line = appSrc.match(/const keepsMaktabCtx = .*;/)[0];
   const f = w.eval(`(function(id, param){ ${line} return keepsMaktabCtx; })`);
   check('app driven: logDetail keeps', f('logDetail', 'sabaq') === true);
-  check('app driven: haidhDetail from the maktab keeps', f('haidhDetail', { maktab: true, date: '2026-08-15' }) === true);
-  check('app driven: haidhDetail from the nav (string date) DROPS', f('haidhDetail', '2026-08-15') === false);
-  check('app driven: haidhDetail from the nav (no param) DROPS', f('haidhDetail', undefined) === false);
+  check('app driven: attendancePage from the maktab keeps', f('attendancePage', { maktab: true, date: '2026-08-15' }) === true);
+  check('app driven: attendancePage from the nav (string date) DROPS', f('attendancePage', '2026-08-15') === false);
+  check('app driven: attendancePage from the nav (no param) DROPS', f('attendancePage', undefined) === false);
   check('app driven: any other screen drops', f('home', undefined) === false && f('maktabSummary', undefined) === false);
 }
 

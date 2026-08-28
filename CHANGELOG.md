@@ -26,6 +26,40 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.80.0 — The attendance page (2026-08-28)
+
+**Files touched:** `worker/migrations/0025_term_dates.sql` (new), `worker/src/maktabAttendance.js`, `worker/src/maktabSettings.js`, `worker/src/index.js`, `js/haidhDetailScreen.js`, `js/maktabSummary.js`, `js/maktabDay.js`, `js/maktabSettings.js`, `js/auth.js`, `js/app.js`, `js/api.js`, `js/icons.js`, `index.html`, `css/haidh.css`, `css/settings.css`, `js/sw.js`, `tests/verify_v3800_attendance_page.mjs` (new), five harness realignments, docs. **MAKTAB DEPLOYMENT ONLY. ⚠ RUN MIGRATION 0025 IN THE D1 CONSOLE FIRST** (two additive lines; console-safe copy shipped), **then the worker, then the frontend.**
+
+**The original list-of-11 intent behind item 5, stated in full 2026-08-28 and built whole.**
+
+**The summary's leading icon is ATTENDANCE now, on EVERY student** (was the haidh icon, haa'idah only). It opens her attendance page; the haidh 'today' tint stays on the icon. **The student gets the same page** from her own nav — the Haidh item became **Attendance**, for all students, with the haidh calendar living INSIDE the page (haa'idah only). The standalone haidh screen is gone; its markup and every id moved into the page untouched, so the calendar, range bar, decision bar and prediction logic run unchanged.
+
+**The page:** % present over the period — **present = activity logged OR haidh; the denominator is MAKTAB DAYS** (the user's standing definition: "day" = maktab day; haidh stays on calendar days) — with the count spelt out; a custom from/to to recalculate over any period; a button revealing the absent dates; the calendar below; and the **last 3 CONFIRMED haidh ranges** (predictions are plans, not history — V3.76.1's rule carried through).
+
+**The period:** custom when applied → else the **CURRENT TERM** — new on Maktab Settings' General card as a from/to date pair (migration 0025; "the easiest way to set term dates") → else the last 4 weeks ending on the maktab's own today. One worker endpoint (`GET /attendance/page`) computes the whole thing server-side — derivation runs over ALL maktab days so haidh propagation from before the period stays correct, then the period filters. Auth mirrors the calendar endpoints: a student gets her own; a teacher passes `student_id`.
+
+**Verification: 877 passed, 0 failed across 27 harnesses** (33 new — 0025, the term save rules, the endpoint's period resolution / percent / absent / ranges / auth against real SQLite, and the page driven in jsdom through custom-apply, reset, the absent list, both haidh-block states and both endpoints). Five existing pins realigned to the deliberate rewiring, including the harness lesson worth keeping: two "absent" fixture days after a haidh run came back haidh — the propagation rule working, not a bug.
+
+---
+
+## V3.79.0 — Maktab Settings as a three-card rail; group descriptions; the one-tap timezone (2026-08-28)
+
+**Files touched:** `worker/migrations/0024_group_descriptions.sql` (new), `worker/src/lists.js`, `js/maktabSettings.js` (rewritten), `index.html`, `css/settings.css`, `js/sw.js`, `tests/verify_v3790_settings_rail.mjs` (new), `tests/verify_maktab_settings_form.mjs`, `tests/verify_v3780_delivery3.mjs`, `TODO.md`, `SPECS.md`, `TESTING.md`, `SCHEMA.md`. **MAKTAB DEPLOYMENT ONLY. ⚠ RUN MIGRATION 0024 IN THE D1 CONSOLE FIRST** (one additive line; a console-safe copy ships with the delivery), **then the worker, then the frontend.**
+
+**Built to the user's schematic (2026-08-28) and the answers that followed it.**
+
+**The screen is a THREE-CARD RAIL like the day view** — General / Tajweed / Groups as snap cards with the pill strip on top, reusing the log-detail rail classes wholesale (sizing, snapping and the desktop 3-up grid come for free; the dots driver is mirrored with the screen's own ids). Opens on General.
+
+**Two save models, both the user's explicit calls.** GENERAL keeps the form + Save it has always had. TAJWEED and GROUPS have NO Save ("keep the existing save, remove the save from tajweed and groups"): every control commits instantly — the MAJOR/MINOR pill and the RETIRE checkbox on tap, the name and description inputs on blur or Enter. The browser rename-prompt is gone. A rejection shows against that card and the re-render restores the stored value; an emptied name restores itself without a write.
+
+**Groups gained a DESCRIPTION** (migration 0024) — info-only, shown on the Groups card and NOWHERE else (user's call). Trimmed, ≤200 chars, empty clears to NULL.
+
+**The timezone control is option 3** (user picked it over a grouped select and a curated list): the current setting plus a one-tap "Use this device's timezone (<zone>)", a "choose a different zone" type-ahead (input + datalist of every IANA zone) for the travelling-admin case, and a clear link. Everything STAGES into the hidden field the Save has read since V3.78.0 — General's Save commits it, and the worker's Intl validation remains the backstop. The 400-entry select is gone.
+
+**Verification: 844 passed, 0 failed across 26 harnesses** (32 new: 0024 against real SQLite; the description save/trim/clear/length rules; the rail markup; the staging flow driven end to end including Save's payload; every instant-commit control; the rejection path). Realigned in the form harness: the settings screen left the `.screen-content` card pattern for the rail (its checks now assert the rail and the remaining three carded screens).
+
+---
+
 ## V3.78.0 — Delivery 3: groups, tajweed tags, the maktab timezone (2026-08-27)
 
 **Files touched:** `worker/migrations/0022_groups_tags_timezone.sql` (new), `worker/migrations/0023_clear_tajweed_words.sql` (new, run LATER), `worker/src/lists.js` (new), `worker/src/index.js`, `worker/src/maktabSettings.js`, `worker/src/maktabLog.js`, `worker/src/admin.js`, `worker/src/utils.js`, `worker/src/attendance.js`, `worker/src/profile.js`, `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `js/tajweed.js` (rewritten), `js/api.js`, `js/app.js`, `js/logContext.js`, `js/maktabDay.js`, `js/haidhDetailScreen.js`, `js/maktabSummary.js`, `js/maktabSettings.js`, `js/adminPage.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `index.html`, `css/settings.css`, `css/detail-pages.css`, `js/sw.js`, `tests/verify_v3780_delivery3.mjs` (new), nine fixture upgrades, `SCHEMA.md`, `TODO.md`, `SPECS.md`, `TESTING.md`.

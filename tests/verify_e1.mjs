@@ -31,7 +31,9 @@ db.exec("ALTER TABLE maktab_sabaq_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
 try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
-try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }
+try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }   // V3.80.0: 0025 rides the same try
 
 
 const DB = { prepare(sql) { return { bind(...args) { return {
@@ -125,6 +127,7 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
     function apiGetMaktabSabaqDhor(){ return Promise.resolve([]); }
     function apiGetMaktabDhor(){ return Promise.resolve([ { date: '2026-08-15', segment_from: 3, segment_to: 4 } ]); }
     function openMaktabHaidhCalendar(){ /* V3.76.0: the haidh icon is a link; verify_v3760_phase2 drives it */ }
+    function openMaktabAttendancePage(){ }
     // V3.64.0: the row tap opens the PJ's own day view with a maktab
     // context (openMaktabDay), not a maktab screen of its own.
     var openedWith = null;
@@ -150,8 +153,10 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   await w.renderMaktabSummaryScreen();
   const rows = w.document.querySelectorAll('#maktabSummaryBody tr');
   check('summary: one row per roster student', rows.length === 2);
-  check('V3.61.0: leading haidh col — control ONLY for track_haidh student, empty cell otherwise',
-    rows[0].cells[0].querySelector('.maktab-haidh-check') === null
+  // V3.80.0: the leading icon is ATTENDANCE, on EVERY student (was haidh,
+  // haa'idah only) — it opens her attendance page.
+  check('V3.80.0: leading col — the attendance control on EVERY student',
+    rows[0].cells[0].querySelector('.maktab-haidh-check') !== null
     && rows[1].cells[0].querySelector('.maktab-haidh-check') !== null);
   // V3.72.0 updated this expectation rather than working around it. The
   // Setup chip left this row: Setup configures the Dhor pool and nothing

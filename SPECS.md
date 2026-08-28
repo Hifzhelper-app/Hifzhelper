@@ -17,6 +17,8 @@ Newest first.
 
 ## Index
 
+- **V3.80.0** — The attendance page: % present over the term, absent history, the haidh calendar inside
+- **V3.79.0** — Maktab Settings as a 3-card rail; group descriptions; one-tap timezone
 - **V3.78.0** — Delivery 3: groups on the summary, tajweed tags as ID rows, the maktab timezone
 - **V3.77.0** — (j) Account separation — built to the 2026-08-17 plan
 - **V3.76.2** — The teacher's decision on a gap refusal: haidh anyway / absent / adjust, in the maktab calendar
@@ -115,6 +117,26 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.80.0 (2026-08-28): the attendance page
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| Haidh icon (haa'idah only) → ATTENDANCE icon, every student, navigates to the page | summary leading column; `openMaktabAttendancePage` |
+| "Day" = MAKTAB DAY from now on; haidh stays on calendar days | the endpoint's denominator = maktab days; derivation unchanged |
+| % present, present = activity or haidh | `present_days / maktab_days`, spelt out under the % |
+| Button: history of days absent | count on the button, dates revealed below |
+| Haidh calendar below; last 3 haidh ranges | the calendar screen absorbed into the page (ids untouched); confirmed runs only, newest first |
+| Term in settings = default period; custom from/to on the page; students get the page too | migration 0025; custom → term → last-4-weeks resolution; Attendance nav item for every student |
+
+## Done — V3.79.0 (2026-08-28): the settings rail
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| Settings = a 3-card rail like the day view (schematic; "Maktab settings becomes a 3 card rail") | General / Tajweed / Groups on the log-detail rail classes, dots strip on top, opens on General |
+| "Keep the existing save, remove the save from tajweed and groups" | General: form + Save. Lists: instant commit — pill/checkbox on tap, name/description on blur/Enter; errors per card; stored value restored on failure |
+| Groups gain a description, info-only, shown nowhere else | migration 0024; Groups card only; ≤200 chars, empty clears |
+| Timezone option 3 | current + one-tap device zone + type-ahead fallback + clear; stages into the Save |
 
 ## Done — V3.78.0 (2026-08-27): delivery 3 — groups, tags, timezone
 
