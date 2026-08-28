@@ -1744,11 +1744,27 @@
 .maktab-search-result:last-child { border-bottom: none; }
 .maktab-search-empty { font-size: 13px; color: var(--color-ink-faint); padding: 10px 12px; }
 
-/* V3.85.0: the standalone student-summary page */
+/* V3.85.0/V3.85.1: the standalone student-summary page. The header is
+   ONE single-row grid sized like the journal itself (the user's
+   suggestion): icon | name | attendance | close, sharing the table's
+   70% centering on wide screens so nothing floats off to the corners. */
 #screen-studentSummary .journal-header-row { margin-top: var(--space-sm); }
-.att-nav-btn { background: none; border: none; padding: 4px; cursor: pointer; margin-left: auto; }
-.att-nav-btn svg, .att-nav-btn .icon { width: 22px; height: 22px; }
-#screen-studentSummary .screen-close-btn { margin-left: var(--space-sm); }
+.ss-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: var(--space-sm) 0;
+}
+.ss-header h2 { margin: 0; }
+.att-nav-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--color-ink-soft); }
+/* the attendance icon reads at the same visual weight as the title now
+   (the first cut's 22px was far too small — user) */
+.att-nav-btn svg, .att-nav-btn .icon { width: 30px; height: 30px; display: block; }
+.ss-header .screen-close-btn { position: static; margin: 0; }
+@media (min-width: 768px){   /* the journal's own breakpoint (journal-table.css) */
+  .ss-header { width: 70%; margin-left: auto; margin-right: auto; }
+}
 
 /* V3.85.0: the attendance page's two cards */
 .att-card {

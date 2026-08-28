@@ -260,10 +260,19 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   const src = read('js/logContext.js');
   const a = src.indexOf('let MAKTAB_TIMEZONE');
   const b = src.indexOf('async function loadMaktabSettings');
-  w.eval(src.slice(a, b));
-  w.eval("MAKTAB_TIMEZONE = 'Asia/Karachi'");
+  // 2026-08-28: a `let` at the top level of an indirect eval scopes to
+  // THAT eval — a later eval's bare assignment writes a global property
+  // the closure never sees. The old two-eval drive therefore never
+  // exercised the maktab branch at all, and the check only "passed"
+  // while the device-UTC day happened to equal Karachi's (it flipped
+  // the moment Karachi crossed midnight at 19:00Z). The setter is
+  // defined in the SAME eval so it closes over the real binding. In the
+  // browser the file loads as one classic script — production was
+  // always fine; only this drive was wrong.
+  w.eval(src.slice(a, b) + "\nwindow.__ssSetTZ = (z) => { MAKTAB_TIMEZONE = z; };");
+  w.eval("__ssSetTZ('Asia/Karachi')");
   check('appTodayISO: the maktab zone\'s day when set', w.eval('appTodayISO()') === new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Karachi' }).format(new Date()));
-  w.eval('MAKTAB_TIMEZONE = null');
+  w.eval('__ssSetTZ(null)');
   check('appTodayISO: the device day when unset (YYYY-MM-DD)', /^\d{4}-\d{2}-\d{2}$/.test(w.eval('appTodayISO()')));
   check('maktabTodayISO (frontend) delegates to appTodayISO', /return appTodayISO\(\);/.test(read('js/maktabDay.js')));
   check('haidhTodayISO uses appTodayISO when present', /if\(typeof appTodayISO === 'function'\) return appTodayISO\(\);/.test(read('js/haidhDetailScreen.js')));

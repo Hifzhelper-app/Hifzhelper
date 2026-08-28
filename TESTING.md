@@ -2045,6 +2045,10 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.85.1 — summary header (FRONTEND ONLY — upload, hard-refresh)
+
+Login card shows 3.85.1. The summary page's name, attendance icon and X sit on ONE row, aligned to the table's width; the attendance icon is clearly tappable now.
+
 ## V3.85.0 — the batch of four (WORKER FIRST, then frontend; no migration)
 
 Cache name is `hifzhelper-v3.85.0`; the login card should show 3.85.0.

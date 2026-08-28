@@ -37,6 +37,13 @@ check('rail: the dots hidden-card guard STAYS (correct in general)', /if\(card\.
 check('rail: the name-row painter is back to three', /\['sabaq', 'sabaqDhor', 'dhor'\]\.forEach\(type => \{   \/\/ V3\.85\.0/.test(daySrc));
 
 // ---------- the standalone page ----------
+// V3.85.1 (user): the header is ONE single-row grid at the journal's
+// width, and the attendance icon is sized to read (30px, not 22).
+check('page: the header is a single-row grid sharing the journal\'s 70% centering',
+  /class="ss-header"/.test(html)
+  && /\.ss-header \{\n  display: grid;\n  grid-template-columns: auto 1fr auto auto;/.test(read('css/detail-pages.css'))
+  && /@media \(min-width: 768px\)\{[^}]*\n  \.ss-header \{ width: 70%; margin-left: auto; margin-right: auto; \}/.test(read('css/detail-pages.css')));
+check('page: the attendance icon is sized to read (30px)', /\.att-nav-btn svg, \.att-nav-btn \.icon \{ width: 30px; height: 30px;/.test(read('css/detail-pages.css')));
 check('page: the screen exists with header, attendance icon, close, and the PJ table shape',
   /id="screen-studentSummary"/.test(html) && /id="studentSummaryTitle"/.test(html)
   && /id="studentSummaryAttendanceBtn"/.test(html) && /id="studentSummaryCloseBtn"/.test(html)

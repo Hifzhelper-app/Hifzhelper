@@ -26,6 +26,16 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.85.1 — Summary-page header neatened (2026-08-28)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/sw.js`, `tests/verify_v3820_student_summary.mjs` (+2 pins), docs. **FRONTEND ONLY.**
+
+Per the user's screenshot feedback on V3.85.0: the page header is now ONE single-row grid — icon · name · attendance · close — sharing the journal table's own 70% centering at its 768px breakpoint (the user's suggestion, adopted exactly), so nothing floats to the screen corners or wraps onto a second line. The attendance icon is 30px ("far too small" at 22).
+
+**Verification: 1007 passed, 0 failed across 33 harnesses.** One latent HARNESS bug surfaced by wall-clock luck while shipping this (Karachi crossed midnight at 19:00Z): the appTodayISO drive's two-eval pattern meant its maktab-zone branch was never really exercised — a `let` at the top level of an indirect eval scopes to that eval, so the second eval's assignment never reached the closure. Fixed with a same-eval setter; production code was always correct (the file loads as one classic script in the browser).
+
+---
+
 ## V3.85.0 — The batch of four: summary page, settings schematic, attendance card, notes history (2026-08-28)
 
 **Files touched:** `index.html`, `js/app.js`, `js/maktabDay.js`, `js/logDetailScreen.js`, `js/maktabSummary.js`, `js/maktabSettings.js`, `js/haidhDetailScreen.js`, `js/dhorPage.js`, `js/api.js`, `css/settings.css`, `css/detail-pages.css`, `worker/src/maktabAttendance.js` (one additive field), `js/sw.js`, tests (verify_v3850_batch new; verify_v3820 rewritten for the page world; verify_v3790's tz drive rewritten; three pins realigned), docs. **Deploy order: WORKER FIRST (one additive response field), then frontend.** No migration.
