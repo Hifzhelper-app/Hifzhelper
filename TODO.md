@@ -51,23 +51,12 @@ after it):
    sitting, one entry per juz; time/mistakes divided (remainder to the
    earliest), tags + note duplicated, laps on the first entry, no
    plan_id; frontend only.
-3. **(k) The merge** — **ONE-WAY, maktab → PJ** (user, 2026-08-28): maktab
-   records appear in the student's PJ, with the NON-maktab (personal)
-   entries clearly apparent (the personal ones carry the marker, not the
-   maktab ones). The maktab side gains NOTHING new from PJ — at the
-   moment haidh, sabaq and notes are the ONLY three items the maktab
-   side reads from PJ, and that stays as-is. **The truth principle (user, 2026-08-28, governs the whole
-   merge):** each side owns its truth. Maktab records are the maktab's
-   truth; what is read from PJ (haidh, sabaq, notes — the only three)
-   becomes maktab truth ONLY when confirmed and saved as a maktab record.
-   Her personal dhor is her record of reciting OUTSIDE the maktab — hers,
-   never maktab truth. So: ownership governs WRITES (maktab entries edit
-   only maktab-side; hers are hers; nothing crosses without
-   confirmation). Marker: user leans COLOUR/TINT on the personal entries;
-   Claude to propose options at build. BUILD INTERPRETATION (open to
-   veto): her PJ tracker/prepop/frontier describe what she has RECITED
-   wherever she recited it, so they consume the full merged journal —
-   ownership limits editing, not counting.
+3. ~~**(k) The merge**~~ **BUILT V3.83.0 (2026-08-28)** — one-way union at
+   read time; maktab rows read-only by construction (id → maktab_log_id),
+   personal entries marked (Option A live; B/C staged in CSS); teacher
+   reads stay pure; prepop/frontier/tracker consume the merge. Marker
+   choice + the build interpretation both still open to the user's veto.
+   (l) Archive is now unblocked.
 4. **Notes History + button moves** — ANSWERED 2026-08-28: option (c),
    ONE INTERLEAVED RAIL across dates of entry notes + teacher feedback,
    like the entry-history rail. Visibility rules UNCHANGED and do the

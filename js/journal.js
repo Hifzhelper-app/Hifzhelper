@@ -100,7 +100,10 @@ function journalCellShorthand(type, entries){
   // label -- opens every entry for that date/type, each individually
   // reachable, instead of only ever the most recent one.
   const badge = entries.length > 1 ? `<button type="button" class="entry-count-badge" data-count-badge>+${entries.length - 1}</button>` : '';
-  return `<span class="journal-cell-text">${text}</span>${badge}`;
+  // V3.83.0 (k): the merged journal — the PERSONAL entries carry the
+  // marker (user, 2026-08-28: maktab rows are the unmarked spine).
+  const mark = e.source === 'personal' ? ' pj-personal' : '';
+  return `<span class="journal-cell-text${mark}">${text}</span>${badge}`;
 }
 
 // 2026-08-05, confirmed in chat: replaces the earlier press-and-hold
@@ -131,7 +134,13 @@ function openEntriesPopup(type, entries, date){
     if(type === 'sabaq') text = `${e.sabaq_from}–${e.sabaq_to}`;
     else if(type === 'sabaqDhor') text = `${e.from_surah}:${e.from_ayah}–${e.to_surah}:${e.to_ayah}`;
     else if(type === 'dhor') text = describeDhorSegment(e.segment_from, e.segment_to, e.ref || dhorCurrentRef);
-    return `<button type="button" class="journal-popup-entry" data-index="${i}">${text}</button>`;
+    // V3.83.0 (k): a MAKTAB entry is the maktab's truth — viewable here
+    // with its provenance (the confirming teacher), never editable from
+    // the PJ. Personal rows keep the tap-to-edit button and the marker.
+    if(e.source === 'maktab'){
+      return `<div class="journal-popup-entry journal-popup-maktab">${text}<span class="journal-popup-teacher">${railEscape(e.teacher_name || 'Maktab')}</span></div>`;
+    }
+    return `<button type="button" class="journal-popup-entry pj-personal" data-index="${i}">${text}</button>`;
   }).join('');
   overlay.innerHTML = `<div class="modal-card journal-popup-card">
     <div class="journal-popup-header">${label} — ${formatDateShort(date)}</div>
@@ -179,6 +188,10 @@ function isLatestEntry(type, date, index){
 // registers EDIT_HANDLERS.sabaq/sabaqDhor/dhor from each page's own
 // file) -- not a separate, second edit mechanism.
 async function openEntryForEdit(type, entry, isLatest){
+  // V3.83.0 (k): ownership governs writes — a maktab row can never enter
+  // the PJ edit path (its id is nulled server-side precisely so a missed
+  // guard fails loudly; this guard means it doesn't get that far).
+  if(entry && entry.source === 'maktab') return;
   await showScreen('logDetail', type);
   const handler = EDIT_HANDLERS[type];
   if(handler) handler(entry, isLatest);
@@ -232,7 +245,14 @@ function renderJournalRow(date, day){
     td.className = 'journal-cell';
     td.innerHTML = journalCellShorthand(type, day[type]);
     if(day[type] && day[type].length){
-      wireClick(td, () => openEntryForEdit(type, day[type][0], isLatestEntry(type, date, 0)));
+      // V3.83.0 (k): if the most recent entry for the day is the
+      // MAKTAB's, tapping the cell opens the entries popup (provenance
+      // visible, personal rows still editable from there) instead of an
+      // editor for a record she doesn't own.
+      wireClick(td, () => {
+        if(day[type][0].source === 'maktab') openEntriesPopup(type, day[type], date);
+        else openEntryForEdit(type, day[type][0], isLatestEntry(type, date, 0));
+      });
       const badge = td.querySelector('[data-count-badge]');
       if(badge){
         badge.addEventListener('click', (e) => {

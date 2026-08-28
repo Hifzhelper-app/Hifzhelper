@@ -2045,6 +2045,17 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.83.0 — (k) the merge (WORKER FIRST, then frontend; no migration)
+
+Cache name is `hifzhelper-v3.83.0`; the login card should show 3.83.0.
+
+1. **Her Journal (a student the maktab logs for)**: maktab entries now appear among her own, in date order. Her OWN entries carry the green edge + tint; maktab entries are plain. A day both logged shows BOTH.
+2. **Tap a cell whose latest entry is the maktab's**: the entries popup opens — the maktab row is plain with the teacher's name under it, not tappable; her own rows in the popup still open the editor.
+3. **History rail on any card (her PJ)**: maktab rows show the teacher's name and have NO edit pencil; her rows keep it.
+4. **Dhor card prepop**: after the maktab logs her dhor, her own card's suggested next continues from THAT, not from her older personal entry.
+5. **Teacher side unchanged**: the maktab summary, day cards and student summary card look exactly as before (the merge added nothing maktab-side).
+6. **Marker choice**: if the edge+tint isn't the one, say so — options B (a small "PERSONAL" chip) and C (coloured text) are one comment-swap away in css/journal-table.css.
+
 ## V3.82.1 — hotfix (upload this build; replaces V3.80.0–V3.82.0 uploads)
 
 Cache name is `hifzhelper-v3.82.1`; login card shows 3.82.1. The app loading AT ALL past the login screen is the test — then run the V3.80.0, V3.81.0 and V3.82.0 checklists below against this build.

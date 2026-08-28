@@ -1,4 +1,4 @@
-import { insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided } from './logHelpers.js';
+import { insertLog, updateLog, deleteLog, getLogs, getMergedLogs, linkPlanIfProvided } from './logHelpers.js';
 import { mergeDhorUnitsIntoPool } from './dhorSchedule.js';
 import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
 
@@ -31,7 +31,12 @@ export async function handleGetDhor(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
   if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
-  const result = await getLogs(env, TABLE, studentId, url.searchParams.get('since'), auth.id, true);
+  // V3.83.0 (k): HER OWN read is the MERGED journal — PJ + maktab rows,
+  // one-way. A named-student read (teacher, three-inputs channel) stays
+  // the pure PJ read it always was. See getMergedLogs, logHelpers.js.
+  const result = studentId === auth.id
+    ? await getMergedLogs(env, TABLE, 'maktab_dhor_log', studentId, url.searchParams.get('since'), auth.id, true)
+    : await getLogs(env, TABLE, studentId, url.searchParams.get('since'), auth.id, true);
   // lap_times is stored as a JSON string — parse it back for the caller
   if (result.data) {
     for (const row of result.data) {

@@ -431,3 +431,32 @@
 .maktab-entry-peek-row + .maktab-entry-peek-row { border-top: 1px solid var(--color-table-border); }
 /* It is a button again (V3.74.2), so it needs to look tappable. */
 .entry-count-badge[data-entry-peek] { cursor: pointer; }
+
+/* ============================================================
+   V3.83.0 (k) — the PERSONAL-entry marker. The merged journal shows
+   maktab entries unmarked (the spine); entries the student logged
+   herself carry .pj-personal. THREE OPTIONS were prepared (user leans
+   colour/tint; pick by swapping which block is live):
+
+   OPTION A (LIVE) — accent edge + faint tint: quiet, reads at a glance.
+   OPTION B — a small "personal" chip after the text: most explicit.
+   OPTION C — accent-coloured text only: lightest possible touch.
+   ============================================================ */
+.pj-personal {
+  border-left: 3px solid var(--accent, #2f7d5d);
+  background: rgba(47, 125, 93, 0.07);
+  border-radius: 4px;
+  padding-left: 6px;
+}
+/* OPTION B — uncomment to use (and comment Option A above):
+.pj-personal { position: relative; }
+.pj-personal::after { content: 'personal'; font-size: 10px; opacity: .65; margin-left: 6px; text-transform: uppercase; letter-spacing: .04em; }
+*/
+/* OPTION C — uncomment to use (and comment Option A above):
+.pj-personal { color: var(--accent, #2f7d5d); font-weight: 600; }
+*/
+
+/* the popup's read-only maktab rows: same shape as the tappable ones,
+   provenance under the text, no button affordance */
+.journal-popup-maktab { cursor: default; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.journal-popup-teacher { font-size: 11px; opacity: .6; }

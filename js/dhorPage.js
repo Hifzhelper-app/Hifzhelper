@@ -1606,13 +1606,13 @@ async function renderRecentEntries(type, railId, onRowClick){
       <h2>${label}</h2>
       <div class="history-full-list">
         ${rows.slice(0, 50).map((r, i) => `<div class="history-entry-row">
-          <div class="history-entry-content"${onRowClick ? ` data-index="${i}"` : ''}>
+          <div class="history-entry-content${r.source === 'personal' ? ' pj-personal' : ''}"${onRowClick ? ` data-index="${i}"` : ''}>
             <div class="rail-card-date">${r.date}</div>
             <div class="rail-card-body">${describeEntryForRail(type, r)}</div>
             ${type === 'dhor' && r.lap_times && r.lap_times.length > 0 ? `<div class="rail-card-laps">${r.lap_times.map(formatDhorDuration).join(' · ')}</div>` : ''}
             ${r.teacher_name ? `<div class="rail-card-teacher">${railEscape(r.teacher_name)}</div>` : ''}
           </div>
-          ${EDIT_HANDLERS[type] ? `<button type="button" class="history-entry-edit-btn" data-index="${i}" aria-label="Edit"></button>` : ''}
+          ${EDIT_HANDLERS[type] && r.source !== 'maktab' ? `<button type="button" class="history-entry-edit-btn" data-index="${i}" aria-label="Edit"></button>` : ''}
         </div>`).join('') || '<div class="form-hint">Nothing logged yet.</div>'}
       </div>
     </div>`;

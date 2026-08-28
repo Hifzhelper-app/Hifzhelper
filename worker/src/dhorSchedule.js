@@ -176,9 +176,22 @@ export async function computeDefaultDhorEntry(env, studentId, opts = {}) {
   if (pool.length === 0) return { source: 'none', reason: "No memorised juz'/quarters recorded yet in Hifz Setup" };
 
   const ref = mushaf === '15line_madani' ? 'uthmani' : 'waterval';
-  const lastLog = await env.DB.prepare(
-    `SELECT segment_from, segment_to FROM ${table} WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1`
-  ).bind(studentId).first();
+  // V3.83.0 (k): the PJ's "continue from last" now spans the MERGED
+  // journal — her last dhor wherever she recited it, PJ or maktab (the
+  // recorded build interpretation: prepop/frontier/tracker consume the
+  // merged journal; ownership limits editing, not counting). The maktab
+  // variant stays maktab-only — the maktab gains nothing from PJ.
+  const lastLog = table === 'dhor_log'
+    ? await env.DB.prepare(
+        `SELECT segment_from, segment_to FROM (
+           SELECT segment_from, segment_to, date, created_at FROM dhor_log WHERE student_id = ?1
+           UNION ALL
+           SELECT segment_from, segment_to, date, created_at FROM maktab_dhor_log WHERE student_id = ?1
+         ) ORDER BY date DESC, created_at DESC LIMIT 1`
+      ).bind(studentId).first()
+    : await env.DB.prepare(
+        `SELECT segment_from, segment_to FROM ${table} WHERE student_id = ? ORDER BY date DESC, created_at DESC LIMIT 1`
+      ).bind(studentId).first();
 
   if (lastLog) {
     const perJuz = segmentsPerJuz(ref);

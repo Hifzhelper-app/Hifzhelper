@@ -211,6 +211,47 @@ async function getLogs(env, table, studentId, since, requesterId, hasFeedback) {
   return { data: results };
 }
 
+// ============================================================
+// V3.83.0 — (k) THE MERGE: union at read time, ONE-WAY maktab → PJ.
+//
+// The student's own read of her journal returns her PJ rows PLUS the
+// maktab's rows for her, interleaved by date. The truth principle
+// (user, 2026-08-28) shapes every detail here:
+//   - Each side owns its truth. Maktab rows arrive with source:'maktab',
+//     their id NULLED and moved to maktab_log_id — so any PJ write path
+//     that forgets to check source fails LOUDLY on a null id instead of
+//     silently editing whichever PJ row shared the number. Ownership
+//     governs writes; her surfaces may only read these rows.
+//   - PJ rows carry source:'personal' — in her journal THEY are the
+//     marked ones (the maktab record is the spine; hers is the addition).
+//   - provenance = teacher_name, already snapshotted on every maktab row.
+//   - Privacy is the SAME applyPrivacy pass the maktab endpoints already
+//     run for a student reading her own maktab journal: as owner she
+//     sees her comments; teachers_only/private feedback stays redacted.
+//   - Duplicates (she logged it AND the maktab did) are SHOWN, never
+//     collapsed — the user's explicit call: seeing the duplication is
+//     how she learns what the maktab covers.
+// This function is used ONLY for an own-read (studentId === auth.id).
+// A teacher reading PJ rows by ?student_id= keeps the PURE PJ read —
+// that is the three-inputs channel (sabaq frontier / haidh / notes) and
+// mixing maktab rows back into it would double-count the maktab's own
+// record. The maktab side gains NOTHING from this merge.
+// ============================================================
+async function getMergedLogs(env, pjTable, maktabTable, studentId, since, requesterId, hasFeedback) {
+  const clause = since ? ' AND date >= ?' : '';
+  const bind = since ? [studentId, since] : [studentId];
+  const [pj, mk] = await Promise.all([
+    env.DB.prepare(`SELECT * FROM ${pjTable} WHERE student_id = ?${clause}`).bind(...bind).all(),
+    env.DB.prepare(`SELECT * FROM ${maktabTable} WHERE student_id = ?${clause}`).bind(...bind).all(),
+  ]);
+  const rows = [];
+  for (const r of pj.results) { r.source = 'personal'; rows.push(r); }
+  for (const r of mk.results) { r.maktab_log_id = r.id; r.id = null; r.source = 'maktab'; rows.push(r); }
+  rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.created_at || '').localeCompare(a.created_at || ''));
+  applyPrivacy(rows, studentId, requesterId, hasFeedback);
+  return { data: rows };
+}
+
 // If a save was made against a plan (the student ticked off a planned
 // session with full detail, rather than just the quick checkbox), this
 // links the new log row back to that plan and marks it completed.
@@ -225,4 +266,4 @@ async function linkPlanIfProvided(env, planId, studentId, logId) {
   ).bind(logId, now, planId, studentId).run();
 }
 
-export { isDuplicate, insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided, applyPrivacy };
+export { isDuplicate, insertLog, updateLog, deleteLog, getLogs, getMergedLogs, linkPlanIfProvided, applyPrivacy };

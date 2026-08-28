@@ -63,6 +63,15 @@ db.exec(`
     ('ADM1','Admin One','admin','2026-01-01');
 `);
 
+// V3.83.0 (k): the merged own-read unions the maktab log tables, so the
+// fixture must have them (empty is fine — the union of nothing changes
+// no role outcome, which is exactly what this harness checks).
+db.exec(`
+  CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'teachers_only', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+  CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, tajweed_tag_ids TEXT, mistakes INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'teachers_only', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+  CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'teachers_only', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+`);
+
 const DB = { prepare(sql) { return { bind(...args) { return {
   async run() { const info = db.prepare(sql).run(...args); return { meta: { last_row_id: Number(info.lastInsertRowid) } }; },
   async first() { return db.prepare(sql).get(...args) ?? null; },

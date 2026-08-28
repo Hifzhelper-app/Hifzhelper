@@ -26,6 +26,24 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.83.0 — (k) THE MERGE: her journal is now the whole record (2026-08-28)
+
+**Files touched:** `worker/src/logHelpers.js`, `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `worker/src/dhorSchedule.js`, `js/journal.js`, `js/dhorPage.js`, `css/journal-table.css`, `js/sw.js`, `index.html` (?v), `tests/verify_v3830_merge.mjs` (new), `tests/verify_roles.mjs` (fixture gains the maktab log tables), docs. **NO MIGRATION** — the merge is a read-time union. **Deploy order: WORKER FIRST, then frontend.**
+
+**What it is (one-way, maktab → PJ; the truth principle governs every detail — user, 2026-08-28):** the student's OWN read of `/sabaq`, `/sabaq-dhor` and `/dhor` now returns her PJ rows PLUS the maktab's rows for her, interleaved by date (`getMergedLogs`, logHelpers.js). Maktab rows arrive with `source:'maktab'`, provenance (`teacher_name`, already snapshotted at confirm time), and their `id` NULLED and moved to `maktab_log_id` — so any PJ write path that ever forgets to check `source` fails LOUDLY on a null id instead of silently editing whichever of her rows shared the number. Her rows carry `source:'personal'` — in her journal THEY are the marked ones (the maktab record is the unmarked spine). Privacy is the SAME `applyPrivacy` pass the maktab endpoints already run: she sees her own comments; `teachers_only`/`private` feedback stays redacted. Duplicate days (she logged it AND the maktab did) are SHOWN, never collapsed — the user's explicit call.
+
+**What stays PURE:** a teacher's named-student read (`?student_id=`) keeps the untouched PJ-only result — that is the three-inputs channel (sabaq frontier / haidh / notes), and mixing maktab rows back into it would double-count the maktab's own record. The maktab side gains NOTHING from this merge, anywhere.
+
+**Counting follows the merge (the recorded build interpretation — ownership limits editing, not counting):** the sabaq frontier, position advance and the juz tracker's inputs all read through the merged GETs, so they now count maktab entries automatically with zero code of their own; and PJ Dhor prepop's "continue from last" queries the UNION of `dhor_log` + `maktab_dhor_log` (dhorSchedule.js) — her next dhor continues from her last dhor wherever she recited it. The maktab prepop variant remains maktab-only.
+
+**Her surfaces:** the Journal marks personal entries (`pj-personal`); a cell whose latest entry is the maktab's opens the entries POPUP on tap (provenance visible, personal rows still editable from there) instead of an editor for a record she doesn't own; popup maktab rows are plain provenance rows; `openEntryForEdit` refuses maktab rows outright as the last line of defence. The History rail withholds its edit pencil from maktab rows and shows the teacher line V3.75.0 already prepared ("once (k) merges… no further change here" — landed exactly so).
+
+**The marker — three options prepared (user leans colour/tint; pick by swapping one CSS block, css/journal-table.css):** **A (LIVE)** accent edge + faint tint; **B** a small "PERSONAL" chip after the text; **C** accent-coloured text only.
+
+**Verification: 973 passed, 0 failed across 31 harnesses** (22 new: the merged own-read row by row — order, nulled ids, provenance, privacy, the duplicate day kept double; `since` across both sides; the teacher read's purity; dhor lap-parsing on both sides; a DECISIVE prepop fixture that passes only when the union is really consulted; every frontend guard and the CSS options). `verify_roles.mjs` fixture realigned: the merged own-read touches the maktab tables, so the fixture now has them (empty).
+
+---
+
 ## V3.82.1 — HOTFIX: app.js broken since V3.80.0 (2026-08-28)
 
 **Files touched:** `js/app.js`, `js/sw.js`, `index.html` (?v only), `tests/verify_syntax.mjs` (new), `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY. Upload this INSTEAD of V3.80.0/V3.81.0/V3.82.0 — all three zips carried the break.**

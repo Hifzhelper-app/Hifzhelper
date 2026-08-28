@@ -1,4 +1,4 @@
-import { insertLog, updateLog, deleteLog, getLogs, linkPlanIfProvided } from './logHelpers.js';
+import { insertLog, updateLog, deleteLog, getLogs, getMergedLogs, linkPlanIfProvided } from './logHelpers.js';
 import { isValidDate, isTeacherOrAbove } from './utils.js';
 
 const TABLE = 'sabaq_dhor_log';
@@ -18,6 +18,10 @@ export async function handleGetSabaqDhor(request, env, auth) {
   const url = new URL(request.url);
   const studentId = url.searchParams.get('student_id') || auth.id;
   if (!isTeacherOrAbove(auth) && studentId !== auth.id) return { error: 'Not authorized', status: 403 };
+  // V3.83.0 (k): HER OWN read is the MERGED journal — PJ + maktab rows,
+  // one-way. A named-student read (teacher, three-inputs channel) stays
+  // the pure PJ read it always was. See getMergedLogs, logHelpers.js.
+  if (studentId === auth.id) return await getMergedLogs(env, TABLE, 'maktab_sabaq_dhor_log', studentId, url.searchParams.get('since'), auth.id, true);
   return await getLogs(env, TABLE, studentId, url.searchParams.get('since'), auth.id, true);
 }
 

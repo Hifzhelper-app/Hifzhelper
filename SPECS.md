@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.83.0** — (k) The merge: one-way maktab → PJ union at read time; personal entries marked; ownership governs writes
 - **V3.82.0** — The student summary card: 4th on the rail, maktab's own record in the PJ layout
 - **V3.81.0** — Dhor juz-range: one Save fans out to per-juz entries; time/mistakes divided, tags duplicated
 - **V3.80.0** — The attendance page: % present over the term, absent history, the haidh calendar inside
@@ -119,6 +120,17 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.83.0 (2026-08-28): (k) the merge
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| ONE-WAY, maktab → PJ; her PJ = the complete record | own-reads of /sabaq, /sabaq-dhor, /dhor return PJ + maktab rows interleaved (getMergedLogs); no migration |
+| Each side owns its truth; ownership governs WRITES | maktab rows arrive id-NULLED (id → maktab_log_id) + source:'maktab'; every PJ edit path guards on source and a missed guard fails loudly; maktab endpoints untouched |
+| The PERSONAL entries carry the marker | source:'personal' → .pj-personal; Option A (accent edge + tint) live, B (chip) and C (coloured text) staged in css/journal-table.css |
+| Maktab gains NOTHING; the three inputs stay as-is | teacher ?student_id reads stay pure PJ; no maktab handler touched |
+| Duplicates shown, never collapsed | both rows of a twice-logged day returned and rendered |
+| Tracker/prepop/frontier consume the merged journal (build interpretation) | frontier/position/tracker read the merged GETs; PJ dhor prepop's last-dhor is the two-table union; maktab prepop stays maktab-only |
 
 ## Done — V3.82.0 (2026-08-28): the student summary card
 
