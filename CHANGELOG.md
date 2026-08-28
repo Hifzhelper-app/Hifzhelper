@@ -26,6 +26,18 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.81.0 — Dhor juz-range: one Save, one sitting, one entry per juz (2026-08-28)
+
+**Files touched:** `js/dhorPage.js`, `index.html`, `js/sw.js`, `tests/verify_v3810_juz_range.mjs` (new), `TODO.md`, `SPECS.md`, `TESTING.md`. **FRONTEND ONLY — no worker change, no migration.** The fan-out is N standard saves through the existing endpoint, so the worker's per-save pool merge and duplicate detection apply to each juz unchanged.
+
+**Built to the user's answers (2026-08-28).** With the unit on **Full/Juz**, a second select appears beside the Juz picker: a dash (single juz — the default, the pre-V3.81.0 behaviour exactly) or any LATER juz. Picking one and saving records the whole range as read in ONE SITTING: **one entry per juz** (each individually editable and deletable afterwards), **time and mistakes divided over the range** — evenly, remainder to the earliest entries, totals preserved exactly — and **tajweed tags duplicated onto each**. Recorded build details: the note duplicates too (each entry stands alone); lap times belong to the sitting and ride the FIRST entry only; a plan id never attaches (a plan names a single portion). The edit path and Plan-Dhor raw-range mode never fan out.
+
+**Failure is named, not swallowed:** the fan-out is sequential, and a mid-range failure stops with "Saved Juz 11, 12. Juz 13 failed: <the worker's message>" so only the unsaved tail needs re-selecting. A duplicate refusal on any juz gets the same OK/Cancel the single save has, per juz; Cancel stops cleanly and says where.
+
+**Verification: 899 passed, 0 failed across 28 harnesses** (22 new: the division rule pure — even, remainder-first, totals preserved, null→nulls; the to-select's lifecycle; the 4-entry fan-out with every field checked; the single save byte-for-byte unchanged; the failure and both duplicate paths driven).
+
+---
+
 ## V3.80.0 — The attendance page (2026-08-28)
 
 **Files touched:** `worker/migrations/0025_term_dates.sql` (new), `worker/src/maktabAttendance.js`, `worker/src/maktabSettings.js`, `worker/src/index.js`, `js/haidhDetailScreen.js`, `js/maktabSummary.js`, `js/maktabDay.js`, `js/maktabSettings.js`, `js/auth.js`, `js/app.js`, `js/api.js`, `js/icons.js`, `index.html`, `css/haidh.css`, `css/settings.css`, `js/sw.js`, `tests/verify_v3800_attendance_page.mjs` (new), five harness realignments, docs. **MAKTAB DEPLOYMENT ONLY. ⚠ RUN MIGRATION 0025 IN THE D1 CONSOLE FIRST** (two additive lines; console-safe copy shipped), **then the worker, then the frontend.**

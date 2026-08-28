@@ -87,6 +87,39 @@ let dhorCurrentRef = 'waterval'; // derived from profile.mushaf on every open, s
 // only now, same as 13-line -- both fall to the final `return
 // 'waterval'`, natively (see shared/data.js's RUB_BOUNDARIES comment),
 // not as a fallback.
+// V3.81.0: the to-juz options — a dash (single juz, the default and the
+// pre-V3.81.0 behaviour) plus every juz AFTER the selected from-juz. The
+// list follows the from-select: changing Juz rebuilds it, keeping the
+// chosen to-juz when it is still ahead of the new from.
+function renderDhorJuzToOptions(){
+  const sel = document.getElementById('dhor_juz_to');
+  if(!sel) return;
+  const from = parseInt(document.getElementById('dhor_juz').value) || 1;
+  const keep = sel.value && parseInt(sel.value) > from ? sel.value : '';
+  sel.innerHTML = '<option value="">&ndash;</option>' +
+    Array.from({length: 30 - from}, (_, i) => `<option value="${from + 1 + i}">to Juz ${from + 1 + i}</option>`).join('');
+  sel.value = keep;
+}
+let dhorJuzRangeWired = false;
+function wireDhorJuzRange(){
+  if(dhorJuzRangeWired) return;
+  dhorJuzRangeWired = true;
+  document.getElementById('dhor_juz').addEventListener('change', () => {
+    if(document.getElementById('dhor_unit').value === 'full') renderDhorJuzToOptions();
+  });
+}
+
+// V3.81.0: the range's arithmetic, pure so the harness can drive it.
+// TIME and MISTAKES are DIVIDED over the juz — evenly, remainder to the
+// EARLIEST entries (the recorded build detail); TAGS are DUPLICATED onto
+// each (both the user's calls, 2026-08-28). null divides to nulls.
+function divideOverRange(total, n){
+  if(total === null || total === undefined) return Array(n).fill(null);
+  const base = Math.floor(total / n);
+  const rem = total - base * n;
+  return Array.from({length: n}, (_, i) => base + (i < rem ? 1 : 0));
+}
+
 function refForMushaf(mushaf){
   if(mushaf === '15line_madani') return 'uthmani';
   return 'waterval';
@@ -267,12 +300,24 @@ function formatDhorDuration(totalSeconds){
 function renderDhorPositionOptions(unit){
   const field = document.getElementById('dhorPositionField');
   const row = document.getElementById('dhorJuzPositionRow');
+  const toField = document.getElementById('dhorJuzToField');
   if(unit === 'full'){
     field.classList.add('hidden');
-    row.classList.add('picker-row-single');
+    // V3.81.0: with the unit on Full/Juz the position slot is meaningless
+    // and the TO-JUZ select takes its place in the row — a RANGE of juz
+    // read in one sitting (user, 2026-08-28). Other units get no range:
+    // the row keeps its position switch and the to-field stays hidden.
+    if(toField){
+      toField.classList.remove('hidden');
+      row.classList.remove('picker-row-single');
+      renderDhorJuzToOptions();
+    } else {
+      row.classList.add('picker-row-single');
+    }
     document.getElementById('dhor_position').value = '1';
     return;
   }
+  if(toField){ toField.classList.add('hidden'); const sel = document.getElementById('dhor_juz_to'); if(sel) sel.value = ''; }
   field.classList.remove('hidden');
   row.classList.remove('picker-row-single');
   const perJuz = segmentsPerJuz(dhorCurrentRef);
@@ -381,6 +426,7 @@ async function renderDhorScreen(){
   dhorActivePlanId = null;
   document.getElementById('dhor_date').value = todayISO();
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
+  wireDhorJuzRange();
 
   try{
     const profile = await logProfile();
@@ -1347,6 +1393,56 @@ async function saveDhorEdit(){
   }
 }
 
+// V3.81.0: the range save. Sequential, one entry per juz; a failure
+// stops the loop and names exactly what was saved and what was not, so
+// the student re-selects only the unsaved tail. A duplicate refusal on
+// any juz gets the same OK/Cancel the single save has — per juz, since
+// each row is its own entry.
+async function saveDhorJuzRange(fromJuz, toJuz, errEl){
+  const n = toJuz - fromJuz + 1;
+  const date = document.getElementById('dhor_date').value || todayISO();
+  const tags = dhorSelectedTags.join(',');
+  const mistakesTotal = parseInt(document.getElementById('dhor_mistakes').value) || 0;
+  const { duration_seconds, lap_times } = computeDhorDuration();
+  const note = readCommentBlock('dhorCommentBlock');
+  const mistakesSplit = divideOverRange(mistakesTotal, n);
+  const durationSplit = divideOverRange(duration_seconds, n);
+
+  const saved = [];
+  for(let i = 0; i < n; i++){
+    const juz = fromJuz + i;
+    const seg = computeSegmentRange(juz, 1, dhorCurrentRef, 'full');
+    const payload = {
+      date,
+      segment_from: seg.segment_from, segment_to: seg.segment_to, ref: dhorCurrentRef,
+      tajweed_tag_ids: tags,
+      mistakes: mistakesSplit[i],
+      duration_seconds: durationSplit[i],
+      lap_times: i === 0 ? lap_times : null,
+      ...note
+    };
+    try{
+      const result = await logClient('dhor').save(payload);
+      if(result && result.isDuplicate && !result.id){
+        const proceed = confirm(`Juz ${juz} has already been saved for ${date}. Select OK to save it again or CANCEL to stop here.`);
+        if(!proceed){
+          errEl.textContent = saved.length ? `Saved Juz ${saved.join(', ')}. Stopped before Juz ${juz}.` : 'Nothing saved.';
+          return;
+        }
+        await logClient('dhor').save(Object.assign({}, payload, { force: true }));
+      }
+      saved.push(juz);
+    } catch(e){
+      errEl.textContent = (saved.length ? `Saved Juz ${saved.join(', ')}. ` : '') + `Juz ${juz} failed: ` + e.message;
+      return;
+    }
+  }
+  document.getElementById('dhorSaveStatus').classList.add('show');
+  setTimeout(() => document.getElementById('dhorSaveStatus').classList.remove('show'), 1800);
+  await renderRecentEntries('dhor', 'dhorRecentRail');
+  await renderDhorScreen();
+}
+
 document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
   const errEl = document.getElementById('dhorError');
   errEl.textContent = '';
@@ -1389,6 +1485,21 @@ document.getElementById('dhorSaveBtn').addEventListener('click', async () => {
     const position = parseInt(document.getElementById('dhor_position').value);
     const unit = document.getElementById('dhor_unit').value;
     ({ segment_from, segment_to } = computeSegmentRange(juz, position, dhorCurrentRef, unit));
+  }
+
+  // V3.81.0: the juz RANGE (user, 2026-08-28). Unit Full + a to-juz
+  // picked = the student read from..to in ONE SITTING; one Save fans out
+  // to ONE ENTRY PER JUZ so each can be edited or deleted on its own
+  // afterwards. Time and mistakes are divided over the range (remainder
+  // to the earliest); tajweed tags — and the note — are duplicated onto
+  // each; lap times belong to the sitting and ride the FIRST entry only.
+  // A plan id never attaches (a plan names a single portion). New saves
+  // only: the edit path and raw-range mode stay single by construction.
+  const juzToRaw = document.getElementById('dhor_juz_to');
+  const rangeTo = (!dhorRawRange && document.getElementById('dhor_unit').value === 'full' && juzToRaw && juzToRaw.value) ? parseInt(juzToRaw.value) : null;
+  const rangeFrom = parseInt(document.getElementById('dhor_juz').value);
+  if(rangeTo && rangeTo > rangeFrom){
+    return saveDhorJuzRange(rangeFrom, rangeTo, errEl);
   }
 
   const payload = {

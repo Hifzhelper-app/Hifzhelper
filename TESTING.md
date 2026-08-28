@@ -2045,6 +2045,16 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.81.0 — the dhor juz-range (FRONTEND ONLY — upload, hard-refresh)
+
+Cache name is `hifzhelper-v3.81.0`; the login card should show 3.81.0.
+
+1. **Dhor card, unit on Full/Juz**: a second select appears after Juz — a dash by default. Other units: it's gone.
+2. **Pick Juz 11 "to Juz 14"**, set 40:00 on the timer or duration, 6 mistakes, two tags, a note → Save once. History shows FOUR entries for the date: Juz 11–14, 10:00 each, mistakes 2/2/1/1, the same tags and note on each.
+3. **Edit one of the four** — it edits alone; the others are untouched.
+4. **The dash** saves exactly as before — one entry.
+5. **Maktab mode**: same flow on a student's dhor card writes her four maktab entries.
+
 ## V3.80.0 — the attendance page (⚠ MIGRATION 0025 in the D1 console FIRST, then worker, then frontend)
 
 Cache name is `hifzhelper-v3.80.0`; the login card should show 3.80.0. 0025 is two lines (console-safe copy provided).

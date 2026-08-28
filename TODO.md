@@ -47,14 +47,10 @@ that show history or summaries must read the MERGED journal, so they come
 after it):
 
 1. ~~**V3.79.0 — the settings rail**~~ **BUILT 2026-08-28.**
-2. **Dhor juz-range** — with the dhor selector on juz, a RANGE of juz can
-   be selected. ANSWERED 2026-08-28: **one Save writes the whole range
-   together** — the assumption is the student read the whole range in one
-   sitting. The save fans out to ONE ENTRY PER JUZ (so each can be edited
-   or deleted individually afterwards); recorded TIME and MISTAKES are
-   DIVIDED over the range; TAJWEED TAGS are DUPLICATED onto each juz.
-   Rounding of the division is a build detail (divide evenly, remainder
-   to the earliest entries). BUILD-READY.
+2. ~~**Dhor juz-range**~~ **BUILT V3.81.0 (2026-08-28)** — one Save, one
+   sitting, one entry per juz; time/mistakes divided (remainder to the
+   earliest), tags + note duplicated, laps on the first entry, no
+   plan_id; frontend only.
 3. **(k) The merge** — **ONE-WAY, maktab → PJ** (user, 2026-08-28): maktab
    records appear in the student's PJ, with the NON-maktab (personal)
    entries clearly apparent (the personal ones carry the marker, not the

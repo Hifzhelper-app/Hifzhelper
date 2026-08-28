@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.81.0** — Dhor juz-range: one Save fans out to per-juz entries; time/mistakes divided, tags duplicated
 - **V3.80.0** — The attendance page: % present over the term, absent history, the haidh calendar inside
 - **V3.79.0** — Maktab Settings as a 3-card rail; group descriptions; one-tap timezone
 - **V3.78.0** — Delivery 3: groups on the summary, tajweed tags as ID rows, the maktab timezone
@@ -117,6 +118,15 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.81.0 (2026-08-28): the dhor juz-range
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| Unit on juz → a RANGE can be selected | a to-juz select beside the Juz picker, Full/Juz unit only; dash = single |
+| One Save writes the whole range together (one sitting) | sequential fan-out to one entry per juz; each editable individually |
+| Time and mistakes divided over the range | even split, remainder to the earliest, totals preserved (`divideOverRange`) |
+| Tajweed tags duplicated for each juz | same CSV on every entry; the note duplicates too; laps ride the first entry only; no plan_id |
 
 ## Done — V3.80.0 (2026-08-28): the attendance page
 

@@ -1,5 +1,9 @@
 // ============================================================
 // verify_v3790_settings_rail.mjs — V3.79.0: Maktab Settings as a 3-card
+// (2026-08-28: a Safari-specific GitHub upload failure was chased through
+// this file — the file was always clean; Chrome uploaded it fine. The
+// chase left one real improvement: the device-zone stub is a plain
+// msetDeviceZone reassignment now, not an Intl.DateTimeFormat patch.)
 // rail; group descriptions; the option-3 timezone control; inline
 // instant-commit lists (no Save on the two list cards).
 // ============================================================
@@ -87,11 +91,12 @@ function dom(settings, groups, tags) {
     function invalidateMaktabSettings(){ } function loadMaktabSettings(){ return Promise.resolve(); }
     var MAKTAB_TIMEZONE = null;
     function iconHtml(){ return ''; }
-    // deterministic device zone: wrap the constructor, keep statics
-    const RealDTF = Intl.DateTimeFormat;
-    Intl.DateTimeFormat = Object.assign(function(...a){ if(a.length === 0) return { resolvedOptions: () => ({ timeZone: 'Asia/Karachi' }) }; return new RealDTF(...a); }, RealDTF);
   `);
   w.eval(src);
+  // deterministic device zone: msetDeviceZone is a top-level function
+  // declaration in the module source, so it can simply be reassigned
+  // after the eval — no constructor patching needed.
+  w.eval("msetDeviceZone = function(){ return 'Asia/Karachi'; };");
   return w;
 }
 const tick = () => new Promise(r => setTimeout(r, 0));
