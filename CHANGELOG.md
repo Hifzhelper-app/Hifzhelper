@@ -26,6 +26,16 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.84.0 — The summary search moves into the Student header cell (2026-08-28)
+
+**Files touched:** `index.html`, `js/maktabSummary.js`, `css/detail-pages.css`, `js/sw.js`, `tests/verify_v3840_header_search.mjs` (new), `tests/verify_v3780_delivery3.mjs` (fixture follows the new markup), docs. **FRONTEND ONLY.** Built alone at the user's request ("implement the search and i will check it") ahead of the rest of the recorded batch.
+
+**The change (user, V3.82 feedback):** the full-width search bar above the maktab summary is gone; the green **Student** header cell IS the search. **Tap-to-reveal — Claude's settled choice, open to veto** (the user left it open): the cell shows "Student" with a small search glyph; tapping swaps in a compact input sized to the cell; Esc, a tap anywhere outside the cell, or picking a result restores the label. The results dropdown anchors under the cell and spills right of the 25% column so names stay readable. V3.78.0 semantics untouched: a way TO a student — a result opens her day view carrying the summary's picked date.
+
+**Verification: 984 passed, 0 failed across 32 harnesses** (11 new: the old row's absence, the cell's markup and CSS anchoring, and the reveal / search / pick / Esc / outside-tap / inside-tap paths all driven). The V3.78 harness's fixture DOM realigned to the cell markup; its own pins (clear-on-pick, date-carry, no-match text) pass unchanged.
+
+---
+
 ## V3.83.0 — (k) THE MERGE: her journal is now the whole record (2026-08-28)
 
 **Files touched:** `worker/src/logHelpers.js`, `worker/src/sabaqLog.js`, `worker/src/sabaqDhorLog.js`, `worker/src/dhorLog.js`, `worker/src/dhorSchedule.js`, `js/journal.js`, `js/dhorPage.js`, `css/journal-table.css`, `js/sw.js`, `index.html` (?v), `tests/verify_v3830_merge.mjs` (new), `tests/verify_roles.mjs` (fixture gains the maktab log tables), docs. **NO MIGRATION** — the merge is a read-time union. **Deploy order: WORKER FIRST, then frontend.**

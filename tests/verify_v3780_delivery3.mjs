@@ -202,7 +202,7 @@ const summarySrc = read('js/maktabSummary.js');
 function summaryDom(students) {
   const dom = new JSDOM(`<!DOCTYPE html><body>
     <input type="date" id="maktabSummaryDatePicker">
-    <div class="maktab-search-row"><input type="search" id="maktabSummarySearch"><div id="maktabSummarySearchResults" class="hidden"></div></div>
+    <div class="journal-header-cell maktab-search-cell"><button type="button" id="maktabSummarySearchToggle">Student</button><input type="search" id="maktabSummarySearch" class="hidden"><div id="maktabSummarySearchResults" class="hidden"></div></div><!-- V3.84.0: the search lives in the header cell now -->
     <table><tbody id="maktabSummaryBody"></tbody></table></body>`, { runScripts: 'dangerously', url: 'https://x/' });
   const w = dom.window;
   w.eval(`

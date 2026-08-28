@@ -2045,6 +2045,14 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.84.0 — the header-cell search (FRONTEND ONLY — upload, hard-refresh)
+
+Cache name is `hifzhelper-v3.84.0`; the login card should show 3.84.0.
+
+1. **Maktab summary**: no search bar above the table any more. The green "Student" header shows a small search glyph.
+2. **Tap "Student"**: it becomes a compact search box in the cell. Type — matches drop down under it; picking one opens her day view on the summary's picked date, and the header goes back to "Student".
+3. **Esc or tap anywhere else**: the box closes back to the label.
+
 ## V3.83.0 — (k) the merge (WORKER FIRST, then frontend; no migration)
 
 Cache name is `hifzhelper-v3.83.0`; the login card should show 3.83.0.

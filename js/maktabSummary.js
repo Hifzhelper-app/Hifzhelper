@@ -112,6 +112,8 @@ function wireMaktabSummarySearch(students, date){
         input.value = '';
         results.classList.add('hidden');
         results.innerHTML = '';
+        input.classList.add('hidden');                                    // V3.84.0: back to the label
+        document.getElementById('maktabSummarySearchToggle').classList.remove('hidden');
         openMaktabDay(stu, input._date);
       });
       results.appendChild(btn);
@@ -120,9 +122,26 @@ function wireMaktabSummarySearch(students, date){
   };
   input.addEventListener('input', render);
   input.addEventListener('focus', render);
+  // V3.84.0: tap-to-reveal — the green Student header cell is a label
+  // until tapped; the tap swaps in the input (sized to the cell) and
+  // focuses it. Esc, or a tap anywhere outside the cell, restores the
+  // label and clears any open results. The reveal choice (vs an
+  // always-visible field) was left to Claude and is easy to flip.
+  const toggle = document.getElementById('maktabSummarySearchToggle');
+  const restore = () => {
+    input.classList.add('hidden');
+    toggle.classList.remove('hidden');
+    results.classList.add('hidden');
+  };
+  toggle.addEventListener('click', () => {
+    toggle.classList.add('hidden');
+    input.classList.remove('hidden');
+    input.focus();
+  });
+  input.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ input.value = ''; restore(); } });
   document.addEventListener('click', (e) => {
-    if(!e.target.closest || (!e.target.closest('.maktab-search-row'))){
-      results.classList.add('hidden');
+    if(!e.target.closest || (!e.target.closest('.maktab-search-cell'))){
+      if(!input.classList.contains('hidden') || !results.classList.contains('hidden')) restore();
     }
   });
 }

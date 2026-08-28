@@ -65,9 +65,65 @@ after it):
    her own notes + feedback visible to her. Layout: BOTH history buttons
    move to the bottom of the page below the notes; on the dhor page the
    Add-Juz and History buttons swap. BUILD-READY.
-5. ~~**Student summary page**~~ **BUILT V3.82.0 (2026-08-28)** — the 4th
-   rail card, maktab's own record in the PJ layout; name tap opens it,
-   log cells route to their own cards; independent of (k); frontend only.
+5. ~~**Student summary page**~~ BUILT V3.82.0 — **then REVISED by the
+   user's V3.82 feedback (2026-08-28, "don't build" until confirmed):**
+   (a) NOT a rail card — a STANDALONE page "copied from the student's
+   PJ"; the 4th card + dot come OFF the rail (back to 3). CONFIRMED by
+   the user 2026-08-28 ("the maktab only sees maktab data"): the PJ
+   Journal PAGE's layout (expanded recent days + weekly rollups) but
+   still over the MAKTAB'S OWN entries only —
+   "copied from the PJ" = the page design, NOT the merged/personal data
+   (a teacher seeing her personal rows would break the three-inputs
+   rule). Name tap on the maktab summary opens it as before; cell-level
+   routing (sabaq cell → sabaq card etc.) presumably stays.
+   (b) The page carries an ATTENDANCE ICON navigating to her attendance
+   page (V3.80.0).
+   (c) Her own read-only 4th card also comes off — her existing Maktab
+   Journal screen already is her standalone view.
+
+6. ~~**Maktab summary search — constrain it**~~ **BUILT V3.84.0
+   (2026-08-28)** — the search lives in the green Student header cell,
+   tap-to-reveal (Claude's settled choice, open to veto); V3.78.0
+   semantics kept. User checking.
+
+7. **Settings General card — schematic rework (user, 2026-08-28,
+   screenshots provided; "don't build" ritual applies):** label-left /
+   control-right rows per the schematic: Maktab Name [input]; Time Zone
+   [ONE compact field — shows the staged zone or "Not set"; tapping it
+   opens the chooser (use-device-zone, type-ahead, clear) and closes on
+   pick]; Mushaf [the boxed radio group, right column]; then two narrow
+   rows with a SMALL numeric input on the right: "Minimum number of
+   students on a maktab day" and the inactive-days flag; Current term
+   keeps its row in the same style. SAVE icon stays top-right.
+   FIXES BUG (a) as a consequence: today the "Use this device's
+   timezone (X)" button stays visible whenever the device differs from
+   the staged zone — by design as a switch-back offer, wrong per the
+   user (device zone still on screen after choosing another). The
+   single-field control removes the standing button entirely.
+
+8. **Attendance "0 maktab days" report (user, 2026-08-28) — DIAGNOSED,
+   almost certainly NOT a code bug:** a date only counts as a maktab day
+   when ≥ maktab_day_min DISTINCT students have maktab logs on it
+   (loadMaktabDays, HAVING n >= min). The user's settings show min = 3;
+   test logging for 1–2 students therefore yields ZERO maktab days, so
+   the term period is empty and the page reports 0. Verify: set min to 1
+   → reload attendance. If STILL 0 with entries in the term, reopen as a
+   real bug. Candidate improvement (unbuilt): when the period holds no
+   maktab days, say so explicitly — "No maktab days in this period
+   (fewer than N students logged per day)" — instead of a bare dash.
+
+9. **Attendance page — card container (user, 2026-08-28):** all the
+   attendance data (% present, the count/period line, the custom
+   from–to controls, the absent-days history) sits neatly on ONE card
+   container, matching the app's existing card styling, instead of
+   loose elements on the page. The custom range reads as a sentence
+   (user, 2026-08-28): "Choose a custom date range from [date] to
+   [date]". The haidh calendar + ranges below keep
+   their own block (presumably a second card — confirm at build).
+
+10. **Note-history button on the log cards** — the user flagged it absent
+   on V3.82: correct, it is queue item 4 (notes history + button moves,
+   option (c), BUILD-READY) and simply not yet built. No spec change.
 
 ## The ATTENDANCE PAGE — BUILT V3.80.0 (2026-08-28; the original list-of-11 intent behind item 5)
 

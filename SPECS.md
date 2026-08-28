@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.84.0** — Summary search relocated into the green Student header cell (tap-to-reveal)
 - **V3.83.0** — (k) The merge: one-way maktab → PJ union at read time; personal entries marked; ownership governs writes
 - **V3.82.0** — The student summary card: 4th on the rail, maktab's own record in the PJ layout
 - **V3.81.0** — Dhor juz-range: one Save fans out to per-juz entries; time/mistakes divided, tags duplicated
@@ -120,6 +121,14 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.84.0 (2026-08-28): the header-cell search
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| The search must not span the screen — the green header section IS the search | the full-width row removed; label + input + dropdown live in `.col-date.maktab-search-cell` |
+| (reveal style left to Claude) | tap-to-reveal: label until tapped; Esc / outside tap / pick restores — one small block to flip if vetoed |
+| V3.78.0 behaviour kept | search-to-student, picked-date carry, no-match message — all pinned and passing |
 
 ## Done — V3.83.0 (2026-08-28): (k) the merge
 
