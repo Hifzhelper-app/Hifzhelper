@@ -124,7 +124,44 @@ after it):
    [date]". The haidh calendar + ranges below keep
    their own block (presumably a second card — confirm at build).
 
-10. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
+10. ~~**Attendance custom range — Apply becomes a small check**~~ **BUILT V3.86.0.** ( (user,
+   2026-08-28, NOT BUILT — batching resumed: the user is not uploading
+   per comment, so WAIT for the build word):** the Apply button (renders
+   full-width on their device) is replaced by a SMALL CHECK control
+   inline next to the two date inputs — tap the check to apply the
+   range. "back to default" reset behaviour unchanged.
+
+11. ~~**Attendance page buttons**~~ **BUILT V3.86.0** (assumption applied: the inline ranges block is gone).** (a) ABSENT DAYS becomes a SMALL GREEN button that looks and
+   acts like the History button (`.history-btn` styling; opens a POPUP
+   modal listing the absent dates, replacing the inline toggle list).
+   (b) NEW: a HAIDH HISTORY button in the same style showing the LAST 3
+   haidh periods (the haidh_ranges the payload already carries).
+   Claude's assumption to confirm at build: the button replaces the
+   inline #attHaidhRanges block below the calendar.
+
+12. ~~**History buttons are NOT pills**~~ **BUILT V3.86.0.** ( (user, 2026-08-28, screenshot; same
+   batch):** the `.history-btn` capsule/pill shape goes — standard
+   button shape (the app's normal radius) for Sabaq History / Notes
+   history and everything that inherits the class, including the new
+   absent-days and haidh-history buttons from item 11.
+
+13. ~~**Settings Tajweed/Groups add-rows**~~ **BUILT V3.86.0.** ( (user, 2026-08-28, screenshot;
+   same batch):** the proportions are inverted today (tiny input, huge
+   Add button). The INPUT takes the wide width the Add button has now,
+   and Add becomes a SAVE ICON (the mset save-icon pattern), compact
+   beside it. Both cards.
+
+14. ~~**Settings General — SAVE on its own row**~~ **BUILT V3.86.0.** ( (user, 2026-08-28,
+   screenshot; same batch):** the SAVE icon (and its Saved status)
+   crowds the Maktab Name row. Give SAVE its OWN row at the top
+   (right-aligned, per the schematic) and lower all the content below
+   it — the Name row starts under it.
+
+15. ~~**Settings General — WIDER input boxes**~~ **BUILT V3.86.0.** ( (user, 2026-08-28; same
+   batch):** the Name / Time Zone (and term) controls take more of the
+   row — shrink the label column so the inputs stretch.
+
+16. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent
    on V3.82: correct, it is queue item 4 (notes history + button moves,

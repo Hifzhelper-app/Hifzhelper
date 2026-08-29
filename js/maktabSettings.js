@@ -51,13 +51,17 @@ async function renderMaktabSettingsScreen(){
          timezone is ONE field (tap to open the chooser), which also
          removes the standing "Use this device's timezone" button the
          user reported lingering after choosing another zone. -->
-    <div class="mset-row mset-name-row">
-      <span class="mset-row-label">Maktab Name</span>
-      <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
+    <!-- V3.86.0 (user): SAVE gets its OWN row at the top, right-aligned
+         (the schematic); every content row starts below it. -->
+    <div class="mset-save-row">
       <button type="button" class="mset-save-btn" id="mset_save" aria-label="Save settings">
         <span class="mset-save-icon" id="mset_save_icon"></span><span>SAVE</span>
       </button>
       <span class="mset-save-status" id="mset_status"></span>
+    </div>
+    <div class="mset-row mset-name-row">
+      <span class="mset-row-label">Maktab Name</span>
+      <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
     </div>
 
     <input type="hidden" id="mset_timezone" value="${esc(s.timezone || '')}">
@@ -117,9 +121,10 @@ async function renderMaktabSettingsScreen(){
     <div class="form-label mset-list-label">Tajweed tags
       <span class="mset-legend-note">(major blocks the mistakes ring; retiring keeps a tag on old entries)</span>
     </div>
+    <!-- V3.86.0 (user): the input takes the width; Add is a save ICON. -->
     <div class="mset-list-add">
       <input type="text" id="mset_tag_new" maxlength="40" placeholder="New tag name">
-      <button type="button" class="secondary" id="mset_tag_add">Add</button>
+      <button type="button" class="mset-add-btn" id="mset_tag_add" aria-label="Add tag"><span class="mset-save-icon"></span></button>
     </div>
     <div class="mset-list-headers"><span>Retire</span></div>
     <div class="mset-list" id="msetTagsList"></div>
@@ -129,9 +134,10 @@ async function renderMaktabSettingsScreen(){
     <div class="form-label mset-list-label">Hifz groups
       <span class="mset-legend-note">(one per student, assigned on her Admin card; the summary orders by group. Descriptions are info-only — they show here and nowhere else)</span>
     </div>
+    <!-- V3.86.0 (user): the input takes the width; Add is a save ICON. -->
     <div class="mset-list-add">
       <input type="text" id="mset_group_new" maxlength="40" placeholder="New group name">
-      <button type="button" class="secondary" id="mset_group_add">Add</button>
+      <button type="button" class="mset-add-btn" id="mset_group_add" aria-label="Add group"><span class="mset-save-icon"></span></button>
     </div>
     <div class="mset-list-headers"><span>Retire</span></div>
     <div class="mset-list" id="msetGroupsList"></div>
@@ -143,6 +149,10 @@ async function renderMaktabSettingsScreen(){
 
   const si = document.getElementById('mset_save_icon');
   if(si && typeof iconHtml === 'function') si.innerHTML = iconHtml('save');
+  // V3.86.0: the two list add-buttons carry the same save icon
+  if(typeof iconHtml === 'function'){
+    document.querySelectorAll('.mset-add-btn .mset-save-icon').forEach(el => { el.innerHTML = iconHtml('save'); });
+  }
   document.getElementById('mset_save').addEventListener('click', saveMaktabSettingsScreen);
 }
 

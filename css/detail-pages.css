@@ -886,12 +886,14 @@
   justify-content: flex-end;
   padding-right: var(--space-sm);
 }
+/* V3.86.0 (user, screenshot): NOT pills — a standard button shape.
+   The old height:100% + zero vertical padding read as a capsule inside
+   the bottom row; normal padding and the app's small radius now. */
 .history-btn {
-  height: 100%;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  padding: 0 14px;
+  padding: 8px 14px;
   border: none;
   border-radius: var(--radius-sm);
   background: var(--palette-evergreen);
@@ -1777,8 +1779,23 @@
 }
 .att-custom-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .att-custom-sentence { font-size: 13px; }
+/* V3.85.2 (user, 2026-08-28): the attendance cards capped at 50% and
+   centered on larger screens — the named figure, applied from the
+   app's standard 768px breakpoint. */
+@media (min-width: 768px) {
+  .att-card { width: 50%; margin-left: auto; margin-right: auto; }
+}
 
 /* V3.85.0: both history buttons at the card bottom, below Notes */
 .card-history-bottom { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-sm) 0; }
 .notes-kind { font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .04em; }
 .notes-kind-feedback { color: var(--accent, #2f7d5d); }
+
+/* V3.86.0: the Apply check beside the attendance dates */
+.att-apply-check {
+  flex: 0 0 34px; width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
+  background: var(--color-surface, #fff); color: var(--palette-evergreen);
+  font-size: 18px; font-weight: 700; cursor: pointer; padding: 0;
+}

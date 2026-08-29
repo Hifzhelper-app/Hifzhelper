@@ -129,7 +129,7 @@ function pageDom(payloads) {
     <span id="attendanceHeaderIcon"></span><h2 id="attendanceTitle"></h2>
     <div id="attPercent"></div><div id="attCount"></div><div id="attPeriod"></div>
     <input id="attFrom"><input id="attTo"><button id="attApply"></button><button id="attReset" class="hidden"></button>
-    <button id="attAbsentBtn"></button><div id="attAbsentList" class="hidden"></div><div id="attError"></div>
+    <button id="attAbsentBtn"></button><div id="attError"></div><!-- V3.86.0: the inline absent list is a popup now -->
     <div id="attHaidhBlock">
       <span id="haidhDetailHeaderIcon"></span><h3 id="haidhDetailTitle">Haidh</h3>
       <button id="haidhCalPrevBtn"></button><span id="haidhCalMonthLabel"></span><button id="haidhCalNextBtn"></button>
@@ -137,7 +137,7 @@ function pageDom(payloads) {
       <div id="haidhRangeBar" class="hidden"><span id="haidhRangeBarText"></span><button id="haidhRangeCancelBtn"></button><button id="haidhRangeConfirmBtn"></button></div>
       <div id="haidhRangeDecision" class="hidden"><span id="haidhRangeDecisionText"></span><button id="haidhDecisionAdjustBtn"></button><button id="haidhDecisionAbsentBtn"></button><button id="haidhDecisionHaidhBtn"></button></div>
       <div id="haidhCalError"></div>
-      <div id="attHaidhRanges"></div>
+      <button id="attHaidhHistoryBtn" class="hidden"></button><!-- V3.86.0: the ranges live behind this button -->
     </div></body>`, { runScripts: 'dangerously', url: 'https://x/' });
   const w = dom.window;
   w.eval(`
@@ -174,15 +174,19 @@ const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source:
   check('page: % and the count render', w.document.getElementById('attPercent').textContent === '90%'
     && /present 18 of 20 maktab days/.test(w.document.getElementById('attCount').textContent));
   check('page: the period line names the source', /2026-08-01 – 2026-08-28 \(current term\)/.test(w.document.getElementById('attPeriod').textContent.replace('\u2013', '–')));
-  check('page: absent button carries the count; list hidden until tapped', /\(2\)/.test(w.document.getElementById('attAbsentBtn').textContent)
-    && w.document.getElementById('attAbsentList').classList.contains('hidden'));
+  // V3.86.0: both lists live in POPUPS behind small green history-style
+  // buttons now — drive the popups instead of the old inline blocks.
+  check('page: absent button carries the count', /Absent days \(2\)/.test(w.document.getElementById('attAbsentBtn').textContent));
   w.document.getElementById('attAbsentBtn').click();
-  check('page: the absent list shows the dates', !w.document.getElementById('attAbsentList').classList.contains('hidden')
-    && w.document.querySelectorAll('.att-absent-date').length === 2);
-  check('page: the haidh block is visible for a haa\'idah, calendar rendered, ranges below',
+  check('page: the absent POPUP lists the two dates', w.document.querySelectorAll('.modal-overlay .history-entry-row').length === 2);
+  w.document.querySelector('.modal-overlay .close-btn').click();
+  check('page: the haidh block is visible for a haa\'idah, calendar rendered, the history button shown',
     !w.document.getElementById('attHaidhBlock').classList.contains('hidden')
     && w.document.querySelectorAll('.haidh-cal-day').length > 0
-    && /2026-08-20 . 2026-08-24/.test(w.document.getElementById('attHaidhRanges').textContent));
+    && !w.document.getElementById('attHaidhHistoryBtn').classList.contains('hidden'));
+  w.document.getElementById('attHaidhHistoryBtn').click();
+  check('page: the haidh POPUP shows the last periods', /2026-08-20 . 2026-08-24/.test(w.document.querySelector('.modal-overlay').textContent));
+  w.document.querySelector('.modal-overlay .close-btn').click();
   // custom period
   w.document.getElementById('attFrom').value = '2026-08-10';
   w.document.getElementById('attTo').value = '2026-08-14';

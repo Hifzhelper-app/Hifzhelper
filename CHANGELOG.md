@@ -26,6 +26,27 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.86.0 — The six-comment batch (2026-08-28)
+
+**Files touched:** `index.html`, `js/haidhDetailScreen.js`, `js/maktabSettings.js`, `css/detail-pages.css`, `css/settings.css`, `js/sw.js`, tests (verify_v3800 realigned to the popup world; +8 pins in verify_v3850_batch), docs. **FRONTEND ONLY.** Built as one delivery per the user's batching instruction.
+
+1. **Apply → a small check.** The attendance custom range's full-width Apply is a compact ✓ button sitting right after the two dates (same id — wiring untouched). "back to default" unchanged.
+2. **Absent days + Haidh history as small green buttons.** Both in the History button's style; each opens a read-only POPUP (the shared modal pattern): the absent dates, and the last 3 haidh periods. The inline absent toggle-list and the inline ranges block below the calendar are GONE (the recorded assumption, applied); the haidh button hides when there are no confirmed runs.
+3. **History buttons are NOT pills** (user's screenshot): the capsule came from height:100% + zero vertical padding inside the bottom row; standard padding + the app's small radius now — every `.history-btn` inherits, including the two new attendance buttons.
+4. **Tajweed/Groups add-rows flipped**: the input takes the width, Add is a save ICON (46px, the mset icon pattern; ids kept so the V3.79.0 instant-commit wiring is untouched).
+5. **SAVE on its own row** at the top of the General card, right-aligned with its Saved status; the Maktab Name row starts below it.
+6. **Wider General inputs**: the label column shrank 38%→28% (42%→32% on phones); Name, Time Zone and the term dates stretch accordingly.
+
+**Verification: 1017 passed, 0 failed across 33 harnesses** (the attendance-page harness now drives both popups; 8 new pins cover every item).
+
+---
+
+## V3.85.2 — Attendance cards capped at 50% (2026-08-28)
+
+**Files touched:** `css/detail-pages.css`, `js/sw.js`, `index.html` (?v), one pin. **FRONTEND ONLY.** The two attendance cards sit at 50% width, centered, from the app's standard 768px breakpoint (the user's named figure). **1008 passed, 0 failed across 33 harnesses.**
+
+---
+
 ## V3.85.1 — Summary-page header neatened (2026-08-28)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/sw.js`, `tests/verify_v3820_student_summary.mjs` (+2 pins), docs. **FRONTEND ONLY.**

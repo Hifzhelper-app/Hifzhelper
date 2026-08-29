@@ -2045,6 +2045,15 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.86.0 — the six-comment batch (FRONTEND ONLY — upload, hard-refresh)
+
+Login card shows 3.86.0.
+
+1. **Attendance**: the range ends in a small ✓ instead of Apply; "Absent days (N)" and "Haidh history" are small green buttons — each opens a popup list. No inline lists anywhere.
+2. **Any log card**: the History / Notes history buttons are normal rectangles now, not capsules.
+3. **Settings → Tajweed / Groups**: the name box is wide, Add is a small save icon beside it.
+4. **Settings → General**: SAVE sits alone on the top row; every input below is visibly wider.
+
 ## V3.85.1 — summary header (FRONTEND ONLY — upload, hard-refresh)
 
 Login card shows 3.85.1. The summary page's name, attendance icon and X sit on ONE row, aligned to the table's width; the attendance icon is clearly tappable now.

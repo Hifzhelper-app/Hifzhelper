@@ -44,6 +44,8 @@ check('attendance: the data block is a card and the haidh block is its own secon
 check('attendance: the custom range reads as the user\'s sentence',
   /Choose a custom date range from<\/span>\s*<input type="date" id="attFrom"/.test(html)
   && />to<\/span>\s*<input type="date" id="attTo"/.test(html));
+check('attendance: the cards cap at 50% centered on larger screens (user, V3.85.2)',
+  /@media \(min-width: 768px\) \{\n  \.att-card \{ width: 50%; margin-left: auto; margin-right: auto; \}/.test(read('css/detail-pages.css')));
 check('attendance: the worker names the threshold so the page can explain an empty period',
   /maktab_day_min: settings\.maktab_day_min,/.test(read('worker/src/maktabAttendance.js')));
 check('attendance: an empty period is NAMED, with the threshold in the message',
@@ -110,6 +112,31 @@ for (const t of ['sabaq', 'sabaqDhor', 'dhor']) {
 }
 check('notes: all three cards wire their button to the shared rail',
   /\['sabaq', 'sabaqDhor', 'dhor'\]\.forEach\(type => \{\n  const btn = document\.getElementById\(type \+ 'NotesHistoryBtn'\);/.test(dhorSrc));
+
+// ---------- V3.86.0: the six-comment batch ----------
+check('v3860: Apply is a small check beside the dates (id kept, wiring untouched)',
+  /class="att-apply-check" id="attApply" aria-label="Apply range">&#10003;<\/button>/.test(read('index.html'))
+  && /\.att-apply-check \{\n  flex: 0 0 34px;/.test(read('css/detail-pages.css')));
+check('v3860: absent days is a green history-style button; the inline list is gone',
+  /class="history-btn" id="attAbsentBtn"/.test(read('index.html')) && !/attAbsentList/.test(read('index.html')));
+check('v3860: the haidh history button exists; the inline ranges block is gone',
+  /class="history-btn hidden" id="attHaidhHistoryBtn">Haidh history</.test(read('index.html')) && !/attHaidhRanges/.test(read('index.html')));
+check('v3860: both buttons open the shared read-only popup',
+  /function attListPopup\(title, lines\)/.test(read('js/haidhDetailScreen.js'))
+  && /attListPopup\('Absent days'/.test(read('js/haidhDetailScreen.js'))
+  && /attListPopup\('Last haidh'/.test(read('js/haidhDetailScreen.js')));
+check('v3860: history buttons are standard buttons, not pills (padding restored, no height:100%)',
+  /\.history-btn \{\n  box-sizing: border-box;\n  display: inline-flex;\n  align-items: center;\n  padding: 8px 14px;/.test(read('css/detail-pages.css')));
+check('v3860: the tag/group add-rows — wide input, icon Add, ids kept',
+  /id="mset_tag_new"[^\n]*\n\s*<button type="button" class="mset-add-btn" id="mset_tag_add"/.test(read('js/maktabSettings.js'))
+  && /class="mset-add-btn" id="mset_group_add"/.test(read('js/maktabSettings.js'))
+  && /\.mset-list-add input\[type="text"\] \{ flex: 1 1 auto;/.test(read('css/settings.css')));
+check('v3860: SAVE sits on its own top row; the name row no longer holds it',
+  /class="mset-save-row">\n      <button type="button" class="mset-save-btn" id="mset_save"/.test(read('js/maktabSettings.js'))
+  && !/mset-name-row">\n      <span class="mset-row-label">Maktab Name<\/span>\n      <input[^\n]*\n      <button/.test(read('js/maktabSettings.js')));
+check('v3860: wider inputs — the label column shrank to 28% (32% on phones)',
+  /\.mset-row-label \{ flex: 0 0 28%;/.test(read('css/settings.css'))
+  && /flex-basis: 32%;/.test(read('css/settings.css')));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

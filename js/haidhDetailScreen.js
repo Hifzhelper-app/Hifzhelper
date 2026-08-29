@@ -410,7 +410,7 @@ async function renderAttendancePage(param){
   document.getElementById('attendanceTitle').textContent = inMaktab ? 'Attendance — ' + logCtxStudentName() : 'Attendance';
   document.getElementById('attError').textContent = '';
   attCustomPeriod = null;   // a fresh visit always starts on the default period
-  document.getElementById('attAbsentList').classList.add('hidden');
+  // (V3.86.0: the inline absent list is gone — nothing to reset here)
   wireAttendancePage();
   await loadAttendancePeriod();
 
@@ -446,38 +446,36 @@ async function loadAttendancePeriod(){
   document.getElementById('attFrom').value = d.from;
   document.getElementById('attTo').value = d.to;
   document.getElementById('attReset').classList.toggle('hidden', d.source !== 'custom');
-  const btn = document.getElementById('attAbsentBtn');
-  btn.textContent = `Show absent days (${d.absent_dates.length})`;
-  const list = document.getElementById('attAbsentList');
-  list.innerHTML = '';
-  d.absent_dates.forEach(date => {
-    const div = document.createElement('div');
-    div.className = 'att-absent-date';
-    div.textContent = date;
-    list.appendChild(div);
-  });
-  if(!d.absent_dates.length){
-    list.innerHTML = '<div class="att-absent-date">No absent days in this period.</div>';
-  }
+  // V3.86.0 (user): the absent list lives in a POPUP behind a small
+  // green history-style button now; the inline toggle list is gone.
+  document.getElementById('attAbsentBtn').textContent = `Absent days (${d.absent_dates.length})`;
   document.getElementById('attHaidhBlock').classList.toggle('hidden', !d.track_haidh);
 }
 let attPageData = null;
 
+// V3.86.0: one shared list popup for the two attendance buttons — the
+// same modal pattern the History rail uses, read-only.
+function attListPopup(title, lines){
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay history-popup-modal';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" id="attPopupCloseBtn">&times;</button>
+    <h2>${title}</h2>
+    <div class="history-full-list">
+      ${lines.map(l => `<div class="history-entry-row"><div class="history-entry-content"><div class="rail-card-date">${l}</div></div></div>`).join('') || '<div class="form-hint">Nothing here.</div>'}
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+  document.getElementById('attPopupCloseBtn').addEventListener('click', () => overlay.remove());
+}
+
+// V3.86.0 (user): the last 3 periods sit behind a HAIDH HISTORY button
+// (history style); the button hides when there are no confirmed runs.
 async function renderAttHaidhRanges(){
-  const host = document.getElementById('attHaidhRanges');
+  const btn = document.getElementById('attHaidhHistoryBtn');
   const ranges = (attPageData && attPageData.haidh_ranges) || [];
-  if(!ranges.length){ host.textContent = ''; return; }
-  host.innerHTML = '';
-  const h = document.createElement('div');
-  h.className = 'att-haidh-ranges-title';
-  h.textContent = 'Last haidh';
-  host.appendChild(h);
-  ranges.forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'att-haidh-range';
-    div.textContent = r.from === r.to ? r.from : `${r.from} – ${r.to}`;
-    host.appendChild(div);
-  });
+  btn.classList.toggle('hidden', !ranges.length);
 }
 
 let attPageWired = false;
@@ -498,7 +496,12 @@ function wireAttendancePage(){
     await loadAttendancePeriod();
   });
   document.getElementById('attAbsentBtn').addEventListener('click', () => {
-    document.getElementById('attAbsentList').classList.toggle('hidden');
+    const dates = (attPageData && attPageData.absent_dates) || [];
+    attListPopup('Absent days', dates.length ? dates : ['No absent days in this period.']);
+  });
+  document.getElementById('attHaidhHistoryBtn').addEventListener('click', () => {
+    const ranges = (attPageData && attPageData.haidh_ranges) || [];
+    attListPopup('Last haidh', ranges.map(r => r.from === r.to ? r.from : `${r.from} \u2013 ${r.to}`));
   });
 }
 

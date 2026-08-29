@@ -414,7 +414,7 @@
    V3.85.0 — the General card to the user's schematic: label-left /
    control-right rows; one Time Zone field; small numeric inputs. */
 .mset-row { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-md) 0; }
-.mset-row-label { flex: 0 0 38%; font-weight: 600; }
+.mset-row-label { flex: 0 0 28%; font-weight: 600; }   /* V3.86.0 (user): wider inputs — the label column shrinks */
 .mset-row > input[type="text"], .mset-row .mset-tz-field { flex: 1 1 auto; min-width: 0; }
 .mset-row-top { align-items: flex-start; }
 .mset-row .mset-mushaf { flex: 1 1 auto; margin: 0; }
@@ -426,9 +426,21 @@
   border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
   background: var(--color-surface, #fff); padding: 8px 10px; font: inherit;
 }
-.mset-tz-chooser { margin: 0 0 var(--space-md) 38%; padding-left: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); align-items: flex-start; }
+.mset-tz-chooser { margin: 0 0 var(--space-md) 28%; padding-left: var(--space-sm); display: flex; flex-direction: column; gap: var(--space-sm); align-items: flex-start; }
 .mset-term-row { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; }
 @media (max-width: 560px){
-  .mset-row-label { flex-basis: 42%; }
+  .mset-row-label { flex-basis: 32%; }   /* V3.86.0: wider inputs on phones too */
   .mset-tz-chooser { margin-left: 0; }
 }
+
+/* V3.86.0: SAVE on its own top row (user's schematic) */
+.mset-save-row { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+/* V3.86.0: the list add-rows — wide input, icon-sized Add */
+.mset-list-add { display: flex; gap: var(--space-sm); align-items: stretch; }
+.mset-list-add input[type="text"] { flex: 1 1 auto; min-width: 0; }
+.mset-add-btn {
+  flex: 0 0 46px; width: 46px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--color-table-border); border-radius: var(--radius-sm);
+  background: var(--color-surface, #fff); cursor: pointer; color: var(--color-ink-soft);
+}
+.mset-add-btn .mset-save-icon, .mset-add-btn svg { width: 20px; height: 20px; }
