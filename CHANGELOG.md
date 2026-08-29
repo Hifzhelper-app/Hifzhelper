@@ -26,6 +26,18 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.92.0 — Legend out, Hijri in; the year pill; chevron-free date pills (2026-08-29)
+
+**Files touched:** `index.html`, `js/maktabCalendarPage.js`, `js/maktabSettings.js`, `css/settings.css`, `js/sw.js`, tests (+3 pins, list drive extended), docs. **FRONTEND ONLY.**
+
+- **The calendar legend is GONE** (user) — the table below the grid is the naming surface. **Islamic rows there show the HIJRI DATE**, not the day name (the label's Hijri part; a manually added day with no Hijri recorded falls back to its own name). Holidays read "Public holiday" (or their edited text). The Hijri also shows in Maktab Settings' Islamic Calendar popup, carried by the V3.89 labels — saved pre-Hijri rows gain it on the one-press Confirm regeneration.
+- **The year select is a blue pill beside the "Calendar" heading** instead of the far corner.
+- **The date pills lost the native picker chevron** that overlapped their text (user's photo); the whole pill opens the picker — with an explicit showPicker() nudge for engines that don't open on field-click.
+
+**Verification: 1086 passed, 0 failed across 34 harnesses** (the page drive now proves the Hijri-not-name list rendering and the manual-entry fallback).
+
+---
+
 ## V3.91.0 — Verdicts and fixes: lavender marker, the search unclipped, the calendar header, blue pills (2026-08-29)
 
 **Files touched:** `index.html`, `js/logDetailScreen.js`, `css/journal-table.css`, `css/detail-pages.css`, `js/sw.js`, tests (2 realigned, +5 pins), docs. **FRONTEND ONLY.**

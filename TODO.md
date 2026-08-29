@@ -452,6 +452,28 @@ after it):
    (d) the pink arrow from Add-Juz-to-Dhor pointing right → the button
    moves to the FAR RIGHT of the date row.
 
+30. ~~**Calendar card year + date-pill chevrons**~~ **BUILT V3.92.0.** ( (user, 2026-08-29,
+   photo on V3.90.1; queued):**
+   (a) the YEAR select becomes a BLUE PILL (accent-soft) and moves
+   next to the "Calendar" heading instead of the far corner;
+   (b) the term date pills: the native picker CHEVRON overlaps and
+   cuts the date text — REMOVE it (hide the webkit
+   calendar-picker-indicator; tapping anywhere on the date still
+   opens the picker, as the user notes).
+
+31. ~~**Calendar page: legend out, Hijri in the list + settings**~~ **BUILT V3.92.0.** ( (user,
+   2026-08-29, CLARIFIED — replaces the earlier cell-name reading):**
+   (a) REMOVE the legend line completely;
+   (b) the table below the grid remains the naming surface for
+   holidays + islamic days (as built);
+   (c) islamic rows in that table show the HIJRI DATE, not the day
+   name — the label's Hijri part (after ' — '); manual entries with
+   no Hijri part fall back to their full label;
+   (d) the Hijri date also shows in MAKTAB SETTINGS (the Islamic
+   Calendar popup) — carried by the V3.89 labels; her saved rows gain
+   it on the one-press Confirm regeneration; new-year proposals carry
+   it natively.
+
 25. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent

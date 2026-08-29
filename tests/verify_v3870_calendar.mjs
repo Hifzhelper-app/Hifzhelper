@@ -185,7 +185,8 @@ const pageSrc = read('js/maktabCalendarPage.js');
     function apiGetMaktabCalendar(year){ return Promise.resolve(year === '2026' ? [
       { id: 1, date_from: '2026-08-09', date_to: '2026-08-09', label: null, type: 'holiday' },
       { id: 2, date_from: '2026-08-10', date_to: '2026-08-10', label: null, type: 'holiday' },
-      { id: 3, date_from: '2026-08-20', date_to: '2026-08-20', label: 'Mock day', type: 'islamic' },
+      { id: 3, date_from: '2026-08-20', date_to: '2026-08-20', label: 'Mock day \u2014 1 Ramadaan 1447', type: 'islamic' },
+      { id: 4, date_from: '2026-08-21', date_to: '2026-08-21', label: 'Manual day', type: 'islamic' },
     ] : []); }
   `);
   w.eval(pageSrc);
@@ -197,13 +198,16 @@ const pageSrc = read('js/maktabCalendarPage.js');
   check('page: August 2026 is labelled', /August 2026/.test(w.document.getElementById('mcalMonthLabel').textContent));
   const holidayCells = cells.filter(c => c.classList.contains('mcal-day-holiday'));
   const islamicCells = cells.filter(c => c.classList.contains('mcal-day-islamic'));
-  check('page: holiday and islamic dots land on the right days', holidayCells.length === 2 && islamicCells.length === 1
-    && islamicCells[0].title === 'Term 3 · Mock day');
+  check('page: holiday and islamic dots land on the right days', holidayCells.length === 2 && islamicCells.length === 2
+    && islamicCells[0].title === 'Term 3 · Mock day \u2014 1 Ramadaan 1447');
   check('page: term days carry the term tint (Aug 2026 sits inside Term 3)', cells.filter(c => c.classList.contains('mcal-day-term')).length >= 28);
-  check('page: the month list names the term and the entries (holidays as dates only)',
+  check('page: the month list — the term, holidays, and islamic rows showing the HIJRI DATE not the name (V3.92.0); a Hijri-less manual entry falls back to its label',
     /Term 3/.test(w.document.getElementById('mcalList').textContent)
-    && /Mock day/.test(w.document.getElementById('mcalList').textContent)
+    && /1 Ramadaan 1447/.test(w.document.getElementById('mcalList').textContent)
+    && !/Mock day/.test(w.document.getElementById('mcalList').textContent)
+    && /Manual day/.test(w.document.getElementById('mcalList').textContent)
     && /Public holiday/.test(w.document.getElementById('mcalList').textContent));
+  check('page: the legend is GONE (V3.92.0 — the list is the naming surface)', !/mcal-legend/.test(read('index.html')));
   // the marker helper the other surfaces share
   check('markers: maktabCalInfoForDate answers sync from the cache', w.eval("maktabCalInfoForDate('2026-08-20').islamic") === true
     && w.eval("maktabCalInfoForDate('2026-08-11')").term === true
@@ -279,6 +283,12 @@ check('worker: the attendance default reads the term containing today', /termCon
 check('desktop: grid-context cards fill their column — no percentage max-width (the V3.89.1 Chrome sliver bug)',
   /max-width: none; width: 100%; min-width: 0; \}/.test(read('css/detail-pages.css'))
   && !/\.log-detail-card \{ height: calc\([^\n]*max-width: 30%/.test(read('css/detail-pages.css')));
+
+check('settings: the year is a blue pill beside the heading; the pill chevrons are gone (whole pill opens the picker)',
+  /#mset_cal_year \{\n  background: var\(--color-accent-soft/.test(read('css/settings.css'))
+  && /justify-content: flex-start; gap: var\(--space-md\);/.test(read('css/settings.css'))
+  && /::-webkit-calendar-picker-indicator \{ display: none; \}/.test(read('css/settings.css'))
+  && /showPicker\(\)/.test(read('js/maktabSettings.js')));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

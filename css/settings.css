@@ -476,7 +476,12 @@
 .mset-cal-add-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
 
 /* V3.88.0: the Calendar card head + the two green buttons + the staged popup */
-.mset-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); }
+/* V3.92.0 (user): the year rides NEXT TO the heading as a blue pill */
+.mset-cal-head { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-md); margin-bottom: var(--space-sm); }
+#mset_cal_year {
+  background: var(--color-accent-soft, #D0DBE7); border: none; border-radius: 999px;
+  padding: 6px 14px; font: inherit; cursor: pointer;
+}
 .mset-cal-buttons { display: flex; flex-direction: column; gap: var(--space-sm); align-items: center; margin-top: var(--space-md); }
 .mset-cal-buttons .history-btn { min-width: 60%; justify-content: center; }
 .cal-stage-card .cal-stage-list { max-height: 50vh; overflow-y: auto; margin: var(--space-sm) 0; }
@@ -488,3 +493,10 @@
 .cal-stage-card .mset-cal-row input[type="text"] { width: auto; flex: 1 1 auto; min-width: 0; }
 .cal-stage-card .mset-cal-row .mset-list-x { flex: 0 0 auto; }
 .cal-stage-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md); }
+
+/* V3.92.0 (user): the native picker chevron overlapped the date text in
+   the pills — gone; the whole pill opens the picker (showPicker on tap
+   for engines that don't open on field-click). */
+.mset-term-dates input[type="date"]::-webkit-calendar-picker-indicator,
+.mset-cal-row input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
+.mset-term-dates input[type="date"], .mset-cal-row input[type="date"] { cursor: pointer; }

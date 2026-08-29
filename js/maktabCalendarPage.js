@@ -105,8 +105,15 @@ async function renderMaktabCalendarScreen(){
   const f = (d) => (typeof fmtDMY === 'function' ? fmtDMY(d) : d);   // V3.88.0: dd-mmm-yy
   c.terms.filter(t => t.term_from <= monthTo && t.term_to >= monthFrom)
     .forEach(t => rows.push(`<div class="mcal-list-row mcal-list-term"><span class="mcal-list-date">${f(t.term_from)} &ndash; ${f(t.term_to)}</span><span>${t.name}</span></div>`));
+  // V3.92.0 (user): islamic rows show the HIJRI DATE, not the day name
+  // — the label's Hijri part (after the em-dash); a manual entry with
+  // no Hijri recorded falls back to its full label.
+  const listText = (e) => {
+    if(e.type !== 'islamic') return e.label || 'Public holiday';
+    return (e.label && e.label.includes(' \u2014 ')) ? e.label.split(' \u2014 ')[1] : (e.label || '');
+  };
   c.entries.filter(e => e.date_from <= monthTo && e.date_to >= monthFrom)
-    .forEach(e => rows.push(`<div class="mcal-list-row"><span class="mcal-list-date">${e.date_from === e.date_to ? f(e.date_from) : f(e.date_from) + ' &ndash; ' + f(e.date_to)}</span><span class="mcal-list-${e.type}">${e.label || 'Public holiday'}</span></div>`));
+    .forEach(e => rows.push(`<div class="mcal-list-row"><span class="mcal-list-date">${e.date_from === e.date_to ? f(e.date_from) : f(e.date_from) + ' &ndash; ' + f(e.date_to)}</span><span class="mcal-list-${e.type}">${listText(e)}</span></div>`));
   list.innerHTML = rows.join('') || '<div class="form-hint">Nothing marked this month.</div>';
 }
 

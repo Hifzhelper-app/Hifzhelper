@@ -473,6 +473,8 @@ async function renderMsetTerms(){
         <input type="date" value="${t.term_to}" data-f="term_to">
         <button type="button" class="mset-list-x" aria-label="Delete term">&times;</button>
       </span>`;
+    // V3.92.0: with the chevron hidden, the whole pill opens the picker
+    row.querySelectorAll('input[type="date"]').forEach(inp => inp.addEventListener('click', () => { try{ inp.showPicker(); } catch(e){} }));
     row.querySelectorAll('input').forEach(inp => inp.addEventListener('change', async () => {
       const err = document.getElementById('mset_term_error');
       err.textContent = '';
@@ -566,7 +568,9 @@ async function openCalStagePopup(type){
       div.innerHTML = `<input type="date" value="${row.date_from || ''}">
            <input type="text" value="${(row.label || (type === 'holiday' ? 'Public Holiday' : '')).replace(/"/g, '&quot;')}" maxlength="60" placeholder="${type === 'holiday' ? 'Public Holiday' : 'Name'}">
            <button type="button" class="mset-list-x" aria-label="Remove">&times;</button>`;
-      div.querySelector('input[type="date"]').addEventListener('change', (e) => { row.date_from = e.target.value; });
+      const dateInp = div.querySelector('input[type="date"]');
+      dateInp.addEventListener('click', () => { try{ dateInp.showPicker(); } catch(e){} });   // V3.92.0
+      dateInp.addEventListener('change', (e) => { row.date_from = e.target.value; });
       div.querySelector('input[type="text"]').addEventListener('change', (e) => { row.label = e.target.value; });
       div.querySelector('.mset-list-x').addEventListener('click', () => { stage.splice(idx, 1); paint(); });
       host.appendChild(div);
