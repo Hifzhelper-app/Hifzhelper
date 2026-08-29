@@ -159,6 +159,27 @@ function exitEditScreenMode(cardId){
 }
 
 async function renderLogDetailScreen(initialCard){
+  // V3.87.0: the date headers name the day's calendar info ("wherever
+  // dates appear" — user). Painted per render; a cold cache paints none.
+  if(typeof ensureMaktabCalYear === 'function'){
+    const y = parseInt((typeof appTodayISO === 'function' ? appTodayISO() : '2026').slice(0, 4));
+    await ensureMaktabCalYear(String(y));
+  }
+  setTimeout(() => {
+    ['sabaq', 'sabaqDhor', 'dhor'].forEach(t => {
+      const input = document.getElementById(t + '_date');
+      if(!input) return;
+      let span = document.getElementById(t + '_date_info');
+      if(!span){
+        span = document.createElement('span');
+        span.className = 'card-date-info';
+        span.id = t + '_date_info';
+        input.insertAdjacentElement('afterend', span);
+      }
+      const info = typeof maktabCalInfoForDate === 'function' ? maktabCalInfoForDate(input.value) : null;
+      span.textContent = info ? info.title : '';
+    });
+  }, 0);
   await Promise.all([
     renderSabaqScreen(),
     renderSabaqDhorScreen(),

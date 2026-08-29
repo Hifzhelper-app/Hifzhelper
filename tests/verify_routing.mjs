@@ -53,6 +53,10 @@ const NOT_STUDENT_SCOPED = [
   // group belongs to the maktab, not to any student, so "whose?" never
   // arises regardless of log context.
   /^\/tajweed-tags/, /^\/maktab-groups/,
+  // V3.87.0: terms and the calendar are maktab-global exactly like tags
+  // and groups — a term or a holiday belongs to the maktab, never to a
+  // student, so "whose?" never arises.
+  /^\/maktab\/terms/, /^\/maktab\/calendar/,
 ];
 
 // Call sites that ARE own-only clients but are correct as they stand.

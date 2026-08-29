@@ -17,6 +17,8 @@ Newest first.
 
 ## Index
 
+- **V3.87.0** — The Maktab Calendar: multiple terms drive attendance; pre-loaded Islamic predictions (adjustable); SA public holidays (Sunday rule); info-only page; markers wherever dates appear
+- **V3.86.0** — The six-comment batch: Apply check, popup attendance buttons, de-pilled history buttons, add-row flip, SAVE row, wider inputs
 - **V3.85.0** — The batch of four: standalone student summary page; settings General schematic; attendance cards + empty-period message; notes history + button moves
 - **V3.84.0** — Summary search relocated into the green Student header cell (tap-to-reveal)
 - **V3.83.0** — (k) The merge: one-way maktab → PJ union at read time; personal entries marked; ownership governs writes
@@ -122,6 +124,16 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.87.0 (2026-08-28): the Maktab Calendar
+
+| Agreed (user, 2026-08-28) | Built as |
+| --- | --- |
+| Multiple terms, manual, in maktab settings; Add-term when none, + after; terms drive attendance | maktab_terms + settings Calendar card; default attendance period = term containing today; old pair migrated in as Term 1 |
+| Calendar = own page, information only, read-only for students | screen-maktabCalendar in everyone's nav; view-only by construction; management in settings |
+| Islamic days pre-loaded 2025–2030 (Jamiatul Ulama Most Likely), adjustable by sightings | ISLAMIC_PREDICTIONS seed + idempotent Add-predictions loader; instant-commit date edits |
+| SA public holidays, dates only; Sunday → following Monday | generator: 10 fixed + Easter pair + Sunday rule; per-year SA-holidays button; label NULL |
+| Info displayed wherever dates appear | formatDateCell dot, haidh/attendance calendar cell classes + title, day-view header labels, the page |
 
 ## Done — V3.85.0 (2026-08-28): the batch of four
 

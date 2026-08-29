@@ -57,6 +57,7 @@ const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'm
 // never sees the maktab settings, though their cards read the mushaf.
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
+const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'attendance' };   // V3.87.0: everyone; students read-only
 
 // V3.70.0: the personal journal is hidden FOR TEACHING PROFILES ONLY.
 // Confirmed in chat 2026-08-17: "those items are only hidden for teacher
@@ -121,6 +122,7 @@ function visibleNavGroups(){
   const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id));
   if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
   if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
+  g3.push(MAKTAB_CALENDAR_NAV_ITEM);   // V3.87.0: the maktab calendar, read-only for students
 
   const g4 = [
     { id: 'refresh', label: 'Refresh', icon: 'refresh', raw: 'refreshBtn' },

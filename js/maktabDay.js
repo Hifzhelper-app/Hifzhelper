@@ -209,6 +209,10 @@ async function renderStudentSummaryScreen(){
   const since = (() => { const d = new Date(); d.setDate(d.getDate() - ssTotalDays); return d.toISOString().slice(0,10); })();
   const id = logCtxStudentId();
   const own = (typeof currentUser !== 'undefined' && currentUser && currentUser.id === id);
+  if(typeof ensureMaktabCalYear === 'function'){   // V3.87.0: markers on the summary's date cells
+    const y = parseInt(maktabTodayISO().slice(0, 4));
+    await Promise.all([ensureMaktabCalYear(String(y)), ensureMaktabCalYear(String(y - 1))]);
+  }
   let sabaq, sabaqDhor, dhor;
   try{
     [sabaq, sabaqDhor, dhor] = await Promise.all([

@@ -180,6 +180,15 @@ function haidhCalDayCell(dateISO, inCurrentMonth){
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'haidh-cal-day';
+  // V3.87.0: the maktab-calendar info rides these day cells too
+  if(typeof maktabCalInfoForDate === 'function'){
+    const info = maktabCalInfoForDate(dateISO);
+    if(info){
+      if(info.islamic) btn.classList.add('mcal-day-islamic');
+      if(info.holiday) btn.classList.add('mcal-day-holiday');
+      btn.title = info.title;
+    }
+  }
   if(!inCurrentMonth) btn.classList.add('haidh-cal-day-muted');
   if(dateISO === haidhTodayISO()) btn.classList.add('haidh-cal-day-today');
   const status = haidhCalAttendance[dateISO];
@@ -405,6 +414,10 @@ function attPageClient(){
 let attCustomPeriod = null;   // { from, to } while the custom option is applied
 
 async function renderAttendancePage(param){
+  if(typeof ensureMaktabCalYear === 'function'){
+    const y = parseInt(maktabTodayISO().slice(0, 4));
+    await Promise.all([ensureMaktabCalYear(String(y)), ensureMaktabCalYear(String(y - 1))]);
+  }
   const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
   document.getElementById('attendanceHeaderIcon').innerHTML = iconHtml('attendance');
   document.getElementById('attendanceTitle').textContent = inMaktab ? 'Attendance — ' + logCtxStudentName() : 'Attendance';

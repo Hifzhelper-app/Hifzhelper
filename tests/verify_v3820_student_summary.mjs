@@ -49,7 +49,7 @@ check('page: the screen exists with header, attendance icon, close, and the PJ t
   && /id="studentSummaryAttendanceBtn"/.test(html) && /id="studentSummaryCloseBtn"/.test(html)
   && /id="studentSummaryTbody"/.test(html));
 check('page: registered as a built screen that KEEPS the maktab context',
-  /studentSummary: true \}/.test(appSrc)
+  /studentSummary: true, maktabCalendar: true \}/.test(appSrc)   // maktabCalendar joined in V3.87.0
   && /id === 'studentSummary'/.test(appSrc.match(/const keepsMaktabCtx =[^\n]*/)[0])
   && /if\(id === 'studentSummary'\) await renderStudentSummaryScreen\(\);/.test(appSrc));
 check('summary: the NAME tap opens the standalone PAGE now',

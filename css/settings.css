@@ -444,3 +444,16 @@
   background: var(--color-surface, #fff); cursor: pointer; color: var(--color-ink-soft);
 }
 .mset-add-btn .mset-save-icon, .mset-add-btn svg { width: 20px; height: 20px; }
+
+/* V3.87.0: the Calendar card */
+.mset-term-row, .mset-cal-row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+.mset-term-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
+.mset-term-row input[type="date"], .mset-cal-row input[type="date"] { flex: 0 0 auto; }
+.mset-cal-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
+.mset-list-x { flex: 0 0 auto; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-ink-soft); padding: 2px 6px; }
+.mset-cal-type { flex: 0 0 auto; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
+.mset-cal-type-islamic { color: var(--palette-evergreen, #2f7d5d); }
+.mset-cal-type-holiday { color: #b4552d; }
+.mset-cal-year-row { display: flex; gap: var(--space-sm); align-items: center; margin: var(--space-sm) 0; flex-wrap: wrap; }
+.mset-cal-add-row { display: flex; gap: 6px; align-items: stretch; margin-top: var(--space-sm); }
+.mset-cal-add-row input[type="text"] { flex: 1 1 auto; min-width: 0; }

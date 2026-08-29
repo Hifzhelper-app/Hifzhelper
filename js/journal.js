@@ -74,7 +74,12 @@ async function loadJournalData(totalDays){
 function formatDateCell(iso){
   const d = new Date(iso + 'T00:00:00');
   const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
-  const rest = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  // V3.87.0: the maktab-calendar marker rides EVERY date cell this
+  // renderer paints (journal, summary page) — "info is displayed
+  // wherever dates appear" (user). Sync against the year cache; a
+  // cold cache simply paints no marker.
+  const mark = typeof maktabCalMarkHtml === 'function' ? maktabCalMarkHtml(iso) : '';
+  const rest = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + mark;
   return `<span class="weekday">${weekday}</span>${rest}`;
 }
 function formatDateShort(iso){
@@ -338,6 +343,11 @@ async function loadMoreJournalHistory(){
 }
 
 async function renderJournalScreen(){
+  // V3.87.0: warm the calendar cache for the years the table can show
+  if(typeof ensureMaktabCalYear === 'function'){
+    const y = parseInt((typeof appTodayISO === 'function' ? appTodayISO() : new Date().toISOString()).slice(0, 4));
+    await Promise.all([ensureMaktabCalYear(String(y)), ensureMaktabCalYear(String(y - 1))]);
+  }
   const tbody = document.getElementById('journalTbody');
   tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--color-ink-faint);padding:24px;">Loading…</td></tr>`;
   try{

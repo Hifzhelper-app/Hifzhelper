@@ -33,6 +33,7 @@ function makeEnv() {
     CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT DEFAULT '', role TEXT NOT NULL, haidh_ruling TEXT DEFAULT 'hanafi', track_haidh INTEGER DEFAULT 0, active INTEGER DEFAULT 1);
     CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
     CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 2, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT);
+    CREATE TABLE maktab_terms (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, term_from TEXT NOT NULL, term_to TEXT NOT NULL, created_at TEXT DEFAULT '');   -- V3.87.0: terms drive attendance
     INSERT INTO maktab_settings (id) VALUES (1);
     CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
     CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
@@ -75,7 +76,7 @@ const post = (body) => ({ json: async () => body, url: 'https://x/' });
 {
   // Ten maktab days: day(-20..-11). STU1 logs on 6 of them, haidh run on
   // 2 (calendar-adjacent), absent on 2.
-  const { env, log, haidh } = makeEnv();
+  const { env, db, log, haidh } = makeEnv();
   const days = [];
   for (let n = -20; n <= -11; n++) { const d = day(n); days.push(d); log('STU2', d); log('X' + n, d); }
   [0, 1, 2, 3, 4, 5].forEach(i => log('STU1', days[i]));
@@ -105,9 +106,15 @@ const post = (body) => ({ json: async () => body, url: 'https://x/' });
   // period resolution
   const noParams = (await handleAttendancePage(req('student_id=STU1'), env, TEACHER)).data;
   check('page: no params + no term → last 4 weeks ending on the maktab today', noParams.source === '4w' && noParams.to === TODAY && noParams.from === day(-27), JSON.stringify([noParams.from, noParams.to]));
-  await handleSaveMaktabSettings(post({ term_from: days[2], term_to: days[9] }), env, { id: 'A', role: 'admin' });
+  // V3.87.0: the default period is the TERM CONTAINING TODAY from
+  // maktab_terms. A finished (past) term is rightly ignored — the old
+  // settings-pair behaviour would have used it; the new rule does not.
+  db.prepare("INSERT INTO maktab_terms (name, term_from, term_to) VALUES ('Old term', ?, ?)").run(days[2], days[9]);
+  check('page: a PAST term is NOT the default (today falls outside it)',
+    (await handleAttendancePage(req('student_id=STU1'), env, TEACHER)).data.source === '4w');
+  db.prepare("INSERT INTO maktab_terms (name, term_from, term_to) VALUES ('Term 1', ?, ?)").run(days[2], TODAY);
   const term = (await handleAttendancePage(req('student_id=STU1'), env, TEACHER)).data;
-  check('page: the current term is the default period once set', term.source === 'term' && term.from === days[2] && term.maktab_days === 8, JSON.stringify(term));
+  check('page: the term CONTAINING TODAY is the default period', term.source === 'term' && term.from === days[2] && term.to === TODAY && term.maktab_days === 8, JSON.stringify(term));
   check('page: custom still overrides the term', (await handleAttendancePage(req(`student_id=STU1&from=${days[0]}&to=${days[1]}`), env, TEACHER)).data.source === 'custom');
 
   // auth

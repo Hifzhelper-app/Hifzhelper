@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.86.0"></script>
+<script src="js/pwaManifest.js?v=3.87.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.86.0">
-<link rel="stylesheet" href="css/base.css?v=3.86.0">
-<link rel="stylesheet" href="css/nav.css?v=3.86.0">
-<link rel="stylesheet" href="css/journal-table.css?v=3.86.0">
-<link rel="stylesheet" href="css/components.css?v=3.86.0">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.86.0">
-<link rel="stylesheet" href="css/settings.css?v=3.86.0">
-<link rel="stylesheet" href="css/admin.css?v=3.86.0">
-<link rel="stylesheet" href="css/haidh.css?v=3.86.0">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.86.0">
-<link rel="stylesheet" href="css/sih.css?v=3.86.0">
+<link rel="stylesheet" href="css/tokens.css?v=3.87.0">
+<link rel="stylesheet" href="css/base.css?v=3.87.0">
+<link rel="stylesheet" href="css/nav.css?v=3.87.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.87.0">
+<link rel="stylesheet" href="css/components.css?v=3.87.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.87.0">
+<link rel="stylesheet" href="css/settings.css?v=3.87.0">
+<link rel="stylesheet" href="css/admin.css?v=3.87.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.87.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.87.0">
+<link rel="stylesheet" href="css/sih.css?v=3.87.0">
 </head>
 <body>
 
@@ -281,6 +281,32 @@
       </div>
     </section>
 
+    <!-- V3.87.0: the MAKTAB CALENDAR — its own page, INFORMATION ONLY
+         (user). Read-only for everyone here; management lives in the
+         Maktab Settings Calendar card. -->
+    <section class="screen hidden" id="screen-maktabCalendar">
+      <div class="card-header-row">
+        <h2>Maktab Calendar</h2>
+      </div>
+      <div class="mcal-card">
+        <div class="mcal-month-row">
+          <button type="button" class="secondary" id="mcalPrevBtn">&lsaquo;</button>
+          <span id="mcalMonthLabel"></span>
+          <button type="button" class="secondary" id="mcalNextBtn">&rsaquo;</button>
+        </div>
+        <div class="mcal-weekdays" id="mcalWeekdays"></div>
+        <div class="mcal-grid" id="mcalGrid"></div>
+        <div class="mcal-legend">
+          <span><span class="mcal-dot mcal-dot-islamic"></span> significant day</span>
+          <span><span class="mcal-dot mcal-dot-holiday"></span> public holiday</span>
+          <span><span class="mcal-term-swatch"></span> term</span>
+        </div>
+      </div>
+      <div class="mcal-card">
+        <div class="mcal-list" id="mcalList"></div>
+      </div>
+    </section>
+
     <!-- Maktab day view — (e1) PLACEHOLDER ONLY. The real 3-card entry
          screen (student name above Sabaq/Sabaq Dhor/Dhor cards, prepop,
          teacher notes, haidh entry) is delivery (e2). This exists so the
@@ -304,6 +330,7 @@
           <button type="button" class="dot" data-index="0">General</button>
           <button type="button" class="dot" data-index="1">Tajweed</button>
           <button type="button" class="dot" data-index="2">Groups</button>
+          <button type="button" class="dot" data-index="3">Calendar</button><!-- V3.87.0 -->
         </div>
         <button type="button" class="log-detail-close screen-close-btn" id="maktabSettingsCloseBtn" aria-label="Exit to Home"></button>
       </div>
@@ -311,6 +338,7 @@
         <div class="log-detail-card"><div class="card-scroll" id="msetCardGeneral"></div></div>
         <div class="log-detail-card"><div class="card-scroll" id="msetCardTajweed"></div></div>
         <div class="log-detail-card"><div class="card-scroll" id="msetCardGroups"></div></div>
+        <div class="log-detail-card"><div class="card-scroll" id="msetCardCalendar"></div></div><!-- V3.87.0 -->
       </div>
     </section>
 
@@ -1280,37 +1308,38 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.86.0"></script>
-<script src="shared/haidhRules.js?v=3.86.0"></script>
-<script src="js/icons.js?v=3.86.0"></script>
-<script src="js/customDate.js?v=3.86.0"></script>
-<script src="js/api.js?v=3.86.0"></script>
-<script src="js/logContext.js?v=3.86.0"></script>
-<script src="js/uiSwitch.js?v=3.86.0"></script>
-<script src="js/position.js?v=3.86.0"></script>
-<script src="js/auth.js?v=3.86.0"></script>
-<script src="js/home.js?v=3.86.0"></script>
-<script src="js/tajweed.js?v=3.86.0"></script>
-<script src="js/commentPrivacy.js?v=3.86.0"></script>
-<script src="js/session-timer.js?v=3.86.0"></script>
-<script src="js/journal.js?v=3.86.0"></script>
-<script src="js/maktabSummary.js?v=3.86.0"></script>
-<script src="js/maktabSettings.js?v=3.86.0"></script>
-<script src="js/maktabSetup.js?v=3.86.0"></script>
-<script src="js/maktabDay.js?v=3.86.0"></script>
-<script src="js/maktabJournal.js?v=3.86.0"></script>
-<script src="js/dhorPage.js?v=3.86.0"></script>
-<script src="js/sabaqPage.js?v=3.86.0"></script>
-<script src="js/sabaqDhorPage.js?v=3.86.0"></script>
-<script src="js/reflectionCard.js?v=3.86.0"></script>
-<script src="js/logDetailScreen.js?v=3.86.0"></script>
-<script src="js/haidhDetailScreen.js?v=3.86.0"></script>
-<script src="js/kaabaTracker.js?v=3.86.0"></script>
-<script src="js/juzTrackerScreen.js?v=3.86.0"></script>
-<script src="js/sihScreen.js?v=3.86.0"></script>
-<script src="js/settingsScreen.js?v=3.86.0"></script>
-<script src="js/adminPage.js?v=3.86.0"></script>
-<script src="js/versionStamp.js?v=3.86.0"></script>
-<script src="js/app.js?v=3.86.0"></script>
+<script src="shared/data.js?v=3.87.0"></script>
+<script src="shared/haidhRules.js?v=3.87.0"></script>
+<script src="js/icons.js?v=3.87.0"></script>
+<script src="js/customDate.js?v=3.87.0"></script>
+<script src="js/api.js?v=3.87.0"></script>
+<script src="js/logContext.js?v=3.87.0"></script>
+<script src="js/uiSwitch.js?v=3.87.0"></script>
+<script src="js/position.js?v=3.87.0"></script>
+<script src="js/auth.js?v=3.87.0"></script>
+<script src="js/home.js?v=3.87.0"></script>
+<script src="js/tajweed.js?v=3.87.0"></script>
+<script src="js/commentPrivacy.js?v=3.87.0"></script>
+<script src="js/session-timer.js?v=3.87.0"></script>
+<script src="js/journal.js?v=3.87.0"></script>
+<script src="js/maktabSummary.js?v=3.87.0"></script>
+<script src="js/maktabSettings.js?v=3.87.0"></script>
+<script src="js/maktabSetup.js?v=3.87.0"></script>
+<script src="js/maktabDay.js?v=3.87.0"></script>
+<script src="js/maktabJournal.js?v=3.87.0"></script>
+<script src="js/maktabCalendarPage.js?v=3.87.0"></script>
+<script src="js/dhorPage.js?v=3.87.0"></script>
+<script src="js/sabaqPage.js?v=3.87.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.87.0"></script>
+<script src="js/reflectionCard.js?v=3.87.0"></script>
+<script src="js/logDetailScreen.js?v=3.87.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.87.0"></script>
+<script src="js/kaabaTracker.js?v=3.87.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.87.0"></script>
+<script src="js/sihScreen.js?v=3.87.0"></script>
+<script src="js/settingsScreen.js?v=3.87.0"></script>
+<script src="js/adminPage.js?v=3.87.0"></script>
+<script src="js/versionStamp.js?v=3.87.0"></script>
+<script src="js/app.js?v=3.87.0"></script>
 </body>
 </html>

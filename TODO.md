@@ -161,7 +161,69 @@ after it):
    batch):** the Name / Time Zone (and term) controls take more of the
    row — shrink the label column so the inputs stretch.
 
-16. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
+16. ~~**MAKTAB CALENDAR**~~ **BUILT V3.87.0 (2026-08-28).** Full spec
+   record kept below; Claude-settled details reported at delivery:
+   settings management on a 4th Calendar card; the page view-only for
+   everyone; blank label on the add-row = holiday, label = islamic;
+   markers repaint on screen re-render (a manually changed card date
+   repaints its header on the next render, not instantly).**
+   - **Its own PAGE** (user). **INFORMATION ONLY — NO attendance logic**
+     (user, explicit). The info is DISPLAYED WHEREVER DATES APPEAR.
+   - **Islamic significant days: PRE-LOADED from the Jamiatul Ulama
+     (KZN, South Africa) 2025–2030 prediction tables** (user's PDF,
+     Most Likely dates), ADJUSTABLE when actual moon sightings differ.
+     Seed data (label → date):
+     2025: Laylatul-Bara'ah (Eve) 2025-02-13; First Taraweeh 2025-03-01;
+       First Fast 2025-03-02; Eid-ul-Fitr 2025-03-31; Eid-ul-Adha
+       2025-06-07; New Islamic Year 2025-06-27; 'Aashuraa 2025-07-06.
+     2026: Laylatul-Bara'ah 2026-02-03; First Taraweeh 2026-02-18;
+       First Fast 2026-02-19; Eid-ul-Fitr 2026-03-21; Eid-ul-Adha
+       2026-05-28; New Islamic Year 2026-06-17; 'Aashuraa 2026-06-26.
+     2027: Laylatul-Bara'ah 2027-01-23; First Taraweeh 2027-02-08;
+       First Fast 2027-02-09; Eid-ul-Fitr 2027-03-10; Eid-ul-Adha
+       2027-05-17; New Islamic Year 2027-06-07; 'Aashuraa 2027-06-16.
+     2028: Laylatul-Bara'ah 2028-01-12; First Taraweeh 2028-01-28;
+       First Fast 2028-01-29; Eid-ul-Fitr 2028-02-28; Eid-ul-Adha
+       2028-05-06; New Islamic Year 2028-05-26; 'Aashuraa 2028-06-04.
+     2029: First Taraweeh 2029-01-16; First Fast 2029-01-17;
+       Eid-ul-Fitr 2029-02-16; Eid-ul-Adha 2029-04-25; New Islamic
+       Year 2029-05-16; 'Aashuraa 2029-05-25; Laylatul-Bara'ah
+       2029-12-20.
+     2030: First Taraweeh 2030-01-05; First Fast 2030-01-06;
+       Eid-ul-Fitr 2030-02-05; Eid-ul-Adha 2030-04-14; New Islamic
+       Year 2030-05-05; 'Aashuraa 2030-05-14; Laylatul-Bara'ah
+       2030-12-10.
+   - **Public holidays: SOUTH AFRICA, dates only, no description**
+     (user). Fixed: 1 Jan, 21 Mar, 27 Apr, 1 May, 16 Jun, 9 Aug,
+     24 Sep, 16 Dec, 25 Dec, 26 Dec; movable: Good Friday (Friday
+     before Easter) + Family Day (Monday after Easter). RULE (user):
+     a PH falling on a SUNDAY makes the FOLLOWING MONDAY a public
+     holiday. Generated per year; changeable in maktab settings.
+   - **Maktab settings gains options** (user): ADD THE PREDICTIONS
+     (load the seed set) and CHANGE THE PUBLIC HOLIDAYS.
+   - **Terms: MULTIPLE, set up manually in MAKTAB SETTINGS (user,
+     2026-08-28):** a "Terms" section — an ADD TERM button (visible
+     when no terms are defined); each term is ONE LINE: term name,
+     start date, end date; a small add control (+) after the rows to
+     add another term. Rows: "term name 1  start, end / term name 2
+     start, end …".
+     ANSWERED (user, 2026-08-28): TERMS DRIVE ATTENDANCE — the
+     multiple terms replace the single current-term pair; the
+     attendance default period is the term containing today (fallback
+     chain otherwise unchanged: custom → term-of-today → last 28
+     days).
+   - ANSWERED (user, 2026-08-28): (i) display surfaces = YES, that
+     set (calendar day cells marker + label; journal/summary date
+     cells small marker; day-view date headers show the label);
+     (ii) Easter-derived holidays computed automatically (implied
+     fine); (iii) students see the calendar page READ-ONLY — yes.
+   **STATUS: BUILD-READY** (awaiting the build word). Scope note:
+   migration (calendar table + terms table, current-term pair
+   migrated in), worker CRUD + holiday/prediction loaders + the
+   attendance default-period change, the calendar page, the settings
+   Terms editor + the two options, and the date-surface markers.
+
+17. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent
    on V3.82: correct, it is queue item 4 (notes history + button moves,

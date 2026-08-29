@@ -26,6 +26,22 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.87.0 — The Maktab Calendar (2026-08-28)
+
+**Files touched:** `worker/migrations/0026_maktab_calendar.sql` (NEW), `worker/src/maktabCalendar.js` (NEW), `worker/src/index.js`, `worker/src/maktabAttendance.js`, `js/maktabCalendarPage.js` (NEW), `js/api.js`, `js/auth.js`, `js/app.js`, `js/maktabSettings.js`, `js/journal.js`, `js/maktabDay.js`, `js/haidhDetailScreen.js`, `js/logDetailScreen.js`, `index.html`, `css/detail-pages.css`, `css/settings.css`, `js/sw.js`, tests (verify_v3870_calendar NEW, 39 checks; realignments across six harnesses), docs. **Deploy order: MIGRATION 0026 (console) → WORKER → FRONTEND.**
+
+The full user spec of 2026-08-28, verbatim from TODO item 16:
+
+- **TERMS drive attendance.** `maktab_terms` holds MULTIPLE named terms (one line each: name, start, end) managed on the new Maktab Settings **Calendar card** — an ADD TERM button while none exist, a small + thereafter, instant-commit edits. The migration carries the old General pair in as "Term 1". The attendance default period is now **the term containing today** (a finished term is rightly ignored — new behaviour, pinned); the rest of the chain (custom → term → last 28 days) is unchanged. The old settings columns stay but are no longer read.
+- **The calendar itself is INFORMATION ONLY** — its own page (`screen-maktabCalendar`, in everyone's nav), a Monday-first month grid with term tint + islamic/holiday dots, a legend, and the month's entries listed beneath. The page is view-only for everyone; students get exactly what teachers see. All management lives in settings.
+- **Islamic significant days pre-load from the Jamiatul Ulama (KZN) 2025–2030 Most Likely tables** (the user's PDF, transcribed into `ISLAMIC_PREDICTIONS`, 42 entries) via the settings "Add predictions" button — idempotent, marked `source: 'prediction'`, and **adjustable after actual moon sightings** (date edits commit instantly).
+- **South African public holidays, dates only** (label NULL): the ten fixed days + Good Friday/Family Day from the Easter computus, with the statutory **Sunday → following-Monday** rule. Generated per year by the "SA holidays" button; idempotent; individually editable/deletable. (2026 lands 13 dates — Aug 9 is a Sunday; 2027 lands 14.)
+- **"Info is displayed wherever dates appear":** journal + summary-page date cells carry a small dot with the label as its tooltip (via formatDateCell); the haidh/attendance calendar day cells take the classes + title; the day-view date headers name the day's info beside the date; the calendar page shows everything.
+
+**Verification: 1058 passed, 0 failed across 34 harnesses.** The new harness drives the migration, terms CRUD + auth (students read, never write), the holiday generator (Easter 2026/2027 pinned; both Sunday-collision years counted), both loaders' idempotence, the page renderer (grid, dots, tint, list), and the marker helper; the attendance-default change is driven in the attendance harness, including the past-term case.
+
+---
+
 ## V3.86.0 — The six-comment batch (2026-08-28)
 
 **Files touched:** `index.html`, `js/haidhDetailScreen.js`, `js/maktabSettings.js`, `css/detail-pages.css`, `css/settings.css`, `js/sw.js`, tests (verify_v3800 realigned to the popup world; +8 pins in verify_v3850_batch), docs. **FRONTEND ONLY.** Built as one delivery per the user's batching instruction.

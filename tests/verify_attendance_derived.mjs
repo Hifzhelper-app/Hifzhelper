@@ -104,6 +104,7 @@ runMig(db, '0020_maktab_settings.sql');
   try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
 db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
 db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }   // V3.80.0: 0025 rides the same try
+runMig(db, '0026_maktab_calendar.sql');   // V3.87.0: terms + calendar tables
 
 
 const DB = { prepare(sql) { return {

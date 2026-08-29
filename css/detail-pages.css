@@ -1799,3 +1799,38 @@
   background: var(--color-surface, #fff); color: var(--palette-evergreen);
   font-size: 18px; font-weight: 700; cursor: pointer; padding: 0;
 }
+
+/* ============================================================
+   V3.87.0: the maktab calendar page + the date markers */
+.mcal-card {
+  background: var(--color-surface, #fff);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin: var(--space-sm) 0 var(--space-md);
+}
+@media (min-width: 768px) { .mcal-card { width: 50%; margin-left: auto; margin-right: auto; } }
+.mcal-month-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); font-weight: 700; }
+.mcal-weekdays, .mcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.mcal-weekdays span { text-align: center; font-size: 11px; opacity: .6; padding: 2px 0; }
+.mcal-day { position: relative; min-height: 40px; border-radius: var(--radius-sm); padding: 3px 4px; font-size: 13px; }
+.mcal-day-muted { opacity: .35; }
+.mcal-day-today .mcal-day-num { font-weight: 800; text-decoration: underline; }
+.mcal-day-term { background: rgba(47, 125, 93, 0.10); }
+.mcal-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin: 2px 1px 0; }
+.mcal-dot-islamic { background: var(--palette-evergreen, #2f7d5d); }
+.mcal-dot-holiday { background: #b4552d; }
+.mcal-term-swatch { display: inline-block; width: 14px; height: 10px; border-radius: 3px; background: rgba(47, 125, 93, 0.25); }
+.mcal-legend { display: flex; gap: var(--space-md); margin-top: var(--space-sm); font-size: 12px; align-items: center; flex-wrap: wrap; }
+.mcal-list-row { display: flex; gap: var(--space-sm); padding: 6px 0; border-bottom: 1px solid var(--color-table-border); font-size: 14px; }
+.mcal-list-row:last-child { border-bottom: none; }
+.mcal-list-date { flex: 0 0 auto; opacity: .7; font-variant-numeric: tabular-nums; }
+.mcal-list-islamic { color: var(--palette-evergreen, #2f7d5d); font-weight: 600; }
+.mcal-list-holiday { color: #b4552d; }
+.mcal-list-term span:last-child { font-weight: 700; }
+
+/* the marker riding date cells + day headers, wherever dates appear */
+.mcal-mark { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 5px; vertical-align: middle; }
+.mcal-mark-islamic { background: var(--palette-evergreen, #2f7d5d); }
+.mcal-mark-holiday { background: #b4552d; }
+.card-date-info { font-size: 11px; opacity: .75; margin-left: 8px; }

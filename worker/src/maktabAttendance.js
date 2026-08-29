@@ -31,6 +31,7 @@
 // ============================================================
 
 import { isTeacherOrAbove, isValidDate, maktabTodayISO } from './utils.js';
+import { termContainingToday } from './maktabCalendar.js';   // V3.87.0: terms drive attendance
 import { readMaktabSettings } from './maktabSettings.js';
 import { haidhOfficialMaxDuration } from '../../shared/haidhRules.js';
 
@@ -197,8 +198,13 @@ export async function handleAttendancePage(request, env, auth) {
   let to = url.searchParams.get('to');
   let source = 'custom';
   if (!isValidDate(from) || !isValidDate(to)) {
-    if (settings.term_from && settings.term_to) {
-      from = settings.term_from; to = settings.term_to; source = 'term';
+    // V3.87.0: TERMS DRIVE ATTENDANCE (user) — the default period is
+    // the TERM CONTAINING TODAY from maktab_terms, not the retired
+    // single pair on maktab_settings. Chain unchanged otherwise:
+    // custom → term-of-today → last 28 days.
+    const term = await termContainingToday(env, today);
+    if (term) {
+      from = term.term_from; to = term.term_to; source = 'term';
     } else {
       const d = new Date(today + 'T00:00:00Z');
       d.setUTCDate(d.getUTCDate() - 27);

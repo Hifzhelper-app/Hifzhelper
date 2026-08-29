@@ -60,8 +60,8 @@ const html = read('index.html');
   const section = (html.match(/<section class="screen hidden" id="screen-maktabSettings">[\s\S]*?<\/section>/) || [''])[0];
   check('html: dots strip with General/Tajweed/Groups + the close button', /General/.test(section) && /Tajweed/.test(section) && /Groups/.test(section) && /maktabSettingsCloseBtn/.test(section));
   check('html: the rail reuses the log-detail classes (sizing/snap/grid for free)',
-    /class="log-detail-rail" id="msetRail"/.test(section) && (section.match(/log-detail-card/g) || []).length === 3);
-  check('html: three card-scroll hosts', ['msetCardGeneral', 'msetCardTajweed', 'msetCardGroups'].every(id => section.includes(`id="${id}"`)));
+    /class="log-detail-rail" id="msetRail"/.test(section) && (section.match(/log-detail-card/g) || []).length === 4);   // Calendar joined V3.87.0
+  check('html: four card-scroll hosts', ['msetCardGeneral', 'msetCardTajweed', 'msetCardGroups', 'msetCardCalendar'].every(id => section.includes(`id="${id}"`)));
 }
 
 // ---------- the screen, driven ----------
@@ -69,10 +69,22 @@ const src = read('js/maktabSettings.js');
 function dom(settings, groups, tags) {
   const d = new JSDOM(`<!DOCTYPE html><body>
     <div id="msetDots"><button class="dot" data-index="0"></button><button class="dot" data-index="1"></button><button class="dot" data-index="2"></button></div>
-    <div id="msetRail"><div><div id="msetCardGeneral"></div></div><div><div id="msetCardTajweed"></div></div><div><div id="msetCardGroups"></div></div></div>
+    <div id="msetRail"><div><div id="msetCardGeneral"></div></div><div><div id="msetCardTajweed"></div></div><div><div id="msetCardGroups"></div></div><div><div id="msetCardCalendar"></div></div></div>
     </body>`, { runScripts: 'dangerously', url: 'https://x/' });
   const w = d.window;
   w.eval(`
+    function appTodayISO(){ return '2026-08-28'; }
+    function apiGetMaktabTerms(){ return Promise.resolve([]); }
+    function apiCreateMaktabTerm(){ return Promise.resolve({ id: 1 }); }
+    function apiUpdateMaktabTerm(){ return Promise.resolve({ ok: true }); }
+    function apiDeleteMaktabTerm(){ return Promise.resolve({ ok: true }); }
+    function apiGetMaktabCalendar(){ return Promise.resolve([]); }
+    function apiCreateMaktabCalEntry(){ return Promise.resolve({ id: 1 }); }
+    function apiUpdateMaktabCalEntry(){ return Promise.resolve({ ok: true }); }
+    function apiDeleteMaktabCalEntry(){ return Promise.resolve({ ok: true }); }
+    function apiLoadCalPredictions(){ return Promise.resolve({ added: 0 }); }
+    function apiLoadCalHolidays(y){ return Promise.resolve({ added: 0, year: y }); }
+    function mcalInvalidate(){}
     var calls = [];
     var SETTINGS = ${JSON.stringify(settings)};
     var GROUPS = ${JSON.stringify(groups)};

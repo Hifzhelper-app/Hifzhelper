@@ -13,6 +13,7 @@ import {
 } from './maktabLog.js';
 import { handleGetMaktabSettings, handleSaveMaktabSettings } from './maktabSettings.js';
 import { handleMaktabAttendance, handleAttendancePage } from './maktabAttendance.js';
+import { handleGetTerms, handleCreateTerm, handleUpdateTerm, handleDeleteTerm, handleGetCalendar, handleCreateCalendarEntry, handleUpdateCalendarEntry, handleDeleteCalendarEntry, handleLoadPredictions, handleLoadHolidays } from './maktabCalendar.js';   // V3.87.0
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
@@ -96,6 +97,23 @@ export default {
       if (path === '/maktab/attendance' && request.method === 'GET') return respond(await handleMaktabAttendance(request, env, auth));
       if (path === '/maktab/summary' && request.method === 'GET') return respond(await handleMaktabSummary(request, env, auth));
       if (path === '/maktab/dhor-default-entry' && request.method === 'GET') return respond(await handleMaktabDhorDefault(request, env, auth));
+      // V3.87.0: the maktab calendar — terms drive attendance; entries are info-only
+      if (path === '/maktab/terms' && request.method === 'GET') return respond(await handleGetTerms(request, env, auth));
+      if (path === '/maktab/terms' && request.method === 'POST') return respond(await handleCreateTerm(request, env, auth));
+      {
+        const m = path.match(/^\/maktab\/terms\/(\d+)$/);
+        if (m && request.method === 'PUT') return respond(await handleUpdateTerm(request, env, auth, parseInt(m[1])));
+        if (m && request.method === 'DELETE') return respond(await handleDeleteTerm(request, env, auth, parseInt(m[1])));
+      }
+      if (path === '/maktab/calendar' && request.method === 'GET') return respond(await handleGetCalendar(request, env, auth));
+      if (path === '/maktab/calendar' && request.method === 'POST') return respond(await handleCreateCalendarEntry(request, env, auth));
+      if (path === '/maktab/calendar/load-predictions' && request.method === 'POST') return respond(await handleLoadPredictions(request, env, auth));
+      if (path === '/maktab/calendar/load-holidays' && request.method === 'POST') return respond(await handleLoadHolidays(request, env, auth));
+      {
+        const m = path.match(/^\/maktab\/calendar\/(\d+)$/);
+        if (m && request.method === 'PUT') return respond(await handleUpdateCalendarEntry(request, env, auth, parseInt(m[1])));
+        if (m && request.method === 'DELETE') return respond(await handleDeleteCalendarEntry(request, env, auth, parseInt(m[1])));
+      }
       if (path === '/maktab/sabaq' && request.method === 'GET') return respond(await handleGetMaktabSabaq(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'POST') return respond(await handleSaveMaktabSabaq(request, env, auth));
       if (path === '/maktab/sabaq' && request.method === 'PATCH') return respond(await handleUpdateMaktabSabaq(request, env, auth));

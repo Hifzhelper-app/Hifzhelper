@@ -331,3 +331,15 @@ function apiGetMaktabSettings(){ return apiFetch('/maktab/settings'); }
 function apiSaveMaktabSettings(fields){
   return apiFetch('/maktab/settings', { method: 'POST', body: JSON.stringify(fields) });
 }
+
+// V3.87.0: the maktab calendar — terms drive attendance; entries info-only
+function apiGetMaktabTerms(){ return apiFetch('/maktab/terms'); }
+function apiCreateMaktabTerm(body){ return apiFetch('/maktab/terms', { method: 'POST', body: JSON.stringify(body) }); }
+function apiUpdateMaktabTerm(id, body){ return apiFetch('/maktab/terms/' + id, { method: 'PUT', body: JSON.stringify(body) }); }
+function apiDeleteMaktabTerm(id){ return apiFetch('/maktab/terms/' + id, { method: 'DELETE' }); }
+function apiGetMaktabCalendar(year){ return apiFetch('/maktab/calendar' + (year ? '?year=' + year : '')); }
+function apiCreateMaktabCalEntry(body){ return apiFetch('/maktab/calendar', { method: 'POST', body: JSON.stringify(body) }); }
+function apiUpdateMaktabCalEntry(id, body){ return apiFetch('/maktab/calendar/' + id, { method: 'PUT', body: JSON.stringify(body) }); }
+function apiDeleteMaktabCalEntry(id){ return apiFetch('/maktab/calendar/' + id, { method: 'DELETE' }); }
+function apiLoadCalPredictions(){ return apiFetch('/maktab/calendar/load-predictions', { method: 'POST', body: '{}' }); }
+function apiLoadCalHolidays(year){ return apiFetch('/maktab/calendar/load-holidays', { method: 'POST', body: JSON.stringify({ year }) }); }

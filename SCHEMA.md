@@ -278,3 +278,9 @@ in D1 — they ship as static data with the app instead:
 
 Each of these carries a source comment in `shared/data.js` per CONVENTIONS.md
 principle 6 — where it came from and that it's been verified, not guessed.
+
+## maktab_terms (0026, V3.87.0)
+Multiple named terms; they DRIVE ATTENDANCE (default period = the term containing today). `id, name, term_from, term_to, created_at`. The old `maktab_settings.term_from/term_to` columns remain but are UNREAD since V3.87.0 (migrated in as 'Term 1').
+
+## maktab_calendar (0026, V3.87.0)
+Information-only entries. `id, date_from, date_to, label (NULL for holidays — dates only), type CHECK ('islamic'|'holiday'), source ('manual'|'prediction'|'generated'), created_at`. Islamic predictions seed from ISLAMIC_PREDICTIONS (worker/src/maktabCalendar.js); SA holidays generate per year with the Sunday→Monday rule.

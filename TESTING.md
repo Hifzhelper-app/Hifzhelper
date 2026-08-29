@@ -2045,6 +2045,15 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.87.0 — the Maktab Calendar (MIGRATION → WORKER → FRONTEND)
+
+Run migration 0026 in the D1 console FIRST (SQL provided with the delivery), then deploy the worker, then upload the frontend. Cache `hifzhelper-v3.87.0`; login card 3.87.0.
+
+1. **Maktab Settings → Calendar (4th dot):** your old current term appears as "Term 1". Add Term 3 with today inside it. Tap "Add predictions" — the significant days land (2025–2030). Pick 2026 and tap "SA holidays" — 13 dates land (9 Aug was a Sunday, so 10 Aug rides along). Adjust any islamic date — it commits instantly.
+2. **Calendar page (in the nav for everyone):** the month grid shows the term tint, green dots (significant days), rust dots (holidays); the month's entries list beneath. A student sees the same page and can change nothing.
+3. **Attendance:** the default period now reads from the term containing today. A finished term no longer drives it (last-28-days takes over between terms).
+4. **Markers:** journal and summary date cells carry a small dot on marked days (hold/hover for the name); the haidh calendar tints those days; the day cards name the day beside the date.
+
 ## V3.86.0 — the six-comment batch (FRONTEND ONLY — upload, hard-refresh)
 
 Login card shows 3.86.0.

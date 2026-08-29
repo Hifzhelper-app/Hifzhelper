@@ -37,7 +37,7 @@ function showWelcome(name){
 // object below, where the // swallowed every entry after it and the
 // unclosed brace broke the whole file — the same one-line-comment trap
 // as the fixture repair, now guarded by tests/verify_syntax.mjs.)
-const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true, juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true, studentSummary: true };   // studentSummary: V3.85.0, the standalone page
+const SCREENS_BUILT = { home: true, journal: true, logDetail: true, admin: true, settings: true, reflections: true, attendancePage: true, juzTracker: true, sih: true, maktabSummary: true, maktabJournal: true, maktabSettings: true, maktabSetup: true, studentSummary: true, maktabCalendar: true };   // studentSummary: V3.85.0, the standalone page
 const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
@@ -78,6 +78,7 @@ async function showScreen(id, param){
   if(id === 'sih') await renderSihScreen();
   if(id === 'maktabSummary') await renderMaktabSummaryScreen();
   if(id === 'studentSummary') await renderStudentSummaryScreen();   // V3.85.0
+  if(id === 'maktabCalendar') await renderMaktabCalendarScreen();   // V3.87.0
   if(id === 'maktabSettings') await renderMaktabSettingsScreen();
   // V3.72.0: the maktabSetup SCREEN is gone — Setup is a sheet over the
   // Dhor card now, opened from that card's own button.
