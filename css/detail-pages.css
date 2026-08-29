@@ -1417,7 +1417,13 @@
      visible in the grid, nothing to indicate a position within) -- same
      auth-band-only calculation as .editing-active uses everywhere,
      since there's genuinely nothing to subtract for it here either. */
-  .log-detail-card { height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2)); max-width: 30%; }
+  /* V3.89.1: max-width was 30% — for a GRID ITEM that percentage
+     resolves against its own grid AREA (one column), so Chrome capped
+     every card at ~30% of a third of the screen (the user's sliver
+     cards), while Safari resolved it against the wider block and looked
+     right. The card must simply FILL its column; the 3-column grid
+     already caps the layout. */
+  .log-detail-card { height: calc(100vh - var(--auth-band-height, 60px) - (var(--appcontent-vpad) * 2)); max-width: none; width: 100%; min-width: 0; }
 }
 
 /* Dot indicators -- only meaningful while the rail actually swipes;

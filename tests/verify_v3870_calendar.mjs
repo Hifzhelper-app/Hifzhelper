@@ -274,5 +274,9 @@ check('worker: the attendance default reads the term containing today', /termCon
   check('dispatch: the PUT/DELETE calendar route regex matches its URL', !!calRe && calRe.test('/maktab/calendar/7') && !calRe.test('/maktab/calendarX/7'), String(calRe));
 }
 
+check('desktop: grid-context cards fill their column — no percentage max-width (the V3.89.1 Chrome sliver bug)',
+  /max-width: none; width: 100%; min-width: 0; \}/.test(read('css/detail-pages.css'))
+  && !/\.log-detail-card \{ height: calc\([^\n]*max-width: 30%/.test(read('css/detail-pages.css')));
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

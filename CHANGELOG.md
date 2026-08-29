@@ -26,6 +26,12 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.89.1 — HOTFIX: Chrome desktop sliver cards (2026-08-29)
+
+**Files touched:** `css/detail-pages.css` (one rule), +1 pin. **FRONTEND ONLY.** The user's Chrome-vs-Safari screenshots: on the desktop grid every rail card had `max-width: 30%` (a V3.45-era page-cap applied per card). A grid item resolves that percentage against its own COLUMN, so Chrome capped each card at ~30% of a third of the screen — the sliver cards — while Safari resolved it more generously and looked right. The card now fills its column (`max-width: none; width: 100%`); the 3-column grid itself is the cap. Applies to the day rail and settings rail alike; Safari's rendering was the intended one and is now what both engines produce. **1072 passed, 0 failed across 34 harnesses.**
+
+---
+
 ## V3.89.0 — Popup rework + settings polish (2026-08-29)
 
 **Files touched:** `worker/src/maktabCalendar.js`, `js/maktabSettings.js`, `index.html`, `css/settings.css`, `css/detail-pages.css`, `js/sw.js`, tests (three harnesses realigned; +4 pins), docs. **Deploy: WORKER → FRONTEND. No migration.**
