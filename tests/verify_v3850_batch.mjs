@@ -142,9 +142,11 @@ check('v3860: wider inputs — the label column shrank to 28% (32% on phones)',
 
 // ---------- V3.90.0: the queued polish batch ----------
 const dcss = read('css/detail-pages.css');
-check('v3900: the date row breathes (margin below) and the calendar-info label rides its own line above the pill',
-  /margin: var\(--space-sm\) 0 var\(--space-md\);\n  gap: var\(--space-sm\);/.test(dcss)
+check('v3900/v3901: the date row breathes — margin below AND auto height so a tall pill can never spill over it; the calendar-info label rides its own line above',
+  /height: auto;\n  min-height: var\(--dhor-row2-h\);\n  margin: var\(--space-sm\) 0 var\(--space-md\);/.test(dcss)
+  && /\.card-date-row \.card-header-date \{ height: var\(--dhor-row2-h\); \}/.test(dcss)
   && /\.card-date-row \.card-date-info \{ grid-column: 1 \/ -1; order: -1;/.test(dcss));
+check('v3901: the dhor From and To selects share one height rule', /#dhor_juz,\n#dhor_juz_to \{/.test(dcss));
 check('v3900: the pill-selector trial rides the ONE shared class', /\.verse-ref-field \{ border-radius: 999px; \}/.test(dcss));
 check('v3900: air between notes and the history buttons', /\.card-history-bottom \{ margin-top: var\(--space-md\); \}/.test(dcss)
   && /#sabaqCommentBlock, #sabaqDhorCommentBlock, #dhorCommentBlock \{ margin-top: var\(--space-md\); \}/.test(dcss));

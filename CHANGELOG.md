@@ -26,6 +26,12 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.90.1 — The date row, properly this time; matching dhor selects (2026-08-29)
+
+**Files touched:** `css/detail-pages.css`, `js/sw.js`, `index.html` (?v), 2 pins. **FRONTEND ONLY.** The V3.90.0 margin was real but the row's FIXED 44px height let a taller-rendering pill (desktop) spill past the row edge and over it — the honest root cause of "still touching". The row now grows with its content (min-height keeps the mobile geometry; the pill keeps its own 44px). And the dhor To select joins From under the one shared height rule it never had. **1079 passed, 0 failed across 34 harnesses.**
+
+---
+
 ## V3.90.0 — The queued polish batch (2026-08-29)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `css/settings.css`, `css/journal-table.css`, `js/sw.js`, tests (+7 pins, 1 realigned), docs. **FRONTEND ONLY.** Six queued items, one delivery:

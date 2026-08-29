@@ -32,7 +32,8 @@
    --dhor-row2-h (also 44px, coincidentally the same number, but two
    separate values that could easily drift apart again) -- now the same
    single shared variable everywhere. */
-#dhor_juz {
+#dhor_juz,
+#dhor_juz_to {   /* V3.90.1 (user): the To select never had the height rule — From and To now match */
   height: var(--dhor-row2-h);
   box-sizing: border-box;
 }
@@ -175,12 +176,16 @@
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: stretch;
-  height: var(--dhor-row2-h);
-  /* V3.90.0 (user): the pill was touching/overlapping the block below
-     on every card — real air beneath the date row. */
+  /* V3.90.1: the fixed height was the real culprit behind "still
+     touching" — when the pill renders taller than 44px (desktop), it
+     spilled past the row's edge and OVER the V3.90.0 margin. The row
+     now grows with its content; the pill keeps its own height. */
+  height: auto;
+  min-height: var(--dhor-row2-h);
   margin: var(--space-sm) 0 var(--space-md);
   gap: var(--space-sm);
 }
+.card-date-row .card-header-date { height: var(--dhor-row2-h); }
 /* V3.90.0: the calendar-info label (e.g. the term name) sits on its own
    line ABOVE the pill, full-width, instead of crowding beside it. */
 .card-date-row .card-date-info { grid-column: 1 / -1; order: -1; margin: 0 0 2px; }
