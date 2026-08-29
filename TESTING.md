@@ -2045,6 +2045,10 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.90.0 — the queued polish batch (FRONTEND ONLY — upload, hard-refresh)
+
+Login card 3.90.0. Settings→Calendar: term names look like text (edge appears when tapped), dates are pills, rows breathe. Maktab summary (desktop): date + X line up with the table. Student summary: the attendance icon hugs the name. Any day card: air under the date pill ("Term 2" on its own line above it), From/To over the dhor selectors, the surah:ayah selectors are pills, and the history buttons sit clear of the note box.
+
 ## V3.89.0 — popup rework + settings polish (WORKER → FRONTEND; no migration)
 
 Cache `hifzhelper-v3.89.0`; login card 3.89.0.

@@ -140,5 +140,22 @@ check('v3860: wider inputs — the label column shrank to 28% (32% on phones)',
   /\.mset-row-label \{ flex: 0 0 28%;/.test(read('css/settings.css'))
   && /flex-basis: 32%;/.test(read('css/settings.css')));
 
+// ---------- V3.90.0: the queued polish batch ----------
+const dcss = read('css/detail-pages.css');
+check('v3900: the date row breathes (margin below) and the calendar-info label rides its own line above the pill',
+  /margin: var\(--space-sm\) 0 var\(--space-md\);\n  gap: var\(--space-sm\);/.test(dcss)
+  && /\.card-date-row \.card-date-info \{ grid-column: 1 \/ -1; order: -1;/.test(dcss));
+check('v3900: the pill-selector trial rides the ONE shared class', /\.verse-ref-field \{ border-radius: 999px; \}/.test(dcss));
+check('v3900: air between notes and the history buttons', /\.card-history-bottom \{ margin-top: var\(--space-md\); \}/.test(dcss)
+  && /#sabaqCommentBlock, #sabaqDhorCommentBlock, #dhorCommentBlock \{ margin-top: var\(--space-md\); \}/.test(dcss));
+check('v3900: dhor From/To labels above the selector boxes',
+  /class="dhor-sel-label">From<\/label><select id="dhor_juz"/.test(read('index.html'))
+  && /class="dhor-sel-label">To<\/label><select id="dhor_juz_to"/.test(read('index.html')));
+check('v3900: the maktab summary toprow aligns to the table width on wide screens',
+  /\.screen-top-close-row\.maktab-summary-toprow \{ width: 70%; margin-left: auto; margin-right: auto; \}/.test(read('css/journal-table.css')));
+check('v3900: terms — quiet name, pill dates, air',
+  /\.mset-term-row \.mset-term-name:focus \{ border-color/.test(read('css/settings.css'))
+  && /\.mset-term-row \.mset-term-dates input\[type="date"\] \{\n  border: none; background/.test(read('css/settings.css')));
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

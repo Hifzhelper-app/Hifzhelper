@@ -450,8 +450,18 @@
 /* V3.87.0: the Calendar card */
 /* V3.88.1 (user): term rows are TWO lines — the name above, the dates
    below — instead of squeezing the name beside two date inputs. */
-.mset-term-row { display: block; margin: var(--space-sm) 0; }
-.mset-term-row .mset-term-name { width: 100%; box-sizing: border-box; margin-bottom: 4px; }
+/* V3.90.0 (user): quiet name (border only on focus), pill dates, air */
+.mset-term-row { display: block; margin: var(--space-lg, 20px) 0; }
+.mset-term-row .mset-term-name {
+  width: 100%; box-sizing: border-box; margin-bottom: 6px;
+  border: 1px solid transparent; background: transparent;
+  font: inherit; font-weight: 600; padding: 4px 6px; border-radius: var(--radius-sm);
+}
+.mset-term-row .mset-term-name:focus { border-color: var(--color-table-border); background: var(--color-surface, #fff); outline: none; }
+.mset-term-row .mset-term-dates input[type="date"] {
+  border: none; background: var(--color-bg-muted, #ececea);
+  border-radius: 999px; padding: 8px 14px;
+}
 .mset-term-row .mset-term-dates { display: flex; gap: 6px; align-items: center; }
 .mset-term-to { font-size: 13px; opacity: .7; }
 .mset-cal-row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }

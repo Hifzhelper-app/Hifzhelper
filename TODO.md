@@ -370,6 +370,48 @@ after it):
    screens). Harness realignments expected (card/dot counts, the
    msetCardGroups host id).
 
+25a. ~~**Terms section neatening**~~ **BUILT V3.90.0.** ( (user, 2026-08-29 15:44, NOT BUILT —
+   queued for the next build word):**
+   (a) term NAME inputs lose their visible box (the quiet borderless
+   pattern — border appears on focus, like .mset-name-input);
+   (b) the from/to DATE inputs render as PILLS (999px radius, subtle
+   fill) instead of squared boxes;
+   (c) more vertical spacing between term rows.
+
+25b. ~~**Maktab summary header grid**~~ **BUILT V3.90.0.** ( (user, 2026-08-29 15:46; same
+   queue):** the date pill and the X close float at the screen corners
+   while the table centres at 70% — put them in a single-row grid AT
+   THE TABLE'S WIDTH (the V3.85.1 ss-header pattern: date left, X
+   right, same 70%/768px centring as the summary table).
+
+25c. ~~**Summary-page attendance icon beside the name**~~ **BUILT V3.90.0.** ( (user,
+   2026-08-29 15:47; same queue):** move the attendance icon from the
+   far right to DIRECTLY AFTER the student's name so it reads "Umme's
+   attendance"; the X stays far right (ss-header grid becomes
+   auto·auto·1fr·auto).
+
+25d. ~~**Day-card rhythm + pill selectors**~~ **BUILT V3.90.0.** ( (user, 2026-08-29 15:48; same
+   queue):**
+   (a) the date pill touches the box below — increase the VERTICAL
+   SPACING across the whole day-card page (shared block rhythm).
+   CONFIRMED on the dhor card too (user, 15:54): the pill touches and
+   OVERLAPS the Quarter/Half/Juz toggle, and the term-info label
+   crowds above the pill — the rhythm fix covers the date-row, the
+   info label, and the toggle spacing on all three cards;
+   (b) TRIAL: the surah:ayah selector row renders as a PILL instead of
+   a box — styled on the SHARED selector class, so it cascades over
+   every card (sabaq / sabaq dhor / dhor, PJ and maktab alike), which
+   the user confirmed is the intent.
+
+25e. ~~**Dhor selectors labelled**~~ **BUILT V3.90.0.** ( (user, 2026-08-29; same queue):** put
+   "From" above the first juz/segment selector box and "To" above the
+   second (the sabaq cards' label pattern).
+
+25f. ~~**Space between the history buttons and the note boxes**~~ **BUILT V3.90.0.** ( (user,
+   2026-08-29; same queue):** the card-history-bottom row (History +
+   Notes history) sits flush under the Notes/Teacher-note block — add
+   vertical space between them (folds into the 25d rhythm pass).
+
 25. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent

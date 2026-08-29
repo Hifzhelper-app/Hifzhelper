@@ -39,9 +39,10 @@ check('rail: the name-row painter is back to three', /\['sabaq', 'sabaqDhor', 'd
 // ---------- the standalone page ----------
 // V3.85.1 (user): the header is ONE single-row grid at the journal's
 // width, and the attendance icon is sized to read (30px, not 22).
-check('page: the header is a single-row grid sharing the journal\'s 70% centering',
+check('page: the header is a single-row grid sharing the journal\'s 70% centering — attendance icon DIRECTLY after the name since V3.90.0',
   /class="ss-header"/.test(html)
-  && /\.ss-header \{\n  display: grid;\n  grid-template-columns: auto 1fr auto auto;/.test(read('css/detail-pages.css'))
+  && /grid-template-columns: auto auto auto 1fr;/.test(read('css/detail-pages.css'))
+  && /\.ss-header \.screen-close-btn \{ justify-self: end; \}/.test(read('css/detail-pages.css'))
   && /@media \(min-width: 768px\)\{[^}]*\n  \.ss-header \{ width: 70%; margin-left: auto; margin-right: auto; \}/.test(read('css/detail-pages.css')));
 check('page: the attendance icon is sized to read (30px)', /\.att-nav-btn svg, \.att-nav-btn \.icon \{ width: 30px; height: 30px;/.test(read('css/detail-pages.css')));
 check('page: the screen exists with header, attendance icon, close, and the PJ table shape',

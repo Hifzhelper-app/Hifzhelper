@@ -26,6 +26,21 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.90.0 — The queued polish batch (2026-08-29)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `css/settings.css`, `css/journal-table.css`, `js/sw.js`, tests (+7 pins, 1 realigned), docs. **FRONTEND ONLY.** Six queued items, one delivery:
+
+1. **Terms neatened** — quiet borderless name inputs (edge on focus only), the from/to dates as grey pills, more air between term rows.
+2. **Maktab summary header** — the date pill and X align to the table's 70% width on wide screens instead of floating at the screen corners.
+3. **Student summary page** — the attendance icon sits directly after the name ("Umme's attendance"); X keeps the far corner.
+4. **Day-card rhythm** — real margin under the date row on every card (the pill was touching/overlapping the blocks below on Sabaq and Dhor alike); the calendar-info label (e.g. "Term 2") rides its own line above the pill; air above the note blocks; air between the notes and the History/Notes-history buttons.
+5. **Pill-selector trial** — `.verse-ref-field` takes a 999px radius; ONE shared class, so it cascades over every from/to selector on all cards, PJ and maktab alike (the user's confirmed intent; one rule to revert if the look doesn't land).
+6. **Dhor From/To labels** above the two juz selector boxes (the sabaq cards' pattern; the To label hides with its range field).
+
+**Verification: 1078 passed, 0 failed across 34 harnesses.**
+
+---
+
 ## V3.89.1 — HOTFIX: Chrome desktop sliver cards (2026-08-29)
 
 **Files touched:** `css/detail-pages.css` (one rule), +1 pin. **FRONTEND ONLY.** The user's Chrome-vs-Safari screenshots: on the desktop grid every rail card had `max-width: 30%` (a V3.45-era page-cap applied per card). A grid item resolves that percentage against its own COLUMN, so Chrome capped each card at ~30% of a third of the screen — the sliver cards — while Safari resolved it more generously and looked right. The card now fills its column (`max-width: none; width: 100%`); the 3-column grid itself is the cap. Applies to the day rail and settings rail alike; Safari's rendering was the intended one and is now what both engines produce. **1072 passed, 0 failed across 34 harnesses.**

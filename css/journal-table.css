@@ -460,3 +460,10 @@
    provenance under the text, no button affordance */
 .journal-popup-maktab { cursor: default; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .journal-popup-teacher { font-size: 11px; opacity: .6; }
+
+/* V3.90.0 (user): the summary's date + X align to the TABLE's width on
+   wide screens instead of floating at the screen corners — the same
+   70%/768px centring the table itself uses. */
+@media (min-width: 768px) {
+  .screen-top-close-row.maktab-summary-toprow { width: 70%; margin-left: auto; margin-right: auto; }
+}

@@ -176,9 +176,14 @@
   grid-template-columns: auto 1fr;
   align-items: stretch;
   height: var(--dhor-row2-h);
-  margin-top: 4px;
+  /* V3.90.0 (user): the pill was touching/overlapping the block below
+     on every card — real air beneath the date row. */
+  margin: var(--space-sm) 0 var(--space-md);
   gap: var(--space-sm);
 }
+/* V3.90.0: the calendar-info label (e.g. the term name) sits on its own
+   line ABOVE the pill, full-width, instead of crowding beside it. */
+.card-date-row .card-date-info { grid-column: 1 / -1; order: -1; margin: 0 0 2px; }
 .card-header-date {
   padding: 4px 6px;
   box-sizing: border-box;
@@ -1762,11 +1767,15 @@
 #screen-studentSummary .journal-header-row { margin-top: var(--space-sm); }
 .ss-header {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  /* V3.90.0 (user): the attendance icon sits DIRECTLY AFTER the name —
+     "Umme's attendance" — with the X keeping the far corner. */
+  grid-template-columns: auto auto auto 1fr;
   align-items: center;
   gap: var(--space-sm);
   margin: var(--space-sm) 0;
 }
+.ss-header .att-nav-btn { margin-left: 0; }
+.ss-header .screen-close-btn { justify-self: end; }
 .ss-header h2 { margin: 0; }
 .att-nav-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--color-ink-soft); }
 /* the attendance icon reads at the same visual weight as the title now
@@ -1859,3 +1868,14 @@
 #attHaidhBlock .haidh-range-bar { width: 100%; box-sizing: border-box; }
 .haidh-range-bar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
 .haidh-range-confirm-btn { flex-basis: 100%; margin: 6px auto 0; display: block; max-width: max-content; }
+
+/* ============================================================
+   V3.90.0 — the queued polish batch (user, 2026-08-29) */
+/* the pill-selector TRIAL: one shared class, cascades to every from/to
+   row on all cards, PJ and maktab alike */
+.verse-ref-field { border-radius: 999px; }
+/* air between the note boxes and the history buttons; and above notes */
+.card-history-bottom { margin-top: var(--space-md); }
+#sabaqCommentBlock, #sabaqDhorCommentBlock, #dhorCommentBlock { margin-top: var(--space-md); }
+/* dhor From/To labels above the selector boxes */
+.dhor-sel-label { display: block; font-size: 13px; color: var(--color-ink-soft); margin-bottom: 4px; }
