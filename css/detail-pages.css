@@ -1735,7 +1735,8 @@
   font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit;
   display: inline-flex; align-items: center; gap: 4px;
 }
-.maktab-search-cell-label::after {
+/* V3.91.0 (user): the magnifier rides the LEFT of "Student" */
+.maktab-search-cell-label::before {
   content: ''; width: 11px; height: 11px; flex: 0 0 auto; opacity: .85;
   background: currentColor;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") center / contain no-repeat;
@@ -1754,7 +1755,7 @@
   text-transform: none; letter-spacing: normal; font-weight: 500;
 }
 .maktab-search-results {
-  position: absolute; left: 0; right: 0; top: 100%; z-index: 30;
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 60;   /* V3.91.0: above the table, always */
   background: var(--color-surface, #fff);
   border: 1px solid var(--color-table-border);
   border-radius: var(--radius-sm);
@@ -1884,3 +1885,18 @@
 #sabaqCommentBlock, #sabaqDhorCommentBlock, #dhorCommentBlock { margin-top: var(--space-md); }
 /* dhor From/To labels above the selector boxes */
 .dhor-sel-label { display: block; font-size: 13px; color: var(--color-ink-soft); margin-bottom: 4px; }
+
+/* ============================================================
+   V3.91.0 — the queued batch (user, 2026-08-29) */
+/* 28: the calendar page header + month nav */
+.mcal-header h2 { margin: 0; white-space: normal; }
+.mcal-header { margin: var(--space-sm) 0; }
+@media (min-width: 768px) { .mcal-header { width: 50%; margin-left: auto; margin-right: auto; } }
+.mcal-month-row .secondary { width: auto; flex: 0 0 auto; padding: 6px 14px; }
+#mcalMonthLabel { flex: 1 1 auto; text-align: center; white-space: nowrap; }
+/* 29a: the selector family takes the palette's light blue */
+.verse-ref-field { background: var(--color-accent-soft, #D0DBE7); border-color: transparent; }
+#dhor_juz, #dhor_juz_to { background: var(--color-accent-soft, #D0DBE7); border: none; border-radius: 999px; padding-left: 14px; }
+.sabaq-dhor-row { background: var(--color-accent-soft, #D0DBE7); border-color: transparent; }
+/* 29d: Add-Juz/Plan rides the far right of the date row */
+.card-date-row #dhorViewPlanBtn { justify-self: end; }

@@ -247,7 +247,9 @@ check('settings: the rail is back to three — Groups renders inside General (ms
   && /msetGroupsSection'\)\.innerHTML/.test(settingsSrc));
 check('markers: formatDateCell carries the calendar mark', /maktabCalMarkHtml === 'function' \? maktabCalMarkHtml\(iso\) : ''/.test(read('js/journal.js')));
 check('markers: the haidh/attendance calendar day cells take the classes + title', /maktabCalInfoForDate\(dateISO\)/.test(read('js/haidhDetailScreen.js')));
-check('markers: the day-view date headers paint the label', /t \+ '_date_info'/.test(read('js/logDetailScreen.js')));
+check('markers: the day-card date-info label is GONE (user scribble, V3.91.0) — the other surfaces keep theirs',
+  !/t \+ '_date_info'/.test(read('js/logDetailScreen.js'))
+  && /V3\.91\.0 \(user scribble/.test(read('js/logDetailScreen.js')));
 check('worker: the attendance default reads the term containing today', /termContainingToday\(env, today\)/.test(read('worker/src/maktabAttendance.js')));
 
 // ---------- V3.88.2: the transport-level regression net ----------

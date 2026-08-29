@@ -161,9 +161,10 @@ check('rail: personal rows carry the marker class',
   /history-entry-content\$\{r\.source === 'personal' \? ' pj-personal' : ''\}/.test(dhorSrc));
 {
   const css = read('css/journal-table.css');
-  check('css: Option A live (accent edge + tint); Options B and C staged in comments',
-    /\.pj-personal \{\n  border-left: 3px solid var\(--accent/.test(css)
-    && /OPTION B/.test(css) && /OPTION C/.test(css) && /journal-popup-teacher/.test(css));
+  check('css: the VERDICT marker (V3.91.0) — lavender fill, NO left border; the B/C staging retired with the verdict',
+    /\.pj-personal \{\n  background: var\(--palette-lavender, #E3DADE\);/.test(css)
+    && !/border-left: 3px solid var\(--accent/.test(css)
+    && !/OPTION B — uncomment/.test(css) && /journal-popup-teacher/.test(css));
 }
 
 console.log(`${pass} passed, ${fail} failed`);

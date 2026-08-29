@@ -26,6 +26,19 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.91.0 — Verdicts and fixes: lavender marker, the search unclipped, the calendar header, blue pills (2026-08-29)
+
+**Files touched:** `index.html`, `js/logDetailScreen.js`, `css/journal-table.css`, `css/detail-pages.css`, `js/sw.js`, tests (2 realigned, +5 pins), docs. **FRONTEND ONLY.**
+
+1. **The merge-marker VERDICT** (the first of the standing three settled): Option A was "a little too subtle" — personal entries in the merged journal now carry a LAVENDER FILL (`--palette-lavender`) with no left border. The staged Option B/C blocks retired with the verdict.
+2. **The header-cell search, visible at last.** The logic always worked; `overflow: hidden` on the header row (there for the rounded corners) was CLIPPING the results dropdown — and the magnifier — into nothing. The corners now round on the first/last cells, nothing clips, the dropdown stacks above the table (z-index 60), and the magnifier rides the LEFT of "Student" as asked.
+3. **The Maktab Calendar header corrected:** the title shows in full at the card's width; the ‹ › buttons are compact and "August 2026" sits unwrapped and centred between them (they'd inherited a full-width button rule).
+4. **The blue pills + the scribble set:** the selector family — sabaq from/to fields, the sabaq-dhor rows, the dhor juz selects — wears the palette's light blue (`--color-accent-soft`); the term-name label is gone from the day-card date rows (markers elsewhere untouched); the group heading reads just "Sabaq Dhor"; Add-Juz/Plan rides the far right of its row.
+
+**Verification: 1084 passed, 0 failed across 34 harnesses.**
+
+---
+
 ## V3.90.1 — The date row, properly this time; matching dhor selects (2026-08-29)
 
 **Files touched:** `css/detail-pages.css`, `js/sw.js`, `index.html` (?v), 2 pins. **FRONTEND ONLY.** The V3.90.0 margin was real but the row's FIXED 44px height let a taller-rendering pill (desktop) spill past the row edge and over it — the honest root cause of "still touching". The row now grows with its content (min-height keeps the mobile geometry; the pill keeps its own 44px). And the dhor To select joins From under the one shared height rule it never had. **1079 passed, 0 failed across 34 harnesses.**

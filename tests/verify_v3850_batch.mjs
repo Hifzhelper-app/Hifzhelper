@@ -159,5 +159,24 @@ check('v3900: terms — quiet name, pill dates, air',
   /\.mset-term-row \.mset-term-name:focus \{ border-color/.test(read('css/settings.css'))
   && /\.mset-term-row \.mset-term-dates input\[type="date"\] \{\n  border: none; background/.test(read('css/settings.css')));
 
+// ---------- V3.91.0: the second queued batch ----------
+const jcss = read('css/journal-table.css');
+check('v3910: the header row no longer clips — corners round on the cells; the dropdown stacks above the table',
+  !/border-radius: var\(--radius-md\) var\(--radius-md\) 0 0;\n  overflow: hidden;/.test(jcss)
+  && /\.journal-header-cell:first-child \{ border-top-left-radius/.test(jcss)
+  && /z-index: 60;/.test(read('css/detail-pages.css')));
+check('v3910: the magnifier rides the LEFT of Student', /\.maktab-search-cell-label::before \{/.test(read('css/detail-pages.css'))
+  && !/\.maktab-search-cell-label::after \{/.test(read('css/detail-pages.css')));
+check('v3910: the calendar page header — full title at card width; compact month nav',
+  /class="mcal-header"><h2>Maktab Calendar<\/h2>/.test(read('index.html'))
+  && /\.mcal-month-row \.secondary \{ width: auto; flex: 0 0 auto;/.test(read('css/detail-pages.css'))
+  && /#mcalMonthLabel \{ flex: 1 1 auto; text-align: center; white-space: nowrap; \}/.test(read('css/detail-pages.css')));
+check('v3910: the selector family wears the palette blue', /\.verse-ref-field \{ background: var\(--color-accent-soft/.test(read('css/detail-pages.css'))
+  && /#dhor_juz, #dhor_juz_to \{ background: var\(--color-accent-soft/.test(read('css/detail-pages.css'))
+  && /\.sabaq-dhor-row \{ background: var\(--color-accent-soft/.test(read('css/detail-pages.css')));
+check('v3910: the scribbles — heading reads "Sabaq Dhor"; Plan rides the far right',
+  /sabaq-dhor-group-label">Sabaq Dhor</.test(read('index.html'))
+  && /\.card-date-row #dhorViewPlanBtn \{ justify-self: end; \}/.test(read('css/detail-pages.css')));
+
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

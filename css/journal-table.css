@@ -16,9 +16,14 @@
    their own bounded scroll area for the 10-days-then-rollups design. */
 .journal-header-row {
   display: flex;
+  /* V3.91.0: overflow:hidden (there for the rounded corners) was
+     CLIPPING the search dropdown into invisibility — the user typed
+     and saw nothing while the logic worked perfectly. The corners now
+     round on the first/last CELLS; nothing needs clipping. */
   border-radius: var(--radius-md) var(--radius-md) 0 0;
-  overflow: hidden;
 }
+.journal-header-cell:first-child { border-top-left-radius: var(--radius-md); }
+.journal-header-cell:last-child { border-top-right-radius: var(--radius-md); }
 .journal-header-cell {
   /* Confirmed in chat: ~20% taller than the previous 8px vertical
      padding -- 11px lands at 36px total cell height (11+14+11) against
@@ -442,19 +447,14 @@
    OPTION B — a small "personal" chip after the text: most explicit.
    OPTION C — accent-coloured text only: lightest possible touch.
    ============================================================ */
+/* V3.91.0 — the user's VERDICT (2026-08-29): Option A read "a little
+   too subtle". The marker is now a LAVENDER FILL from the palette, no
+   left border. Options B/C retired with the verdict. */
 .pj-personal {
-  border-left: 3px solid var(--accent, #2f7d5d);
-  background: rgba(47, 125, 93, 0.07);
+  background: var(--palette-lavender, #E3DADE);
   border-radius: 4px;
   padding-left: 6px;
 }
-/* OPTION B — uncomment to use (and comment Option A above):
-.pj-personal { position: relative; }
-.pj-personal::after { content: 'personal'; font-size: 10px; opacity: .65; margin-left: 6px; text-transform: uppercase; letter-spacing: .04em; }
-*/
-/* OPTION C — uncomment to use (and comment Option A above):
-.pj-personal { color: var(--accent, #2f7d5d); font-weight: 600; }
-*/
 
 /* the popup's read-only maktab rows: same shape as the tappable ones,
    provenance under the text, no button affordance */

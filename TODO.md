@@ -412,6 +412,46 @@ after it):
    Notes history) sits flush under the Notes/Teacher-note block — add
    vertical space between them (folds into the 25d rhythm pass).
 
+26. ~~**MERGE MARKER VERDICT**~~ **BUILT V3.91.0** (verdict settled). ( (user, 2026-08-29; queued for the next
+   build word):** Option A "a little too subtle" — keep the marker but:
+   use the LAVENDER highlight colour (--palette-lavender #E3DADE) as
+   the cell background, and REMOVE the left accent border. Options B/C
+   comments can then come out of the CSS (verdict given).
+
+27. ~~**HEADER-CELL SEARCH — clipped invisible**~~ **FIXED V3.91.0.** ( (user, 2026-08-29;
+   DIAGNOSED, queued):** the logic works (11/11 in the harness); the
+   symptom "no feedback regardless of typing" is `.journal-header-row
+   { overflow: hidden }` (there for the rounded top corners) CLIPPING
+   the absolutely-positioned results dropdown — and the magnifier icon
+   at the cell's right edge with it. Fix: (a) drop the row-level
+   overflow and round the corners on the first/last CELLS instead, so
+   the dropdown escapes; (b) move the magnifier to the LEFT of
+   "Student" (::before, per the user); (c) dropdown z-index above the
+   table.
+
+28. ~~**Maktab Calendar page header**~~ **BUILT V3.91.0.** ( (user, 2026-08-29, screenshot;
+   queued):** (a) the page title clips to "Maktab Cal…" at the screen
+   corner — show it in full, aligned to the card's width (the 50%
+   centring the cards use); (b) the month row is broken on desktop:
+   the ‹ › buttons stretch into huge boxes and squeeze "August 2026"
+   into a wrap — make the nav buttons compact (auto width), the month
+   label on one line, centred between them.
+
+29. ~~**Blue pills + the scribble set**~~ **BUILT V3.91.0** (all three scribble readings applied; open to veto). ( (user, 2026-08-29 17:24,
+   annotated screenshot; queued):**
+   (a) STATED: the selector pills take the LIGHT BLUE from the palette
+   (--palette-sky #D0DBE7 = --color-accent-soft) — the mock paints the
+   sabaq from/to fields, the sabaqDhor from/to + suggestion boxes, and
+   the dhor juz selects, i.e. the selector controls as a family.
+   Scribble-readings (open to veto at delivery):
+   (b) "Term 2" struck out on ALL THREE cards → remove the term-name
+   info label from the day-card date rows (the calendar markers
+   elsewhere stay);
+   (c) "Confirm" struck in "Confirm Sabaq Dhor" → the heading reads
+   just "Sabaq Dhor";
+   (d) the pink arrow from Add-Juz-to-Dhor pointing right → the button
+   moves to the FAR RIGHT of the date row.
+
 25. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent
