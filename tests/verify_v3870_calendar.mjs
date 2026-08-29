@@ -224,6 +224,9 @@ check('settings: the Calendar card is year-picker + Terms + the TWO green popup 
   && /id="mset_cal_islamic">Islamic Calendar</.test(settingsSrc)
   && /id="mset_cal_holidays">Public Holidays</.test(settingsSrc)
   && !/mset_cal_load_predictions|mset_cal_new_date|msetCalList/.test(settingsSrc));
+check('settings: term rows put the NAME on its own line above the dates (V3.88.1)',
+  /class="mset-term-name"/.test(read('js/maktabSettings.js'))
+  && /class="mset-term-dates"/.test(read('js/maktabSettings.js')));
 check('settings: ADD TERM is the big button only while none exist; the + takes over after',
   /mset_term_add_big'\)\.classList\.toggle\('hidden', terms\.length > 0\)/.test(settingsSrc)
   && /mset_term_add'\)\.classList\.toggle\('hidden', terms\.length === 0\)/.test(settingsSrc));
@@ -236,6 +239,30 @@ check('markers: formatDateCell carries the calendar mark', /maktabCalMarkHtml ==
 check('markers: the haidh/attendance calendar day cells take the classes + title', /maktabCalInfoForDate\(dateISO\)/.test(read('js/haidhDetailScreen.js')));
 check('markers: the day-view date headers paint the label', /t \+ '_date_info'/.test(read('js/logDetailScreen.js')));
 check('worker: the attendance default reads the term containing today', /termContainingToday\(env, today\)/.test(read('worker/src/maktabAttendance.js')));
+
+// ---------- V3.88.2: the transport-level regression net ----------
+// The user's "network error" on term date edits was CORS: the editors
+// are the app's FIRST PUT requests, and the worker's preflight didn't
+// list PUT — the browser blocked the call before it left. Handlers
+// passed every direct-call test; nothing exercised the transport. Two
+// nets now: (1) every method the api clients use appears in the
+// worker's Allow-Methods; (2) the :id dispatch regexes, extracted from
+// index.js VERBATIM, match their real URLs.
+{
+  const idx = read('worker/src/index.js');
+  const allow = (idx.match(/'Access-Control-Allow-Methods': '([^']+)'/) || ['', ''])[1];
+  const clientMethods = [...new Set([...read('js/api.js').matchAll(/method: '(\w+)'/g)].map(m => m[1]))];
+  check('transport: every method js/api.js uses is CORS-allowed (PUT was missing — the V3.88.2 bug)',
+    clientMethods.length >= 4 && clientMethods.every(m => allow.includes(m)), `clients=${clientMethods} allow=${allow}`);
+  const grab = (frag) => {
+    const m = idx.match(new RegExp('path\\.match\\(\\/((?:[^\\/\\\\]|\\\\.)*' + frag + '(?:[^\\/\\\\]|\\\\.)*)\\/\\)'));
+    return m ? new RegExp(m[1]) : null;
+  };
+  const termsRe = grab('terms');
+  const calRe = grab('calendar');
+  check('dispatch: the PUT/DELETE terms route regex matches its URL', !!termsRe && termsRe.test('/maktab/terms/12') && !termsRe.test('/maktab/terms/'), String(termsRe));
+  check('dispatch: the PUT/DELETE calendar route regex matches its URL', !!calRe && calRe.test('/maktab/calendar/7') && !calRe.test('/maktab/calendarX/7'), String(calRe));
+}
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

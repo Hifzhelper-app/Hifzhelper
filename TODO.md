@@ -332,7 +332,47 @@ after it):
    is the device's region format — native pickers follow the phone
    (Settings → General → Language & Region → Region), not the app.
 
-24. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
+24. ~~**Term rows: name on its own line ABOVE the dates**~~ **BUILT
+   V3.88.1** (Claude shipped it solo before the user's restated
+   batching instruction below — noted).
+
+24b. **Staged popups rework (user, 2026-08-29 13:41, NOT BUILT —
+   BATCH; the user restated firmly: NO one-change-at-a-time uploads,
+   WAIT for the build word):**
+   (a) BUG on her device (screenshot): the Islamic popup rows render
+   as date-only boxes — the name input and the delete × aren't
+   visible. Investigate the row CSS inside the modal (likely a
+   full-width input rule stacking the flex children); fix so all row
+   parts show.
+   (b) Islamic rows must show the DAY DESCRIPTION **and the ISLAMIC
+   (Hijri) DATE** from the Jamiatul Ulama table (e.g. "First Taraweeh
+   — 1 Ramadaan 1447"): extend the seed with each row's Hijri string
+   (in the PDF: 15 Sha'baan / 1 Ramadaan / 1 Shawwal / 10 Zul Hijjah
+   / 1 Muharram / 10 Muharram, with the right Hijri year per entry)
+   and carry it in the label. Re-proposal dedupe keys on the full
+   label string consistently.
+   (c) DELETE per row in BOTH popups (the × — make it visibly work).
+   (d) PUBLIC HOLIDAYS — reverses item 20: every holiday row carries
+   EDITABLE text prefilled "Public Holiday" (not date-only after
+   all); Confirm stores the text (blank → 'Public Holiday'); the
+   worker stops forcing label NULL for holidays.
+
+
+24c. **Settings polish set (user, 2026-08-29 13:45; same batch):**
+   (a) the MAJOR/MINOR pills on the Tajweed list — noticeably SMALLER;
+   (b) REMOVE the explanatory parentheticals from the TERMS heading
+   ("terms drive attendance — …") and the GROUPS heading ("one per
+   student, …") — Tajweed's note untouched (not named);
+   (c) vertical space between the add-row (with its save-icon button)
+   and the RETIRE header in BOTH the Groups and Tajweed cards;
+   (d) COMBINE Hifz Groups INTO the General card → the settings rail
+   returns to THREE cards (General incl. Groups / Tajweed / Calendar);
+   dots back to three; the desktop rail override adjusts accordingly
+   (the 25%×4 rule dies with the 4th card — three across on large
+   screens). Harness realignments expected (card/dot counts, the
+   msetCardGroups host id).
+
+25. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent
    on V3.82: correct, it is queue item 4 (notes history + button moves,

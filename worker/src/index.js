@@ -38,7 +38,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-          'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS'
+          'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS'   // PUT: V3.88.2 — the term/calendar editors are the app's first PUTs; its absence made the browser block them at preflight (the user's "network error")
         }
       });
     }

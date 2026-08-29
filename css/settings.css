@@ -446,9 +446,14 @@
 .mset-add-btn .mset-save-icon, .mset-add-btn svg { width: 20px; height: 20px; }
 
 /* V3.87.0: the Calendar card */
-.mset-term-row, .mset-cal-row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
-.mset-term-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
-.mset-term-row input[type="date"], .mset-cal-row input[type="date"] { flex: 0 0 auto; }
+/* V3.88.1 (user): term rows are TWO lines — the name above, the dates
+   below — instead of squeezing the name beside two date inputs. */
+.mset-term-row { display: block; margin: var(--space-sm) 0; }
+.mset-term-row .mset-term-name { width: 100%; box-sizing: border-box; margin-bottom: 4px; }
+.mset-term-row .mset-term-dates { display: flex; gap: 6px; align-items: center; }
+.mset-term-to { font-size: 13px; opacity: .7; }
+.mset-cal-row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+.mset-cal-row input[type="date"] { flex: 0 0 auto; }
 .mset-cal-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
 .mset-list-x { flex: 0 0 auto; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--color-ink-soft); padding: 2px 6px; }
 .mset-cal-type { flex: 0 0 auto; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }

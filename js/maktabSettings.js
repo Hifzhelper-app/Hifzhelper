@@ -462,10 +462,15 @@ async function renderMsetTerms(){
   terms.forEach(t => {
     const row = document.createElement('div');
     row.className = 'mset-term-row';
-    row.innerHTML = `<input type="text" value="${t.name.replace(/"/g, '&quot;')}" maxlength="40" data-f="name">
-      <input type="date" value="${t.term_from}" data-f="term_from">
-      <input type="date" value="${t.term_to}" data-f="term_to">
-      <button type="button" class="mset-list-x" aria-label="Delete term">&times;</button>`;
+    // V3.88.1 (user, screenshot): the NAME rides its own line ABOVE the
+    // dates — the one-line version squeezed it to a sliver.
+    row.innerHTML = `<input type="text" class="mset-term-name" value="${t.name.replace(/"/g, '&quot;')}" maxlength="40" data-f="name">
+      <span class="mset-term-dates">
+        <input type="date" value="${t.term_from}" data-f="term_from">
+        <span class="mset-term-to">to</span>
+        <input type="date" value="${t.term_to}" data-f="term_to">
+        <button type="button" class="mset-list-x" aria-label="Delete term">&times;</button>
+      </span>`;
     row.querySelectorAll('input').forEach(inp => inp.addEventListener('change', async () => {
       const err = document.getElementById('mset_term_error');
       err.textContent = '';

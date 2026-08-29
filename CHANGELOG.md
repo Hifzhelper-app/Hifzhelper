@@ -26,6 +26,20 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.88.2 — HOTFIX: term/calendar edits blocked by CORS (2026-08-29)
+
+**Files touched:** `worker/src/index.js` (one line), `tests/verify_v3870_calendar.mjs` (+3 transport-net checks). **WORKER-ONLY DEPLOY — no frontend upload, no migration.**
+
+The user's report: changing a term date → "network error", everything else fine. Root cause: the V3.87.0 term/calendar editors are the app's FIRST PUT requests, and the worker's CORS preflight response allowed only `GET,POST,PATCH,DELETE,OPTIONS` — the browser blocked every PUT before it left the device. `PUT` added to Allow-Methods. Honest note: the first diagnosis (a doubled-backslash route regex) was WRONG — the route was fine; the investigation's own test-net was buggy and initially "confirmed" it. Both lessons are now pinned: (1) every method js/api.js uses must appear in the worker's Allow-Methods (this would have caught the bug at build time); (2) the :id dispatch regexes, extracted verbatim from index.js, must match their real URLs. **1068 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.88.1 — Term rows: name above the dates (2026-08-29)
+
+**Files touched:** `js/maktabSettings.js`, `css/settings.css`, `js/sw.js`, `index.html` (?v), +1 pin. **FRONTEND ONLY.** Per the user's screenshot (the name input squeezed to a sliver beside two date pickers): each term renders on TWO lines — the name full-width above, then "from to to" with the delete X. **1065 passed, 0 failed across 34 harnesses.**
+
+---
+
 ## V3.88.0 — The staged calendar, the attendance layout, and the format batch (2026-08-29)
 
 **Files touched:** `worker/migrations/0027_calendar_dedupe.sql` (NEW), `worker/src/maktabCalendar.js`, `worker/src/index.js`, `js/maktabSettings.js`, `js/haidhDetailScreen.js`, `js/customDate.js`, `js/dhorPage.js`, `js/maktabCalendarPage.js`, `js/api.js`, `index.html`, `css/detail-pages.css`, `css/settings.css`, `js/sw.js`, tests (v3870 rewritten for the staged world; v3800/v3850 realigned; the migration fixtures run 0027), docs. **Deploy order: MIGRATION 0027 (console) → WORKER → FRONTEND.** Built as one delivery per the batching instruction.
