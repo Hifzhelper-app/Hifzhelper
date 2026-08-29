@@ -158,37 +158,73 @@ export async function handleDeleteCalendarEntry(request, env, auth, id) {
   return { data: { ok: true } };
 }
 
-// ---------- the two loaders (both idempotent: existing rows with the
-// same date + type + label are never duplicated) ----------
-export async function handleLoadPredictions(request, env, auth) {
-  if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
-  let added = 0;
-  for (const [label, date] of ISLAMIC_PREDICTIONS) {
-    const exists = await env.DB.prepare(
-      "SELECT id FROM maktab_calendar WHERE type = 'islamic' AND label = ? AND date_from = ?"
-    ).bind(label, date).first();
-    if (exists) continue;
-    await env.DB.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES (?, ?, ?, 'islamic', 'prediction')")
-      .bind(date, date, label).run();
-    added++;
+// ============================================================
+// V3.88.0: the PROPOSE → EDIT → CONFIRM workflow (user, 2026-08-29)
+// replaced the V3.87.0 blind loaders. A proposal is COMPUTED and
+// returned, never inserted; the settings popup lets the maktab edit,
+// delete, add; Confirm REGENERATES that type+year — the confirmed
+// list becomes the truth. This also closes the V3.87.0 duplicate bug
+// properly (with migration 0027's unique index as the backstop) and
+// the adjusted-prediction re-insert hole: a proposal row is dropped
+// when that label (islamic) or any holiday set (holiday) already
+// exists for the year, whatever date it has moved to.
+// ============================================================
+
+// The proposal: what the maktab COULD add for this year, merged view —
+// current rows first (id'd), then proposal rows not already covered.
+export async function handleGetProposal(request, env, auth, type) {
+  if (!auth) return { error: 'Not authenticated', status: 401 };
+  const url = new URL(request.url);
+  const year = url.searchParams.get('year');
+  if (!/^\d{4}$/.test(year || '')) return { error: 'year must be YYYY', status: 400 };
+  const current = (await env.DB.prepare(
+    "SELECT * FROM maktab_calendar WHERE type = ?1 AND date_from >= ?2 AND date_from <= ?3 ORDER BY date_from"
+  ).bind(type, `${year}-01-01`, `${year}-12-31`).all()).results;
+  let proposed = [];
+  if (type === 'holiday') {
+    // any holidays already saved for the year → the proposal is only the
+    // missing generated dates; a fresh year proposes the full set
+    const have = new Set(current.map(r => r.date_from));
+    proposed = southAfricanHolidays(parseInt(year)).filter(d => !have.has(d))
+      .map(d => ({ date_from: d, date_to: d, label: null }));
+  } else {
+    // islamic: dedupe by LABEL within the year — an adjusted date stays
+    // adjusted and its day is never re-proposed (the V3.87.0 hole)
+    const have = new Set(current.map(r => r.label));
+    proposed = ISLAMIC_PREDICTIONS.filter(([label, d]) => d.startsWith(year) && !have.has(label))
+      .map(([label, d]) => ({ date_from: d, date_to: d, label }));
   }
-  return { data: { added } };
+  return { data: { year, type, current, proposed } };
 }
 
-export async function handleLoadHolidays(request, env, auth) {
+// Confirm: the submitted list BECOMES that type+year. Delete-then-insert
+// keeps it simple and duplicate-proof (0027's unique index backstops;
+// OR IGNORE swallows same-list repeats).
+export async function handleConfirmList(request, env, auth) {
   if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
   const b = await request.json();
-  const year = parseInt(b.year);
-  if (!year || year < 2000 || year > 2100) return { error: 'year must be a 4-digit year', status: 400 };
+  const type = b.type;
+  if (type !== 'islamic' && type !== 'holiday') return { error: "type must be 'islamic' or 'holiday'", status: 400 };
+  if (!/^\d{4}$/.test(String(b.year || ''))) return { error: 'year must be YYYY', status: 400 };
+  const rows = Array.isArray(b.entries) ? b.entries : [];
+  for (const r of rows) {
+    if (!isValidDate(r.date_from) || !String(r.date_from).startsWith(String(b.year))) {
+      return { error: `Every date must be a valid YYYY-MM-DD inside ${b.year}`, status: 400 };
+    }
+    if (type === 'islamic' && !(r.label && String(r.label).trim())) {
+      return { error: 'Every significant day needs a name', status: 400 };
+    }
+  }
+  await env.DB.prepare(
+    "DELETE FROM maktab_calendar WHERE type = ?1 AND date_from >= ?2 AND date_from <= ?3"
+  ).bind(type, `${b.year}-01-01`, `${b.year}-12-31`).run();
   let added = 0;
-  for (const date of southAfricanHolidays(year)) {
-    const exists = await env.DB.prepare(
-      "SELECT id FROM maktab_calendar WHERE type = 'holiday' AND date_from = ?"
-    ).bind(date).first();
-    if (exists) continue;
-    await env.DB.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES (?, ?, NULL, 'holiday', 'generated')")
-      .bind(date, date).run();
+  for (const r of rows) {
+    const label = type === 'holiday' ? null : String(r.label).trim().slice(0, 60);
+    await env.DB.prepare(
+      "INSERT OR IGNORE INTO maktab_calendar (date_from, date_to, label, type, source) VALUES (?, ?, ?, ?, 'confirmed')"
+    ).bind(r.date_from, r.date_from, label, type).run();
     added++;
   }
-  return { data: { added, year } };
+  return { data: { ok: true, year: b.year, type, count: added } };
 }

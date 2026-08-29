@@ -1409,6 +1409,10 @@
     overflow: visible;
     scroll-snap-type: none;
   }
+  /* V3.88.0 (user): the SETTINGS rail holds four — side by side, 25%
+     each, on large screens. Scoped to #msetRail so the day rail keeps
+     its three (the V3.45.8 lesson: column count follows card count). */
+  #msetRail.log-detail-rail { grid-template-columns: repeat(4, 1fr); }
 
   /* Dots row is hidden entirely at this breakpoint (all 3 cards already
      visible in the grid, nothing to indicate a position within) -- same
@@ -1834,3 +1838,19 @@
 .mcal-mark-islamic { background: var(--palette-evergreen, #2f7d5d); }
 .mcal-mark-holiday { background: #b4552d; }
 .card-date-info { font-size: 11px; opacity: .75; margin-left: 8px; }
+
+/* ============================================================
+   V3.88.0: the attendance/haidh layout (user schematic) */
+.att-card-title { margin: 0 0 var(--space-sm); font-size: 17px; }
+.att-sentence { font-size: 15px; margin-bottom: var(--space-sm); }
+.att-custom-label { font-weight: 600; margin-top: var(--space-md); }
+#attAbsentBtn { margin: var(--space-sm) 0; }
+.att-haidh-subtext { margin: 2px 0 var(--space-sm); font-size: 13px; opacity: .8; }
+/* the calendar expands to 90% of the card (user) */
+#attHaidhBlock .haidh-cal-weekdays, #attHaidhBlock .haidh-cal-grid { width: 90%; margin-left: auto; margin-right: auto; }
+#attHaidhBlock .haidh-cal-nav { width: 90%; margin-left: auto; margin-right: auto; }
+/* the range/decision bars use the FULL width; Confirm keeps its size
+   but sits on its OWN line, centred (user's circled clipping) */
+#attHaidhBlock .haidh-range-bar { width: 100%; box-sizing: border-box; }
+.haidh-range-bar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.haidh-range-confirm-btn { flex-basis: 100%; margin: 6px auto 0; display: block; max-width: max-content; }

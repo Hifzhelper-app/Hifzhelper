@@ -421,6 +421,9 @@ async function renderAttendancePage(param){
   const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
   document.getElementById('attendanceHeaderIcon').innerHTML = iconHtml('attendance');
   document.getElementById('attendanceTitle').textContent = inMaktab ? 'Attendance — ' + logCtxStudentName() : 'Attendance';
+  // V3.88.0 (user schematic): the haidh card heading carries the name
+  const hTitle = document.getElementById('haidhDetailTitle');
+  if(hTitle) hTitle.textContent = 'Haidh: ' + (inMaktab ? logCtxStudentName() : (typeof currentUser !== 'undefined' && currentUser && currentUser.name) || '');
   document.getElementById('attError').textContent = '';
   attCustomPeriod = null;   // a fresh visit always starts on the default period
   // (V3.86.0: the inline absent list is gone — nothing to reset here)
@@ -447,15 +450,17 @@ async function loadAttendancePeriod(){
     return;
   }
   attPageData = d;
-  document.getElementById('attPercent').textContent = d.percent === null ? '–' : d.percent + '%';
-  // V3.85.0: an EMPTY period is named, not left as a bare line — the
-  // user's "0 maktab days" report was the min-students threshold doing
-  // its job, and this wording makes that self-explaining forever.
-  document.getElementById('attCount').textContent = d.maktab_days
-    ? `present ${d.present_days} of ${d.maktab_days} maktab days`
+  // V3.88.0 (user schematic): the heading names the period kind and the
+  // stats read as ONE sentence — "Present on X of Y maktab days : Z%".
+  // The V3.85.0 empty-period explanation stays, in the same slot.
+  document.getElementById('attCardTitle').textContent =
+    d.source === 'term' ? 'Attendance this Term' : 'Attendance';
+  document.getElementById('attSentence').textContent = d.maktab_days
+    ? `Present on ${d.present_days} of ${d.maktab_days} maktab days : ${d.percent}%`
     : `No maktab days in this period (fewer than ${d.maktab_day_min || '?'} students logged per day).`;
   const label = d.source === 'term' ? ' (current term)' : d.source === '4w' ? ' (last 4 weeks)' : ' (custom)';
-  document.getElementById('attPeriod').textContent = `${d.from} – ${d.to}${label}`;
+  const fD = typeof fmtDMY === 'function' ? fmtDMY : (x) => x;   // V3.88.0: dd-mmm-yy for prose
+  document.getElementById('attPeriod').textContent = `${fD(d.from)} \u2013 ${fD(d.to)}${label}`;
   document.getElementById('attFrom').value = d.from;
   document.getElementById('attTo').value = d.to;
   document.getElementById('attReset').classList.toggle('hidden', d.source !== 'custom');
@@ -510,11 +515,11 @@ function wireAttendancePage(){
   });
   document.getElementById('attAbsentBtn').addEventListener('click', () => {
     const dates = (attPageData && attPageData.absent_dates) || [];
-    attListPopup('Absent days', dates.length ? dates : ['No absent days in this period.']);
+    attListPopup('Absent days', dates.length ? dates.map(d => (typeof fmtDMY === 'function' ? fmtDMY(d) : d)) : ['No absent days in this period.']);
   });
   document.getElementById('attHaidhHistoryBtn').addEventListener('click', () => {
     const ranges = (attPageData && attPageData.haidh_ranges) || [];
-    attListPopup('Last haidh', ranges.map(r => r.from === r.to ? r.from : `${r.from} \u2013 ${r.to}`));
+    attListPopup('Last haidh', ranges.map(r => { const f = typeof fmtDMY === 'function' ? fmtDMY : (x) => x; return r.from === r.to ? f(r.from) : `${f(r.from)} \u2013 ${f(r.to)}`; }));
   });
 }
 

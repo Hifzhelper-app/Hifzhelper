@@ -2045,6 +2045,16 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.88.0 — the staged calendar + attendance layout (MIGRATION 0027 → WORKER → FRONTEND)
+
+Run migration 0027 in the D1 console FIRST — it also CLEANS YOUR EXISTING DUPLICATES — then the worker, then the frontend. Cache `hifzhelper-v3.88.0`; login card 3.88.0.
+
+1. **Settings → Calendar (4th card):** year picker up top; Terms; two green buttons. "Public Holidays" opens a popup listing your saved 2026 dates once each (the duplicates are gone) — edit/delete/add, then Confirm; the calendar page reflects exactly what you confirmed. "Islamic Calendar" works the same; adjust a date, reopen — your adjusted date stands and is not re-proposed.
+2. **General:** the Current term row is gone; Save still works.
+3. **Attendance:** "Attendance this Term" heading; "Present on X of Y maktab days : Z%" as one line; From … to … ✓ under "Calculate for another period". The haidh card reads "Haidh: {name}", explanation under the header, no hint below the calendar; the calendar is wider; select a range — the bar spans the card and Confirm-as-haidh sits centred on its own line.
+4. **Dates:** period lines and popups read dd-mmm-yy (e.g. 24-Sep-26).
+5. **Desktop:** Maktab Settings shows all four cards side by side.
+
 ## V3.87.0 — the Maktab Calendar (MIGRATION → WORKER → FRONTEND)
 
 Run migration 0026 in the D1 console FIRST (SQL provided with the delivery), then deploy the worker, then upload the frontend. Cache `hifzhelper-v3.87.0`; login card 3.87.0.

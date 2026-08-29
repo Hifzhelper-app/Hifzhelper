@@ -100,3 +100,13 @@ function wireCustomDateDisplay(inputId){
 // but also the one card showing the browser-native format instead of
 // the app's own. Now all four both work and match.
 ['sabaq_date', 'sabaqDhor_date', 'dhor_date', 'tadabbur_date'].forEach(wireCustomDateDisplay);
+
+// V3.88.0 (user): the app's PLAIN-TEXT date format is dd-mmm-yy
+// (24-Sep-26) — one shared formatter for prose/list dates. Date INPUTS
+// stay with the device's region format (native pickers); the journal's
+// two-line weekday cells keep their own designed layout.
+const FMT_DMY_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDMY(iso){
+  if(!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso || '';
+  return `${iso.slice(8, 10)}-${FMT_DMY_MONTHS[parseInt(iso.slice(5, 7), 10) - 1]}-${iso.slice(2, 4)}`;
+}

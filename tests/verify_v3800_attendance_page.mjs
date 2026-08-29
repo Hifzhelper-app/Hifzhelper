@@ -134,7 +134,7 @@ const pageSrc = read('js/haidhDetailScreen.js');
 function pageDom(payloads) {
   const dom = new JSDOM(`<!DOCTYPE html><body>
     <span id="attendanceHeaderIcon"></span><h2 id="attendanceTitle"></h2>
-    <div id="attPercent"></div><div id="attCount"></div><div id="attPeriod"></div>
+    <h3 id="attCardTitle"></h3><div id="attSentence"></div><div id="attPeriod"></div><!-- V3.88.0: the one-sentence layout -->
     <input id="attFrom"><input id="attTo"><button id="attApply"></button><button id="attReset" class="hidden"></button>
     <button id="attAbsentBtn"></button><div id="attError"></div><!-- V3.86.0: the inline absent list is a popup now -->
     <div id="attHaidhBlock">
@@ -178,8 +178,10 @@ const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source:
   const w = pageDom({ 'default': BASE, '2026-08-10|2026-08-14': Object.assign({}, BASE, { from: '2026-08-10', to: '2026-08-14', source: 'custom', percent: 50, maktab_days: 4, present_days: 2, absent_dates: ['2026-08-11', '2026-08-13'] }) });
   await w.eval("renderAttendancePage('2026-08-28')");
   await tick(); await tick(); await tick();
-  check('page: % and the count render', w.document.getElementById('attPercent').textContent === '90%'
-    && /present 18 of 20 maktab days/.test(w.document.getElementById('attCount').textContent));
+  check('page: the stats read as ONE sentence with the % at the end (V3.88.0)',
+    w.document.getElementById('attSentence').textContent === 'Present on 18 of 20 maktab days : 90%');
+  check('page: the card heading names the period kind', w.document.getElementById('attCardTitle').textContent === 'Attendance this Term'
+    || w.document.getElementById('attCardTitle').textContent === 'Attendance');
   check('page: the period line names the source', /2026-08-01 – 2026-08-28 \(current term\)/.test(w.document.getElementById('attPeriod').textContent.replace('\u2013', '–')));
   // V3.86.0: both lists live in POPUPS behind small green history-style
   // buttons now — drive the popups instead of the old inline blocks.
@@ -199,12 +201,12 @@ const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source:
   w.document.getElementById('attTo').value = '2026-08-14';
   w.document.getElementById('attApply').click();
   await tick(); await tick();
-  check('page: Apply refetches over the custom period and shows reset', w.document.getElementById('attPercent').textContent === '50%'
+  check('page: Apply refetches over the custom period and shows reset', /: 50%$/.test(w.document.getElementById('attSentence').textContent)
     && !w.document.getElementById('attReset').classList.contains('hidden')
     && /\(custom\)/.test(w.document.getElementById('attPeriod').textContent));
   w.document.getElementById('attReset').click();
   await tick(); await tick();
-  check('page: reset returns to the default period', w.document.getElementById('attPercent').textContent === '90%'
+  check('page: reset returns to the default period', /: 90%$/.test(w.document.getElementById('attSentence').textContent)
     && w.document.getElementById('attReset').classList.contains('hidden'));
   check('page: PJ mode used the own endpoint, no student_id', w.eval('pageCalls[0]')[0] === 'own');
 }
@@ -226,8 +228,8 @@ check('nav: the item is Attendance for every student; trackHaidh no longer gates
   /const ATTENDANCE_NAV_ITEM = \{ id: 'attendancePage', label: 'Attendance', icon: 'attendance' \};/.test(read('js/auth.js')));
 check('app: the screen key renamed whole (no haidhDetail route survives)',
   !/'haidhDetail'/.test(read('js/app.js')) && /attendancePage: true/.test(read('js/app.js')));
-check('settings: the General card stages term_from/term_to into Save',
-  /id="mset_term_from"/.test(read('js/maktabSettings.js')) && /term_from: document\.getElementById\('mset_term_from'\)\.value/.test(read('js/maktabSettings.js')));
+check('settings: the term pair is GONE from General and from the Save payload (V3.88.0 — terms live in maktab_terms)',
+  !/id="mset_term_from"/.test(read('js/maktabSettings.js')) && !/term_from: document/.test(read('js/maktabSettings.js')));
 check('icons: the attendance icon exists', /attendance: '<svg/.test(read('js/icons.js')));
 
 console.log(`${pass} passed, ${fail} failed`);

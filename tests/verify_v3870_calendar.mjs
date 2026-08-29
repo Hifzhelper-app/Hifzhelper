@@ -18,7 +18,7 @@ import {
   ISLAMIC_PREDICTIONS, easterSunday, southAfricanHolidays,
   handleGetTerms, handleCreateTerm, handleUpdateTerm, handleDeleteTerm, termContainingToday,
   handleGetCalendar, handleCreateCalendarEntry, handleUpdateCalendarEntry, handleDeleteCalendarEntry,
-  handleLoadPredictions, handleLoadHolidays,
+  handleGetProposal, handleConfirmList,
 } from '../worker/src/maktabCalendar.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -35,6 +35,7 @@ function makeEnv() {
   db.exec("CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, term_from TEXT, term_to TEXT);");
   db.exec("INSERT INTO maktab_settings (id, term_from, term_to) VALUES (1, '2026-01-14', '2026-03-25');");
   runMig(db, '0026_maktab_calendar.sql');
+  runMig(db, '0027_calendar_dedupe.sql');   // V3.88.0: dedupe + the unique index
   const stmt = (sql, args) => ({
     async run() { const i = db.prepare(sql).run(...args); return { meta: { last_row_id: Number(i.lastInsertRowid) } }; },
     async first() { return db.prepare(sql).get(...args) ?? null; },
@@ -57,6 +58,26 @@ const STUDENT = { id: 'S1', role: 'student' };
     try { db.prepare("INSERT INTO maktab_calendar (date_from, date_to, type) VALUES ('2026-01-01', '2026-01-01', 'party')").run(); return false; }
     catch (e) { return true; }
   })());
+  // V3.88.0 / 0027: the unique index refuses a repeat at the DATABASE —
+  // the layer the V3.87.0 race was missing (NULL labels included).
+  db.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES ('2026-08-09', '2026-08-09', NULL, 'holiday', 'x')").run();
+  check('0027: the unique index refuses a duplicate NULL-label holiday', (() => {
+    try { db.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES ('2026-08-09', '2026-08-09', NULL, 'holiday', 'x')").run(); return false; }
+    catch (e) { return true; }
+  })());
+}
+{ // 0027's DELETE half: pre-existing duplicates collapse to one each
+  const db2 = new DatabaseSync(':memory:');
+  db2.exec("CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, term_from TEXT, term_to TEXT); INSERT INTO maktab_settings (id) VALUES (1);");
+  runMig(db2, '0026_maktab_calendar.sql');
+  for (let i = 0; i < 2; i++) {
+    db2.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES ('2026-09-24', '2026-09-24', NULL, 'holiday', 'generated')").run();
+    db2.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES ('2026-02-19', '2026-02-19', 'First Fast', 'islamic', 'prediction')").run();
+  }
+  runMig(db2, '0027_calendar_dedupe.sql');
+  check('0027: existing duplicates (the user\'s screenshot) collapse to one each, oldest kept',
+    db2.prepare('SELECT COUNT(*) AS c FROM maktab_calendar').get().c === 2
+    && db2.prepare('SELECT MIN(id) AS m FROM maktab_calendar').get().m === 1);
 }
 
 // ---------- terms CRUD + auth ----------
@@ -109,18 +130,45 @@ const STUDENT = { id: 'S1', role: 'student' };
   check('calendar: an entry adjusts to the sighted date', (await handleGetCalendar(req('year=2026'), env, TEACHER)).data[0].date_from === '2026-02-20');
   await handleDeleteCalendarEntry(post({}), env, TEACHER, e.data.id);
 
-  const p1 = await handleLoadPredictions(post({}), env, TEACHER);
-  const p2 = await handleLoadPredictions(post({}), env, TEACHER);
-  check('loader: predictions load once and are IDEMPOTENT', p1.data.added === ISLAMIC_PREDICTIONS.length && p2.data.added === 0);
-  check('loader: the 2026 seed carries the seven significant days', (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 7);
-  check('loader: predictions are marked as such (source)', (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.every(x => x.source === 'prediction'));
+  // ---------- V3.88.0: the propose → edit → confirm flow ----------
+  const prop1 = (await handleGetProposal(req('year=2026'), env, TEACHER, 'islamic')).data;
+  check('stage: a fresh year proposes the seed\'s seven days, nothing saved yet',
+    prop1.current.length === 0 && prop1.proposed.length === 7
+    && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.length === 0);
+  // the maktab EDITS the stage: adjusts First Fast by a day (a sighting),
+  // drops one day, adds one the table never had — then confirms
+  const edited = prop1.proposed
+    .filter(r => r.label !== "'Aashuraa")
+    .map(r => r.label === 'First Fast' ? { ...r, date_from: '2026-02-20' } : r);
+  edited.push({ date_from: '2026-04-15', label: 'Local observance' });
+  const c1 = await handleConfirmList(post({ year: '2026', type: 'islamic', entries: edited }), env, TEACHER);
+  check('stage: Confirm GENERATES the list — the confirmed rows become the year', !c1.error
+    && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 7
+    && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.some(x => x.label === 'Local observance'));
+  const prop2 = (await handleGetProposal(req('year=2026'), env, TEACHER, 'islamic')).data;
+  check('stage: the ADJUSTED day is never re-proposed (label dedupe — the V3.87.0 hole closed); only the dropped day returns',
+    prop2.current.length === 7
+    && prop2.proposed.length === 1 && prop2.proposed[0].label === "'Aashuraa"
+    && prop2.current.find(x => x.label === 'First Fast').date_from === '2026-02-20');
 
-  const h1 = await handleLoadHolidays(post({ year: 2026 }), env, TEACHER);
-  const h2 = await handleLoadHolidays(post({ year: 2026 }), env, TEACHER);
-  check('loader: SA holidays load per year, dates only (label NULL), idempotent', h1.data.added === 13 && h2.data.added === 0
+  const hprop = (await handleGetProposal(req('year=2026'), env, TEACHER, 'holiday')).data;
+  check('stage: the holiday proposal carries the 13 generated dates, label-less', hprop.proposed.length === 13
+    && hprop.proposed.every(r => r.label === null));
+  const c2 = await handleConfirmList(post({ year: '2026', type: 'holiday', entries: hprop.proposed.slice(0, 12) }), env, TEACHER);
+  const c2again = await handleConfirmList(post({ year: '2026', type: 'holiday', entries: hprop.proposed.slice(0, 12) }), env, TEACHER);
+  check('stage: holiday Confirm lands dates only and REGENERATES on repeat (no duplicates, ever)',
+    !c2.error && !c2again.error
+    && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').length === 12
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').every(x => x.label === null));
-  check('loader: a student cannot invoke either', (await handleLoadPredictions(post({}), env, STUDENT)).status === 403
-    && (await handleLoadHolidays(post({ year: 2026 }), env, STUDENT)).status === 403);
+  check('stage: confirming holidays leaves the islamic year UNTOUCHED (type-scoped delete)',
+    (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 7);
+  check('stage: validation — a date outside the year, a nameless islamic day, a bad type all refuse',
+    (await handleConfirmList(post({ year: '2026', type: 'holiday', entries: [{ date_from: '2027-01-01' }] }), env, TEACHER)).status === 400
+    && (await handleConfirmList(post({ year: '2026', type: 'islamic', entries: [{ date_from: '2026-01-01', label: '' }] }), env, TEACHER)).status === 400
+    && (await handleConfirmList(post({ year: '2026', type: 'term', entries: [] }), env, TEACHER)).status === 400);
+  check('stage: a student can READ a proposal but never CONFIRM',
+    !(await handleGetProposal(req('year=2026'), env, STUDENT, 'holiday')).error
+    && (await handleConfirmList(post({ year: '2026', type: 'holiday', entries: [] }), env, STUDENT)).status === 403);
 }
 
 // ---------- the page renderer, driven ----------
@@ -171,14 +219,19 @@ check('nav: the Calendar item rides g3 for everyone (students read-only by const
   /const MAKTAB_CALENDAR_NAV_ITEM = \{ id: 'maktabCalendar', label: 'Calendar'/.test(read('js/auth.js'))
   && /g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\);/.test(read('js/auth.js')));
 const settingsSrc = read('js/maktabSettings.js');
-check('settings: the Calendar card renders terms + year entries + the two loaders',
+check('settings: the Calendar card is year-picker + Terms + the TWO green popup buttons (V3.88.0)',
   /id="msetCardCalendar"/.test(html) && /id="msetTermsList"/.test(settingsSrc)
-  && /id="mset_cal_load_predictions"/.test(settingsSrc) && /id="mset_cal_load_holidays"/.test(settingsSrc));
+  && /id="mset_cal_islamic">Islamic Calendar</.test(settingsSrc)
+  && /id="mset_cal_holidays">Public Holidays</.test(settingsSrc)
+  && !/mset_cal_load_predictions|mset_cal_new_date|msetCalList/.test(settingsSrc));
 check('settings: ADD TERM is the big button only while none exist; the + takes over after',
   /mset_term_add_big'\)\.classList\.toggle\('hidden', terms\.length > 0\)/.test(settingsSrc)
   && /mset_term_add'\)\.classList\.toggle\('hidden', terms\.length === 0\)/.test(settingsSrc));
-check('settings: a blank label files as a public holiday; a label as a significant day',
-  /type: label \? 'islamic' : 'holiday'/.test(settingsSrc));
+check('settings: the popup stages both types; holiday rows are DATE ONLY (no label input, no ghost text); Confirm is the only save and disables in flight',
+  /function openCalStagePopup\(type\)/.test(settingsSrc)
+  && /type === 'holiday'\n        \? `<input type="date"/.test(settingsSrc)
+  && /btn\.disabled = true;/.test(settingsSrc)
+  && /apiConfirmCalList\(year, type, rows\)/.test(settingsSrc));
 check('markers: formatDateCell carries the calendar mark', /maktabCalMarkHtml === 'function' \? maktabCalMarkHtml\(iso\) : ''/.test(read('js/journal.js')));
 check('markers: the haidh/attendance calendar day cells take the classes + title', /maktabCalInfoForDate\(dateISO\)/.test(read('js/haidhDetailScreen.js')));
 check('markers: the day-view date headers paint the label', /t \+ '_date_info'/.test(read('js/logDetailScreen.js')));

@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V3.88.0** — Staged propose→edit→confirm calendar flows; duplicate fix (0027 unique index); attendance/haidh layout; dd-mmm-yy; 4-card settings rail at 25%
 - **V3.87.0** — The Maktab Calendar: multiple terms drive attendance; pre-loaded Islamic predictions (adjustable); SA public holidays (Sunday rule); info-only page; markers wherever dates appear
 - **V3.86.0** — The six-comment batch: Apply check, popup attendance buttons, de-pilled history buttons, add-row flip, SAVE row, wider inputs
 - **V3.85.0** — The batch of four: standalone student summary page; settings General schematic; attendance cards + empty-period message; notes history + button moves
@@ -124,6 +125,19 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## Done — V3.88.0 (2026-08-29): the staged calendar + attendance layout batch
+
+| Agreed (user, 2026-08-29) | Built as |
+| --- | --- |
+| Duplicated holidays (screenshot) | 0027: dedupe + UNIQUE index; regenerate-on-confirm; in-flight disable |
+| Public Holidays not locked to SA: show list → edit/delete/add → confirm → generated | holiday-proposal GET (SA set as the proposal) + confirm POST; popup staging; nothing saved before Confirm |
+| Same system for the significant Islamic days | islamic-proposal GET (seed by year, label-deduped) + the same popup; supersedes Add-predictions |
+| Green buttons use the history mechanism | .history-btn styled buttons opening the shared modal pattern |
+| Holidays without explanatory notes | date-only rows in the popup; label NULL throughout |
+| Keep the 4th rail card; remove the one term from General; 25% × 4 on large screens | done exactly; Save stops sending term fields; #msetRail 4-col grid |
+| Attendance schematic + haidh card (90% calendar, full-width bars, pill on its own centred line, hint removed) | built to the schematic; heading "Attendance this Term"; one-sentence stats |
+| dd-mmm-yy for plain text | fmtDMY across prose surfaces; inputs stay device-region; journal cells keep their layout (assumption) |
 
 ## Done — V3.87.0 (2026-08-28): the Maktab Calendar
 

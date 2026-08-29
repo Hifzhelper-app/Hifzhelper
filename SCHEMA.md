@@ -284,3 +284,6 @@ Multiple named terms; they DRIVE ATTENDANCE (default period = the term containin
 
 ## maktab_calendar (0026, V3.87.0)
 Information-only entries. `id, date_from, date_to, label (NULL for holidays — dates only), type CHECK ('islamic'|'holiday'), source ('manual'|'prediction'|'generated'), created_at`. Islamic predictions seed from ISLAMIC_PREDICTIONS (worker/src/maktabCalendar.js); SA holidays generate per year with the Sunday→Monday rule.
+
+## 0027 (V3.88.0)
+`maktab_calendar` gains a UNIQUE expression index on `(type, date_from, date_to, COALESCE(label,''))` after a one-time duplicate purge (oldest row kept per group). Writes go through the confirm endpoint (regenerate type+year) with INSERT OR IGNORE behind the index.

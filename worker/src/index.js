@@ -13,7 +13,7 @@ import {
 } from './maktabLog.js';
 import { handleGetMaktabSettings, handleSaveMaktabSettings } from './maktabSettings.js';
 import { handleMaktabAttendance, handleAttendancePage } from './maktabAttendance.js';
-import { handleGetTerms, handleCreateTerm, handleUpdateTerm, handleDeleteTerm, handleGetCalendar, handleCreateCalendarEntry, handleUpdateCalendarEntry, handleDeleteCalendarEntry, handleLoadPredictions, handleLoadHolidays } from './maktabCalendar.js';   // V3.87.0
+import { handleGetTerms, handleCreateTerm, handleUpdateTerm, handleDeleteTerm, handleGetCalendar, handleCreateCalendarEntry, handleUpdateCalendarEntry, handleDeleteCalendarEntry, handleGetProposal, handleConfirmList } from './maktabCalendar.js';   // V3.87.0/V3.88.0
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
 import { handleGetPosition, handleSavePosition } from './position.js';
@@ -107,8 +107,10 @@ export default {
       }
       if (path === '/maktab/calendar' && request.method === 'GET') return respond(await handleGetCalendar(request, env, auth));
       if (path === '/maktab/calendar' && request.method === 'POST') return respond(await handleCreateCalendarEntry(request, env, auth));
-      if (path === '/maktab/calendar/load-predictions' && request.method === 'POST') return respond(await handleLoadPredictions(request, env, auth));
-      if (path === '/maktab/calendar/load-holidays' && request.method === 'POST') return respond(await handleLoadHolidays(request, env, auth));
+      // V3.88.0: the staged propose → edit → confirm flow (replaced the loaders)
+      if (path === '/maktab/calendar/holiday-proposal' && request.method === 'GET') return respond(await handleGetProposal(request, env, auth, 'holiday'));
+      if (path === '/maktab/calendar/islamic-proposal' && request.method === 'GET') return respond(await handleGetProposal(request, env, auth, 'islamic'));
+      if (path === '/maktab/calendar/confirm' && request.method === 'POST') return respond(await handleConfirmList(request, env, auth));
       {
         const m = path.match(/^\/maktab\/calendar\/(\d+)$/);
         if (m && request.method === 'PUT') return respond(await handleUpdateCalendarEntry(request, env, auth, parseInt(m[1])));

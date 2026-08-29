@@ -105,16 +105,9 @@ async function renderMaktabSettingsScreen(){
       <input type="number" class="mset-num" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}">
     </div>
 
-    <div class="mset-row mset-row-narrow">
-      <span class="mset-row-label">Current term
-        <span class="mset-legend-note">(the default attendance period)</span>
-      </span>
-      <span class="mset-term-row">
-        <input type="date" id="mset_term_from" value="${esc(s.term_from || '')}" aria-label="Term from">
-        <span>&ndash;</span>
-        <input type="date" id="mset_term_to" value="${esc(s.term_to || '')}" aria-label="Term to">
-      </span>
-    </div>`;
+    <!-- V3.88.0 (user's pink scribble): the Current term row is GONE —
+         terms live only on the Calendar card and drive attendance from
+         maktab_terms. -->`;
 
   // ---------- cards 2 + 3: the two instant-commit lists ----------
   document.getElementById('msetCardTajweed').innerHTML = `
@@ -150,7 +143,18 @@ async function renderMaktabSettingsScreen(){
   // asked for (load the 2025–2030 predictions; South African public
   // holidays per year) and the year's entries, each adjustable (actual
   // moon sightings overrule predictions) or deletable.
+  // V3.88.0 (user schematic, 2026-08-29): the card is CALENDAR + year
+  // picker up top, the Terms editor, then TWO green buttons opening the
+  // staged propose → edit → confirm POPUPS (the history mechanism).
+  // The inline entries list, inline loaders, and the per-row add (with
+  // its save icon) are gone — entries are VIEWED on the calendar page
+  // and EDITED through the popups; nothing saves before Confirm.
   document.getElementById('msetCardCalendar').innerHTML = `
+    <div class="mset-cal-head">
+      <span class="form-label mset-list-label">Calendar</span>
+      <select id="mset_cal_year" aria-label="Year"></select>
+    </div>
+
     <div class="form-label mset-list-label">Terms
       <span class="mset-legend-note">(terms drive attendance — the default period is the term containing today)</span>
     </div>
@@ -159,25 +163,13 @@ async function renderMaktabSettingsScreen(){
     <button type="button" class="mset-add-btn hidden" id="mset_term_add" aria-label="Add another term">+</button>
     <div class="form-error" id="mset_term_error"></div>
 
-    <div class="form-label mset-list-label">Calendar entries
-      <span class="mset-legend-note">(information only — shown on the calendar page and wherever dates appear)</span>
-    </div>
-    <div class="mset-cal-year-row">
-      <label for="mset_cal_year">Year</label>
-      <select id="mset_cal_year"></select>
-      <button type="button" class="secondary" id="mset_cal_load_predictions">Add predictions</button>
-      <button type="button" class="secondary" id="mset_cal_load_holidays">SA holidays</button>
-    </div>
-    <div class="mset-cal-list" id="msetCalList"></div>
-    <div class="mset-cal-add-row">
-      <input type="date" id="mset_cal_new_date" aria-label="New entry date">
-      <input type="text" id="mset_cal_new_label" maxlength="60" placeholder="Label (blank = public holiday)">
-      <button type="button" class="mset-add-btn" id="mset_cal_add" aria-label="Add entry"><span class="mset-save-icon"></span></button>
+    <div class="mset-cal-buttons">
+      <button type="button" class="history-btn" id="mset_cal_islamic">Islamic Calendar</button>
+      <button type="button" class="history-btn" id="mset_cal_holidays">Public Holidays</button>
     </div>
     <div class="form-error" id="mset_cal_error"></div>`;
   wireMsetCalendarCard();
   renderMsetTerms();
-  renderMsetCalList();
 
   renderMsetTimezoneControl();
   await renderMsetLists();
@@ -437,8 +429,7 @@ async function saveMaktabSettingsScreen(){
     maktab_day_min: Number(document.getElementById('mset_day_min').value),
     absence_flag_days: Number(document.getElementById('mset_absence').value),
     timezone: document.getElementById('mset_timezone').value,   // the STAGED value; '' clears (V3.78.0/V3.79.0)
-    term_from: document.getElementById('mset_term_from').value,   // V3.80.0; '' clears
-    term_to: document.getElementById('mset_term_to').value,
+    // V3.88.0: term fields no longer sent — terms live in maktab_terms
   };
   status.textContent = 'Saving\u2026';
   try{
@@ -505,38 +496,6 @@ async function msetAddTerm(){
   } catch(e){ err.textContent = e.message; }
 }
 
-async function renderMsetCalList(){
-  const host = document.getElementById('msetCalList');
-  if(!host) return;
-  const year = document.getElementById('mset_cal_year').value;
-  let entries = [];
-  try{ entries = await apiGetMaktabCalendar(year); } catch(e){ entries = []; }
-  host.innerHTML = '';
-  entries.forEach(e => {
-    const row = document.createElement('div');
-    row.className = 'mset-cal-row';
-    row.innerHTML = `<input type="date" value="${e.date_from}" data-f="date_from">
-      <input type="text" value="${(e.label || '').replace(/"/g, '&quot;')}" maxlength="60" placeholder="Public holiday" data-f="label">
-      <span class="mset-cal-type mset-cal-type-${e.type}">${e.type}</span>
-      <button type="button" class="mset-list-x" aria-label="Delete entry">&times;</button>`;
-    row.querySelectorAll('input').forEach(inp => inp.addEventListener('change', async () => {
-      const err = document.getElementById('mset_cal_error');
-      err.textContent = '';
-      const body = inp.dataset.f === 'date_from'
-        ? { date_from: inp.value, date_to: inp.value }   // single-day entries move whole
-        : { label: inp.value };
-      try{ await apiUpdateMaktabCalEntry(e.id, body); mcalInvalidate(); }
-      catch(err2){ err.textContent = err2.message; await renderMsetCalList(); }
-    }));
-    row.querySelector('.mset-list-x').addEventListener('click', async () => {
-      try{ await apiDeleteMaktabCalEntry(e.id); mcalInvalidate(); } catch(e2){}
-      await renderMsetCalList();
-    });
-    host.appendChild(row);
-  });
-  if(!entries.length) host.innerHTML = '<div class="form-hint">No entries for this year yet.</div>';
-}
-
 let msetCalWired = false;
 function wireMsetCalendarCard(){
   if(msetCalWired) return;
@@ -545,43 +504,93 @@ function wireMsetCalendarCard(){
   const thisYear = parseInt(appTodayISO().slice(0, 4));
   yearSel.innerHTML = Array.from({ length: 8 }, (_, i) => thisYear - 1 + i)
     .map(y => `<option value="${y}"${y === thisYear ? ' selected' : ''}>${y}</option>`).join('');
-  yearSel.addEventListener('change', renderMsetCalList);
   document.getElementById('mset_term_add_big').addEventListener('click', msetAddTerm);
   document.getElementById('mset_term_add').addEventListener('click', msetAddTerm);
-  document.getElementById('mset_cal_load_predictions').addEventListener('click', async () => {
-    const err = document.getElementById('mset_cal_error');
-    err.textContent = '';
-    try{
-      const r = await apiLoadCalPredictions();
-      err.textContent = `${r.added} prediction${r.added === 1 ? '' : 's'} added (2025\u20132030).`;
-      mcalInvalidate();
-      await renderMsetCalList();
-    } catch(e){ err.textContent = e.message; }
+  document.getElementById('mset_cal_islamic').addEventListener('click', () => openCalStagePopup('islamic'));
+  document.getElementById('mset_cal_holidays').addEventListener('click', () => openCalStagePopup('holiday'));
+}
+
+// ============================================================
+// V3.88.0: the staged popup (the history-popup mechanism). One popup
+// serves both types: the picked year's saved rows + the proposal,
+// editable in place; NOTHING is written until Confirm, which makes
+// the confirmed list BE that type+year ("the list is then generated").
+// Holiday rows are DATE ONLY — no label input, no ghost text (user).
+// ============================================================
+async function openCalStagePopup(type){
+  const year = document.getElementById('mset_cal_year').value;
+  const err = document.getElementById('mset_cal_error');
+  err.textContent = '';
+  let data;
+  try{
+    data = type === 'holiday' ? await apiGetHolidayProposal(year) : await apiGetIslamicProposal(year);
+  } catch(e){ err.textContent = e.message; return; }
+  // the STAGE: saved rows first, then the proposal's additions
+  const stage = [
+    ...data.current.map(r => ({ date_from: r.date_from, label: r.label })),
+    ...data.proposed.map(r => ({ date_from: r.date_from, label: r.label })),
+  ];
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay history-popup-modal';
+  const title = type === 'holiday' ? 'Public Holidays' : 'Islamic Calendar';
+  overlay.innerHTML = `<div class="modal-card cal-stage-card">
+    <button type="button" class="close-btn" id="calStageCloseBtn">&times;</button>
+    <h2>${title} \u2014 ${year}</h2>
+    <div class="form-hint">Edit, delete or add below. Nothing is saved until Confirm.</div>
+    <div class="cal-stage-list" id="calStageList"></div>
+    <button type="button" class="secondary" id="calStageAdd">+ Add ${type === 'holiday' ? 'a holiday' : 'a day'}</button>
+    <div class="cal-stage-actions">
+      <button type="button" class="secondary" id="calStageCancel">Cancel</button>
+      <button type="button" class="history-btn" id="calStageConfirm">Confirm</button>
+    </div>
+    <div class="form-error" id="calStageError"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const paint = () => {
+    const host = overlay.querySelector('#calStageList');
+    host.innerHTML = '';
+    stage.sort((a, b) => (a.date_from || '').localeCompare(b.date_from || ''));
+    stage.forEach((row, idx) => {
+      const div = document.createElement('div');
+      div.className = 'mset-cal-row';
+      div.innerHTML = type === 'holiday'
+        ? `<input type="date" value="${row.date_from || ''}">
+           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button>`
+        : `<input type="date" value="${row.date_from || ''}">
+           <input type="text" value="${(row.label || '').replace(/"/g, '&quot;')}" maxlength="60" placeholder="Name">
+           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button>`;
+      div.querySelector('input[type="date"]').addEventListener('change', (e) => { row.date_from = e.target.value; });
+      const lbl = div.querySelector('input[type="text"]');
+      if(lbl) lbl.addEventListener('change', (e) => { row.label = e.target.value; });
+      div.querySelector('.mset-list-x').addEventListener('click', () => { stage.splice(idx, 1); paint(); });
+      host.appendChild(div);
+    });
+    if(!stage.length) host.innerHTML = '<div class="form-hint">Nothing staged \u2014 add below.</div>';
+  };
+  paint();
+  const close = () => overlay.remove();
+  overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
+  overlay.querySelector('#calStageCloseBtn').addEventListener('click', close);
+  overlay.querySelector('#calStageCancel').addEventListener('click', close);
+  overlay.querySelector('#calStageAdd').addEventListener('click', () => {
+    stage.push({ date_from: '', label: type === 'holiday' ? null : '' });
+    paint();
+    const dates = overlay.querySelectorAll('#calStageList input[type="date"]');
+    if(dates.length) dates[dates.length - 1].focus();
   });
-  document.getElementById('mset_cal_load_holidays').addEventListener('click', async () => {
-    const err = document.getElementById('mset_cal_error');
-    err.textContent = '';
+  overlay.querySelector('#calStageConfirm').addEventListener('click', async () => {
+    const stageErr = overlay.querySelector('#calStageError');
+    stageErr.textContent = '';
+    const rows = stage.filter(r => r.date_from);
+    const btn = overlay.querySelector('#calStageConfirm');
+    btn.disabled = true;   // the in-flight guard (the V3.87.0 double-press lesson)
     try{
-      const r = await apiLoadCalHolidays(parseInt(yearSel.value));
-      err.textContent = `${r.added} public holiday${r.added === 1 ? '' : 's'} added for ${r.year}.`;
+      await apiConfirmCalList(year, type, rows);
       mcalInvalidate();
-      await renderMsetCalList();
-    } catch(e){ err.textContent = e.message; }
-  });
-  document.getElementById('mset_cal_add').addEventListener('click', async () => {
-    const err = document.getElementById('mset_cal_error');
-    err.textContent = '';
-    const date = document.getElementById('mset_cal_new_date').value;
-    const label = document.getElementById('mset_cal_new_label').value.trim();
-    if(!date){ err.textContent = 'Pick a date first.'; return; }
-    try{
-      // blank label = a public holiday (dates only — the user's rule);
-      // a label makes it a significant (islamic) day.
-      await apiCreateMaktabCalEntry({ date_from: date, date_to: date, label: label || null, type: label ? 'islamic' : 'holiday' });
-      document.getElementById('mset_cal_new_date').value = '';
-      document.getElementById('mset_cal_new_label').value = '';
-      mcalInvalidate();
-      await renderMsetCalList();
-    } catch(e){ err.textContent = e.message; }
+      close();
+    } catch(e){
+      stageErr.textContent = e.message;
+      btn.disabled = false;
+    }
   });
 }

@@ -95,7 +95,8 @@ function migratedEnv() {
   runSql(db, '0022_groups_tags_timezone.sql');
   runSql(db, '0024_group_descriptions.sql');   // V3.79.0: lists.js selects description now
   runSql(db, '0025_term_dates.sql');           // V3.80.0: settings selects term_from/term_to now
-  runSql(db, '0026_maktab_calendar.sql');      // V3.87.0: terms + calendar tables
+  runSql(db, '0026_maktab_calendar.sql');
+  runSql(db, '0027_calendar_dedupe.sql');      // V3.88.0: dedupe + unique index
   return { db, env };
 }
 {

@@ -457,3 +457,10 @@
 .mset-cal-year-row { display: flex; gap: var(--space-sm); align-items: center; margin: var(--space-sm) 0; flex-wrap: wrap; }
 .mset-cal-add-row { display: flex; gap: 6px; align-items: stretch; margin-top: var(--space-sm); }
 .mset-cal-add-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
+
+/* V3.88.0: the Calendar card head + the two green buttons + the staged popup */
+.mset-cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); }
+.mset-cal-buttons { display: flex; flex-direction: column; gap: var(--space-sm); align-items: center; margin-top: var(--space-md); }
+.mset-cal-buttons .history-btn { min-width: 60%; justify-content: center; }
+.cal-stage-card .cal-stage-list { max-height: 50vh; overflow-y: auto; margin: var(--space-sm) 0; }
+.cal-stage-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md); }

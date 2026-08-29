@@ -28,11 +28,12 @@ const settingsSrc = read('js/maktabSettings.js');
 const dhorSrc = read('js/dhorPage.js');
 
 // ---------- item 2: the schematic ----------
-check('settings: label-left rows exist for name, timezone, mushaf, and the two numerics',
+check('settings: label-left rows exist for name, timezone, mushaf, and the two numerics (V3.88.0: the Current term row is gone — terms live on the Calendar card)',
   /class="mset-row mset-name-row"/.test(settingsSrc)
   && /class="mset-row-label">Time Zone</.test(settingsSrc)
   && /class="mset-row-label">Mushaf/.test(settingsSrc)
-  && (settingsSrc.match(/mset-row mset-row-narrow/g) || []).length === 3);
+  && (settingsSrc.match(/mset-row mset-row-narrow/g) || []).length === 2
+  && !/mset_term_from/.test(settingsSrc));
 check('settings: ONE timezone field; the old standing device button and toggle links are gone from the template',
   /id="mset_tz_field"/.test(settingsSrc) && !/mset_tz_other_toggle/.test(settingsSrc) && !/mset_tz_current/.test(settingsSrc));
 check('settings: the save-status span survived the rebuild (its absence crashed Save)', /id="mset_status"/.test(settingsSrc));
@@ -41,8 +42,9 @@ check('settings: every stage action closes the chooser through one path', /const
 // ---------- item 3: the attendance card ----------
 check('attendance: the data block is a card and the haidh block is its own second card',
   /class="att-card att-block"/.test(html) && /id="attHaidhBlock" class="att-card"/.test(html));
-check('attendance: the custom range reads as the user\'s sentence',
-  /Choose a custom date range from<\/span>\s*<input type="date" id="attFrom"/.test(html)
+check('attendance: the range reads From … to … under "Calculate for another period" (the V3.88.0 schematic)',
+  /Calculate for another period/.test(html)
+  && />From<\/span>\s*<input type="date" id="attFrom"/.test(html)
   && />to<\/span>\s*<input type="date" id="attTo"/.test(html));
 check('attendance: the cards cap at 50% centered on larger screens (user, V3.85.2)',
   /@media \(min-width: 768px\) \{\n  \.att-card \{ width: 50%; margin-left: auto; margin-right: auto; \}/.test(read('css/detail-pages.css')));

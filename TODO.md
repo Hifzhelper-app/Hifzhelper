@@ -223,7 +223,116 @@ after it):
    attendance default-period change, the calendar page, the settings
    Terms editor + the two options, and the date-surface markers.
 
-17. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
+17. ~~**STUDENT ATTENDANCE LAYOUT**~~ **BUILT V3.88.0 (2026-08-29).** Spec:**
+   Card 1 — "Attendance this Term":
+   - card heading: "Attendance this Term"
+   - the stats as ONE sentence: "Present on X of Y maktab days : Z%"
+     (count first, percent at the end — replaces the big % row)
+   - the Absent Days button below it (as built)
+   - then a "Calculate for another period" label, and beneath it the
+     range as: From [date] to [date] [small check] (replaces the
+     "Choose a custom date range from…" sentence)
+   Card 2 — Haidh:
+   - heading with icon: "Haidh: {name}"
+   - subtext: "Confirm, cancel or predict haidh." / "Select a single
+     day or a range"
+   - the haidh CALENDAR expands to 90% of the container width
+   - the calendar's range/decision BAR uses the FULL WIDTH (the
+     screenshot shows the "15 days have not passed…" decision box
+     squeezed left with dead space right)
+   - ANSWERED (user, 2026-08-29): REMOVE the "Tap a start day…" hint
+     text entirely — replaced by the explanation under the card header.
+   - Range-bar cleanup (user screenshot, the circled half-hidden pill):
+     the "Confirm as haidh" pill currently clips/overflows beside the
+     "N days selected [Cancel]" row. KEEP the pill the SAME SIZE but
+     move it to ITS OWN LINE BELOW, CENTRED; the selected-count +
+     Cancel row above it uses the full width.
+   (Haidh history button not shown on the schematic — KEPT unless
+   vetoed.)
+
+18. ~~**"Public Holidays" — the PROPOSE → EDIT → CONFIRM workflow**~~ **BUILT V3.88.0** (incl. the Islamic extension, the 4th-rail-card correction, and the 25% desktop grid). Spec:**
+   the button (renamed "Public Holidays", "Add holidays" flow) must
+   NOT be locked onto South Africa. Workflow:
+   (1) press → SHOW the proposed list of public holidays for the
+       picked year (the SA generated set is the current starting
+       proposal — "SA atm");
+   (2) EDIT, DELETE, or ADD rows on that staged list (dates only);
+   (3) CONFIRM →
+   (4) the confirmed list is added to the calendar.
+   Build shape (Claude): a GET holiday-proposal endpoint returning the
+   generated dates WITHOUT inserting; a staged editable panel in the
+   settings card; Confirm commits the rows (the item-21 unique index
+   makes commits duplicate-proof). Nothing inserts before Confirm.
+   **EXTENDED (user, 2026-08-29): the SAME propose → edit → confirm
+   system serves the SIGNIFICANT ISLAMIC DAYS** — a second button whose
+   proposal source is the Jamiatul Ulama seed filtered to the picked
+   year (labels editable in the stage, since these carry names);
+   confirm lands them. This SUPERSEDES item 22.
+   **FINAL SHAPE (user schematic, 2026-08-29 08:29):**
+   - General card: the CURRENT TERM row is REMOVED (pink scribble) —
+     terms live only on the Calendar card.
+   - CORRECTED (user, 2026-08-29, on-phone): KEEP THE 4-CARD RAIL —
+     the Calendar stays the 4th rail card ("as it should be"), holding
+     the "CALENDAR" heading with the YEAR PICKER at the top, the TERMS
+     section (edit/add rows as built), then the two green buttons —
+     "Islamic Calendar" and "Public Holidays". (The earlier "one card"
+     reading is void.)
+   - LARGE SCREENS (user): the FOUR rail cards sit SIDE BY SIDE, each
+     taking 25% — the settings rail's desktop grid becomes four
+     columns. (The day rail keeps its own three.)
+   - Each green button uses the HISTORY MECHANISM (the popup modal):
+     it opens the staged list for the picked year — current entries
+     merged with the proposal — editable in the popup (edit dates,
+     edit labels on islamic, delete, add) → CONFIRM → "the list is
+     then generated": that type+year's calendar entries become the
+     confirmed list.
+   - The inline "Calendar entries" list, the inline loader buttons,
+     and the inline add-row (with its save icon) are GONE from
+     settings (green X over the whole current block) — entries are
+     VIEWED on the calendar page and EDITED through the popups.
+
+19. ~~**Add-predictions idempotence hole**~~ **CLOSED V3.88.0** (label-per-year dedupe in the proposal). (Claude, spotted 2026-08-29
+   answering the user's question; fix with the batch):** the loader
+   skips rows matching label + EXACT DATE. An ADJUSTED prediction (the
+   whole point — sightings) no longer matches its seed date, so
+   pressing "Add predictions" again would RE-INSERT the original
+   predicted date alongside the adjusted one. Fix: dedupe by label +
+   YEAR (a significant day exists once per year, whatever its current
+   date). Small worker change + harness pin.
+
+20. ~~**Holiday rows show the DATE ONLY**~~ **BUILT V3.88.0.** Spec:** in the settings entries list, holiday rows carry no
+   label input and no "Public holiday" ghost placeholder — "Public
+   Holidays without any explanatory notes". Date + type tag + delete
+   only. (Islamic rows keep their editable label.)
+
+21. ~~**HOLIDAY DUPLICATES**~~ **FIXED V3.88.0** (migration 0027 + regenerate-on-confirm + in-flight disable). Record:** duplicates exist in her data
+   despite the loader's check and the harness's idempotence pin,
+   because the check is TOCTOU: two rapid presses race — both SELECT
+   before either INSERT, and the table has no unique constraint.
+   Fix, three layers: (a) migration 0027 — DELETE existing duplicate
+   rows (keep MIN(id) per type+date+label group) THEN add a UNIQUE
+   expression index on (type, date_from, COALESCE(label,'')) (plain
+   UNIQUE treats NULL labels as distinct); (b) the loaders switch to
+   INSERT OR IGNORE and count changes; (c) the two settings buttons
+   disable while a load is in flight. Harness: a racing double-load
+   drive + the index pinned.
+
+22. ~~REMOVE the "Add predictions" button~~ SUPERSEDED (user,
+   2026-08-29) by item 18's extension: the button becomes the staged
+   propose → edit → confirm flow for significant days, proposal source
+   = the seed filtered to the picked year.
+
+23. ~~**Plain-text date format: dd-mmm-yy**~~ **BUILT V3.88.0.** Spec:** app-written PLAIN-TEXT dates render as dd-mmm-yy (e.g.
+   24-Sep-26) via one shared formatter — attendance period lines,
+   absent-days + haidh popups, calendar page lists, settings rows'
+   text, notes-history dates, and the staged popup lists. Claude's
+   assumption to confirm at build: the JOURNAL DATE CELLS keep their
+   designed two-line weekday format (Thu / Aug 27) — they are layout,
+   not prose. NOTE (answered in chat): the mm/dd/yyyy in DATE INPUTS
+   is the device's region format — native pickers follow the phone
+   (Settings → General → Language & Region → Region), not the app.
+
+24. ~~**Note-history button on the log cards**~~ **BUILT V3.85.0
    (2026-08-28)** — option (c) interleaved rail; both history buttons
    below Notes; the dhor swap. Original note:** — the user flagged it absent
    on V3.82: correct, it is queue item 4 (notes history + button moves,

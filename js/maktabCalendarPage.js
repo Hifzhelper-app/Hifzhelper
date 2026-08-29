@@ -102,10 +102,11 @@ async function renderMaktabCalendarScreen(){
   const monthFrom = `${mcalMonth}-01`, monthTo = `${mcalMonth}-31`;
   const c = MCAL_CACHE[yearStr] || { entries: [], terms: [] };
   const rows = [];
+  const f = (d) => (typeof fmtDMY === 'function' ? fmtDMY(d) : d);   // V3.88.0: dd-mmm-yy
   c.terms.filter(t => t.term_from <= monthTo && t.term_to >= monthFrom)
-    .forEach(t => rows.push(`<div class="mcal-list-row mcal-list-term"><span class="mcal-list-date">${t.term_from} &ndash; ${t.term_to}</span><span>${t.name}</span></div>`));
+    .forEach(t => rows.push(`<div class="mcal-list-row mcal-list-term"><span class="mcal-list-date">${f(t.term_from)} &ndash; ${f(t.term_to)}</span><span>${t.name}</span></div>`));
   c.entries.filter(e => e.date_from <= monthTo && e.date_to >= monthFrom)
-    .forEach(e => rows.push(`<div class="mcal-list-row"><span class="mcal-list-date">${e.date_from === e.date_to ? e.date_from : e.date_from + ' &ndash; ' + e.date_to}</span><span class="mcal-list-${e.type}">${e.label || 'Public holiday'}</span></div>`));
+    .forEach(e => rows.push(`<div class="mcal-list-row"><span class="mcal-list-date">${e.date_from === e.date_to ? f(e.date_from) : f(e.date_from) + ' &ndash; ' + f(e.date_to)}</span><span class="mcal-list-${e.type}">${e.label || 'Public holiday'}</span></div>`));
   list.innerHTML = rows.join('') || '<div class="form-hint">Nothing marked this month.</div>';
 }
 

@@ -341,5 +341,7 @@ function apiGetMaktabCalendar(year){ return apiFetch('/maktab/calendar' + (year 
 function apiCreateMaktabCalEntry(body){ return apiFetch('/maktab/calendar', { method: 'POST', body: JSON.stringify(body) }); }
 function apiUpdateMaktabCalEntry(id, body){ return apiFetch('/maktab/calendar/' + id, { method: 'PUT', body: JSON.stringify(body) }); }
 function apiDeleteMaktabCalEntry(id){ return apiFetch('/maktab/calendar/' + id, { method: 'DELETE' }); }
-function apiLoadCalPredictions(){ return apiFetch('/maktab/calendar/load-predictions', { method: 'POST', body: '{}' }); }
-function apiLoadCalHolidays(year){ return apiFetch('/maktab/calendar/load-holidays', { method: 'POST', body: JSON.stringify({ year }) }); }
+// V3.88.0: the staged propose → edit → confirm flow (replaced the loaders)
+function apiGetHolidayProposal(year){ return apiFetch('/maktab/calendar/holiday-proposal?year=' + year); }
+function apiGetIslamicProposal(year){ return apiFetch('/maktab/calendar/islamic-proposal?year=' + year); }
+function apiConfirmCalList(year, type, entries){ return apiFetch('/maktab/calendar/confirm', { method: 'POST', body: JSON.stringify({ year, type, entries }) }); }

@@ -1666,7 +1666,7 @@ async function openNotesHistory(type){
     <div class="history-full-list">
       ${items.slice(0, 80).map(it => `<div class="history-entry-row">
         <div class="history-entry-content">
-          <div class="rail-card-date">${it.date} · <span class="notes-kind notes-kind-${it.kind.toLowerCase()}">${it.kind}</span></div>
+          <div class="rail-card-date">${typeof fmtDMY === 'function' ? fmtDMY(it.date) : it.date} · <span class="notes-kind notes-kind-${it.kind.toLowerCase()}">${it.kind}</span></div>
           <div class="rail-card-body">${railEscape(it.text)}</div>
           ${it.teacher ? `<div class="rail-card-teacher">${railEscape(it.teacher)}</div>` : ''}
         </div>
