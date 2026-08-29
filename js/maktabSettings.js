@@ -105,6 +105,9 @@ async function renderMaktabSettingsScreen(){
       <input type="number" class="mset-num" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}">
     </div>
 
+    <!-- V3.89.0: the Groups section rides General (rail back to three) -->
+    <div id="msetGroupsSection"></div>
+
     <!-- V3.88.0 (user's pink scribble): the Current term row is GONE —
          terms live only on the Calendar card and drive attendance from
          maktab_terms. -->`;
@@ -123,10 +126,11 @@ async function renderMaktabSettingsScreen(){
     <div class="mset-list" id="msetTagsList"></div>
     <div class="form-error" id="mset_tag_error"></div>`;
 
-  document.getElementById('msetCardGroups').innerHTML = `
-    <div class="form-label mset-list-label">Hifz groups
-      <span class="mset-legend-note">(one per student, assigned on her Admin card; the summary orders by group. Descriptions are info-only — they show here and nowhere else)</span>
-    </div>
+  // V3.89.0 (user): Groups live INSIDE the General card now — the rail
+  // is back to three (General / Tajweed / Calendar); the explanatory
+  // note is gone too.
+  document.getElementById('msetGroupsSection').innerHTML = `
+    <div class="form-label mset-list-label">Hifz groups</div>
     <!-- V3.86.0 (user): the input takes the width; Add is a save ICON. -->
     <div class="mset-list-add">
       <input type="text" id="mset_group_new" maxlength="40" placeholder="New group name">
@@ -155,9 +159,7 @@ async function renderMaktabSettingsScreen(){
       <select id="mset_cal_year" aria-label="Year"></select>
     </div>
 
-    <div class="form-label mset-list-label">Terms
-      <span class="mset-legend-note">(terms drive attendance — the default period is the term containing today)</span>
-    </div>
+    <div class="form-label mset-list-label">Terms</div>
     <div class="mset-terms" id="msetTermsList"></div>
     <button type="button" class="secondary" id="mset_term_add_big">Add term</button>
     <button type="button" class="mset-add-btn hidden" id="mset_term_add" aria-label="Add another term">+</button>
@@ -558,15 +560,14 @@ async function openCalStagePopup(type){
     stage.forEach((row, idx) => {
       const div = document.createElement('div');
       div.className = 'mset-cal-row';
-      div.innerHTML = type === 'holiday'
-        ? `<input type="date" value="${row.date_from || ''}">
-           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button>`
-        : `<input type="date" value="${row.date_from || ''}">
-           <input type="text" value="${(row.label || '').replace(/"/g, '&quot;')}" maxlength="60" placeholder="Name">
+      // V3.89.0 (user): BOTH types carry the editable text — islamic rows
+      // show "Description — Hijri date"; holiday rows prefill the
+      // editable "Public Holiday". The delete × rides every row.
+      div.innerHTML = `<input type="date" value="${row.date_from || ''}">
+           <input type="text" value="${(row.label || (type === 'holiday' ? 'Public Holiday' : '')).replace(/"/g, '&quot;')}" maxlength="60" placeholder="${type === 'holiday' ? 'Public Holiday' : 'Name'}">
            <button type="button" class="mset-list-x" aria-label="Remove">&times;</button>`;
       div.querySelector('input[type="date"]').addEventListener('change', (e) => { row.date_from = e.target.value; });
-      const lbl = div.querySelector('input[type="text"]');
-      if(lbl) lbl.addEventListener('change', (e) => { row.label = e.target.value; });
+      div.querySelector('input[type="text"]').addEventListener('change', (e) => { row.label = e.target.value; });
       div.querySelector('.mset-list-x').addEventListener('click', () => { stage.splice(idx, 1); paint(); });
       host.appendChild(div);
     });
@@ -578,7 +579,7 @@ async function openCalStagePopup(type){
   overlay.querySelector('#calStageCloseBtn').addEventListener('click', close);
   overlay.querySelector('#calStageCancel').addEventListener('click', close);
   overlay.querySelector('#calStageAdd').addEventListener('click', () => {
-    stage.push({ date_from: '', label: type === 'holiday' ? null : '' });
+    stage.push({ date_from: '', label: type === 'holiday' ? 'Public Holiday' : '' });
     paint();
     const dates = overlay.querySelectorAll('#calStageList input[type="date"]');
     if(dates.length) dates[dates.length - 1].focus();

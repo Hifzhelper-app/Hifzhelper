@@ -1409,10 +1409,9 @@
     overflow: visible;
     scroll-snap-type: none;
   }
-  /* V3.88.0 (user): the SETTINGS rail holds four — side by side, 25%
-     each, on large screens. Scoped to #msetRail so the day rail keeps
-     its three (the V3.45.8 lesson: column count follows card count). */
-  #msetRail.log-detail-rail { grid-template-columns: repeat(4, 1fr); }
+  /* V3.89.0: Groups folded into General — the settings rail is back to
+     three cards, so the shared repeat(3) rule covers it and the V3.88.0
+     four-column override is gone (the V3.45.8 lesson, applied again). */
 
   /* Dots row is hidden entirely at this breakpoint (all 3 cards already
      visible in the grid, nothing to indicate a position within) -- same

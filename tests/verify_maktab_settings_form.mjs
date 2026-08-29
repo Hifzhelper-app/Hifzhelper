@@ -66,10 +66,11 @@ check('loading and error states are NOT treated as explanatory text',
 // ---------- the 30/50 cap ----------
 // V3.79.0: the settings screen is a 3-card RAIL now (log-detail classes
 // reused), no .screen-content card — the rail carries its own sizing.
-check('the settings screen is the rail: FOUR cards + dots (Calendar joined V3.87.0), no old body',
+check('the settings screen is the rail: THREE cards + dots (V3.89.0 — Groups folded into General), no old body',
   /id="msetRail"/.test(html) && !/maktabSettingsBody/.test(html)
-  && ['msetCardGeneral', 'msetCardTajweed', 'msetCardGroups', 'msetCardCalendar'].every(id => html.includes(`id="${id}"`))
-  && (html.match(/id="msetDots"[\s\S]*?id="msetRail"/) || [''])[0].split('class="dot"').length === 5);
+  && ['msetCardGeneral', 'msetCardTajweed', 'msetCardCalendar'].every(id => html.includes(`id="${id}"`))
+  && !/id="msetCardGroups"/.test(html)
+  && (html.match(/id="msetDots"[\s\S]*?id="msetRail"/) || [''])[0].split('class="dot"').length === 4);
 // The card was already capped; the SECTION painting the olive background
 // was not, so the card floated in a full-width green band. Fixed as a RULE
 // in base.css rather than per screen — four screens had it (maktabSettings,

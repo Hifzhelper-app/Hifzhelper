@@ -377,6 +377,8 @@
 
 /* The list rows: name input, (groups) description input, (tags) the
    MAJOR/MINOR pill, the retire checkbox. Inputs look quiet until focus. */
+/* V3.89.0 (user): air between the add-row and RETIRE */
+.mset-list-add { margin-bottom: var(--space-md); }
 .mset-list-headers { display: flex; justify-content: flex-end; font-size: 11px; color: var(--color-ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-top: var(--space-sm); padding-right: 2px; }
 .mset-name-input, .mset-desc-input {
   flex: 1;
@@ -397,9 +399,9 @@
   border: none;
   background: transparent;
   font: inherit;
-  font-size: 11px;
+  font-size: 9px;   /* V3.89.0 (user): smaller */
   letter-spacing: 0.03em;
-  padding: 5px 9px;
+  padding: 3px 8px;   /* V3.89.0: smaller */
   cursor: pointer;
   color: var(--color-ink-soft);
 }
@@ -468,4 +470,11 @@
 .mset-cal-buttons { display: flex; flex-direction: column; gap: var(--space-sm); align-items: center; margin-top: var(--space-md); }
 .mset-cal-buttons .history-btn { min-width: 60%; justify-content: center; }
 .cal-stage-card .cal-stage-list { max-height: 50vh; overflow-y: auto; margin: var(--space-sm) 0; }
+/* V3.89.0: the popup-row render bug (user's screenshot — only the date
+   showed). components.css gives every .modal-card input width:100%,
+   which stacked the row's flex children full-width; scoped widths
+   restore the row: date fixed, text flexes, × always visible. */
+.cal-stage-card .mset-cal-row input[type="date"] { width: auto; flex: 0 0 auto; }
+.cal-stage-card .mset-cal-row input[type="text"] { width: auto; flex: 1 1 auto; min-width: 0; }
+.cal-stage-card .mset-cal-row .mset-list-x { flex: 0 0 auto; }
 .cal-stage-actions { display: flex; justify-content: flex-end; gap: var(--space-sm); margin-top: var(--space-md); }

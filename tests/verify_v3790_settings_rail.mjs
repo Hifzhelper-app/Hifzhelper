@@ -60,8 +60,9 @@ const html = read('index.html');
   const section = (html.match(/<section class="screen hidden" id="screen-maktabSettings">[\s\S]*?<\/section>/) || [''])[0];
   check('html: dots strip with General/Tajweed/Groups + the close button', /General/.test(section) && /Tajweed/.test(section) && /Groups/.test(section) && /maktabSettingsCloseBtn/.test(section));
   check('html: the rail reuses the log-detail classes (sizing/snap/grid for free)',
-    /class="log-detail-rail" id="msetRail"/.test(section) && (section.match(/log-detail-card/g) || []).length === 4);   // Calendar joined V3.87.0
-  check('html: four card-scroll hosts', ['msetCardGeneral', 'msetCardTajweed', 'msetCardGroups', 'msetCardCalendar'].every(id => section.includes(`id="${id}"`)));
+    /class="log-detail-rail" id="msetRail"/.test(section) && (section.match(/log-detail-card/g) || []).length === 3);   // V3.89.0: Groups folded into General
+  check('html: three card-scroll hosts (Groups lives inside General now)', ['msetCardGeneral', 'msetCardTajweed', 'msetCardCalendar'].every(id => section.includes(`id="${id}"`))
+    && !/id="msetCardGroups"/.test(section));
 }
 
 // ---------- the screen, driven ----------
@@ -69,7 +70,7 @@ const src = read('js/maktabSettings.js');
 function dom(settings, groups, tags) {
   const d = new JSDOM(`<!DOCTYPE html><body>
     <div id="msetDots"><button class="dot" data-index="0"></button><button class="dot" data-index="1"></button><button class="dot" data-index="2"></button></div>
-    <div id="msetRail"><div><div id="msetCardGeneral"></div></div><div><div id="msetCardTajweed"></div></div><div><div id="msetCardGroups"></div></div><div><div id="msetCardCalendar"></div></div></div>
+    <div id="msetRail"><div><div id="msetCardGeneral"></div></div><div><div id="msetCardTajweed"></div></div><div><div id="msetCardCalendar"></div></div></div><!-- V3.89.0: Groups renders inside General's template -->
     </body>`, { runScripts: 'dangerously', url: 'https://x/' });
   const w = d.window;
   w.eval(`

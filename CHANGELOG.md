@@ -26,6 +26,22 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V3.89.0 — Popup rework + settings polish (2026-08-29)
+
+**Files touched:** `worker/src/maktabCalendar.js`, `js/maktabSettings.js`, `index.html`, `css/settings.css`, `css/detail-pages.css`, `js/sw.js`, tests (three harnesses realigned; +4 pins), docs. **Deploy: WORKER → FRONTEND. No migration.**
+
+**The popup rework (TODO 24b):**
+- **The render bug fixed:** components.css gives every `.modal-card input` width:100%, which stacked the stage rows so only the date showed (the user's screenshot — no name field, no ×). Scoped overrides restore the row: date fixed, text flexes, × always visible — and pinned.
+- **Islamic rows carry the day description AND the Hijri date** — the seed labels are now e.g. "First Taraweeh — 1 Ramadaan 1447", every entry transcribed with its Hijri date from the Jamiatul Ulama tables. Proposal dedupe keys on the BASE description (`calBaseName`), so entries saved under the older short labels are still recognised and never re-proposed or duplicated.
+- **Delete works visibly on every row, both popups.**
+- **Public holidays reverse the date-only call:** every row carries editable text prefilled "Public Holiday"; Confirm stores it (blank → "Public Holiday"); the worker no longer forces NULL.
+
+**The settings polish (TODO 24c):** the MAJOR/MINOR pills are smaller (9px, tighter padding); the explanatory parentheticals are OFF the Terms and Groups headings (Tajweed's stays — not named); air between the add-row and RETIRE on both list cards; and **Groups folded INTO the General card** — the rail is back to THREE (General / Tajweed / Calendar), three dots, and the V3.88.0 four-column desktop override dies with the fourth card (the V3.45.8 lesson applied again: column count follows card count).
+
+**Verification: 1071 passed, 0 failed across 34 harnesses.** Note for existing data: previously saved islamic entries keep their short labels; opening the Islamic Calendar popup and pressing Confirm regenerates the year with the Hijri-bearing labels, with the base-name dedupe guaranteeing no doubles either way.
+
+---
+
 ## V3.88.2 — HOTFIX: term/calendar edits blocked by CORS (2026-08-29)
 
 **Files touched:** `worker/src/index.js` (one line), `tests/verify_v3870_calendar.mjs` (+3 transport-net checks). **WORKER-ONLY DEPLOY — no frontend upload, no migration.**

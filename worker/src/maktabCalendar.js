@@ -23,21 +23,28 @@
 
 import { isTeacherOrAbove, isValidDate } from './utils.js';
 
-// The user's PDF, transcribed: Most Likely dates, 2025–2030.
+// The user's PDF, transcribed: Most Likely dates, 2025–2030 — each with
+// its ISLAMIC (Hijri) date (user, 2026-08-29: "add the day description
+// and the islamic date"). The stored label is "Description — Hijri";
+// proposal dedupe keys on the BASE description so rows saved under the
+// pre-V3.89 short labels are still recognised (see calBaseName).
 export const ISLAMIC_PREDICTIONS = [
-  ['Laylatul-Bara\'ah (Eve)', '2025-02-13'], ['First Taraweeh', '2025-03-01'], ['First Fast', '2025-03-02'],
-  ['Eid-ul-Fitr', '2025-03-31'], ['Eid-ul-Adha', '2025-06-07'], ['New Islamic Year', '2025-06-27'], ['\'Aashuraa', '2025-07-06'],
-  ['Laylatul-Bara\'ah (Eve)', '2026-02-03'], ['First Taraweeh', '2026-02-18'], ['First Fast', '2026-02-19'],
-  ['Eid-ul-Fitr', '2026-03-21'], ['Eid-ul-Adha', '2026-05-28'], ['New Islamic Year', '2026-06-17'], ['\'Aashuraa', '2026-06-26'],
-  ['Laylatul-Bara\'ah (Eve)', '2027-01-23'], ['First Taraweeh', '2027-02-08'], ['First Fast', '2027-02-09'],
-  ['Eid-ul-Fitr', '2027-03-10'], ['Eid-ul-Adha', '2027-05-17'], ['New Islamic Year', '2027-06-07'], ['\'Aashuraa', '2027-06-16'],
-  ['Laylatul-Bara\'ah (Eve)', '2028-01-12'], ['First Taraweeh', '2028-01-28'], ['First Fast', '2028-01-29'],
-  ['Eid-ul-Fitr', '2028-02-28'], ['Eid-ul-Adha', '2028-05-06'], ['New Islamic Year', '2028-05-26'], ['\'Aashuraa', '2028-06-04'],
-  ['First Taraweeh', '2029-01-16'], ['First Fast', '2029-01-17'], ['Eid-ul-Fitr', '2029-02-16'],
-  ['Eid-ul-Adha', '2029-04-25'], ['New Islamic Year', '2029-05-16'], ['\'Aashuraa', '2029-05-25'], ['Laylatul-Bara\'ah (Eve)', '2029-12-20'],
-  ['First Taraweeh', '2030-01-05'], ['First Fast', '2030-01-06'], ['Eid-ul-Fitr', '2030-02-05'],
-  ['Eid-ul-Adha', '2030-04-14'], ['New Islamic Year', '2030-05-05'], ['\'Aashuraa', '2030-05-14'], ['Laylatul-Bara\'ah (Eve)', '2030-12-10'],
+  ["Laylatul-Bara'ah (Eve) — 15 Sha'baan 1446", '2025-02-13'], ['First Taraweeh — 1 Ramadaan 1446', '2025-03-01'], ['First Fast — 1 Ramadaan 1446', '2025-03-02'],
+  ['Eid-ul-Fitr — 1 Shawwal 1446', '2025-03-31'], ['Eid-ul-Adha — 10 Zul Hijjah 1446', '2025-06-07'], ['New Islamic Year — 1 Muharram 1447', '2025-06-27'], ["'Aashuraa — 10 Muharram 1447", '2025-07-06'],
+  ["Laylatul-Bara'ah (Eve) — 15 Sha'baan 1447", '2026-02-03'], ['First Taraweeh — 1 Ramadaan 1447', '2026-02-18'], ['First Fast — 1 Ramadaan 1447', '2026-02-19'],
+  ['Eid-ul-Fitr — 1 Shawwal 1447', '2026-03-21'], ['Eid-ul-Adha — 10 Zul Hijjah 1447', '2026-05-28'], ['New Islamic Year — 1 Muharram 1448', '2026-06-17'], ["'Aashuraa — 10 Muharram 1448", '2026-06-26'],
+  ["Laylatul-Bara'ah (Eve) — 15 Sha'baan 1448", '2027-01-23'], ['First Taraweeh — 1 Ramadaan 1448', '2027-02-08'], ['First Fast — 1 Ramadaan 1448', '2027-02-09'],
+  ['Eid-ul-Fitr — 1 Shawwal 1448', '2027-03-10'], ['Eid-ul-Adha — 10 Zul Hijjah 1448', '2027-05-17'], ['New Islamic Year — 1 Muharram 1449', '2027-06-07'], ["'Aashuraa — 10 Muharram 1449", '2027-06-16'],
+  ["Laylatul-Bara'ah (Eve) — 15 Sha'baan 1449", '2028-01-12'], ['First Taraweeh — 1 Ramadaan 1449', '2028-01-28'], ['First Fast — 1 Ramadaan 1449', '2028-01-29'],
+  ['Eid-ul-Fitr — 1 Shawwal 1449', '2028-02-28'], ['Eid-ul-Adha — 10 Zul Hijjah 1449', '2028-05-06'], ['New Islamic Year — 1 Muharram 1450', '2028-05-26'], ["'Aashuraa — 10 Muharram 1450", '2028-06-04'],
+  ['First Taraweeh — 1 Ramadaan 1450', '2029-01-16'], ['First Fast — 1 Ramadaan 1450', '2029-01-17'], ['Eid-ul-Fitr — 1 Shawwal 1450', '2029-02-16'],
+  ['Eid-ul-Adha — 10 Zul Hijjah 1450', '2029-04-25'], ['New Islamic Year — 1 Muharram 1451', '2029-05-16'], ["'Aashuraa — 10 Muharram 1451", '2029-05-25'], ["Laylatul-Bara'ah (Eve) — 15 Sha'baan 1451", '2029-12-20'],
+  ['First Taraweeh — 1 Ramadaan 1451', '2030-01-05'], ['First Fast — 1 Ramadaan 1451', '2030-01-06'], ['Eid-ul-Fitr — 1 Shawwal 1451', '2030-02-05'],
+  ['Eid-ul-Adha — 10 Zul Hijjah 1451', '2030-04-14'], ['New Islamic Year — 1 Muharram 1452', '2030-05-05'], ["'Aashuraa — 10 Muharram 1452", '2030-05-14'], ["Laylatul-Bara'ah (Eve) — 15 Sha'baan 1452", '2030-12-10'],
 ];
+
+// The base description, Hijri part stripped — dedupe key for proposals.
+export const calBaseName = (label) => String(label || '').split(' — ')[0].trim();
 
 // Anonymous Gregorian computus — Easter Sunday for a year.
 export function easterSunday(year) {
@@ -185,13 +192,16 @@ export async function handleGetProposal(request, env, auth, type) {
     // any holidays already saved for the year → the proposal is only the
     // missing generated dates; a fresh year proposes the full set
     const have = new Set(current.map(r => r.date_from));
+    // V3.89.0 (user): holidays carry an EDITABLE label, prefilled
     proposed = southAfricanHolidays(parseInt(year)).filter(d => !have.has(d))
-      .map(d => ({ date_from: d, date_to: d, label: null }));
+      .map(d => ({ date_from: d, date_to: d, label: 'Public Holiday' }));
   } else {
-    // islamic: dedupe by LABEL within the year — an adjusted date stays
-    // adjusted and its day is never re-proposed (the V3.87.0 hole)
-    const have = new Set(current.map(r => r.label));
-    proposed = ISLAMIC_PREDICTIONS.filter(([label, d]) => d.startsWith(year) && !have.has(label))
+    // islamic: dedupe by BASE NAME within the year — an adjusted date
+    // stays adjusted and its day is never re-proposed (the V3.87.0
+    // hole), and rows saved under pre-V3.89 short labels still match
+    // their Hijri-bearing successors.
+    const have = new Set(current.map(r => calBaseName(r.label)));
+    proposed = ISLAMIC_PREDICTIONS.filter(([label, d]) => d.startsWith(year) && !have.has(calBaseName(label)))
       .map(([label, d]) => ({ date_from: d, date_to: d, label }));
   }
   return { data: { year, type, current, proposed } };
@@ -220,7 +230,11 @@ export async function handleConfirmList(request, env, auth) {
   ).bind(type, `${b.year}-01-01`, `${b.year}-12-31`).run();
   let added = 0;
   for (const r of rows) {
-    const label = type === 'holiday' ? null : String(r.label).trim().slice(0, 60);
+    // V3.89.0 (user, reversing the date-only call): holidays store their
+    // editable text too; blank falls back to 'Public Holiday'.
+    const label = type === 'holiday'
+      ? (String(r.label || '').trim().slice(0, 60) || 'Public Holiday')
+      : String(r.label).trim().slice(0, 60);
     await env.DB.prepare(
       "INSERT OR IGNORE INTO maktab_calendar (date_from, date_to, label, type, source) VALUES (?, ?, ?, ?, 'confirmed')"
     ).bind(r.date_from, r.date_from, label, type).run();

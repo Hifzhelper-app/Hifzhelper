@@ -336,9 +336,7 @@ after it):
    V3.88.1** (Claude shipped it solo before the user's restated
    batching instruction below — noted).
 
-24b. **Staged popups rework (user, 2026-08-29 13:41, NOT BUILT —
-   BATCH; the user restated firmly: NO one-change-at-a-time uploads,
-   WAIT for the build word):**
+24b. ~~**Staged popups rework**~~ **BUILT V3.89.0** (render bug fixed — the modal's width:100% inputs; Hijri labels with base-name dedupe; visible deletes; editable Public Holiday text). Spec:**
    (a) BUG on her device (screenshot): the Islamic popup rows render
    as date-only boxes — the name input and the delete × aren't
    visible. Investigate the row CSS inside the modal (likely a
@@ -358,7 +356,7 @@ after it):
    worker stops forcing label NULL for holidays.
 
 
-24c. **Settings polish set (user, 2026-08-29 13:45; same batch):**
+24c. ~~**Settings polish set**~~ **BUILT V3.89.0.** Spec:**
    (a) the MAJOR/MINOR pills on the Tajweed list — noticeably SMALLER;
    (b) REMOVE the explanatory parentheticals from the TERMS heading
    ("terms drive attendance — …") and the GROUPS heading ("one per

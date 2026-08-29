@@ -1,5 +1,5 @@
 // Current as of V3.67.0
-const CACHE_NAME = 'hifzhelper-v3.88.1'; // bumped for the V3.88.1 polish
+const CACHE_NAME = 'hifzhelper-v3.89.0'; // bumped for the V3.89.0 release
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a

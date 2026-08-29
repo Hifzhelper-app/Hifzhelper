@@ -2045,6 +2045,14 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.89.0 — popup rework + settings polish (WORKER → FRONTEND; no migration)
+
+Cache `hifzhelper-v3.89.0`; login card 3.89.0.
+
+1. **Islamic Calendar popup:** every row now shows the date, the editable name WITH the Hijri date ("First Taraweeh — 1 Ramadaan 1447"), and a working ×. Press Confirm once and your saved 2026 entries regenerate with the Hijri labels — no duplicates.
+2. **Public Holidays popup:** every row shows editable text prefilled "Public Holiday" plus the ×; edits store.
+3. **Settings rail:** THREE cards again — Groups now lives at the bottom of General. Major/Minor pills are smaller; the Terms and Groups headings lost their grey notes; the add-rows have air before RETIRE.
+
 ## V3.88.0 — the staged calendar + attendance layout (MIGRATION 0027 → WORKER → FRONTEND)
 
 Run migration 0027 in the D1 console FIRST — it also CLEANS YOUR EXISTING DUPLICATES — then the worker, then the frontend. Cache `hifzhelper-v3.88.0`; login card 3.88.0.

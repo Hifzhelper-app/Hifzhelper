@@ -137,9 +137,10 @@ const STUDENT = { id: 'S1', role: 'student' };
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.length === 0);
   // the maktab EDITS the stage: adjusts First Fast by a day (a sighting),
   // drops one day, adds one the table never had — then confirms
+  // labels carry the Hijri date since V3.89.0 — match on the BASE name
   const edited = prop1.proposed
-    .filter(r => r.label !== "'Aashuraa")
-    .map(r => r.label === 'First Fast' ? { ...r, date_from: '2026-02-20' } : r);
+    .filter(r => !r.label.startsWith("'Aashuraa"))
+    .map(r => r.label.startsWith('First Fast') ? { ...r, date_from: '2026-02-20' } : r);
   edited.push({ date_from: '2026-04-15', label: 'Local observance' });
   const c1 = await handleConfirmList(post({ year: '2026', type: 'islamic', entries: edited }), env, TEACHER);
   check('stage: Confirm GENERATES the list — the confirmed rows become the year', !c1.error
@@ -148,18 +149,18 @@ const STUDENT = { id: 'S1', role: 'student' };
   const prop2 = (await handleGetProposal(req('year=2026'), env, TEACHER, 'islamic')).data;
   check('stage: the ADJUSTED day is never re-proposed (label dedupe — the V3.87.0 hole closed); only the dropped day returns',
     prop2.current.length === 7
-    && prop2.proposed.length === 1 && prop2.proposed[0].label === "'Aashuraa"
-    && prop2.current.find(x => x.label === 'First Fast').date_from === '2026-02-20');
+    && prop2.proposed.length === 1 && prop2.proposed[0].label.startsWith("'Aashuraa")
+    && prop2.current.find(x => x.label.startsWith('First Fast')).date_from === '2026-02-20');
 
   const hprop = (await handleGetProposal(req('year=2026'), env, TEACHER, 'holiday')).data;
-  check('stage: the holiday proposal carries the 13 generated dates, label-less', hprop.proposed.length === 13
-    && hprop.proposed.every(r => r.label === null));
+  check('stage: the holiday proposal carries the 13 generated dates, each prefilled "Public Holiday" (V3.89.0 — editable text)', hprop.proposed.length === 13
+    && hprop.proposed.every(r => r.label === 'Public Holiday'));
   const c2 = await handleConfirmList(post({ year: '2026', type: 'holiday', entries: hprop.proposed.slice(0, 12) }), env, TEACHER);
   const c2again = await handleConfirmList(post({ year: '2026', type: 'holiday', entries: hprop.proposed.slice(0, 12) }), env, TEACHER);
-  check('stage: holiday Confirm lands dates only and REGENERATES on repeat (no duplicates, ever)',
+  check('stage: holiday Confirm stores the editable text (blank → "Public Holiday") and REGENERATES on repeat (no duplicates, ever)',
     !c2.error && !c2again.error
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').length === 12
-    && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').every(x => x.label === null));
+    && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').every(x => x.label === 'Public Holiday'));
   check('stage: confirming holidays leaves the islamic year UNTOUCHED (type-scoped delete)',
     (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 7);
   check('stage: validation — a date outside the year, a nameless islamic day, a bad type all refuse',
@@ -230,11 +231,20 @@ check('settings: term rows put the NAME on its own line above the dates (V3.88.1
 check('settings: ADD TERM is the big button only while none exist; the + takes over after',
   /mset_term_add_big'\)\.classList\.toggle\('hidden', terms\.length > 0\)/.test(settingsSrc)
   && /mset_term_add'\)\.classList\.toggle\('hidden', terms\.length === 0\)/.test(settingsSrc));
-check('settings: the popup stages both types; holiday rows are DATE ONLY (no label input, no ghost text); Confirm is the only save and disables in flight',
+check('settings: the popup stages both types with EDITABLE text on every row — islamic "Description — Hijri", holiday prefilled "Public Holiday" — the × on every row; Confirm is the only save and disables in flight (V3.89.0)',
   /function openCalStagePopup\(type\)/.test(settingsSrc)
-  && /type === 'holiday'\n        \? `<input type="date"/.test(settingsSrc)
+  && /row\.label \|\| \(type === 'holiday' \? 'Public Holiday' : ''\)/.test(settingsSrc)
+  && /class="mset-list-x" aria-label="Remove"/.test(settingsSrc)
   && /btn\.disabled = true;/.test(settingsSrc)
   && /apiConfirmCalList\(year, type, rows\)/.test(settingsSrc));
+check('settings: the Hijri date rides the seed labels and dedupe keys on the BASE name (calBaseName)',
+  /First Taraweeh — 1 Ramadaan 1447/.test(read('worker/src/maktabCalendar.js'))
+  && /calBaseName\(r\.label\)/.test(read('worker/src/maktabCalendar.js')));
+check('settings: the popup rows override the modal\'s width:100% inputs (the render bug — only dates showed)',
+  /\.cal-stage-card \.mset-cal-row input\[type="date"\] \{ width: auto; flex: 0 0 auto; \}/.test(read('css/settings.css')));
+check('settings: the rail is back to three — Groups renders inside General (msetGroupsSection)',
+  /id="msetGroupsSection"/.test(settingsSrc)
+  && /msetGroupsSection'\)\.innerHTML/.test(settingsSrc));
 check('markers: formatDateCell carries the calendar mark', /maktabCalMarkHtml === 'function' \? maktabCalMarkHtml\(iso\) : ''/.test(read('js/journal.js')));
 check('markers: the haidh/attendance calendar day cells take the classes + title', /maktabCalInfoForDate\(dateISO\)/.test(read('js/haidhDetailScreen.js')));
 check('markers: the day-view date headers paint the label', /t \+ '_date_info'/.test(read('js/logDetailScreen.js')));
