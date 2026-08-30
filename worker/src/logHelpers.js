@@ -146,6 +146,14 @@ async function updateLog(env, table, id, studentId, updates, authId, contentFiel
   if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };
   values.push(id);
   await env.DB.prepare(`UPDATE ${table} SET ${setClauses.join(', ')} WHERE id = ?`).bind(...values).run();
+  // V3.97.0 (l) RE-SYNC, not frozen (user's call): if this is a MAKTAB
+  // row that has already been archived into her table, the copy is
+  // patched to match — one targeted statement keyed on maktab_log_id,
+  // harmless when no copy exists. Same SET list: the content columns
+  // are shared by construction.
+  if (ARCHIVE_INTO[table]) {
+    await env.DB.prepare(`UPDATE ${ARCHIVE_INTO[table]} SET ${setClauses.join(', ')} WHERE maktab_log_id = ?`).bind(...values).run();
+  }
 
   if (dateChanging) {
     await markAttendancePresent(env, studentId, updates.date);
@@ -163,6 +171,13 @@ async function deleteLog(env, table, id, studentId, trackAttendance = false) {
   if (!row) return { error: 'Not found', status: 404 };
   if (row.student_id !== studentId) return { error: 'Not authorized', status: 403 };
   await env.DB.prepare(`DELETE FROM ${table} WHERE id = ?`).bind(id).run();
+  // V3.97.0 (l): THE DELETE PATH — the one the spec warns gets
+  // forgotten. An archived copy surviving a deleted maktab record
+  // would leave her journal asserting something the maktab no longer
+  // says; the copy dies with the original.
+  if (ARCHIVE_INTO[table]) {
+    await env.DB.prepare(`DELETE FROM ${ARCHIVE_INTO[table]} WHERE maktab_log_id = ?`).bind(id).run();
+  }
   if (trackAttendance) await releaseAttendanceIfNoActivity(env, studentId, row.date);
   return { data: { deleted: true } };
 }
@@ -237,15 +252,65 @@ async function getLogs(env, table, studentId, since, requesterId, hasFeedback) {
 // mixing maktab rows back into it would double-count the maktab's own
 // record. The maktab side gains NOTHING from this merge.
 // ============================================================
+// ============================================================
+// V3.97.0 (l) THE ARCHIVE. Maktab rows older than 60 days are
+// PHYSICALLY COPIED into her table — "hifz is a solo journey with the
+// maktab helping during certain periods; even when one loses
+// connection the journey continues, so the journal can always be
+// used." Idempotent by construction: INSERT OR IGNORE behind 0028's
+// unique index, guarded by the NOT-IN key. Bounded (LIMIT 500 per
+// pass) and triggered opportunistically on her own merged read — no
+// cron; after the first pass the marginal work is near zero. The
+// maktab tables are NEVER moved or emptied.
+// ============================================================
+const ARCHIVE_COLS = {
+  sabaq_log: ['student_id', 'date', 'entered_by', 'sabaq_from', 'sabaq_to', 'tajweed_tag_ids', 'line_count', 'page_count', 'student_comment', 'student_comment_by', 'student_comment_at', 'student_comment_private', 'teacher_feedback', 'teacher_feedback_by', 'teacher_feedback_at', 'teacher_feedback_visibility', 'is_duplicate', 'created_at'],
+  sabaq_dhor_log: ['student_id', 'date', 'entered_by', 'from_surah', 'from_ayah', 'to_surah', 'to_ayah', 'tajweed_tag_ids', 'mistakes', 'student_comment', 'student_comment_by', 'student_comment_at', 'student_comment_private', 'teacher_feedback', 'teacher_feedback_by', 'teacher_feedback_at', 'teacher_feedback_visibility', 'is_duplicate', 'created_at'],
+  dhor_log: ['student_id', 'date', 'entered_by', 'segment_from', 'segment_to', 'ref', 'tajweed_tag_ids', 'mistakes', 'duration_seconds', 'lap_times', 'student_comment', 'student_comment_by', 'student_comment_at', 'student_comment_private', 'teacher_feedback', 'teacher_feedback_by', 'teacher_feedback_at', 'teacher_feedback_visibility', 'is_duplicate', 'created_at'],
+};
+// the maktab table each PJ table archives FROM, and the reverse (for re-sync)
+const ARCHIVE_FROM = { sabaq_log: 'maktab_sabaq_log', sabaq_dhor_log: 'maktab_sabaq_dhor_log', dhor_log: 'maktab_dhor_log' };
+const ARCHIVE_INTO = { maktab_sabaq_log: 'sabaq_log', maktab_sabaq_dhor_log: 'sabaq_dhor_log', maktab_dhor_log: 'dhor_log' };
+
+async function archiveOldMaktab(env, pjTable, maktabTable, studentId) {
+  const cols = ARCHIVE_COLS[pjTable];
+  if (!cols) return;
+  const colList = cols.join(', ');
+  const mColList = cols.map(c => `m.${c}`).join(', ');
+  await env.DB.prepare(
+    `INSERT OR IGNORE INTO ${pjTable} (${colList}, maktab_log_id, maktab_teacher)
+     SELECT ${mColList}, m.id, m.teacher_name FROM ${maktabTable} m
+     WHERE m.student_id = ?1 AND m.date < date('now', '-60 day')
+       AND m.id NOT IN (SELECT maktab_log_id FROM ${pjTable} WHERE student_id = ?1 AND maktab_log_id IS NOT NULL)
+     LIMIT 500`
+  ).bind(studentId).run();
+}
+
 async function getMergedLogs(env, pjTable, maktabTable, studentId, since, requesterId, hasFeedback) {
-  const clause = since ? ' AND date >= ?' : '';
+  await archiveOldMaktab(env, pjTable, maktabTable, studentId);   // V3.97.0: opportunistic, idempotent, bounded
+  const clause = since ? ' AND date >= ?2' : '';
   const bind = since ? [studentId, since] : [studentId];
   const [pj, mk] = await Promise.all([
-    env.DB.prepare(`SELECT * FROM ${pjTable} WHERE student_id = ?${clause}`).bind(...bind).all(),
-    env.DB.prepare(`SELECT * FROM ${maktabTable} WHERE student_id = ?${clause}`).bind(...bind).all(),
+    env.DB.prepare(`SELECT * FROM ${pjTable} WHERE student_id = ?1${clause}`).bind(...bind).all(),
+    // V3.97.0 EXACTNESS: a maktab row already archived is EXCLUDED from
+    // the live read — its copy represents it. No cutoff arithmetic, no
+    // window where a row shows twice or disappears, whenever archiving runs.
+    env.DB.prepare(`SELECT * FROM ${maktabTable} WHERE student_id = ?1${clause}
+      AND id NOT IN (SELECT maktab_log_id FROM ${pjTable} WHERE student_id = ?1 AND maktab_log_id IS NOT NULL)`).bind(...bind).all(),
   ]);
   const rows = [];
-  for (const r of pj.results) { r.source = 'personal'; rows.push(r); }
+  for (const r of pj.results) {
+    if (r.maktab_log_id != null) {
+      // an ARCHIVED copy presents exactly like a live maktab row —
+      // teacher provenance, id nulled (read-only by construction, the
+      // (k) pattern) — so the UI needs no new case at all.
+      r.teacher_name = r.maktab_teacher;
+      r.id = null; r.source = 'maktab';
+    } else {
+      r.source = 'personal';
+    }
+    rows.push(r);
+  }
   for (const r of mk.results) { r.maktab_log_id = r.id; r.id = null; r.source = 'maktab'; rows.push(r); }
   rows.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.created_at || '').localeCompare(a.created_at || ''));
   applyPrivacy(rows, studentId, requesterId, hasFeedback);
