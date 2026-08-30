@@ -165,9 +165,9 @@ async function renderMaktabSettingsScreen(){
     <button type="button" class="mset-add-btn hidden" id="mset_term_add" aria-label="Add another term">+</button>
     <div class="form-error" id="mset_term_error"></div>
 
-    <div class="mset-cal-buttons">
-      <button type="button" class="history-btn" id="mset_cal_islamic">Islamic Calendar</button>
+    <div class="mset-cal-buttons"><!-- V3.92.1 (user): Holidays LEFT, Islamic RIGHT -->
       <button type="button" class="history-btn" id="mset_cal_holidays">Public Holidays</button>
+      <button type="button" class="history-btn" id="mset_cal_islamic">Islamic Calendar</button>
     </div>
     <div class="form-error" id="mset_cal_error"></div>`;
   wireMsetCalendarCard();

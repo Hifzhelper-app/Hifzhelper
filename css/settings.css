@@ -476,14 +476,22 @@
 .mset-cal-add-row input[type="text"] { flex: 1 1 auto; min-width: 0; }
 
 /* V3.88.0: the Calendar card head + the two green buttons + the staged popup */
-/* V3.92.0 (user): the year rides NEXT TO the heading as a blue pill */
-.mset-cal-head { display: flex; align-items: center; justify-content: flex-start; gap: var(--space-md); margin-bottom: var(--space-sm); }
+/* V3.92.0/.1 (user): the year rides NEXT TO the heading as a blue pill,
+   BASELINE-aligned with the "Calendar" text. V3.92.1: the borderless
+   select collapsed to its arrows on iOS (no intrinsic width) — an
+   explicit min-width + appearance:none keeps the year visible. */
+.mset-cal-head { display: flex; align-items: baseline; justify-content: flex-start; gap: var(--space-md); margin-bottom: var(--space-sm); }
+.mset-cal-head .mset-list-label { margin: 0; }
 #mset_cal_year {
+  appearance: none; -webkit-appearance: none;
   background: var(--color-accent-soft, #D0DBE7); border: none; border-radius: 999px;
-  padding: 6px 14px; font: inherit; cursor: pointer;
+  padding: 6px 20px; font: inherit; font-weight: 600; cursor: pointer;
+  min-width: 104px; text-align: center; text-align-last: center;
 }
-.mset-cal-buttons { display: flex; flex-direction: column; gap: var(--space-sm); align-items: center; margin-top: var(--space-md); }
-.mset-cal-buttons .history-btn { min-width: 60%; justify-content: center; }
+/* V3.92.1 (user): side by side — Public Holidays LEFT, Islamic Calendar
+   RIGHT — and taller. */
+.mset-cal-buttons { display: flex; flex-direction: row; gap: var(--space-sm); justify-content: center; margin-top: var(--space-md); }
+.mset-cal-buttons .history-btn { flex: 1 1 0; justify-content: center; padding-top: 14px; padding-bottom: 14px; }
 .cal-stage-card .cal-stage-list { max-height: 50vh; overflow-y: auto; margin: var(--space-sm) 0; }
 /* V3.89.0: the popup-row render bug (user's screenshot — only the date
    showed). components.css gives every .modal-card input width:100%,
