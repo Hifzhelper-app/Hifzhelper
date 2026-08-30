@@ -533,3 +533,8 @@
 #msetCardCalendar { padding-top: var(--space-lg, 22px); }
 .mset-cal-head .mset-list-label { font-size: 18px; font-weight: 700; }
 #msetCardCalendar .mset-add-btn { padding: 8px 20px; font-size: 18px; line-height: 1; }
+
+/* V3.96.0 (user, specced 2026-08-08/17): the Haaidha heading — text
+   first, the opt-in checkbox to its RIGHT at twice the size. */
+.haidh-heading-check { display: flex; align-items: center; gap: var(--space-sm); }
+.haidh-heading-check input[type="checkbox"] { width: 32px; height: 32px; transform: none; }

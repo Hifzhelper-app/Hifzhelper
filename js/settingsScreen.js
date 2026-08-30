@@ -54,15 +54,14 @@ function updateHaidhVisibility(){
 }
 
 // ---------- Haidh: ruling switch + haaidha opt-in checkbox (V3.39) ----------
-const HAIDH_RULING_HINTS = {
-  hanafi: "Hanafi: haidh cannot exceed 10 days.",
-  shafii: "Shafi'i: haidh cannot exceed 15 days."
-};
+// V3.96.0: the ruling-hint constant and the hint element are DELETED as one
+// set with both writer lines (the V3.51.2 trap). The ruling itself is
+// untouched: chosen here, re-rendered, loaded, saved, and enforced by
+// haidhOfficialMaxDuration in validation.
 let setupSelectedRuling = 'hanafi';
 wireSwitch('haidh_ruling_switch', (value) => {
   setupSelectedRuling = value;
   renderSwitch('haidh_ruling_switch', setupSelectedRuling);
-  document.getElementById('haidhRulingHint').textContent = HAIDH_RULING_HINTS[setupSelectedRuling] || '';
 });
 
 // Deliberately outside every section's own Save button (confirmed in
@@ -270,7 +269,6 @@ async function renderSettingsScreen(){
   document.getElementById('haaidha_checkbox').checked = !!profile.track_haidh;
   setupSelectedRuling = profile.haidh_ruling || 'hanafi';
   renderSwitch('haidh_ruling_switch', setupSelectedRuling);
-  document.getElementById('haidhRulingHint').textContent = HAIDH_RULING_HINTS[setupSelectedRuling] || '';
   document.getElementById('haidh_cycle_length').value = profile.haidh_cycle_length || '';
   document.getElementById('haidh_period_length').value = profile.haidh_period_length || '';
   document.getElementById('haidh_next_expected').value = profile.haidh_next_expected || '';
