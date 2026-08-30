@@ -1900,3 +1900,51 @@
 .sabaq-dhor-row { background: var(--color-accent-soft, #D0DBE7); border-color: transparent; }
 /* 29d: Add-Juz/Plan rides the far right of the date row */
 .card-date-row #dhorViewPlanBtn { justify-self: end; }
+
+/* ============================================================
+   V3.93.0 — the day-card set + the setup popup (user's annotated
+   mocks, 2026-08-30) */
+/* (a)+(b): space before the boxed timer */
+.card-header-timer-btn {
+  margin-left: var(--space-md);
+  border: 1.5px solid var(--color-ink, #222);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  background: transparent;
+}
+/* (c): the Lines/Pages unit box */
+.unit-amount-box { position: relative; display: flex; align-items: center; }
+.unit-amount-box input { width: 100%; padding-right: 120px; box-sizing: border-box; }
+.unit-pill {
+  position: absolute; right: 6px; display: inline-flex;
+  border: 1px solid var(--color-table-border); border-radius: 999px; overflow: hidden;
+  background: var(--color-surface, #fff);
+}
+.unit-pill button { border: none; background: transparent; font-size: 11px; padding: 4px 10px; cursor: pointer; color: var(--color-ink-soft); }
+.unit-pill button.on { background: var(--color-accent-soft, #D0DBE7); color: var(--color-ink, #222); font-weight: 600; }
+/* (d): the Sabaq Dhor suggestion rows as pills */
+.sabaq-dhor-row { border-radius: 999px; }
+/* (e): the position switch rides the SAME line as the juz select */
+#dhorJuzPositionRow { flex-wrap: nowrap; align-items: center; }
+#dhorPositionField { display: inline-flex; align-items: center; }
+/* (g): Duration / Mistakes / Tajweed as one row */
+.dhor-triple-row { display: flex; gap: var(--space-sm); align-items: flex-end; }
+.dhor-triple-row > div { flex: 1 1 0; min-width: 0; }
+.dhor-triple-row #dhor_duration_min { width: 100%; box-sizing: border-box; }
+/* (h): history symmetry — the pair sits identically on every card */
+.card-history-bottom { justify-content: flex-start; }
+.card-history-bottom .history-btn, .card-history-bottom .history-container .history-btn {
+  min-width: 150px; justify-content: center;
+}
+/* the setup popup: 3×10 selectable chips; save icon head */
+.maktab-setup-head { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.maktab-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.maktab-setup-juz {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--color-table-border); border-radius: 999px;
+  padding: 10px 6px; cursor: pointer; user-select: none;
+  background: var(--color-surface, #fff);
+}
+.maktab-setup-juz input { position: absolute; opacity: 0; pointer-events: none; }
+.maktab-setup-juz:has(input:checked) { background: var(--palette-evergreen, #344C3D); color: #fff; border-color: transparent; }
+.maktab-setup-juz.partial { border-style: dashed; }

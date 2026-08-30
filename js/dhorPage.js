@@ -227,39 +227,29 @@ let dhorActivePlanId = null; // which one (if any) is currently backing the form
 let dhorEditingId = null;
 
 // 2026-08-04, confirmed in chat: Duration is now 2 plain number fields
-// (dhor_duration_min/dhor_duration_sec) instead of one text field
+// (dhor_duration_min, minutes only since V3.93.0) instead of one text field
 // holding "mm:ss" -- a colon in a single field doesn't play well with
 // the native numeric keypad, which expects plain digits. Replaces
 // parseDhorDuration entirely (that function's one and only caller, the
 // old single-field payload construction, is what's being replaced here).
 function getDhorDurationSeconds(){
+  // V3.93.0: a single MINUTES box (user) — stored as whole minutes.
   const minRaw = document.getElementById('dhor_duration_min').value;
-  const secRaw = document.getElementById('dhor_duration_sec').value;
-  if(!minRaw && !secRaw) return null;
-  const min = parseInt(minRaw, 10) || 0;
-  const sec = parseInt(secRaw, 10) || 0;
-  return min * 60 + sec;
+  const mins = parseInt(minRaw, 10);
+  if(!minRaw || isNaN(mins) || mins < 0) return null;
+  return mins * 60;
 }
 function setDhorDurationFields(totalSeconds){
   const minEl = document.getElementById('dhor_duration_min');
-  const secEl = document.getElementById('dhor_duration_sec');
-  if(totalSeconds == null || isNaN(totalSeconds)){
-    minEl.value = '';
-    secEl.value = '';
-    return;
-  }
-  const total = Math.max(0, Math.round(totalSeconds));
-  minEl.value = String(Math.floor(total / 60));
-  secEl.value = String(total % 60).padStart(2, '0');
+  if(!minEl) return;
+  if(totalSeconds == null || totalSeconds === ''){ minEl.value = ''; return; }
+  // display rounds to the nearest minute; anything saved under a minute shows 1
+  minEl.value = String(Math.max(1, Math.round(Number(totalSeconds) / 60)));
 }
 // Auto-advance (confirmed in chat): typing a 2nd digit into Minutes
 // (max 99, per maxlength="2" in index.html) moves focus straight to
 // Seconds, no manual tap needed for the common case.
-document.getElementById('dhor_duration_min').addEventListener('input', () => {
-  if(document.getElementById('dhor_duration_min').value.length >= 2){
-    document.getElementById('dhor_duration_sec').focus();
-  }
-});
+// V3.93.0: the mm→ss auto-advance died with the ss box.
 // Blur (confirmed in chat): if Minutes is left with exactly 1 digit when
 // focus leaves it -- by any means: iOS's checkmark, Android's Next,
 // tapping Seconds manually, or tapping away entirely -- that single
@@ -267,11 +257,7 @@ document.getElementById('dhor_duration_min').addEventListener('input', () => {
 // than requiring it to be typed out explicitly. Only fires when Seconds
 // is still genuinely empty, so it never overwrites a value someone
 // already entered there.
-document.getElementById('dhor_duration_min').addEventListener('blur', () => {
-  const minEl = document.getElementById('dhor_duration_min');
-  const secEl = document.getElementById('dhor_duration_sec');
-  if(minEl.value.length === 1 && !secEl.value) secEl.value = '00';
-});
+// V3.93.0: the ss box is gone — the blur helper died with it.
 function formatDhorDuration(totalSeconds){
   if(totalSeconds == null || isNaN(totalSeconds)) return '';
   const m = Math.floor(totalSeconds / 60);
@@ -838,7 +824,7 @@ function enterDhorRawRangeMode(range){
   document.getElementById('dhorRawToBtn').textContent = range.toLabel;
   document.getElementById('dhor_mistakes').disabled = true;
   document.getElementById('dhor_duration_min').disabled = true;
-  document.getElementById('dhor_duration_sec').disabled = true;
+  // (V3.93.0: single minutes box — no ss to disable)
   const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
   if(tajweedBtn) tajweedBtn.disabled = true;
   dhorActivePlanId = null;
@@ -851,7 +837,7 @@ function exitDhorRawRangeMode(){
   placeDhorConfirmBox('picker');   // V3.50.0: back to the Juz row
   document.getElementById('dhor_mistakes').disabled = false;
   document.getElementById('dhor_duration_min').disabled = false;
-  document.getElementById('dhor_duration_sec').disabled = false;
+  // (V3.93.0: single minutes box — no ss to enable)
   const tajweedBtn = document.querySelector('#dhorTajweedPicker .tajweed-trigger-btn');
   if(tajweedBtn) tajweedBtn.disabled = false;
 }
@@ -938,7 +924,7 @@ function refreshDhorPlanBtn(){
   const btn = document.getElementById('dhorViewPlanBtn');
   if(!btn) return;
   const setup = dhorPlanBtnIsSetup();
-  btn.textContent = setup ? 'Add Juz to Dhor' : 'Plan';
+  btn.textContent = setup ? 'Ajzaa Completed' : 'Plan';   // V3.93.0 (user): relabel
   btn.setAttribute('aria-label', setup ? 'Add juz to this student\u2019s Dhor pool' : 'Plan Dhor');
 }
 document.getElementById('dhorViewPlanBtn').addEventListener('click', () => {
@@ -1238,7 +1224,7 @@ function planDhorHandleQueueRowTap(rowIndex){
 // special handling here, it's read fresh from both fields at save time
 // either way -- see getDhorDurationSeconds above). Attached to both
 // Minutes and Seconds now that Duration is 2 fields, not 1.
-['dhor_duration_min', 'dhor_duration_sec'].forEach(id => {
+['dhor_duration_min'].forEach(id => {   // V3.93.0: min only
   document.getElementById(id).addEventListener('input', () => {
     dhorLapTimes = null;
     renderDhorLapRollup();
@@ -1297,7 +1283,7 @@ function collectDhorEditState(){
       document.getElementById('dhor_position').value] : null,
     mistakes: document.getElementById('dhor_mistakes').value,
     tags: dhorSelectedTags.join(','),
-    dur: [document.getElementById('dhor_duration_min').value, document.getElementById('dhor_duration_sec').value],
+    dur: [document.getElementById('dhor_duration_min').value],   // V3.93.0: min only
     notes: readCommentBlock('dhorCommentBlock')
   });
 }

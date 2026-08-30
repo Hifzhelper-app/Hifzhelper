@@ -175,6 +175,7 @@ async function renderSabaqScreen(){
   document.getElementById('sabaq_date').value = todayISO();
   document.getElementById('sabaq_line_count').value = '';
   document.getElementById('sabaq_page_count').value = '';
+  if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0
 
   let profile = null;
   try{ profile = await logProfile(); } catch(e){ profile = null; }
@@ -215,6 +216,7 @@ function recomputeSabaqLineCount(){
   if(!result) return;
   document.getElementById('sabaq_line_count').value = result.lineCount;
   document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / 13) * 4) / 4;
+  if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0
 }
 
 // V3.21.0: loads an existing entry into this same form for editing --
@@ -288,6 +290,7 @@ async function resetSabaqFormAfterEdit(){
   document.getElementById('sabaq_date').value = todayISO();
   document.getElementById('sabaq_line_count').value = '';
   document.getElementById('sabaq_page_count').value = '';
+  if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0
   sabaqSelectedTags = [];
   renderTajweedPicker('sabaqTajweedPicker', sabaqSelectedTags);
   renderCommentBlock('sabaqCommentBlock', null);
@@ -430,3 +433,30 @@ document.getElementById('sabaqSaveBtn').addEventListener('click', async () => {
     errEl.textContent = "Couldn't save: " + e.message;
   }
 });
+
+// ============================================================
+// V3.93.0 (user): the Lines/Pages unit pill — ONE visible amount box,
+// the pill inside choosing WHICH unit is shown. Both inputs keep their
+// ids and their values (the auto-calc fills both; the save path is
+// untouched); this is a VIEW switch, not a data change.
+// ============================================================
+function sabaqUnitPillShow(unit){
+  const lines = document.getElementById('sabaq_line_count');
+  const pages = document.getElementById('sabaq_page_count');
+  const pill = document.getElementById('sabaqUnitPill');
+  if(!lines || !pages || !pill) return;
+  lines.classList.toggle('hidden', unit !== 'lines');
+  pages.classList.toggle('hidden', unit !== 'pages');
+  pill.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.u === unit));
+}
+function sabaqSyncUnitPill(){
+  const lines = document.getElementById('sabaq_line_count');
+  const pages = document.getElementById('sabaq_page_count');
+  if(!lines || !pages) return;
+  sabaqUnitPillShow(!lines.value && pages.value ? 'pages' : 'lines');
+}
+(function wireSabaqUnitPill(){
+  const pill = document.getElementById('sabaqUnitPill');
+  if(!pill) return;
+  pill.querySelectorAll('button').forEach(b => b.addEventListener('click', () => sabaqUnitPillShow(b.dataset.u)));
+})();

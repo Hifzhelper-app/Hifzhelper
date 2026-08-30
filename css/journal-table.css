@@ -467,3 +467,9 @@
 @media (min-width: 768px) {
   .screen-top-close-row.maktab-summary-toprow { width: 70%; margin-left: auto; margin-right: auto; }
 }
+
+/* V3.93.0: the SECOND clipper (user, 2026-08-30) — the header CELL's
+   own overflow:hidden (there for label ellipsis) was swallowing the
+   search dropdown a level below the V3.91.0 row fix. The search cell
+   alone is visible; the other cells keep their ellipsis clipping. */
+.journal-header-cell.maktab-search-cell { overflow: visible; }

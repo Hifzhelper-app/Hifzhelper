@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.92.1"></script>
+<script src="js/pwaManifest.js?v=3.93.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.92.1">
-<link rel="stylesheet" href="css/base.css?v=3.92.1">
-<link rel="stylesheet" href="css/nav.css?v=3.92.1">
-<link rel="stylesheet" href="css/journal-table.css?v=3.92.1">
-<link rel="stylesheet" href="css/components.css?v=3.92.1">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.92.1">
-<link rel="stylesheet" href="css/settings.css?v=3.92.1">
-<link rel="stylesheet" href="css/admin.css?v=3.92.1">
-<link rel="stylesheet" href="css/haidh.css?v=3.92.1">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.92.1">
-<link rel="stylesheet" href="css/sih.css?v=3.92.1">
+<link rel="stylesheet" href="css/tokens.css?v=3.93.0">
+<link rel="stylesheet" href="css/base.css?v=3.93.0">
+<link rel="stylesheet" href="css/nav.css?v=3.93.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.93.0">
+<link rel="stylesheet" href="css/components.css?v=3.93.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.93.0">
+<link rel="stylesheet" href="css/settings.css?v=3.93.0">
+<link rel="stylesheet" href="css/admin.css?v=3.93.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.93.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.93.0">
+<link rel="stylesheet" href="css/sih.css?v=3.93.0">
 </head>
 <body>
 
@@ -454,12 +454,23 @@
               </div>
               <span class="checkbox-box"><input type="checkbox" id="sabaq_confirm" aria-label="Confirm selection"></span>
             </div>
+            <!-- V3.93.0 (user): ONE Lines/Pages box with the unit PILL
+                 inside; Tajweed moves up beside it. Both inputs keep
+                 their ids (the save path and the auto-calc fill both;
+                 the pill switches which one is SHOWN). -->
             <div class="picker-row">
-              <div><label>Lines</label><input type="number" inputmode="numeric" id="sabaq_line_count"></div>
-              <div><label>Pages</label><input type="number" inputmode="numeric" id="sabaq_page_count"></div>
+              <div><label>Lines/Pages</label>
+                <div class="unit-amount-box">
+                  <input type="number" inputmode="numeric" id="sabaq_line_count">
+                  <input type="number" inputmode="numeric" id="sabaq_page_count" class="hidden">
+                  <div class="unit-pill" id="sabaqUnitPill">
+                    <button type="button" data-u="lines" class="on">Lines</button>
+                    <button type="button" data-u="pages">Pages</button>
+                  </div>
+                </div>
+              </div>
+              <div><label>Tajweed</label><div id="sabaqTajweedPicker"></div></div>
             </div>
-            <label>Tajweed</label>
-            <div id="sabaqTajweedPicker"></div>
             <div id="sabaqCommentBlock"></div>
             <!-- V3.85.0 (user, 2026-08-28): BOTH history buttons live at
                  the bottom of the page, below the notes. -->
@@ -679,7 +690,12 @@
               <div><label>From</label><button type="button" class="dhor-raw-range-btn" id="dhorRawFromBtn"></button></div>
               <div><label>To</label><button type="button" class="dhor-raw-range-btn" id="dhorRawToBtn"></button></div>
             </div>
-            <div class="picker-row">
+            <!-- V3.93.0 (user): Duration / Mistakes / Tajweed in ONE row;
+                 the mm:ss split is a single MINUTES box (stored as mm:00 —
+                 schema unchanged; the ss input is gone and every reader
+                 guards for it). -->
+            <div class="picker-row dhor-triple-row">
+              <div><label>Duration</label><input type="text" inputmode="numeric" id="dhor_duration_min" placeholder="min" maxlength="3"></div>
               <div><label>Mistakes</label><input type="number" inputmode="numeric" id="dhor_mistakes"></div>
               <div><label>Tajweed</label><div id="dhorTajweedPicker"></div></div>
             </div>
@@ -702,16 +718,8 @@
                  exactly as it already was, deliberately NOT expanded
                  to fill the resulting space -- .picker-row-single was
                  considered and explicitly withdrawn. -->
-            <div class="picker-row">
-              <div>
-                <label>Duration</label>
-                <div class="dhor-duration-split">
-                  <input type="text" inputmode="numeric" id="dhor_duration_min" placeholder="mm" maxlength="2">
-                  <span class="dhor-duration-colon">:</span>
-                  <input type="text" inputmode="numeric" id="dhor_duration_sec" placeholder="ss" maxlength="2">
-                </div>
-              </div>
-            </div>
+            <!-- V3.93.0: the mm:ss Duration block moved into the triple
+                 row above as a single minutes box. -->
             <!-- 2026-08-04, confirmed in chat: shows what Note Time
                  captured, until the Dhor entry itself is actually saved
                  (js/dhorPage.js's renderDhorLapRollup). -->
@@ -1304,38 +1312,38 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.92.1"></script>
-<script src="shared/haidhRules.js?v=3.92.1"></script>
-<script src="js/icons.js?v=3.92.1"></script>
-<script src="js/customDate.js?v=3.92.1"></script>
-<script src="js/api.js?v=3.92.1"></script>
-<script src="js/logContext.js?v=3.92.1"></script>
-<script src="js/uiSwitch.js?v=3.92.1"></script>
-<script src="js/position.js?v=3.92.1"></script>
-<script src="js/auth.js?v=3.92.1"></script>
-<script src="js/home.js?v=3.92.1"></script>
-<script src="js/tajweed.js?v=3.92.1"></script>
-<script src="js/commentPrivacy.js?v=3.92.1"></script>
-<script src="js/session-timer.js?v=3.92.1"></script>
-<script src="js/journal.js?v=3.92.1"></script>
-<script src="js/maktabSummary.js?v=3.92.1"></script>
-<script src="js/maktabSettings.js?v=3.92.1"></script>
-<script src="js/maktabSetup.js?v=3.92.1"></script>
-<script src="js/maktabDay.js?v=3.92.1"></script>
-<script src="js/maktabJournal.js?v=3.92.1"></script>
-<script src="js/maktabCalendarPage.js?v=3.92.1"></script>
-<script src="js/dhorPage.js?v=3.92.1"></script>
-<script src="js/sabaqPage.js?v=3.92.1"></script>
-<script src="js/sabaqDhorPage.js?v=3.92.1"></script>
-<script src="js/reflectionCard.js?v=3.92.1"></script>
-<script src="js/logDetailScreen.js?v=3.92.1"></script>
-<script src="js/haidhDetailScreen.js?v=3.92.1"></script>
-<script src="js/kaabaTracker.js?v=3.92.1"></script>
-<script src="js/juzTrackerScreen.js?v=3.92.1"></script>
-<script src="js/sihScreen.js?v=3.92.1"></script>
-<script src="js/settingsScreen.js?v=3.92.1"></script>
-<script src="js/adminPage.js?v=3.92.1"></script>
-<script src="js/versionStamp.js?v=3.92.1"></script>
-<script src="js/app.js?v=3.92.1"></script>
+<script src="shared/data.js?v=3.93.0"></script>
+<script src="shared/haidhRules.js?v=3.93.0"></script>
+<script src="js/icons.js?v=3.93.0"></script>
+<script src="js/customDate.js?v=3.93.0"></script>
+<script src="js/api.js?v=3.93.0"></script>
+<script src="js/logContext.js?v=3.93.0"></script>
+<script src="js/uiSwitch.js?v=3.93.0"></script>
+<script src="js/position.js?v=3.93.0"></script>
+<script src="js/auth.js?v=3.93.0"></script>
+<script src="js/home.js?v=3.93.0"></script>
+<script src="js/tajweed.js?v=3.93.0"></script>
+<script src="js/commentPrivacy.js?v=3.93.0"></script>
+<script src="js/session-timer.js?v=3.93.0"></script>
+<script src="js/journal.js?v=3.93.0"></script>
+<script src="js/maktabSummary.js?v=3.93.0"></script>
+<script src="js/maktabSettings.js?v=3.93.0"></script>
+<script src="js/maktabSetup.js?v=3.93.0"></script>
+<script src="js/maktabDay.js?v=3.93.0"></script>
+<script src="js/maktabJournal.js?v=3.93.0"></script>
+<script src="js/maktabCalendarPage.js?v=3.93.0"></script>
+<script src="js/dhorPage.js?v=3.93.0"></script>
+<script src="js/sabaqPage.js?v=3.93.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.93.0"></script>
+<script src="js/reflectionCard.js?v=3.93.0"></script>
+<script src="js/logDetailScreen.js?v=3.93.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.93.0"></script>
+<script src="js/kaabaTracker.js?v=3.93.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.93.0"></script>
+<script src="js/sihScreen.js?v=3.93.0"></script>
+<script src="js/settingsScreen.js?v=3.93.0"></script>
+<script src="js/adminPage.js?v=3.93.0"></script>
+<script src="js/versionStamp.js?v=3.93.0"></script>
+<script src="js/app.js?v=3.93.0"></script>
 </body>
 </html>

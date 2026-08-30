@@ -508,3 +508,11 @@
 .mset-term-dates input[type="date"]::-webkit-calendar-picker-indicator,
 .mset-cal-row input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
 .mset-term-dates input[type="date"], .mset-cal-row input[type="date"] { cursor: pointer; }
+
+/* V3.93.0 (user): the Calendar card's content centres */
+#msetCardCalendar .mset-cal-head { justify-content: center; }
+#msetCardCalendar .mset-list-label { display: block; text-align: center; }
+#msetCardCalendar .mset-terms, #msetCardCalendar .mset-cal-buttons { max-width: 520px; margin-left: auto; margin-right: auto; }
+#msetCardCalendar .mset-term-row .mset-term-name { text-align: center; }
+#msetCardCalendar #mset_term_add, #msetCardCalendar #mset_term_add_big { display: block; margin: 0 auto; }
+#msetCardCalendar .mset-term-dates { justify-content: center; }

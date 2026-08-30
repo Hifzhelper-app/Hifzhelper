@@ -103,8 +103,14 @@ async function renderMaktabSetupScreen(host){
     if(n > 0 && n < 4) partial.push(j);
   }
 
+  // V3.93.0 (user's annotated mock): the explanatory paragraph is GONE;
+  // Save is an ICON at the top-right; the list is a 3×10 grid of
+  // SELECTABLE BUTTONS (the user's preferred "if possible" option).
   host.innerHTML = `
-    <p class="form-hint">Tick every juz' this student has completed and is revising. This sets the maktab's Dhor pool for her — saving replaces whatever is there now.</p>
+    <div class="maktab-setup-head">
+      <span class="save-status" id="maktabSetupStatus"></span>
+      <button type="button" class="mset-save-btn" id="maktabSetupSave" aria-label="Save setup"><span class="mset-save-icon" id="maktabSetupSaveIcon"></span></button>
+    </div>
     <div class="maktab-setup-grid" id="maktabSetupGrid">
       ${Array.from({ length: 30 }, (_, i) => i + 1).map(j => `
         <label class="maktab-setup-juz${partial.includes(j) ? ' partial' : ''}">
@@ -113,9 +119,10 @@ async function renderMaktabSetupScreen(host){
         </label>`).join('')}
     </div>
     ${partial.length ? `<p class="form-hint">Juz ${partial.join(', ')} ${partial.length === 1 ? 'is' : 'are'} partly in the pool from a half moved to Dhor. Ticking marks the whole juz'; leaving unticked removes the part.</p>` : ''}
-    <button type="button" class="primary-btn" id="maktabSetupSave">Save setup</button>
-    <span class="save-status" id="maktabSetupStatus"></span>`;
+    `;
 
+  const si = document.getElementById('maktabSetupSaveIcon');
+  if(si && typeof iconHtml === 'function') si.innerHTML = iconHtml('save');
   document.getElementById('maktabSetupSave').addEventListener('click', () => saveMaktabStudentSetup(pool, host));
 }
 
