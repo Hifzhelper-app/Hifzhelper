@@ -1925,7 +1925,11 @@
 /* (d): the Sabaq Dhor suggestion rows as pills */
 .sabaq-dhor-row { border-radius: 999px; }
 /* (e): the position switch rides the SAME line as the juz select */
-#dhorJuzPositionRow { flex-wrap: nowrap; align-items: center; }
+/* V3.96.1: center parked the bare switch in the LABEL GAP of the
+   labelled From column (the verified cause of every failed alignment
+   nudge) — the row bottom-aligns instead, so the switch stands level
+   with the select. */
+#dhorJuzPositionRow { flex-wrap: nowrap; align-items: flex-end; }
 #dhorPositionField { display: inline-flex; align-items: center; }
 /* (g): Duration / Mistakes / Tajweed as one row */
 .dhor-triple-row { display: flex; gap: var(--space-sm); align-items: flex-end; }
@@ -1968,7 +1972,6 @@
 }
 /* 41b: the inline 1|2 switch gets real dimensions beside the select */
 #dhorPositionField { flex: 0 0 auto; }
-#dhorPositionField .switch-track { width: 84px; height: 34px; }
 /* 41c: the triple row's labels share one line */
 .dhor-triple-row { align-items: flex-start; }
 .dhor-triple-row > div > label { display: block; margin-top: 0; margin-bottom: 6px; }
@@ -1985,7 +1988,13 @@
 .dhor-triple-row { margin-top: var(--space-md); }
 /* (d) the From select and the 1|2 pills share the line at ONE height;
    the three boxes of the triple row align and match height */
-#dhorPositionField .switch-track { width: 84px; height: var(--dhor-row2-h); }
+/* V3.96.1: the forced track sizes are GONE (both of them — 34px and
+   44px debris from three failed attempts). The component's contract is
+   restored instead: renderSwitch computes the thumb as PERCENTAGES of
+   the track assuming N equal slots, so the options become equal flex
+   slots and one width serves 2-way and 4-way alike. */
+#dhorPositionField .switch-track { width: 140px; }
+#dhor_position_switch .switch-option { flex: 1 1 0; min-width: 0; padding-left: 0; padding-right: 0; text-align: center; }
 .dhor-triple-row input,
 .dhor-triple-row .tajweed-trigger-btn { height: var(--dhor-row2-h); box-sizing: border-box; }
 .dhor-triple-row .tajweed-trigger-btn { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
