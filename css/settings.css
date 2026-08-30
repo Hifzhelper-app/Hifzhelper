@@ -524,7 +524,11 @@
 .cal-stage-card .mset-cal-row-main { display: flex; gap: 6px; align-items: center; }
 .cal-stage-card .mset-cal-row-main input[type="date"] { width: auto; flex: 0 0 auto; }
 .cal-stage-card .mset-cal-row-main input[type="text"] { width: auto; flex: 1 1 auto; min-width: 0; }
-.mset-cal-hijri { font-size: 13px; opacity: .75; margin: 2px 0 0 4px; }
+.mset-cal-namecol { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.mset-cal-namecol input[type="text"] { width: 100%; box-sizing: border-box; }
+.mset-cal-hijri { font-size: 13px; opacity: .75; margin: 2px 0 0 6px; }
+/* V3.95.0 (user): the border around the Calendar content (her pink box) */
+#msetCardCalendar { border: 1.5px solid var(--color-table-border); border-radius: var(--radius-md); padding: var(--space-md); }
 /* 39: Calendar as a HEADER; bigger +; content down a notch */
 #msetCardCalendar { padding-top: var(--space-lg, 22px); }
 .mset-cal-head .mset-list-label { font-size: 18px; font-weight: 700; }

@@ -571,10 +571,12 @@ async function openCalStagePopup(type){
       const base = type === 'holiday' ? (row.label || 'Public Holiday') : (parts[0] || '');
       const hijri = type === 'islamic' && parts.length > 1 ? parts.slice(1).join(' \u2014 ') : '';
       row._base = base; row._hijri = hijri;
+      // V3.95.0 (user): the italic Hijri sits directly UNDER THE NAME
+      // BOX — the name and its Hijri share a column.
       div.innerHTML = `<div class="mset-cal-row-main"><input type="date" value="${row.date_from || ''}">
-           <input type="text" value="${base.replace(/"/g, '&quot;')}" maxlength="60" placeholder="${type === 'holiday' ? 'Public Holiday' : 'Name'}">
-           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button></div>
-           ${hijri ? `<div class="mset-cal-hijri"><i>${hijri}</i></div>` : ''}`;
+           <span class="mset-cal-namecol"><input type="text" value="${base.replace(/"/g, '&quot;')}" maxlength="60" placeholder="${type === 'holiday' ? 'Public Holiday' : 'Name'}">
+           ${hijri ? `<span class="mset-cal-hijri"><i>${hijri}</i></span>` : ''}</span>
+           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button></div>`;
       const dateInp = div.querySelector('input[type="date"]');
       dateInp.addEventListener('click', () => { try{ dateInp.showPicker(); } catch(e){} });
       dateInp.addEventListener('change', (e) => { row.date_from = e.target.value; });

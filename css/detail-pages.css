@@ -1972,5 +1972,20 @@
 /* 41c: the triple row's labels share one line */
 .dhor-triple-row { align-items: flex-start; }
 .dhor-triple-row > div > label { display: block; margin-top: 0; margin-bottom: 6px; }
-/* 41e: the history pair rides the RIGHT edge (the user's arrows) */
-.card-history-bottom { justify-content: flex-end; }
+/* V3.95.0 (user's boxed mock, replacing the flex-end reading): the
+   history pair SPREADS — one to each end — on every card. */
+.card-history-bottom { justify-content: space-between; }
+
+/* ============================================================
+   V3.95.0 (user, 2026-08-30 09:51 — the red Space markers and the
+   dashed alignment lines) */
+/* (c) air above the notes, above the history row, above dhor's triple */
+#sabaqCommentBlock, #sabaqDhorCommentBlock, #dhorCommentBlock { margin-top: var(--space-lg, 24px); }
+.card-history-bottom { margin-top: var(--space-lg, 24px); }
+.dhor-triple-row { margin-top: var(--space-md); }
+/* (d) the From select and the 1|2 pills share the line at ONE height;
+   the three boxes of the triple row align and match height */
+#dhorPositionField .switch-track { width: 84px; height: var(--dhor-row2-h); }
+.dhor-triple-row input,
+.dhor-triple-row .tajweed-trigger-btn { height: var(--dhor-row2-h); box-sizing: border-box; }
+.dhor-triple-row .tajweed-trigger-btn { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
