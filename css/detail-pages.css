@@ -1948,3 +1948,29 @@
 .maktab-setup-juz input { position: absolute; opacity: 0; pointer-events: none; }
 .maktab-setup-juz:has(input:checked) { background: var(--palette-evergreen, #344C3D); color: #fff; border-color: transparent; }
 .maktab-setup-juz.partial { border-style: dashed; }
+
+/* ============================================================
+   V3.94.0 (user, 2026-08-30) */
+/* 40: the Ajzaa popup — title left of the save icon; the X in the LEFT
+   corner; pills ~20% smaller with centred text */
+.maktab-setup-head { justify-content: space-between; }
+.maktab-setup-title { font-size: 17px; margin: 0 0 0 28px; flex: 1 1 auto; }
+.maktab-setup-card .maktab-setup-close { left: var(--space-md); right: auto; }
+.maktab-setup-juz { padding: 8px 5px; font-size: 13px; text-align: center; }
+.maktab-setup-juz span { width: 100%; text-align: center; }
+/* 41a: the PILL lands on the element that actually carries the border */
+#sabaqDhor_sections .sabaq-dhor-row-text,
+.sabaq-dhor-row-wrap .sabaq-dhor-row-text {
+  border-radius: 999px;
+  background: var(--color-accent-soft, #D0DBE7);
+  border-color: transparent;
+  padding-left: 16px; padding-right: 16px;
+}
+/* 41b: the inline 1|2 switch gets real dimensions beside the select */
+#dhorPositionField { flex: 0 0 auto; }
+#dhorPositionField .switch-track { width: 84px; height: 34px; }
+/* 41c: the triple row's labels share one line */
+.dhor-triple-row { align-items: flex-start; }
+.dhor-triple-row > div > label { display: block; margin-top: 0; margin-bottom: 6px; }
+/* 41e: the history pair rides the RIGHT edge (the user's arrows) */
+.card-history-bottom { justify-content: flex-end; }

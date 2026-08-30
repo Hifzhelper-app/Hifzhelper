@@ -516,3 +516,16 @@
 #msetCardCalendar .mset-term-row .mset-term-name { text-align: center; }
 #msetCardCalendar #mset_term_add, #msetCardCalendar #mset_term_add_big { display: block; margin: 0 auto; }
 #msetCardCalendar .mset-term-dates { justify-content: center; }
+
+/* ============================================================
+   V3.94.0 (user, 2026-08-30) */
+/* 38c: the staged rows — name line + italic Hijri beneath */
+.cal-stage-card .mset-cal-row { display: block; }
+.cal-stage-card .mset-cal-row-main { display: flex; gap: 6px; align-items: center; }
+.cal-stage-card .mset-cal-row-main input[type="date"] { width: auto; flex: 0 0 auto; }
+.cal-stage-card .mset-cal-row-main input[type="text"] { width: auto; flex: 1 1 auto; min-width: 0; }
+.mset-cal-hijri { font-size: 13px; opacity: .75; margin: 2px 0 0 4px; }
+/* 39: Calendar as a HEADER; bigger +; content down a notch */
+#msetCardCalendar { padding-top: var(--space-lg, 22px); }
+.mset-cal-head .mset-list-label { font-size: 18px; font-weight: 700; }
+#msetCardCalendar .mset-add-btn { padding: 8px 20px; font-size: 18px; line-height: 1; }

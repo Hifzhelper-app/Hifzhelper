@@ -39,7 +39,7 @@ function tajweedNamesFor(selectedIds){
 // array of tag-ID strings -- the caller reads it back at save time.
 function renderTajweedPicker(containerId, selected){
   const el = document.getElementById(containerId);
-  const summary = selected.length ? tajweedNamesFor(selected).join(', ') : 'Select tajweed tags';
+  const summary = selected.length ? tajweedNamesFor(selected).join(', ') : 'Select tags';   // V3.94.0 (user): the label above already says Tajweed
   el.innerHTML = `<button type="button" class="tajweed-trigger-btn"></button>`;
   const btn = el.querySelector('.tajweed-trigger-btn');
   btn.textContent = summary;   // names are admin-entered text — never innerHTML

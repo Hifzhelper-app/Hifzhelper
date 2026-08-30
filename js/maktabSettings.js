@@ -159,7 +159,7 @@ async function renderMaktabSettingsScreen(){
       <select id="mset_cal_year" aria-label="Year"></select>
     </div>
 
-    <div class="form-label mset-list-label">Terms</div>
+    <!-- V3.94.0 (user): the Terms label is gone -->
     <div class="mset-terms" id="msetTermsList"></div>
     <button type="button" class="secondary" id="mset_term_add_big">Add term</button>
     <button type="button" class="mset-add-btn hidden" id="mset_term_add" aria-label="Add another term">+</button>
@@ -505,10 +505,11 @@ async function msetAddTerm(){
   } catch(e){ err.textContent = e.message; }
 }
 
-let msetCalWired = false;
+// V3.94.0: the run-once guard (msetCalWired) is GONE — the card's
+// innerHTML is rebuilt every visit, so it must be wired every visit;
+// the old handlers die with their replaced nodes (the user's dead
+// year/+/buttons on second entry, diagnosed 2026-08-30).
 function wireMsetCalendarCard(){
-  if(msetCalWired) return;
-  msetCalWired = true;
   const yearSel = document.getElementById('mset_cal_year');
   const thisYear = parseInt(appTodayISO().slice(0, 4));
   yearSel.innerHTML = Array.from({ length: 8 }, (_, i) => thisYear - 1 + i)
@@ -562,16 +563,25 @@ async function openCalStagePopup(type){
     stage.forEach((row, idx) => {
       const div = document.createElement('div');
       div.className = 'mset-cal-row';
-      // V3.89.0 (user): BOTH types carry the editable text — islamic rows
-      // show "Description — Hijri date"; holiday rows prefill the
-      // editable "Public Holiday". The delete × rides every row.
-      div.innerHTML = `<input type="date" value="${row.date_from || ''}">
-           <input type="text" value="${(row.label || (type === 'holiday' ? 'Public Holiday' : '')).replace(/"/g, '&quot;')}" maxlength="60" placeholder="${type === 'holiday' ? 'Public Holiday' : 'Name'}">
-           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button>`;
+      // V3.94.0 (user): the NAME input holds the BASE name only; the
+      // Hijri date renders in ITALICS on its own line beneath
+      // (display-only). Confirm reassembles "base — hijri" — storage
+      // unchanged. Holiday rows keep the editable "Public Holiday".
+      const parts = String(row.label || '').split(' \u2014 ');
+      const base = type === 'holiday' ? (row.label || 'Public Holiday') : (parts[0] || '');
+      const hijri = type === 'islamic' && parts.length > 1 ? parts.slice(1).join(' \u2014 ') : '';
+      row._base = base; row._hijri = hijri;
+      div.innerHTML = `<div class="mset-cal-row-main"><input type="date" value="${row.date_from || ''}">
+           <input type="text" value="${base.replace(/"/g, '&quot;')}" maxlength="60" placeholder="${type === 'holiday' ? 'Public Holiday' : 'Name'}">
+           <button type="button" class="mset-list-x" aria-label="Remove">&times;</button></div>
+           ${hijri ? `<div class="mset-cal-hijri"><i>${hijri}</i></div>` : ''}`;
       const dateInp = div.querySelector('input[type="date"]');
-      dateInp.addEventListener('click', () => { try{ dateInp.showPicker(); } catch(e){} });   // V3.92.0
+      dateInp.addEventListener('click', () => { try{ dateInp.showPicker(); } catch(e){} });
       dateInp.addEventListener('change', (e) => { row.date_from = e.target.value; });
-      div.querySelector('input[type="text"]').addEventListener('change', (e) => { row.label = e.target.value; });
+      div.querySelector('input[type="text"]').addEventListener('change', (e) => {
+        row._base = e.target.value;
+        row.label = row._hijri ? `${e.target.value} \u2014 ${row._hijri}` : e.target.value;
+      });
       div.querySelector('.mset-list-x').addEventListener('click', () => { stage.splice(idx, 1); paint(); });
       host.appendChild(div);
     });

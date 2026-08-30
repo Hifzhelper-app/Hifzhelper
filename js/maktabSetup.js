@@ -108,6 +108,7 @@ async function renderMaktabSetupScreen(host){
   // SELECTABLE BUTTONS (the user's preferred "if possible" option).
   host.innerHTML = `
     <div class="maktab-setup-head">
+      <h2 class="maktab-setup-title">Ajzaa completed</h2><!-- V3.94.0 (user) -->
       <span class="save-status" id="maktabSetupStatus"></span>
       <button type="button" class="mset-save-btn" id="maktabSetupSave" aria-label="Save setup"><span class="mset-save-icon" id="maktabSetupSaveIcon"></span></button>
     </div>

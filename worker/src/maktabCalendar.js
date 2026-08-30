@@ -188,21 +188,21 @@ export async function handleGetProposal(request, env, auth, type) {
     "SELECT * FROM maktab_calendar WHERE type = ?1 AND date_from >= ?2 AND date_from <= ?3 ORDER BY date_from"
   ).bind(type, `${year}-01-01`, `${year}-12-31`).all()).results;
   let proposed = [];
-  if (type === 'holiday') {
-    // any holidays already saved for the year → the proposal is only the
-    // missing generated dates; a fresh year proposes the full set
-    const have = new Set(current.map(r => r.date_from));
-    // V3.89.0 (user): holidays carry an EDITABLE label, prefilled
-    proposed = southAfricanHolidays(parseInt(year)).filter(d => !have.has(d))
-      .map(d => ({ date_from: d, date_to: d, label: 'Public Holiday' }));
-  } else {
-    // islamic: dedupe by BASE NAME within the year — an adjusted date
-    // stays adjusted and its day is never re-proposed (the V3.87.0
-    // hole), and rows saved under pre-V3.89 short labels still match
-    // their Hijri-bearing successors.
-    const have = new Set(current.map(r => calBaseName(r.label)));
-    proposed = ISLAMIC_PREDICTIONS.filter(([label, d]) => d.startsWith(year) && !have.has(calBaseName(label)))
-      .map(([label, d]) => ({ date_from: d, date_to: d, label }));
+  // V3.94.0 (user, 2026-08-30 — "deletions must stick"): the standard
+  // set is proposed ONLY INTO AN EMPTY YEAR. Once any rows of this
+  // type exist for the year, the stage is exactly what is saved —
+  // nothing re-proposed, so a deleted day stays deleted ("deleted"
+  // and "never had" were previously indistinguishable, the design
+  // fault behind her returning First Fast). Deleting every row and
+  // reopening invites the full fresh proposal — the natural reset.
+  if (current.length === 0) {
+    if (type === 'holiday') {
+      proposed = southAfricanHolidays(parseInt(year))
+        .map(d => ({ date_from: d, date_to: d, label: 'Public Holiday' }));
+    } else {
+      proposed = ISLAMIC_PREDICTIONS.filter(([label, d]) => d.startsWith(year))
+        .map(([label, d]) => ({ date_from: d, date_to: d, label }));
+    }
   }
   return { data: { year, type, current, proposed } };
 }
@@ -229,12 +229,23 @@ export async function handleConfirmList(request, env, auth) {
     "DELETE FROM maktab_calendar WHERE type = ?1 AND date_from >= ?2 AND date_from <= ?3"
   ).bind(type, `${b.year}-01-01`, `${b.year}-12-31`).run();
   let added = 0;
+  // V3.94.0: Hijri enrichment — a confirmed islamic label matching a
+  // seed base name for this year that LACKS a Hijri part is upgraded
+  // to the seed's full "Name — Hijri" label (the safety net for rows
+  // saved under the pre-V3.89 short names).
+  const seedByBase = new Map(
+    ISLAMIC_PREDICTIONS.filter(([l, d]) => d.startsWith(String(b.year)))
+      .map(([l]) => [calBaseName(l), l])
+  );
   for (const r of rows) {
     // V3.89.0 (user, reversing the date-only call): holidays store their
     // editable text too; blank falls back to 'Public Holiday'.
-    const label = type === 'holiday'
+    let label = type === 'holiday'
       ? (String(r.label || '').trim().slice(0, 60) || 'Public Holiday')
       : String(r.label).trim().slice(0, 60);
+    if (type === 'islamic' && !label.includes(' \u2014 ') && seedByBase.has(calBaseName(label))) {
+      label = seedByBase.get(calBaseName(label));
+    }
     await env.DB.prepare(
       "INSERT OR IGNORE INTO maktab_calendar (date_from, date_to, label, type, source) VALUES (?, ?, ?, ?, 'confirmed')"
     ).bind(r.date_from, r.date_from, label, type).run();
