@@ -2022,7 +2022,7 @@
 .mkweek-add { border: 1px dashed var(--color-table-border); background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; width: 100%; }
 .mkweek-add-card select { width: 100%; margin-bottom: var(--space-sm); }
 /* the teaching-day chips on the General card */
-.mset-teaching-days { display: flex; flex-wrap: wrap; gap: 4px; }
+.mset-teaching-days { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .mset-day-chip {
   border: 1px solid var(--color-table-border); background: transparent;
   border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer;
