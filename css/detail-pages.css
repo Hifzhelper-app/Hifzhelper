@@ -1998,3 +1998,43 @@
 .dhor-triple-row input,
 .dhor-triple-row .tajweed-trigger-btn { height: var(--dhor-row2-h); box-sizing: border-box; }
 .dhor-triple-row .tajweed-trigger-btn { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ============================================================
+   V3.98.0 — the maktab ATTENDANCE screen + the teaching-day chips */
+.mkweek-nav { display: flex; align-items: center; justify-content: center; gap: var(--space-md); margin: var(--space-sm) 0 var(--space-md); }
+.mkweek-nav .secondary { width: auto; flex: 0 0 auto; padding: 6px 14px; }
+#mkweekLabel { white-space: nowrap; font-weight: 600; }
+.mkweek-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-sm); align-items: start; }
+.mkweek-col {
+  background: var(--color-surface, #fff); border-radius: var(--radius-md);
+  padding: var(--space-sm); min-width: 0;
+}
+.mkweek-col-off { opacity: .65; }
+.mkweek-col-head { display: flex; flex-direction: column; margin-bottom: var(--space-sm); }
+.mkweek-wd { font-size: 12px; color: var(--color-ink-soft); text-transform: uppercase; letter-spacing: .04em; }
+.mkweek-date { font-weight: 700; }
+.mkweek-note { font-size: 13px; opacity: .8; font-style: italic; }
+.mkweek-list { margin-bottom: var(--space-sm); }
+.mkweek-list-title { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--color-ink-soft); margin-bottom: 2px; }
+.mkweek-name { font-size: 14px; padding: 2px 0; }
+.mkweek-haidh .mkweek-name { background: var(--palette-lavender, #E3DADE); border-radius: 999px; padding: 2px 10px; margin-bottom: 2px; display: inline-block; }
+.mkweek-absent .mkweek-list-title { color: var(--palette-mauve, #D8959B); }
+.mkweek-add { border: 1px dashed var(--color-table-border); background: transparent; border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; width: 100%; }
+.mkweek-add-card select { width: 100%; margin-bottom: var(--space-sm); }
+/* the teaching-day chips on the General card */
+.mset-teaching-days { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.mset-day-chip {
+  border: 1px solid var(--color-table-border); background: transparent;
+  border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer;
+}
+.mset-day-chip.on { background: var(--palette-evergreen, #344C3D); color: #fff; border-color: transparent; }
+
+/* ============================================================
+   V3.99.0 (user) — one shared width cap for the three wide screens
+   (Attendance, Maktab Calendar, the Kaaba puzzle), so none of them
+   runs edge-to-edge on a desktop display; plus air under the header
+   card that both maktab screens now carry. */
+.screen-cap { max-width: 1100px; margin-left: auto; margin-right: auto; }
+#screen-maktabAttendance .juz-tracker-header-row,
+#screen-maktabCalendar .juz-tracker-header-row { margin-bottom: var(--space-lg, 24px); }
+#screen-maktabCalendar .mcal-card { margin-top: 0; }

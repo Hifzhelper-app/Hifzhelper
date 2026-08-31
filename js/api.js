@@ -4,7 +4,24 @@
 // reason as shared/data.js. Loaded before every other JS file.
 // ============================================================
 
-const API_BASE = 'https://hifzhelper-api.hifzhelper-app.workers.dev';
+// V3.97.1 (user — "fix the seam"): the API base picks itself by where
+// the app is served. A dev-hosted frontend (any hostname containing
+// "-dev", or localhost) talks to the DEV worker; everything else talks
+// to production — so one identical codebase serves both streams and a
+// dev page can never quietly write into real maktab data. For ad-hoc
+// work, localStorage 'hh_api_base' overrides both (set it in the
+// browser console; remove the key to return to automatic).
+const API_BASE = (() => {
+  try {
+    const override = localStorage.getItem('hh_api_base');
+    if (override) return override;
+    const h = location.hostname;
+    if (h.includes('-dev') || h === 'localhost' || h === '127.0.0.1') {
+      return 'https://hifzhelper-api-dev.hifzhelper-app.workers.dev';
+    }
+  } catch (e) { /* no location/storage (harness) — production default */ }
+  return 'https://hifzhelper-api.hifzhelper-app.workers.dev';
+})();
 
 const TOKEN_KEY = 'hh_token';
 const REMEMBERED_ID_KEY = 'hh_login_id';
@@ -337,6 +354,9 @@ function apiGetMaktabTerms(){ return apiFetch('/maktab/terms'); }
 function apiCreateMaktabTerm(body){ return apiFetch('/maktab/terms', { method: 'POST', body: JSON.stringify(body) }); }
 function apiUpdateMaktabTerm(id, body){ return apiFetch('/maktab/terms/' + id, { method: 'PUT', body: JSON.stringify(body) }); }
 function apiDeleteMaktabTerm(id){ return apiFetch('/maktab/terms/' + id, { method: 'DELETE' }); }
+// V3.98.0: the maktab Attendance screen — one week of columns
+function apiGetMaktabWeek(monday){ return apiFetch('/maktab/attendance-week?monday=' + monday); }
+
 function apiGetMaktabCalendar(year){ return apiFetch('/maktab/calendar' + (year ? '?year=' + year : '')); }
 function apiCreateMaktabCalEntry(body){ return apiFetch('/maktab/calendar', { method: 'POST', body: JSON.stringify(body) }); }
 function apiUpdateMaktabCalEntry(id, body){ return apiFetch('/maktab/calendar/' + id, { method: 'PUT', body: JSON.stringify(body) }); }

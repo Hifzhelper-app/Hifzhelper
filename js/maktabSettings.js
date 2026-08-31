@@ -41,6 +41,11 @@ async function renderMaktabSettingsScreen(){
     general.innerHTML = '<p class="form-hint">Could not load the maktab settings.</p>';
     return;
   }
+  // V3.98.0: seed the staged teaching-day chips from the saved row
+  try{
+    const parsed = JSON.parse(s.teaching_days || 'null');
+    if(Array.isArray(parsed) && parsed.length) msetTeachingDays = MSET_WEEKDAYS.map(w => w[0]).filter(d => parsed.includes(d));
+  } catch(e){ /* malformed — keep the Mon–Thu default */ }
 
   const esc = (v) => { const d = document.createElement('span'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
 
@@ -103,6 +108,14 @@ async function renderMaktabSettingsScreen(){
     <div class="mset-row mset-row-narrow">
       <span class="mset-row-label">No. of inactive maktab days before flagging a student</span>
       <input type="number" class="mset-num" id="mset_absence" min="1" inputmode="numeric" value="${esc(s.absence_flag_days)}">
+    </div>
+
+    <!-- V3.98.0 (user): the teaching-day set drives the Attendance
+         screen's columns. The derived maktab-day rule behind the
+         attendance PERCENTAGES is deliberately untouched. -->
+    <div class="mset-row mset-row-narrow">
+      <span class="mset-row-label">Teaching days</span>
+      <span class="mset-teaching-days" id="mset_teaching_days"></span>
     </div>
 
     <!-- V3.89.0: the Groups section rides General (rail back to three) -->
@@ -174,6 +187,7 @@ async function renderMaktabSettingsScreen(){
   renderMsetTerms();
 
   renderMsetTimezoneControl();
+  msetPaintTeachingDays();   // V3.98.0
   await renderMsetLists();
   wireMsetRail();
 
@@ -431,6 +445,7 @@ async function saveMaktabSettingsScreen(){
     maktab_day_min: Number(document.getElementById('mset_day_min').value),
     absence_flag_days: Number(document.getElementById('mset_absence').value),
     timezone: document.getElementById('mset_timezone').value,   // the STAGED value; '' clears (V3.78.0/V3.79.0)
+    teaching_days: msetTeachingDays.slice(),   // V3.98.0
     // V3.88.0: term fields no longer sent — terms live in maktab_terms
   };
   status.textContent = 'Saving\u2026';
@@ -509,6 +524,26 @@ async function msetAddTerm(){
 // innerHTML is rebuilt every visit, so it must be wired every visit;
 // the old handlers die with their replaced nodes (the user's dead
 // year/+/buttons on second entry, diagnosed 2026-08-30).
+// ============================================================
+// V3.98.0: the teaching-day toggles. Staged like the timezone — the
+// chips flip locally and SAVE commits them, so a mis-tap costs nothing.
+// ============================================================
+const MSET_WEEKDAYS = [['mon','Mon'],['tue','Tue'],['wed','Wed'],['thu','Thu'],['fri','Fri'],['sat','Sat'],['sun','Sun']];
+let msetTeachingDays = ['mon', 'tue', 'wed', 'thu'];
+function msetPaintTeachingDays(){
+  const host = document.getElementById('mset_teaching_days');
+  if(!host) return;
+  host.innerHTML = MSET_WEEKDAYS.map(([k, label]) =>
+    `<button type="button" class="mset-day-chip${msetTeachingDays.includes(k) ? ' on' : ''}" data-d="${k}">${label}</button>`).join('');
+  host.querySelectorAll('.mset-day-chip').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.d;
+    msetTeachingDays = msetTeachingDays.includes(k)
+      ? msetTeachingDays.filter(x => x !== k)
+      : MSET_WEEKDAYS.map(w => w[0]).filter(x => msetTeachingDays.includes(x) || x === k);
+    msetPaintTeachingDays();
+  }));
+}
+
 function wireMsetCalendarCard(){
   const yearSel = document.getElementById('mset_cal_year');
   const thisYear = parseInt(appTodayISO().slice(0, 4));

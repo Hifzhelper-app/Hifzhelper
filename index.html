@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=3.96.1"></script>
+<script src="js/pwaManifest.js?v=3.99.0"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=3.96.1">
-<link rel="stylesheet" href="css/base.css?v=3.96.1">
-<link rel="stylesheet" href="css/nav.css?v=3.96.1">
-<link rel="stylesheet" href="css/journal-table.css?v=3.96.1">
-<link rel="stylesheet" href="css/components.css?v=3.96.1">
-<link rel="stylesheet" href="css/detail-pages.css?v=3.96.1">
-<link rel="stylesheet" href="css/settings.css?v=3.96.1">
-<link rel="stylesheet" href="css/admin.css?v=3.96.1">
-<link rel="stylesheet" href="css/haidh.css?v=3.96.1">
-<link rel="stylesheet" href="css/juzTracker.css?v=3.96.1">
-<link rel="stylesheet" href="css/sih.css?v=3.96.1">
+<link rel="stylesheet" href="css/tokens.css?v=3.99.0">
+<link rel="stylesheet" href="css/base.css?v=3.99.0">
+<link rel="stylesheet" href="css/nav.css?v=3.99.0">
+<link rel="stylesheet" href="css/journal-table.css?v=3.99.0">
+<link rel="stylesheet" href="css/components.css?v=3.99.0">
+<link rel="stylesheet" href="css/detail-pages.css?v=3.99.0">
+<link rel="stylesheet" href="css/settings.css?v=3.99.0">
+<link rel="stylesheet" href="css/admin.css?v=3.99.0">
+<link rel="stylesheet" href="css/haidh.css?v=3.99.0">
+<link rel="stylesheet" href="css/juzTracker.css?v=3.99.0">
+<link rel="stylesheet" href="css/sih.css?v=3.99.0">
 </head>
 <body>
 
@@ -284,10 +284,35 @@
     <!-- V3.87.0: the MAKTAB CALENDAR — its own page, INFORMATION ONLY
          (user). Read-only for everyone here; management lives in the
          Maktab Settings Calendar card. -->
+    <!-- V3.98.0 — the maktab ATTENDANCE screen (teacher/admin). Columns
+         are the maktab's teaching days; holidays, term breaks and
+         no-maktab days appear LABELLED rather than skipped. -->
+    <section class="screen hidden" id="screen-maktabAttendance">
+      <!-- V3.99.0 (user): the Juz Tracker header card — icon, title, X.
+           The X wires itself: app.js binds every .screen-close-btn. -->
+      <div class="juz-tracker-header-row screen-cap">
+        <span class="card-header-icon" id="mkweekHeaderIcon"></span>
+        <h2>Attendance</h2>
+        <button type="button" class="screen-close-btn" id="mkweekCloseBtn" aria-label="Exit to Home"></button>
+      </div>
+      <div class="mkweek-nav screen-cap">
+        <button type="button" class="secondary" id="mkweekPrevBtn">&lsaquo;</button>
+        <span id="mkweekLabel"></span>
+        <button type="button" class="secondary" id="mkweekNextBtn">&rsaquo;</button>
+      </div>
+      <div class="mkweek-cols screen-cap" id="mkweekCols"></div>
+      <div class="form-error screen-cap" id="mkweekError"></div>
+    </section>
+
     <section class="screen hidden" id="screen-maktabCalendar">
-      <!-- V3.91.0 (user): the title in full, aligned to the card width -->
-      <div class="mcal-header"><h2>Maktab Calendar</h2></div>
-      <div class="mcal-card">
+      <!-- V3.91.0 (user): the title in full, aligned to the card width.
+           V3.99.0: the same header card the Kaaba puzzle carries. -->
+      <div class="juz-tracker-header-row screen-cap">
+        <span class="card-header-icon" id="mcalHeaderIcon"></span>
+        <h2>Maktab Calendar</h2>
+        <button type="button" class="screen-close-btn" id="mcalCloseBtn" aria-label="Exit to Home"></button>
+      </div>
+      <div class="mcal-card screen-cap">
         <div class="mcal-month-row">
           <button type="button" class="secondary" id="mcalPrevBtn">&lsaquo;</button>
           <span id="mcalMonthLabel"></span>
@@ -299,7 +324,7 @@
              the marked days, with the Hijri date for islamic ones. -->
       </div>
       <div class="mcal-card">
-        <div class="mcal-list" id="mcalList"></div>
+        <div class="mcal-list screen-cap" id="mcalList"></div>
       </div>
     </section>
 
@@ -923,7 +948,7 @@
          same as the component's own natural behavior. No tie-in to any
          student data yet; that's Phase 2. -->
     <section class="screen hidden" id="screen-juzTracker">
-      <div class="juz-tracker-header-row">
+      <div class="juz-tracker-header-row screen-cap">
         <span class="card-header-icon" id="juzTrackerHeaderIcon"></span>
         <h2>Juz Tracker</h2>
         <!-- V3.49.0: Free play toggle (confirmed in chat: lives inside the
@@ -936,7 +961,7 @@
         </div>
         <button type="button" class="screen-close-btn" id="juzTrackerCloseBtn" aria-label="Exit to Home"></button>
       </div>
-      <div class="juz-tracker-wrap">
+      <div class="juz-tracker-wrap screen-cap">
         <!-- V3.40.1: controls="full" removed entirely (it was all-or-
              nothing -- no way to keep Reset while dropping Download SVG
              and Mark next juz individually). Progress bar + Reset are
@@ -1317,38 +1342,39 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=3.96.1"></script>
-<script src="shared/haidhRules.js?v=3.96.1"></script>
-<script src="js/icons.js?v=3.96.1"></script>
-<script src="js/customDate.js?v=3.96.1"></script>
-<script src="js/api.js?v=3.96.1"></script>
-<script src="js/logContext.js?v=3.96.1"></script>
-<script src="js/uiSwitch.js?v=3.96.1"></script>
-<script src="js/position.js?v=3.96.1"></script>
-<script src="js/auth.js?v=3.96.1"></script>
-<script src="js/home.js?v=3.96.1"></script>
-<script src="js/tajweed.js?v=3.96.1"></script>
-<script src="js/commentPrivacy.js?v=3.96.1"></script>
-<script src="js/session-timer.js?v=3.96.1"></script>
-<script src="js/journal.js?v=3.96.1"></script>
-<script src="js/maktabSummary.js?v=3.96.1"></script>
-<script src="js/maktabSettings.js?v=3.96.1"></script>
-<script src="js/maktabSetup.js?v=3.96.1"></script>
-<script src="js/maktabDay.js?v=3.96.1"></script>
-<script src="js/maktabJournal.js?v=3.96.1"></script>
-<script src="js/maktabCalendarPage.js?v=3.96.1"></script>
-<script src="js/dhorPage.js?v=3.96.1"></script>
-<script src="js/sabaqPage.js?v=3.96.1"></script>
-<script src="js/sabaqDhorPage.js?v=3.96.1"></script>
-<script src="js/reflectionCard.js?v=3.96.1"></script>
-<script src="js/logDetailScreen.js?v=3.96.1"></script>
-<script src="js/haidhDetailScreen.js?v=3.96.1"></script>
-<script src="js/kaabaTracker.js?v=3.96.1"></script>
-<script src="js/juzTrackerScreen.js?v=3.96.1"></script>
-<script src="js/sihScreen.js?v=3.96.1"></script>
-<script src="js/settingsScreen.js?v=3.96.1"></script>
-<script src="js/adminPage.js?v=3.96.1"></script>
-<script src="js/versionStamp.js?v=3.96.1"></script>
-<script src="js/app.js?v=3.96.1"></script>
+<script src="shared/data.js?v=3.99.0"></script>
+<script src="shared/haidhRules.js?v=3.99.0"></script>
+<script src="js/icons.js?v=3.99.0"></script>
+<script src="js/customDate.js?v=3.99.0"></script>
+<script src="js/api.js?v=3.99.0"></script>
+<script src="js/logContext.js?v=3.99.0"></script>
+<script src="js/uiSwitch.js?v=3.99.0"></script>
+<script src="js/position.js?v=3.99.0"></script>
+<script src="js/auth.js?v=3.99.0"></script>
+<script src="js/home.js?v=3.99.0"></script>
+<script src="js/tajweed.js?v=3.99.0"></script>
+<script src="js/commentPrivacy.js?v=3.99.0"></script>
+<script src="js/session-timer.js?v=3.99.0"></script>
+<script src="js/journal.js?v=3.99.0"></script>
+<script src="js/maktabSummary.js?v=3.99.0"></script>
+<script src="js/maktabSettings.js?v=3.99.0"></script>
+<script src="js/maktabSetup.js?v=3.99.0"></script>
+<script src="js/maktabDay.js?v=3.99.0"></script>
+<script src="js/maktabJournal.js?v=3.99.0"></script>
+<script src="js/maktabCalendarPage.js?v=3.99.0"></script>
+<script src="js/maktabAttendancePage.js?v=3.99.0"></script>
+<script src="js/dhorPage.js?v=3.99.0"></script>
+<script src="js/sabaqPage.js?v=3.99.0"></script>
+<script src="js/sabaqDhorPage.js?v=3.99.0"></script>
+<script src="js/reflectionCard.js?v=3.99.0"></script>
+<script src="js/logDetailScreen.js?v=3.99.0"></script>
+<script src="js/haidhDetailScreen.js?v=3.99.0"></script>
+<script src="js/kaabaTracker.js?v=3.99.0"></script>
+<script src="js/juzTrackerScreen.js?v=3.99.0"></script>
+<script src="js/sihScreen.js?v=3.99.0"></script>
+<script src="js/settingsScreen.js?v=3.99.0"></script>
+<script src="js/adminPage.js?v=3.99.0"></script>
+<script src="js/versionStamp.js?v=3.99.0"></script>
+<script src="js/app.js?v=3.99.0"></script>
 </body>
 </html>

@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   // other item here; no student/teacher split exists anywhere in NAV_ITEMS
   // yet (confirmed in chat -- the whole app is personal-to-user today, the
   // Maktab/teacher phase hasn't started), so there's nothing to gate on.
-  { id: 'juzTracker', label: 'Juz Tracker', icon: 'juzTracker' },
+  { id: 'juzTracker', label: 'Juz Tracker', icon: 'juzTracker' },   // V3.99.0: relabelled "Kaaba puzzle" for teaching profiles — see juzTrackerLabel()
   // V3.46.0: Surahs in my Heart — the colouring activity (js/sihScreen.js),
   // confirmed in chat. Same unconditional visibility as every other item;
   // deliberately NOT connected to any progress tracking.
@@ -47,6 +47,11 @@ const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
 // inside the page now, shown there for haa'idah only. The track_haidh
 // nav gate went with it: attendance is everyone's.
 const ATTENDANCE_NAV_ITEM = { id: 'attendancePage', label: 'Attendance', icon: 'attendance' };
+// V3.98.0 (user): the LABEL is the same for everyone; the DESTINATION
+// follows the role — a student lands on her own attendance page, a
+// teacher/admin on the maktab-wide Attendance screen. The per-student
+// view keeps its own door: the icon beside her name on the summary.
+const MAKTAB_ATTENDANCE_NAV_ITEM = { id: 'maktabAttendance', label: 'Attendance', icon: 'attendance' };
 // V3.59.0 (maktab delivery (e1), confirmed in chat): the maktab summary
 // is teacher+ only (admin counts as teacher everywhere — same hierarchy
 // as the worker's isTeacherOrAbove); the student's own read-only Maktab
@@ -57,7 +62,7 @@ const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'm
 // never sees the maktab settings, though their cards read the mushaf.
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
-const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'attendance' };   // V3.87.0: everyone; students read-only
+const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'calendar' };   // V3.87.0: everyone; students read-only. V3.98.1: its own glyph — the check-calendar now means attendance alone.
 
 // V3.70.0: the personal journal is hidden FOR TEACHING PROFILES ONLY.
 // Confirmed in chat 2026-08-17: "those items are only hidden for teacher
@@ -88,6 +93,13 @@ const HIDDEN_PJ_NAV_IDS = new Set([
 
 // Admin counts as a teacher everywhere else in this codebase
 // (isTeacherOrAbove), and does here too: ADMIN-01 is the maktab teacher.
+// V3.99.0 (user): for the MAKTAB the screen is a puzzle, not a tracker —
+// a teacher/admin has no hifz of their own on it. Students keep "Juz
+// Tracker", which is exactly what it is for them.
+function juzTrackerLabel(){
+  return isTeachingProfile() ? 'Kaaba puzzle' : 'Juz Tracker';
+}
+
 function isTeachingProfile(){
   return currentUser.role === 'teacher' || currentUser.role === 'admin';
 }
@@ -114,14 +126,19 @@ function visibleNavGroups(){
   if(isTeachingProfile()) g1.push(MAKTAB_SUMMARY_NAV_ITEM);
   if(currentUser.role === 'admin') g1.push(MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM);
 
-  const g2 = [byId('sih'), byId('juzTracker')].filter(keep);
+  // V3.99.0: the label follows the role — "Kaaba puzzle" in the maktab
+  const g2 = [byId('sih'), byId('juzTracker')].filter(keep)
+    .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
   g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
 
   // The student's own Maktab Journal and the PJ screens keep their place
   // among the personal tools — they are hers, not maktab machinery.
   const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id));
   if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
-  if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
+  // V3.98.0: teachers/admins get the MAKTAB attendance screen under the
+  // same label; students keep their own page exactly as before.
+  if(isTeachingProfile()) g3.push(MAKTAB_ATTENDANCE_NAV_ITEM);
+  else if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
   g3.push(MAKTAB_CALENDAR_NAV_ITEM);   // V3.87.0: the maktab calendar, read-only for students
 
   const g4 = [
