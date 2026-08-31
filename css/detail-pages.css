@@ -2028,3 +2028,13 @@
   border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer;
 }
 .mset-day-chip.on { background: var(--palette-evergreen, #344C3D); color: #fff; border-color: transparent; }
+
+/* ============================================================
+   V3.99.0 (user) — one shared width cap for the three wide screens
+   (Attendance, Maktab Calendar, the Kaaba puzzle), so none of them
+   runs edge-to-edge on a desktop display; plus air under the header
+   card that both maktab screens now carry. */
+.screen-cap { max-width: 1100px; margin-left: auto; margin-right: auto; }
+#screen-maktabAttendance .juz-tracker-header-row,
+#screen-maktabCalendar .juz-tracker-header-row { margin-bottom: var(--space-lg, 24px); }
+#screen-maktabCalendar .mcal-card { margin-top: 0; }

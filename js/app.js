@@ -230,6 +230,11 @@ window.addEventListener('popstate', () => {
   document.getElementById('th_sabaqDhor').innerHTML = iconHtml('sabaqDhor') + '<span>Sabaq Dhor</span>';
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
   document.getElementById('juzTrackerHeaderIcon').innerHTML = iconHtml('juzTracker');
+  // V3.99.0: the two maktab screens carry the same header card
+  const mkIcon = document.getElementById('mkweekHeaderIcon');
+  if(mkIcon) mkIcon.innerHTML = iconHtml('attendance');
+  const mcIcon = document.getElementById('mcalHeaderIcon');
+  if(mcIcon) mcIcon.innerHTML = iconHtml('calendar');
   document.getElementById('adminHeaderIcon').innerHTML = iconHtml('admin');
   // V3.69.0: Home's header icon and the row holding it are both gone --
   // the element no longer exists, so this unguarded getElementById would

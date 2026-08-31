@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   // other item here; no student/teacher split exists anywhere in NAV_ITEMS
   // yet (confirmed in chat -- the whole app is personal-to-user today, the
   // Maktab/teacher phase hasn't started), so there's nothing to gate on.
-  { id: 'juzTracker', label: 'Juz Tracker', icon: 'juzTracker' },
+  { id: 'juzTracker', label: 'Juz Tracker', icon: 'juzTracker' },   // V3.99.0: relabelled "Kaaba puzzle" for teaching profiles — see juzTrackerLabel()
   // V3.46.0: Surahs in my Heart — the colouring activity (js/sihScreen.js),
   // confirmed in chat. Same unconditional visibility as every other item;
   // deliberately NOT connected to any progress tracking.
@@ -93,6 +93,13 @@ const HIDDEN_PJ_NAV_IDS = new Set([
 
 // Admin counts as a teacher everywhere else in this codebase
 // (isTeacherOrAbove), and does here too: ADMIN-01 is the maktab teacher.
+// V3.99.0 (user): for the MAKTAB the screen is a puzzle, not a tracker —
+// a teacher/admin has no hifz of their own on it. Students keep "Juz
+// Tracker", which is exactly what it is for them.
+function juzTrackerLabel(){
+  return isTeachingProfile() ? 'Kaaba puzzle' : 'Juz Tracker';
+}
+
 function isTeachingProfile(){
   return currentUser.role === 'teacher' || currentUser.role === 'admin';
 }
@@ -119,7 +126,9 @@ function visibleNavGroups(){
   if(isTeachingProfile()) g1.push(MAKTAB_SUMMARY_NAV_ITEM);
   if(currentUser.role === 'admin') g1.push(MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM);
 
-  const g2 = [byId('sih'), byId('juzTracker')].filter(keep);
+  // V3.99.0: the label follows the role — "Kaaba puzzle" in the maktab
+  const g2 = [byId('sih'), byId('juzTracker')].filter(keep)
+    .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
   g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
 
   // The student's own Maktab Journal and the PJ screens keep their place

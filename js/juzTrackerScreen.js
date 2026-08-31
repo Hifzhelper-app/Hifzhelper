@@ -65,6 +65,11 @@ function buildJuzConfirmMessage(newlyMarked, newlyUnmarked, resultingFullList){
 async function renderJuzTrackerScreen(){
   const el = document.querySelector('kaaba-juz-tracker');
   if(!el) return; // defensive -- shouldn't happen, screen markup always includes it
+  // V3.99.0 (user): the heading follows the role, as the nav label does —
+  // "Kaaba puzzle" in the maktab, "Juz Tracker" for a student whose own
+  // hifz it actually tracks.
+  const heading = document.querySelector('#screen-juzTracker .juz-tracker-header-row h2');
+  if(heading && typeof juzTrackerLabel === 'function') heading.textContent = juzTrackerLabel();
   const countEl = document.getElementById('juzTrackerCount');
   const fillEl = document.getElementById('juzTrackerFill');
   const resetBtn = document.getElementById('juzTrackerResetBtn');
