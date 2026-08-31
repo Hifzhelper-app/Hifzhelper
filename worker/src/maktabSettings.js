@@ -27,7 +27,7 @@ const MUSHAFS = ['13line', '15line_madani', '15line_indopak'];
 export async function handleGetMaktabSettings(request, env, auth) {
   if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to, teaching_days FROM maktab_settings WHERE id = 1'
   ).first();
   if (!row) return { error: 'Maktab settings row is missing — run migration 0020', status: 500 };
   return { data: row };
@@ -41,6 +41,17 @@ export async function handleSaveMaktabSettings(request, env, auth) {
 
   const updates = [];
   const values = [];
+  // V3.98.0: the teaching-day weekday set drives the Attendance screen's
+  // columns (and nothing else — the derived maktab-day rule that governs
+  // the attendance PERCENTAGES is deliberately untouched).
+  if (body.teaching_days !== undefined) {
+    const list = body.teaching_days;
+    if (!Array.isArray(list) || list.some(d => !WEEKDAY_KEYS.includes(d))) {
+      return { error: `teaching_days must be an array of: ${WEEKDAY_KEYS.join(', ')}`, status: 400 };
+    }
+    updates.push('teaching_days = ?');
+    values.push(JSON.stringify(WEEKDAY_KEYS.filter(d => list.includes(d))));   // stored in week order, deduped
+  }
   if (body.mushaf !== undefined) {
     if (!MUSHAFS.includes(body.mushaf)) return { error: `mushaf must be one of: ${MUSHAFS.join(', ')}`, status: 400 };
     updates.push('mushaf = ?'); values.push(body.mushaf);
@@ -93,7 +104,7 @@ export async function handleSaveMaktabSettings(request, env, auth) {
   await env.DB.prepare(`UPDATE maktab_settings SET ${updates.join(', ')} WHERE id = 1`).bind(...values).run();
 
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to, teaching_days FROM maktab_settings WHERE id = 1'
   ).first();
   return { data: row };
 }
@@ -101,9 +112,22 @@ export async function handleSaveMaktabSettings(request, env, auth) {
 // Shared reader for other worker modules ((f)'s derived attendance needs
 // both numbers, (h)'s prepop needs the mushaf) -- one place that knows
 // the row's shape, rather than each module writing its own SELECT.
+// V3.98.0: one weekday vocabulary, Monday-first (the app's calendars are
+// Monday-first throughout). Shared by the settings validator and the
+// Attendance screen's column builder.
+export const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+export const DEFAULT_TEACHING_DAYS = ['mon', 'tue', 'wed', 'thu'];
+export function teachingDaysOf(settings) {
+  try {
+    const parsed = JSON.parse((settings && settings.teaching_days) || 'null');
+    if (Array.isArray(parsed) && parsed.length) return WEEKDAY_KEYS.filter(d => parsed.includes(d));
+  } catch (e) { /* malformed — fall back rather than break the screen */ }
+  return DEFAULT_TEACHING_DAYS;
+}
+
 export async function readMaktabSettings(env) {
   const row = await env.DB.prepare(
-    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to FROM maktab_settings WHERE id = 1'
+    'SELECT mushaf, maktab_day_min, absence_flag_days, name, timezone, term_from, term_to, teaching_days FROM maktab_settings WHERE id = 1'
   ).first();
-  return row || { mushaf: '13line', maktab_day_min: 3, absence_flag_days: 30, name: '' };
+  return row || { mushaf: '13line', maktab_day_min: 3, absence_flag_days: 30, name: '', teaching_days: null };
 }

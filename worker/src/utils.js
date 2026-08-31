@@ -67,7 +67,9 @@ export function isTeacherOrAbove(auth) {
 export function validateAttendanceBody(body) {
   if (!body || typeof body !== 'object') return 'Body must be a JSON object';
   if (!isValidDate(body.date)) return 'date must be YYYY-MM-DD';
-  if (!['present', 'absent', 'haidh', 'predicted-haidh'].includes(body.status)) return 'invalid status';
+  // V3.98.0: 'predicted-absent' — the teacher's forward-looking marker
+  // for a student who has informed the maktab. Never excuses (user).
+  if (!['present', 'absent', 'haidh', 'predicted-haidh', 'predicted-absent'].includes(body.status)) return 'invalid status';
   return null;
 }
 

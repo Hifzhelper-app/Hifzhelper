@@ -354,6 +354,9 @@ function apiGetMaktabTerms(){ return apiFetch('/maktab/terms'); }
 function apiCreateMaktabTerm(body){ return apiFetch('/maktab/terms', { method: 'POST', body: JSON.stringify(body) }); }
 function apiUpdateMaktabTerm(id, body){ return apiFetch('/maktab/terms/' + id, { method: 'PUT', body: JSON.stringify(body) }); }
 function apiDeleteMaktabTerm(id){ return apiFetch('/maktab/terms/' + id, { method: 'DELETE' }); }
+// V3.98.0: the maktab Attendance screen — one week of columns
+function apiGetMaktabWeek(monday){ return apiFetch('/maktab/attendance-week?monday=' + monday); }
+
 function apiGetMaktabCalendar(year){ return apiFetch('/maktab/calendar' + (year ? '?year=' + year : '')); }
 function apiCreateMaktabCalEntry(body){ return apiFetch('/maktab/calendar', { method: 'POST', body: JSON.stringify(body) }); }
 function apiUpdateMaktabCalEntry(id, body){ return apiFetch('/maktab/calendar/' + id, { method: 'PUT', body: JSON.stringify(body) }); }

@@ -32,7 +32,7 @@
 
 import { isTeacherOrAbove, isValidDate, maktabTodayISO } from './utils.js';
 import { termContainingToday } from './maktabCalendar.js';   // V3.87.0: terms drive attendance
-import { readMaktabSettings } from './maktabSettings.js';
+import { readMaktabSettings, teachingDaysOf, WEEKDAY_KEYS } from './maktabSettings.js';   // V3.98.0
 import { haidhOfficialMaxDuration } from '../../shared/haidhRules.js';
 
 function daysBetweenISO(a, b) {
@@ -261,4 +261,102 @@ export async function handleAttendancePage(request, env, auth) {
     track_haidh: !!student.track_haidh,
     term_from: settings.term_from || null, term_to: settings.term_to || null,
   } };
+}
+
+// ============================================================
+// V3.98.0 — THE MAKTAB ATTENDANCE SCREEN (user, 2026-08-31).
+//
+// One week at a time; ‹ › pages by week. Columns come from the maktab's
+// configured TEACHING DAYS, not from derived maktab days — a maktab day
+// is derived from logging activity, so no future date can ever be one.
+//
+// Every teaching day appears as a column even when nothing can happen on
+// it, LABELLED with the reason (user: "so that the user doesn't skip days
+// as they scroll"): a public holiday by its own name, a date outside any
+// term as a term break, and a past teaching day that fell below the
+// maktab-day threshold as "No maktab day" — the V3.85 rule stands there,
+// so such a day is never turned into a wall of false absences.
+//
+// Cell content follows the calendar, not the column:
+//   BEFORE today → three lists: present, absent, haa'idha (the derived
+//                  truth, exactly as the per-student page computes it).
+//   TODAY onward → predicted haa'idha and predicted absentees — today is
+//                  a planning column, not a half-written register (user).
+// ============================================================
+export async function handleMaktabWeek(request, env, auth) {
+  if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
+  const url = new URL(request.url);
+  const monday = url.searchParams.get('monday');
+  if (!isValidDate(monday)) return { error: 'monday must be YYYY-MM-DD', status: 400 };
+
+  const settings = await readMaktabSettings(env);
+  const today = await maktabTodayISO(env);
+  const teaching = teachingDaysOf(settings);
+
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + i);
+    dates.push({ date: d.toISOString().slice(0, 10), key: WEEKDAY_KEYS[i] });
+  }
+  const columns = dates.filter(d => teaching.includes(d.key));
+  if (!columns.length) return { data: { monday, today, columns: [] } };
+
+  const first = columns[0].date, last = columns[columns.length - 1].date;
+
+  const [students, marks, terms, entries, maktabDays, logged] = await Promise.all([
+    env.DB.prepare("SELECT id, name, track_haidh FROM students WHERE role = 'student' AND active = 1 ORDER BY name").all(),
+    env.DB.prepare('SELECT student_id, date, status FROM attendance WHERE date >= ? AND date <= ?').bind(first, last).all(),
+    env.DB.prepare('SELECT term_from, term_to FROM maktab_terms').all(),
+    env.DB.prepare("SELECT date_from, date_to, label, type FROM maktab_calendar WHERE type = 'holiday' AND date_to >= ? AND date_from <= ?").bind(first, last).all(),
+    loadMaktabDays(env, settings.maktab_day_min),
+    env.DB.prepare(
+      `SELECT DISTINCT student_id, date FROM (
+         SELECT date, student_id FROM maktab_sabaq_log
+         UNION ALL SELECT date, student_id FROM maktab_sabaq_dhor_log
+         UNION ALL SELECT date, student_id FROM maktab_dhor_log
+       ) WHERE date >= ? AND date <= ?`
+    ).bind(first, last).all(),
+  ]);
+
+  const nameOf = new Map(students.results.map(s => [s.id, s.name]));
+  const loggedOn = new Set(logged.results.map(r => `${r.student_id}|${r.date}`));
+  const maktabDaySet = new Set(maktabDays);
+  const markAt = new Map(marks.results.map(r => [`${r.student_id}|${r.date}`, r.status]));
+
+  const holidayOn = (date) => {
+    const hit = entries.results.find(e => e.date_from <= date && e.date_to >= date);
+    return hit ? (hit.label || 'Public Holiday') : null;
+  };
+  const inTerm = (date) => terms.results.some(t => t.term_from <= date && t.term_to >= date);
+
+  const out = columns.map(({ date, key }) => {
+    const holiday = holidayOn(date);
+    const past = date < today;
+    const col = { date, weekday: key, past, holiday, note: null, present: [], absent: [], haidh: [], predictedHaidh: [], predictedAbsent: [] };
+
+    if (holiday) { col.note = holiday; return col; }
+    if (!inTerm(date)) { col.note = 'Term break'; return col; }
+
+    if (past) {
+      // the V3.85 threshold rule: a teaching day the maktab plainly did
+      // not hold is named, never filled with false absences
+      if (!maktabDaySet.has(date)) { col.note = 'No maktab day'; return col; }
+      for (const s of students.results) {
+        const status = markAt.get(`${s.id}|${date}`);
+        if (loggedOn.has(`${s.id}|${date}`)) col.present.push(s.name);
+        else if (status === 'haidh' || status === 'predicted-haidh') col.haidh.push(s.name);
+        else col.absent.push(s.name);
+      }
+    } else {
+      for (const s of students.results) {
+        const status = markAt.get(`${s.id}|${date}`);
+        if (status === 'haidh' || status === 'predicted-haidh') col.predictedHaidh.push(s.name);
+        else if (status === 'predicted-absent') col.predictedAbsent.push(s.name);
+      }
+    }
+    return col;
+  });
+
+  return { data: { monday, today, teaching_days: teaching, columns: out, students: students.results.map(s => ({ id: s.id, name: s.name })) } };
 }

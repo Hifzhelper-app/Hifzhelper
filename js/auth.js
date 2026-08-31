@@ -47,6 +47,11 @@ const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
 // inside the page now, shown there for haa'idah only. The track_haidh
 // nav gate went with it: attendance is everyone's.
 const ATTENDANCE_NAV_ITEM = { id: 'attendancePage', label: 'Attendance', icon: 'attendance' };
+// V3.98.0 (user): the LABEL is the same for everyone; the DESTINATION
+// follows the role — a student lands on her own attendance page, a
+// teacher/admin on the maktab-wide Attendance screen. The per-student
+// view keeps its own door: the icon beside her name on the summary.
+const MAKTAB_ATTENDANCE_NAV_ITEM = { id: 'maktabAttendance', label: 'Attendance', icon: 'attendance' };
 // V3.59.0 (maktab delivery (e1), confirmed in chat): the maktab summary
 // is teacher+ only (admin counts as teacher everywhere — same hierarchy
 // as the worker's isTeacherOrAbove); the student's own read-only Maktab
@@ -121,7 +126,10 @@ function visibleNavGroups(){
   // among the personal tools — they are hers, not maktab machinery.
   const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id));
   if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
-  if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
+  // V3.98.0: teachers/admins get the MAKTAB attendance screen under the
+  // same label; students keep their own page exactly as before.
+  if(isTeachingProfile()) g3.push(MAKTAB_ATTENDANCE_NAV_ITEM);
+  else if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
   g3.push(MAKTAB_CALENDAR_NAV_ITEM);   // V3.87.0: the maktab calendar, read-only for students
 
   const g4 = [
