@@ -62,7 +62,7 @@ const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'm
 // never sees the maktab settings, though their cards read the mushaf.
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
-const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'attendance' };   // V3.87.0: everyone; students read-only
+const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'calendar' };   // V3.87.0: everyone; students read-only. V3.98.1: its own glyph — the check-calendar now means attendance alone.
 
 // V3.70.0: the personal journal is hidden FOR TEACHING PROFILES ONLY.
 // Confirmed in chat 2026-08-17: "those items are only hidden for teacher
