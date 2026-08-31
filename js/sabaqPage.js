@@ -38,6 +38,12 @@ let sabaqRef = 'waterval';
 // combined fields' current values, kept here since the DOM only shows a
 // formatted display, not the raw numbers.
 let sabaqValue = { from: null, to: null };
+// V3.99.1: the mushaf the render already fetched, hoisted to module
+// scope. recomputeSabaqLineCount used to read a `profile` that is
+// declared LOCALLY inside the render function — a ReferenceError every
+// time it ran, which is why Lines/Pages silently never calculated for
+// anyone. Hoisting the value beats a second (async) profile lookup.
+let sabaqMushaf = null;
 // V3.21.0: editing an existing entry (js/dhorPage.js's History popup,
 // EDIT_HANDLERS.sabaq below) loads it into this same form rather than a
 // separate edit UI. sabaqEditingId is null for a normal new entry.
@@ -179,7 +185,8 @@ async function renderSabaqScreen(){
 
   let profile = null;
   try{ profile = await logProfile(); } catch(e){ profile = null; }
-  sabaqRef = refForMushafSabaq(profile && profile.mushaf);
+  sabaqMushaf = profile && profile.mushaf;   // V3.99.1
+  sabaqRef = refForMushafSabaq(sabaqMushaf);
   sabaqPosition = await loadPosition();
   // V3.45.4: computed fresh from real history every time, not read from
   // a stored value -- see js/position.js's file header.
@@ -212,7 +219,7 @@ function recomputeSabaqLineCount(){
   // which is a different concern (Juz'-position tracking elsewhere in
   // this file) that only ever distinguishes uthmani vs waterval, not the
   // IndoPak dataset this needs to reach.
-  const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, pageRefForMushaf(profile && profile.mushaf));
+  const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, pageRefForMushaf(sabaqMushaf));
   if(!result) return;
   document.getElementById('sabaq_line_count').value = result.lineCount;
   document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / 13) * 4) / 4;
