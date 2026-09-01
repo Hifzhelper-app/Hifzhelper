@@ -245,7 +245,24 @@ async function renderStudentSummaryScreen(){
     ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
       const td = document.createElement('td');
       td.className = 'journal-cell';
-      td.innerHTML = journalCellShorthand(type, days[date][type]);
+      // V4.0.2 (user): the +N pill was RENDERED here but inert — only the
+      // row's own click was wired, so tapping the pill just opened the
+      // day. Same fix the maktab summary already carries: retarget the
+      // badge and give it its own listener that stops propagation, so
+      // the pill peeks at the cell's entries while the rest of the row
+      // still opens the day.
+      td.innerHTML = journalCellShorthand(type, days[date][type]).replace(
+        /<button type="button" class="entry-count-badge" data-count-badge>(\+\d+)<\/button>/,
+        `<button type="button" class="entry-count-badge" data-entry-peek="${type}">$1</button>`
+      );
+      td._peekEntries = days[date][type];
+      const peekBtn = td.querySelector('[data-entry-peek]');
+      if(peekBtn){
+        peekBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          maktabOpenEntryPeek(peekBtn, type, td._peekEntries);
+        });
+      }
       tr.appendChild(td);
     });
     tr.addEventListener('click', () => {

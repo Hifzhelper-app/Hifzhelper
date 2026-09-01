@@ -70,9 +70,18 @@ async function loadLoggedPairs(env) {
 // Pure, so the harness can drive every branch without a DB: given one
 // student's logged dates, her haidh marks and her ruling, decide her
 // status on each maktab day, plus whether she should be flagged.
-export function deriveStudentAttendance(maktabDays, loggedDates, haidhDates, ruling, absenceFlagDays) {
+// V4.0.2 (user, 2026-09-01): `todayISO` — absence is derived ONLY for
+// days STRICTLY BEFORE today. A day still in progress marked everyone
+// who had not logged YET as absent, the moment anyone else's logs
+// pushed the date over the maktab-day threshold; her percentage then
+// dipped through the day and recovered when she logged. Today is now
+// UNRESOLVED: it takes a status only from an explicit teacher mark.
+// Omit the argument and the old behaviour stands (nothing is filtered),
+// which keeps the pure function honest for callers that pass history.
+export function deriveStudentAttendance(maktabDays, loggedDates, haidhDates, ruling, absenceFlagDays, todayISO) {
   const logged = loggedDates instanceof Set ? loggedDates : new Set(loggedDates || []);
   const haidh = new Set(haidhDates || []);
+  const explicitAbsent = new Set(arguments.length > 6 && arguments[6] ? arguments[6] : []);
   const maxDays = haidhOfficialMaxDuration(ruling);
   const sortedHaidh = [...haidh].sort();
 
@@ -93,6 +102,7 @@ export function deriveStudentAttendance(maktabDays, loggedDates, haidhDates, rul
   for (const date of maktabDays) {
     if (logged.has(date)) { statuses[date] = 'present'; continue; }   // a log always wins
     if (haidh.has(date)) { statuses[date] = 'haidh'; continue; }      // explicitly marked
+    if (explicitAbsent.has(date)) { statuses[date] = 'absent'; continue; }   // V4.0.2: a teacher's own mark stands on any day, today included
 
     // Not marked, but possibly still inside a run that started earlier.
     const priorStart = sortedHaidh.filter(d => d < date).pop();
@@ -102,6 +112,10 @@ export function deriveStudentAttendance(maktabDays, loggedDates, haidhDates, rul
       // so a hanafi max of 10 covers start .. start+9.
       if (daysBetweenISO(start, date) < maxDays) { statuses[date] = 'haidh'; continue; }
     }
+    // V4.0.2: today (and anything later) is UNRESOLVED — the day has not
+    // finished, so a missing log is not yet an absence. Only the explicit
+    // mark above can put a status on it.
+    if (todayISO && date >= todayISO) continue;
     statuses[date] = 'absent';
   }
 
@@ -136,17 +150,25 @@ export async function handleMaktabAttendance(request, env, auth) {
     'SELECT id, haidh_ruling FROM students WHERE active = 1 AND role = \'student\''   // V3.77.0 (j): same roster rule as the summary
   ).all();
   const logged = await loadLoggedPairs(env);
+  const today = await maktabTodayISO(env);   // V4.0.2: today is unresolved, not absent
   const { results: haidhRows } = await env.DB.prepare(
     `SELECT student_id, date FROM attendance WHERE status IN ('haidh','predicted-haidh')`
   ).all();
   const haidhByStudent = {};
   for (const r of haidhRows) (haidhByStudent[r.student_id] = haidhByStudent[r.student_id] || []).push(r.date);
+  // V4.0.2: a teacher's OWN 'absent' mark stands on any day, today included
+  const { results: absentRows } = await env.DB.prepare(
+    `SELECT student_id, date FROM attendance WHERE status = 'absent'`
+  ).all();
+  const absentByStudent = {};
+  for (const r of absentRows) (absentByStudent[r.student_id] = absentByStudent[r.student_id] || []).push(r.date);
 
   const out = {};
   for (const s of students) {
     const d = deriveStudentAttendance(
       maktabDays, logged[s.id] || new Set(), haidhByStudent[s.id] || [],
-      s.haidh_ruling || 'hanafi', settings.absence_flag_days
+      s.haidh_ruling || 'hanafi', settings.absence_flag_days,
+      today, absentByStudent[s.id] || []
     );
     out[s.id] = {
       // null when the date isn't a maktab day at all: nobody is absent on
@@ -227,13 +249,17 @@ export async function handleAttendancePage(request, env, auth) {
   const { results: haidhRows } = await env.DB.prepare(
     `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') ORDER BY date`
   ).bind(studentId).all();
+  const { results: absentRows } = await env.DB.prepare(   // V4.0.2: explicit teacher marks
+    `SELECT date FROM attendance WHERE student_id = ? AND status = 'absent'`
+  ).bind(studentId).all();
 
   const derived = deriveStudentAttendance(
     allMaktabDays,
     new Set(loggedRows.map(r => r.date)),
     haidhRows.map(r => r.date),
     student.haidh_ruling || 'hanafi',
-    settings.absence_flag_days
+    settings.absence_flag_days,
+    today, absentRows.map(r => r.date)
   );
 
   const periodDays = allMaktabDays.filter(d => d >= from && d <= to);
