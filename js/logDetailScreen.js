@@ -38,7 +38,9 @@ document.getElementById('dhorTimerBtnIcon').innerHTML = iconHtml('timer');
 // in chat -- was Journal-only before, per the reasoning below, which no
 // longer applies now that ALL screens get a consistent X-to-Home).
 document.getElementById('logDetailClose').innerHTML = iconHtml('close');
-document.getElementById('logDetailClose').addEventListener('click', () => showScreen('home'));
+// V4.1.1: the day card closes to the maktab summary for a teaching
+// profile, Home for a student — homeScreenFor() in js/app.js.
+document.getElementById('logDetailClose').addEventListener('click', () => showScreen(typeof homeScreenFor === 'function' ? homeScreenFor() : 'home'));
 
 // V3.51.0 (confirmed in chat): the icon bottombar (Cancel/Delete/Update)
 // is gone -- Cancel is the X in each edit topbar now, and the button flow
