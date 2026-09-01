@@ -137,15 +137,41 @@ button.secondary.danger {
    Colour: the app's OWN palette, not the mock's pink — sage on the id
    column and mauve across the rest, the same pairing the journal and
    summary tables use, so this reads as their sibling. */
-.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-.admin-table thead th {
+/* V4.2.0 (user): the maktab summary's shape — header row + white rows
+   region, ONE width for both (the journal-table lesson: a width on only
+   one of them splits the table in half). The card and .screen-content
+   are gone, so the shared 30% desktop cap no longer applies here — the
+   width comes from not opting in, not from an override. */
+.admin-screen-body { padding: 0 var(--space-md); }
+.admin-header-row { display: flex; border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.admin-header-cell {
   background: var(--color-table-header-log);
-  text-align: left; padding: 10px 8px; font-size: 12px;
+  padding: 10px 8px; font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+  flex: 1 1 0; min-width: 0;
 }
-.admin-table thead th.admin-th-id { background: var(--color-table-header-date); }
-.admin-table thead th:first-child { border-top-left-radius: var(--radius-md); }
-.admin-table thead th:last-child { border-top-right-radius: var(--radius-md); }
+.admin-header-cell.admin-hc-id { background: var(--color-table-header-date); border-top-left-radius: var(--radius-md); flex: 0 0 130px; }
+.admin-header-cell.admin-hc-actions { border-top-right-radius: var(--radius-md); flex: 0 0 300px; }
+.admin-wrap {
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border); border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  max-height: calc(100vh - var(--auth-band-height, 60px) - 140px);
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+.admin-table td:first-child { width: 130px; }
+.admin-table .admin-actions-cell { width: 300px; }
+/* the eight columns need room: on wide screens the pair is capped and
+   centred like the summary's 70%, at 80% for the extra columns; below
+   that the region scrolls sideways rather than crushing the cells */
+@media (min-width: 768px) {
+  .admin-header-row, .admin-wrap { width: 80%; margin-left: auto; margin-right: auto; }
+}
+@media (max-width: 1179px) and (min-width: 768px) {
+  .admin-header-row, .admin-wrap { overflow-x: auto; }
+  .admin-header-row { flex-wrap: nowrap; }
+}
 .admin-table td { padding: 8px; border-bottom: 1px solid var(--color-table-border); vertical-align: middle; }
 .admin-cell-id { font-size: 12px; opacity: .75; white-space: nowrap; }
 .admin-dash { opacity: .55; }

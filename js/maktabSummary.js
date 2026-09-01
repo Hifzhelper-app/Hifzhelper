@@ -277,6 +277,7 @@ async function renderMaktabSummaryScreen(){
     const nameTd = document.createElement('td');
     nameTd.className = 'cell-date maktab-student-name';
     const nameSpan = document.createElement('span');
+    nameSpan.className = 'maktab-name-pill';   // V4.2.0 (user): reads as the button it already is
     nameSpan.textContent = stu.name;
     nameTd.appendChild(nameSpan);
     // V3.85.0 (was V3.82.0's rail card): tapping the NAME opens her

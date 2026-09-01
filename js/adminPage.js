@@ -93,10 +93,21 @@ function renderAdminUsersList(){
     return;
   }
 
-  list.innerHTML = `<table class="admin-table"><thead><tr>
-      <th class="admin-th-id">Unique ID</th><th>Name</th><th>WhatsApp</th><th>Role</th>
-      <th>Group</th><th>Teacher profile</th><th>Status</th><th class="admin-th-actions">Actions</th>
-    </tr></thead><tbody></tbody></table>`;
+  // V4.2.0: the maktab summary's shape — a coloured header row, then the
+  // rows in their own white scrolling region beneath it. The two move as
+  // ONE width (the journal-table lesson: a width on only one of them
+  // splits the table in half visually).
+  list.innerHTML = `<div class="admin-header-row">
+      <div class="admin-header-cell admin-hc-id">Unique ID</div>
+      <div class="admin-header-cell">Name</div>
+      <div class="admin-header-cell">WhatsApp</div>
+      <div class="admin-header-cell">Role</div>
+      <div class="admin-header-cell">Group</div>
+      <div class="admin-header-cell">Teacher profile</div>
+      <div class="admin-header-cell">Status</div>
+      <div class="admin-header-cell admin-hc-actions">Actions</div>
+    </div>
+    <div class="admin-wrap"><table class="admin-table"><tbody></tbody></table></div>`;
   const tbody = list.querySelector('tbody');
 
   filtered.forEach(u => {

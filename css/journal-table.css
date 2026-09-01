@@ -252,7 +252,16 @@
    ============================================================ */
 .maktab-summary-row { cursor: pointer; }
 .maktab-summary-row:active { background: rgba(130, 150, 114, 0.12); }
+/* V4.2.0 (user): the names ARE buttons — tapping one opens her day — so
+   they now look like it: the app's light blue in a pill. The pill wraps
+   the NAME only; the cell also carries the attendance icon. */
 .maktab-student-name { font-weight: 600; }
+.maktab-student-name .maktab-name-pill {
+  display: inline-block;
+  background: var(--color-accent-soft, #D0DBE7);
+  border-radius: 999px;
+  padding: 4px 14px;
+}
 .maktab-day-placeholder { color: var(--muted, #8e8e93); }
 
 /* V3.61.1: summary column alignment + the date pill.
