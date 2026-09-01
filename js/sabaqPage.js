@@ -221,9 +221,12 @@ function recomputeSabaqLineCount(){
   // IndoPak dataset this needs to reach.
   const result = getLinesForSpan(from.surah, from.ayah, to.surah, to.ayah, pageRefForMushaf(sabaqMushaf));
   if(!result) return;
+  // V4.0.1: linesPerPage comes from the MUSHAF now — the old hardcoded
+  // 13 quietly mis-costed every 15-line maktab's page counts.
+  const lpp = linesPerPageForMushaf(sabaqMushaf);
   document.getElementById('sabaq_line_count').value = result.lineCount;
-  document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / 13) * 4) / 4;
-  if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0
+  document.getElementById('sabaq_page_count').value = Math.floor((result.lineCount / lpp) * 4) / 4;
+  if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0 / V4.0.1 rule
 }
 
 // V3.21.0: loads an existing entry into this same form for editing --
@@ -456,11 +459,20 @@ function sabaqUnitPillShow(unit){
   pages.classList.toggle('hidden', unit !== 'pages');
   pill.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.u === unit));
 }
+// V4.0.1 — THE UNIT FOLLOWS THE AMOUNT (user, 2026-09-01):
+//   more than one page's worth of lines → show PAGES
+//   otherwise                           → show LINES
+// The old rule ("pages only when lines is empty") could never fire,
+// because the auto-calc fills BOTH boxes — so a Pages choice snapped
+// back to Lines on every recompute. The pill stays switchable by hand;
+// this only decides what is shown by default.
 function sabaqSyncUnitPill(){
   const lines = document.getElementById('sabaq_line_count');
   const pages = document.getElementById('sabaq_page_count');
   if(!lines || !pages) return;
-  sabaqUnitPillShow(!lines.value && pages.value ? 'pages' : 'lines');
+  const n = parseFloat(lines.value);
+  const lpp = typeof linesPerPageForMushaf === 'function' ? linesPerPageForMushaf(sabaqMushaf) : 13;
+  sabaqUnitPillShow(!isNaN(n) && n > lpp ? 'pages' : 'lines');
 }
 (function wireSabaqUnitPill(){
   const pill = document.getElementById('sabaqUnitPill');
