@@ -8,25 +8,20 @@
 
 let adminUsers = [];
 
-// V4.1.0: the add row — the register box, revealed by "+ Add new
-// student" and hidden again once the student is created. Its fields,
-// its duplicate-name guard and its Continue/Cancel path are untouched.
+// V4.2.1 (user): "Register a user" sits ABOVE the table and opens the new
+// user as its FIRST ROW — no separate register box any more.
 function adminShowAddRow(show){
-  const box = document.getElementById('adminRegisterBox');
-  const btn = document.getElementById('adminAddRowBtn');
-  if(!box || !btn) return;
-  box.classList.toggle('hidden', !show);
-  btn.classList.toggle('hidden', show);
-  if(show) document.getElementById('admin_new_name').focus();
+  adminAdding = !!show;
+  if(!show) adminMatchedId = null;
+  renderAdminUsersList();
 }
 
 async function renderAdminScreen(){
-  document.getElementById('adminRegisterError').textContent = '';
-  document.getElementById('adminRegisterResult').textContent = '';
-  document.getElementById('admin_new_name').value = '';
-  document.getElementById('admin_new_whatsapp').value = '';
-  cancelAdminMatch();
-  adminShowAddRow(false);   // V4.1.0
+  // V4.2.1: the register controls are a table row that exists only while
+  // open — nothing to clear here; opening fresh renders it empty.
+  adminAdding = false;
+  adminMatchedId = null;
+  adminJustCreatedId = null;
   document.getElementById('admin_search').value = '';
   await loadAdminUsers();
 }
@@ -81,62 +76,112 @@ async function adminSaveField(user, fields, describe){
   }
 }
 
+// V4.2.1: one shared <colgroup> on BOTH the header table and the body
+// table — two tables with identical column widths align exactly, which a
+// flex header over a fixed-layout table never reliably did (V4.2.0's
+// misaligned "TEACHER PROF"). Name takes the leftover width; the rest are
+// honest fixed widths, so nothing truncates and delete stays visible.
+// The Teacher-profile column is GONE (user, 2026-09-01: the Role select
+// already promotes directly; the second-account path was redundant).
+const ADMIN_COLGROUP = `<colgroup>
+  <col style="width:110px"><col><col style="width:130px"><col style="width:125px">
+  <col style="width:140px"><col style="width:110px"><col style="width:230px">
+</colgroup>`;
+let adminAdding = false;   // the "Register a user" row is open
+// V4.2.1 (user): after registering, the NEW user is pinned to the TOP row
+// and highlighted, so her role, group, copy and share are right there.
+// Cleared when the screen is left or another user is registered.
+let adminJustCreatedId = null;
+
 function renderAdminUsersList(){
   const query = (document.getElementById('admin_search').value || '').trim().toLowerCase();
-  const filtered = adminUsers.filter(u =>
+  let filtered = adminUsers.filter(u =>
     !query || u.id.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)
   );
+  if(adminJustCreatedId){
+    const idx = filtered.findIndex(u => u.id === adminJustCreatedId);
+    if(idx > 0) filtered = [filtered[idx]].concat(filtered.slice(0, idx), filtered.slice(idx + 1));
+  }
   const list = document.getElementById('adminUsersList');
   const canShare = typeof navigator.share === 'function';
-  if(!filtered.length){
-    list.innerHTML = '<div class="admin-list-empty">No matching users.</div>';
+  const esc = (v) => String(v == null ? '' : v).replace(/"/g, '&quot;');
+
+  list.innerHTML = `
+    <table class="admin-table admin-table-head">${ADMIN_COLGROUP}<thead><tr>
+      <th class="admin-th-id">Unique ID</th><th>Name</th><th>WhatsApp</th><th>Role</th>
+      <th>Group</th><th>Status</th><th class="admin-th-actions">Actions</th>
+    </tr></thead></table>
+    <div class="admin-wrap"><table class="admin-table admin-table-body">${ADMIN_COLGROUP}<tbody></tbody></table></div>`;
+  const tbody = list.querySelector('tbody');
+
+  // ---- the REGISTER row: first in the table, opened by the button above ----
+  if(adminAdding){
+    const tr = document.createElement('tr');
+    tr.className = 'admin-row admin-row-fields admin-row-new';
+    tr.innerHTML = `
+      <td class="mono admin-cell-id admin-dash" data-label="Unique ID">new</td>
+      <td data-label="Name"><input type="text" class="admin-inline" id="admin_new_name" placeholder="Name"></td>
+      <td data-label="WhatsApp"><input type="text" class="admin-inline" id="admin_new_whatsapp" placeholder="WhatsApp"></td>
+      <td data-label="Role"><select class="admin-inline" id="admin_new_role">
+        <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
+      </select></td>
+      <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></td>
+      <td data-label="Status"><span class="admin-dash">—</span></td>
+      <td class="admin-actions-cell" data-label="Actions">
+        <button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button>
+        <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
+      </td>`;
+    tbody.appendChild(tr);
+    const trMatch = document.createElement('tr');
+    trMatch.className = 'admin-row admin-row-match hidden';
+    trMatch.id = 'adminRegisterMatchRow';
+    trMatch.innerHTML = `<td colspan="7">
+      <div class="form-hint" id="adminRegisterMatchHint"></div>
+      <div class="admin-match-actions">
+        <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
+        <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
+        <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset that student's PIN</button>
+      </div>
+      <div class="form-error" id="adminRegisterError"></div>
+    </td>`;
+    tbody.appendChild(trMatch);
+    const trErr = document.createElement('tr');
+    trErr.className = 'admin-row admin-row-newerr';
+    trErr.innerHTML = `<td colspan="7"><div class="form-error" id="adminRegisterRowError"></div></td>`;
+    tbody.appendChild(trErr);
+    wireAdminRegisterRow();
+    const gsel = tr.querySelector('#admin_new_group');
+    const fillNew = (groups) => {
+      gsel.innerHTML = '<option value="">No group</option>' + groups.filter(g => !g.retired).map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
+      gsel.disabled = false;
+    };
+    if(adminGroupsCache) fillNew(adminGroupsCache);
+    else apiGetMaktabGroups().then(g => { adminGroupsCache = g; fillNew(g); }).catch(() => {});
+    setTimeout(() => tr.querySelector('#admin_new_name').focus(), 0);
+  }
+
+  if(!filtered.length && !adminAdding){
+    tbody.innerHTML = '<tr><td colspan="7" class="admin-list-empty">No matching users.</td></tr>';
     return;
   }
 
-  // V4.2.0: the maktab summary's shape — a coloured header row, then the
-  // rows in their own white scrolling region beneath it. The two move as
-  // ONE width (the journal-table lesson: a width on only one of them
-  // splits the table in half visually).
-  list.innerHTML = `<div class="admin-header-row">
-      <div class="admin-header-cell admin-hc-id">Unique ID</div>
-      <div class="admin-header-cell">Name</div>
-      <div class="admin-header-cell">WhatsApp</div>
-      <div class="admin-header-cell">Role</div>
-      <div class="admin-header-cell">Group</div>
-      <div class="admin-header-cell">Teacher profile</div>
-      <div class="admin-header-cell">Status</div>
-      <div class="admin-header-cell admin-hc-actions">Actions</div>
-    </div>
-    <div class="admin-wrap"><table class="admin-table"><tbody></tbody></table></div>`;
-  const tbody = list.querySelector('tbody');
-
   filtered.forEach(u => {
-    const teaching = u.role === 'student' ? teachingProfileFor(u.id) : null;
-    const canCreateTeaching = u.role === 'student' && u.active && !teaching;
-    const derivedFrom = isTeachingId(u.id) ? adminUsers.find(x => x.id === u.id.slice(0, -TEACHING_ID_SUFFIX.length)) : null;
-
     const tr = document.createElement('tr');
-    tr.className = 'admin-row admin-row-fields';
+    tr.className = 'admin-row admin-row-fields' + (u.id === adminJustCreatedId ? ' admin-row-just-created' : '');
     tr.innerHTML = `
-      <td class="mono admin-cell-id">${u.id}</td>
-      <td><input type="text" class="admin-inline" data-f="name" value="${(u.name || '').replace(/"/g, '&quot;')}"></td>
-      <td><input type="text" class="admin-inline" data-f="whatsapp_number" value="${(u.whatsapp_number || '').replace(/"/g, '&quot;')}"></td>
-      <td><select class="admin-inline" data-f="role">
+      <td class="mono admin-cell-id" data-label="Unique ID">${u.id}</td>
+      <td data-label="Name"><input type="text" class="admin-inline" data-f="name" value="${esc(u.name)}"></td>
+      <td data-label="WhatsApp"><input type="text" class="admin-inline" data-f="whatsapp_number" value="${esc(u.whatsapp_number)}"></td>
+      <td data-label="Role"><select class="admin-inline" data-f="role">
         <option value="student"${u.role === 'student' ? ' selected' : ''}>Student</option>
         <option value="teacher"${u.role === 'teacher' ? ' selected' : ''}>Teacher</option>
         <option value="admin"${u.role === 'admin' ? ' selected' : ''}>Admin</option>
       </select></td>
-      <td>${u.role === 'student' ? '<select class="admin-inline" data-f="group_id" disabled><option>…</option></select>' : '<span class="admin-dash">—</span>'}</td>
-      <td class="admin-cell-teaching">${
-        teaching ? `<span class="mono admin-teaching-id">${teaching.id}</span>${teaching.active ? '' : ' <span class="admin-dash">(inactive)</span>'}`
-        : canCreateTeaching ? '<input type="checkbox" class="admin-inline" data-create-teaching aria-label="Create teaching profile">'
-        : derivedFrom ? `<span class="admin-dash">of ${derivedFrom.name}</span>`
-        : '<span class="admin-dash">—</span>'}</td>
-      <td><label class="admin-status"><input type="checkbox" class="admin-inline" data-f="active"${u.active ? ' checked' : ''}><span>${u.active ? 'Active' : 'Inactive'}</span></label></td>
-      <td class="admin-actions-cell"></td>`;
+      <td data-label="Group">${u.role === 'student' ? '<select class="admin-inline" data-f="group_id" disabled><option>…</option></select>' : '<span class="admin-dash">—</span>'}</td>
+      <td data-label="Status"><label class="admin-status"><input type="checkbox" class="admin-inline" data-f="active"${u.active ? ' checked' : ''}><span>${u.active ? 'Active' : 'Inactive'}</span></label></td>
+      <td class="admin-actions-cell" data-label="Actions"></td>`;
     tbody.appendChild(tr);
 
-    // the actions — their own row on mobile, the last cell on desktop
     const actionsHtml = `
       <button type="button" class="icon-btn" data-copy-url="${u.id}" aria-label="Copy personal URL"></button>
       ${canShare ? `<button type="button" class="icon-btn" data-share-url="${u.id}" aria-label="Share personal URL"></button>` : ''}
@@ -145,11 +190,10 @@ function renderAdminUsersList(){
     tr.querySelector('.admin-actions-cell').innerHTML = actionsHtml;
     const trActions = document.createElement('tr');
     trActions.className = 'admin-row admin-row-actions';
-    trActions.innerHTML = `<td colspan="8"><div class="admin-actions-strip">${actionsHtml}</div></td>`;
+    trActions.innerHTML = `<td colspan="7"><div class="admin-actions-strip">${actionsHtml}</div></td>`;
     tbody.appendChild(trActions);
 
     const wire = (scope) => {
-      // ---- per-field autosave ----
       const nameEl = scope.querySelector('[data-f="name"]');
       if(nameEl) nameEl.addEventListener('change', () => {
         const v = nameEl.value.trim();
@@ -183,23 +227,6 @@ function renderAdminUsersList(){
         const v = groupEl.value === '' ? null : Number(groupEl.value);
         if(String(v ?? '') !== String(u.group_id ?? '')) adminSaveField(u, { group_id: v }, 'Group');
       });
-      // ---- teaching profile: unchanged behaviour, its own confirm ----
-      const teachEl = scope.querySelector('[data-create-teaching]');
-      if(teachEl) teachEl.addEventListener('change', async () => {
-        if(!teachEl.checked) return;
-        if(!confirm(`Create a teaching profile for ${u.name}? Her teaching ID will be ${u.id}${TEACHING_ID_SUFFIX}. She sets its PIN on first login.`)){
-          teachEl.checked = false; return;
-        }
-        try{
-          const result = await apiAdminCreateTeachingProfile(u.id);
-          adminFlash(`Teaching profile created: ${result.id}`);
-          await loadAdminUsers();
-        } catch(e){
-          teachEl.checked = false;
-          adminFlash("Couldn't create the teaching profile: " + e.message, true);
-        }
-      });
-      // ---- the actions ----
       const copyBtn = scope.querySelector('[data-copy-url]');
       if(copyBtn){
         copyBtn.innerHTML = iconHtml('copy');
@@ -229,15 +256,12 @@ function renderAdminUsersList(){
         delBtn.addEventListener('click', async () => {
           if(!confirm(`Delete ${u.id} (${u.name}) permanently? This cannot be undone.`)) return;
           try{ await apiAdminDeleteUser(u.id); await loadAdminUsers(); }
-          catch(e){ adminFlash(e.message, true); }   // the "blocked because history exists" case
+          catch(e){ adminFlash(e.message, true); }
         });
       }
     };
     wire(tr); wire(trActions);
 
-    // the group select, populated once and reused (V3.78.0 semantics kept:
-    // a retired group she is already in stays selectable so a save cannot
-    // silently move her)
     if(u.role === 'student'){
       const sel = tr.querySelector('[data-f="group_id"]');
       const fill = (groups) => {
@@ -259,165 +283,12 @@ function renderAdminUsersList(){
 }
 
 document.getElementById('admin_search').addEventListener('input', renderAdminUsersList);
-const adminAddRowBtnEl = document.getElementById('adminAddRowBtn');   // guarded: fixtures build only the markup they test
+const adminAddRowBtnEl = document.getElementById('adminRegisterOpenBtn');   // guarded: fixtures build only the markup they test
 if(adminAddRowBtnEl) adminAddRowBtnEl.addEventListener('click', () => adminShowAddRow(true));
 
-// ---------- user detail card ----------
-// V3.77.0 (j): the teaching id is the student's id + 'TEACHER' (worker
-// convention, admin.js). The list is the only place both rows are visible,
-// so "has a teaching profile" is computed here from it — nothing in the
-// data links the two rows.
-const TEACHING_ID_SUFFIX = 'TEACHER';
-function teachingProfileFor(studentId){
-  return adminUsers.find(u => u.id === studentId + TEACHING_ID_SUFFIX) || null;
-}
-function isTeachingId(id){ return typeof id === 'string' && id.endsWith(TEACHING_ID_SUFFIX) && id.length > TEACHING_ID_SUFFIX.length; }
-
-function openUserCard(id){
-  const user = adminUsers.find(u => u.id === id);
-  if(!user) return;
-  // V3.77.0 (j): the create action is offered ONLY on an active student row
-  // that has no teaching profile yet — never on a teaching account, never
-  // twice (both also refused by the worker).
-  const teaching = user.role === 'student' ? teachingProfileFor(user.id) : null;
-  // V3.78.0 (item 8): her group, assigned here (names are defined on
-  // Maktab Settings). Loaded async after the card renders; the select
-  // stays disabled until the list arrives.
-
-  const canCreateTeaching = user.role === 'student' && user.active && !teaching;
-  const derivedFrom = isTeachingId(user.id) ? adminUsers.find(u => u.id === user.id.slice(0, -TEACHING_ID_SUFFIX.length)) : null;
-
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.innerHTML = `<div class="modal-card">
-    <button class="close-btn">&times;</button>
-    <h2>${user.id}</h2>
-    <label>Name</label>
-    <input type="text" id="uc_name" value="${user.name}">
-    <label>WhatsApp number</label>
-    <input type="text" id="uc_whatsapp" value="${user.whatsapp_number || ''}">
-    ${user.role === 'student' ? `<label>Group</label>
-    <select id="uc_group" disabled><option>Loading…</option></select>` : ''}
-    <label>Role</label>
-    <select id="uc_role">
-      <option value="student" ${user.role==='student'?'selected':''}>Student</option>
-      <option value="teacher" ${user.role==='teacher'?'selected':''}>Teacher</option>
-      <option value="admin" ${user.role==='admin'?'selected':''}>Admin</option>
-    </select>
-    <label style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-      <input type="checkbox" id="uc_active" style="width:auto;" ${user.active ? 'checked' : ''}>
-      Active
-    </label>
-    <div class="form-error" id="uc_error"></div>
-    <div class="modal-actions">
-      <button class="secondary" id="uc_cancel">Cancel</button>
-      <button class="primary" id="uc_save">Save</button>
-    </div>
-    <div class="modal-actions">
-      <button class="secondary" id="uc_reset_pin">Reset PIN</button>
-      <button class="secondary danger" id="uc_delete">Delete user</button>
-    </div>
-    ${canCreateTeaching ? `<div class="modal-actions"><button class="secondary" id="uc_create_teaching">Create teaching profile</button></div>` : ''}
-    ${teaching ? `<div class="form-hint" id="uc_teaching_note">Teaching profile: <span class="mono">${teaching.id}</span>${teaching.active ? '' : ' (inactive)'}</div>` : ''}
-    ${derivedFrom ? `<div class="form-hint" id="uc_derived_note">Teaching profile of ${derivedFrom.name} (<span class="mono">${derivedFrom.id}</span>)</div>` : ''}
-  </div>`;
-  document.body.appendChild(overlay);
-
-  // V3.77.0 (j): create the teaching profile from this student's row.
-  const createBtn = document.getElementById('uc_create_teaching');
-  if(createBtn){
-    createBtn.addEventListener('click', async () => {
-      const errEl = document.getElementById('uc_error');
-      errEl.textContent = '';
-      if(!confirm(`Create a teaching profile for ${user.name}? Her teaching ID will be ${user.id}${TEACHING_ID_SUFFIX}. She sets its PIN on first login.`)) return;
-      try{
-        const result = await apiAdminCreateTeachingProfile(user.id);
-        overlay.remove();
-        await loadAdminUsers();
-        showBanner(`Teaching profile created: ${result.id}`);
-      } catch(e){
-        errEl.textContent = "Couldn't create the teaching profile: " + e.message;
-      }
-    });
-  }
-
-  // V3.78.0: populate the group select — live groups plus, if she is in a
-  // retired one, that group (kept selectable so Save doesn't silently move
-  // her; the worker refuses ASSIGNING a retired group to someone new).
-  if(user.role === 'student'){
-    apiGetMaktabGroups().then(groups => {
-      const sel = document.getElementById('uc_group');
-      if(!sel) return;
-      sel.innerHTML = '';
-      const opts = [{ id: '', name: 'No group' }].concat(groups.filter(g => !g.retired || g.id === user.group_id));
-      for(const g of opts){
-        const o = document.createElement('option');
-        o.value = String(g.id);
-        o.textContent = g.name + (g.retired ? ' (retired)' : '');
-        if(String(user.group_id ?? '') === String(g.id)) o.selected = true;
-        sel.appendChild(o);
-      }
-      sel.disabled = false;
-    }).catch(() => { /* the select stays disabled; nothing to save then */ });
-  }
-
-  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
-  overlay.querySelector('.close-btn').addEventListener('click', () => overlay.remove());
-  document.getElementById('uc_cancel').addEventListener('click', () => overlay.remove());
-
-  document.getElementById('uc_save').addEventListener('click', async () => {
-    const errEl = document.getElementById('uc_error');
-    errEl.textContent = '';
-    const newName = document.getElementById('uc_name').value.trim();
-    const newWhatsapp = document.getElementById('uc_whatsapp').value.trim();
-    const newRole = document.getElementById('uc_role').value;
-    const newActive = document.getElementById('uc_active').checked;
-    if(!newName){ errEl.textContent = 'Name cannot be empty.'; return; }
-    if(newRole !== user.role && !confirm(`Change ${user.id}'s role to "${newRole}"?`)) return;
-    if(!newActive && user.active && !confirm(`Mark ${user.id} inactive? They won't be able to log in until reactivated.`)) return;
-    try{
-      const fields = {};
-      if(newName !== user.name) fields.name = newName;
-      if(newWhatsapp !== (user.whatsapp_number || '')) fields.whatsapp_number = newWhatsapp;
-      if(newActive !== !!user.active) fields.active = newActive;
-      // V3.78.0: the group, only if the select loaded and the value changed
-      const groupSel = document.getElementById('uc_group');
-      if(groupSel && !groupSel.disabled && groupSel.value !== String(user.group_id ?? '')){
-        fields.group_id = groupSel.value === '' ? null : Number(groupSel.value);
-      }
-      if(Object.keys(fields).length) await apiAdminUpdateUser(user.id, fields);
-      if(newRole !== user.role) await apiAdminChangeRole(user.id, newRole);
-      overlay.remove();
-      await loadAdminUsers();
-    } catch(e){
-      errEl.textContent = "Couldn't save: " + e.message;
-    }
-  });
-
-  document.getElementById('uc_reset_pin').addEventListener('click', async () => {
-    if(!confirm(`Reset ${user.id}'s PIN? They'll set a new one on their next login.`)) return;
-    try{
-      await apiAdminResetPin(user.id);
-      showBanner(`PIN reset for ${user.id}.`);
-    } catch(e){
-      showBanner("Couldn't reset PIN: " + e.message);
-    }
-  });
-
-  document.getElementById('uc_delete').addEventListener('click', async () => {
-    if(!confirm(`Delete ${user.id} (${user.name}) permanently? This cannot be undone.`)) return;
-    try{
-      await apiAdminDeleteUser(user.id);
-      overlay.remove();
-      await loadAdminUsers();
-    } catch(e){
-      // deliberately shown inline, not as a passing banner — this is the
-      // "blocked because history exists" case and the admin should see it clearly
-      document.getElementById('uc_error').textContent = e.message;
-    }
-  });
-}
-
+// V4.2.1: the per-user detail card (openUserCard) is REMOVED. The table
+// does everything it did, and it was the last surface still offering
+// teaching-profile creation after the user retired that path.
 // ---------- register new student ----------
 // Matches self-registration's structure (V3.4.2): the form fields stay
 // visible and editable the whole time — Continue always re-submits with
@@ -431,58 +302,50 @@ function openUserCard(id){
 // the prompt first appeared, regardless of any edits made afterward.
 let adminMatchedId = null;
 
-document.getElementById('adminRegisterBtn').addEventListener('click', attemptAdminRegister);
-document.getElementById('adminRegisterContinueBtn').addEventListener('click', async () => {
-  const errEl = document.getElementById('adminRegisterError');
-  errEl.textContent = '';
-  const name = document.getElementById('admin_new_name').value.trim();
-  const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
-  try{
-    const result = await apiAdminRegisterStudent(name, whatsapp || null, true);
-    if(result.matchedId && confirm('CANCEL: Both journals remain active ; OK: mark existing journal INACTIVE')){
-      try{ await apiAdminUpdateUser(result.matchedId, { active: false }); }
-      catch(e){ errEl.textContent = "Registered, but couldn't deactivate the existing student: " + e.message; }
-    }
-    finishAdminRegisterUI(result);
-  } catch(e){
-    errEl.textContent = "Couldn't register: " + e.message;
-  }
-});
-document.getElementById('adminRegisterCancelBtn').addEventListener('click', cancelAdminMatch);
-document.getElementById('adminRegisterResetPinBtn').addEventListener('click', async () => {
-  if(!adminMatchedId) return;
-  if(!confirm("Reset the existing student's PIN?")) return;
-  try{
-    await apiAdminResetPin(adminMatchedId);
-    showBanner('PIN reset for the existing student.');
-    cancelAdminMatch();
-  } catch(e){
-    showBanner("Couldn't reset PIN: " + e.message);
-  }
-});
+// V4.2.1: the register controls live in the table's FIRST ROW, opened by
+// "Register a user" above the table. Wired per render (the row is rebuilt
+// each time). Continue re-submits whatever the row CURRENTLY holds with
+// force:true — the V3.4.2 semantics, unchanged.
+function wireAdminRegisterRow(){
+  document.getElementById('adminRegisterBtn').addEventListener('click', attemptAdminRegister);
+  document.getElementById('adminRegisterCloseBtn').addEventListener('click', () => { adminAdding = false; adminMatchedId = null; renderAdminUsersList(); });
+  document.getElementById('adminRegisterCancelBtn').addEventListener('click', cancelAdminMatch);
+  document.getElementById('adminRegisterContinueBtn').addEventListener('click', async () => {
+    const errEl = document.getElementById('adminRegisterError');
+    errEl.textContent = '';
+    const name = document.getElementById('admin_new_name').value.trim();
+    const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
+    if(!name){ errEl.textContent = 'Enter a name.'; return; }
+    try{
+      const result = await apiAdminRegisterStudent(name, whatsapp || null, true);
+      await finishAdminRegisterUI(result);
+    } catch(e){ errEl.textContent = "Couldn't register: " + e.message; }
+  });
+  document.getElementById('adminRegisterResetPinBtn').addEventListener('click', async () => {
+    if(!adminMatchedId) return;
+    if(!confirm(`Reset the PIN of the existing student ${adminMatchedId}? They'll set a new one on their next login.`)) return;
+    try{ await apiAdminResetPin(adminMatchedId); adminFlash(`PIN reset for ${adminMatchedId}.`); cancelAdminMatch(); }
+    catch(e){ document.getElementById('adminRegisterError').textContent = "Couldn't reset PIN: " + e.message; }
+  });
+}
 
 async function attemptAdminRegister(){
-  const errEl = document.getElementById('adminRegisterError');
-  const resultEl = document.getElementById('adminRegisterResult');
+  const errEl = document.getElementById('adminRegisterRowError');
   errEl.textContent = '';
-  resultEl.textContent = '';
   const name = document.getElementById('admin_new_name').value.trim();
   const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
   if(!name){ errEl.textContent = 'Enter a name.'; return; }
-
   try{
     const result = await apiAdminRegisterStudent(name, whatsapp || null, false);
     if(result.matched){
       adminMatchedId = result.matchedId;
-      // V3.4.3 item 5: identifies the actual matched student, since the
-      // admin list can have several similarly-named entries.
+      // V3.4.3 item 5: names the actual matched student — the list can
+      // hold several similarly-named entries.
       document.getElementById('adminRegisterMatchHint').textContent =
         `Student: ${name}, WhatsApp number: ${whatsapp || '(none given)'} has the same details and is currently ${result.matchedActive ? 'active' : 'inactive'}. How do you want to proceed?`;
-      document.getElementById('adminRegisterMatchHint').classList.remove('hidden');
-      document.getElementById('adminRegisterNormalActions').classList.add('hidden');
-      document.getElementById('adminRegisterMatchActions').classList.remove('hidden');
+      document.getElementById('adminRegisterMatchRow').classList.remove('hidden');
     } else {
-      finishAdminRegisterUI(result);
+      await finishAdminRegisterUI(result);
     }
   } catch(e){
     errEl.textContent = "Couldn't register: " + e.message;
@@ -491,17 +354,29 @@ async function attemptAdminRegister(){
 
 function cancelAdminMatch(){
   adminMatchedId = null;
-  document.getElementById('adminRegisterMatchHint').classList.add('hidden');
-  document.getElementById('adminRegisterMatchActions').classList.add('hidden');
-  document.getElementById('adminRegisterNormalActions').classList.remove('hidden');
+  const row = document.getElementById('adminRegisterMatchRow');
+  if(row) row.classList.add('hidden');
+  const err = document.getElementById('adminRegisterError');
+  if(err) err.textContent = '';
 }
 
-function finishAdminRegisterUI(result){
-  cancelAdminMatch();
-  document.getElementById('admin_new_name').value = '';
-  document.getElementById('admin_new_whatsapp').value = '';
-  document.getElementById('adminRegisterResult').textContent =
-    `Created — ID: ${result.id}. Share this with ${result.name} so they can log in for the first time.`;
-  adminShowAddRow(false);   // V4.1.0: the add row closes; the new student appears in the table
-  loadAdminUsers();
+// After the account exists, apply the row's ROLE and GROUP — the register
+// endpoint creates a student, so these are the two follow-ups — then
+// close the row; the new user appears in the table.
+async function finishAdminRegisterUI(result){
+  const roleEl = document.getElementById('admin_new_role');
+  const groupEl = document.getElementById('admin_new_group');
+  const role = roleEl ? roleEl.value : 'student';
+  const group = groupEl && !groupEl.disabled && groupEl.value !== '' ? Number(groupEl.value) : null;
+  try{
+    if(role !== 'student') await apiAdminChangeRole(result.id, role);
+    if(group != null && role === 'student') await apiAdminUpdateUser(result.id, { group_id: group });
+  } catch(e){
+    adminFlash(`Registered ${result.id}, but couldn't apply ${role !== 'student' ? 'the role' : 'the group'}: ${e.message}`, true);
+  }
+  adminMatchedId = null;
+  adminAdding = false;
+  adminJustCreatedId = result.id;   // V4.2.1: pinned to the top row, highlighted
+  adminFlash(`Created — ID: ${result.id}. Share it with ${result.name} for their first login.`);
+  await loadAdminUsers();
 }
