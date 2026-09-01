@@ -452,6 +452,17 @@ function crossesAtMostOneJuzBoundary(fromSurah, fromAyah, toSurah, toAyah, ref){
 // ever distinguish uthmani vs waterval. Lines/Pages always reads the
 // mushaf's own real dataset, regardless of which terminology the
 // student separately picked for IndoPak's Dhor/Sabaq Dhor display.
+// V4.0.1 (user's rule, 2026-09-01): the sabaq amount is displayed in
+// PAGES once it exceeds one page, otherwise in LINES — and pages mean
+// TEXT QUANTITY (lines / linesPerPage in quarter-page units), not the
+// physical pages a span happens to touch. That needs the mushaf's own
+// lines-per-page: js/sabaqPage.js had hardcoded 13, so every 15-line
+// maktab has been computing its page counts against the wrong divisor
+// since the feature shipped.
+function linesPerPageForMushaf(mushaf){
+  return (mushaf === '15line_madani' || mushaf === '15line_indopak') ? 15 : 13;
+}
+
 function pageRefForMushaf(mushaf){
   if(mushaf === '15line_madani') return 'uthmani';
   if(mushaf === '15line_indopak') return 'indopak';
@@ -675,7 +686,7 @@ if(typeof module !== 'undefined' && module.exports){
     SURAH_JUZ_RANGE, getSurahJuzRange,
     compareVerseKey, getRubInfo, AYAH_WORD_RANGE, LINE13_RANGES, getLines13ForAyahRange,
     AYAH_LINE_UTHMANI, PAGE_MAX_LINE_UTHMANI, getLines15ForAyahRange,
-    AYAH_LINE_INDOPAK, PAGE_MAX_LINE_INDOPAK, findAyahLineIndopak, getLines15IndopakForAyahRange, pageRefForMushaf,
+    AYAH_LINE_INDOPAK, PAGE_MAX_LINE_INDOPAK, findAyahLineIndopak, getLines15IndopakForAyahRange, pageRefForMushaf, linesPerPageForMushaf,
     segmentsPerJuz, unitMarkerCount, segmentRangeForUnitIndex,
     SABAQ_STUDY_ORDER, nextJuzInStudyOrder, firstSabaqPositionForJuz,
     maxAyahForSurah, nextSabaqPosition,
