@@ -134,6 +134,16 @@ function fixScreenTopPaint(screenId){
   });
 }
 
+// V4.1.1 (user, 2026-09-01): where CLOSING a screen lands. For a
+// teaching profile that is the maktab summary — the generic Home page is
+// an unnecessary step in daily use, and bootApp already lands them there
+// on login; only the close paths disagreed. A student is unaffected.
+// The menu's HOME button deliberately does NOT use this: a button
+// labelled Home goes Home (the V3.74.1 lesson, kept).
+function homeScreenFor(){
+  return (typeof isTeachingProfile === 'function' && isTeachingProfile()) ? 'maktabSummary' : 'home';
+}
+
 async function bootApp(){
   showAppShell();
   try{
@@ -187,7 +197,7 @@ async function bootApp(){
     // (V3.70.0), so sending a teacher there would land them on a screen
     // with no way out.
     if(typeof isTeachingProfile === 'function' && isTeachingProfile()){
-      showScreen('maktabSummary');
+      showScreen(homeScreenFor());
     } else {
       showScreen(profile.setup_complete ? 'home' : 'settings');
     }
@@ -267,7 +277,7 @@ window.addEventListener('popstate', () => {
 
   document.querySelectorAll('.screen-close-btn:not(#logDetailClose)').forEach(btn => {
     btn.innerHTML = iconHtml('close');
-    btn.addEventListener('click', () => showScreen('home'));
+    btn.addEventListener('click', () => showScreen(homeScreenFor()));   // V4.1.1
   });
 
   if(getToken()){
