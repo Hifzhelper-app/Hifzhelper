@@ -143,34 +143,50 @@ button.secondary.danger {
    are gone, so the shared 30% desktop cap no longer applies here — the
    width comes from not opting in, not from an override. */
 .admin-screen-body { padding: 0 var(--space-md); }
-.admin-header-row { display: flex; border-radius: var(--radius-md) var(--radius-md) 0 0; }
-.admin-header-cell {
+/* V4.2.1: HEADER and BODY are two tables sharing one <colgroup>, so their
+   columns align exactly (the flex-header-over-fixed-table of V4.2.0
+   never did). The header table wears the colours; the body table sits
+   in its own white scrolling region. */
+.admin-toolbar { display: flex; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-md); }
+.admin-toolbar #admin_search { flex: 1 1 auto; margin: 0; }
+.admin-toolbar .admin-add-row { flex: 0 0 auto; width: auto; margin: 0; padding: 8px 16px; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+.admin-table-head thead th {
   background: var(--color-table-header-log);
-  padding: 10px 8px; font-size: 12px; font-weight: 700;
+  text-align: left; padding: 10px 8px; font-size: 12px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
-  flex: 1 1 0; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis;
 }
-.admin-header-cell.admin-hc-id { background: var(--color-table-header-date); border-top-left-radius: var(--radius-md); flex: 0 0 130px; }
-.admin-header-cell.admin-hc-actions { border-top-right-radius: var(--radius-md); flex: 0 0 300px; }
+.admin-table-head thead th.admin-th-id { background: var(--color-table-header-date); border-top-left-radius: var(--radius-md); }
+.admin-table-head thead th.admin-th-actions { border-top-right-radius: var(--radius-md); }
 .admin-wrap {
   background: var(--color-surface);
   border: 1px solid var(--color-table-border); border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  max-height: calc(100vh - var(--auth-band-height, 60px) - 140px);
+  max-height: calc(100vh - var(--auth-band-height, 60px) - 160px);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
 }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
-.admin-table td:first-child { width: 130px; }
-.admin-table .admin-actions-cell { width: 300px; }
+.admin-table-body td { overflow: hidden; }
+/* the register row + its match hint, and the just-created highlight */
+.admin-row-new td { background: var(--color-accent-soft, #D0DBE7); }
+.admin-row-new .admin-register-btn { width: auto; padding: 6px 14px; font-size: 13px; }
+.admin-row-match td, .admin-row-newerr td { border-bottom: none; padding-top: 0; }
+.admin-match-actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-sm); }
+.admin-match-actions .secondary { width: auto; padding: 6px 12px; font-size: 13px; }
+.admin-row-just-created td { background: var(--palette-lavender, #E3DADE); }
+/* action buttons hug their content so the delete icon always fits */
+.admin-actions-cell .secondary, .admin-actions-strip .secondary { width: auto; display: inline-block; }
 /* the eight columns need room: on wide screens the pair is capped and
    centred like the summary's 70%, at 80% for the extra columns; below
    that the region scrolls sideways rather than crushing the cells */
 @media (min-width: 768px) {
-  .admin-header-row, .admin-wrap { width: 80%; margin-left: auto; margin-right: auto; }
+  .admin-toolbar, .admin-table-head, .admin-wrap, .admin-status-line { width: 80%; margin-left: auto; margin-right: auto; }
 }
-@media (max-width: 1179px) and (min-width: 768px) {
-  .admin-header-row, .admin-wrap { overflow-x: auto; }
-  .admin-header-row { flex-wrap: nowrap; }
+/* below ~1000px the fixed columns (845px) outgrow 80% — let the pair
+   scroll sideways together rather than crush */
+@media (max-width: 1100px) and (min-width: 768px) {
+  .admin-table-head, .admin-wrap { overflow-x: auto; }
+  .admin-table { min-width: 960px; }
 }
 .admin-table td { padding: 8px; border-bottom: 1px solid var(--color-table-border); vertical-align: middle; }
 .admin-cell-id { font-size: 12px; opacity: .75; white-space: nowrap; }
@@ -201,7 +217,8 @@ button.secondary.danger {
 /* MOBILE: two rows per user — fields, then every icon/button — tethered
    so the pair reads as one record (no divider between them). */
 @media (max-width: 767px) {
-  .admin-table thead { display: none; }
+  .admin-table-head { display: none; }
+  .admin-table { min-width: 0; }
   .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
   .admin-row-fields td { border-bottom: none; padding: 4px 8px; }
   .admin-row-fields td::before { content: attr(data-label); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
