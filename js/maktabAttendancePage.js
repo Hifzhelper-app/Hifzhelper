@@ -75,12 +75,14 @@ async function mkweekPaint(){
     const body = c.past
       ? list('Present', c.present, 'mkweek-present') + list('Absent', c.absent, 'mkweek-absent') + list("Haa'idha", c.haidh, 'mkweek-haidh')
       : list("Haa'idha (predicted)", c.predictedHaidh, 'mkweek-haidh') + list('Absent (informed)', c.predictedAbsent, 'mkweek-absent');
-    const add = c.past ? '' : `<button type="button" class="mkweek-add" data-date="${c.date}">+ Add</button>`;
+    // V4.2.2 (user): the REGISTER icon — one sheet for the whole day, so a
+    // teacher marks several students at once instead of visiting each.
+    const add = `<button type="button" class="mkweek-add" data-register="${c.date}" data-past="${c.past ? '1' : ''}">${c.past ? 'Mark register' : '+ Add'}</button>`;
     return `<div class="mkweek-col${c.past ? '' : ' mkweek-col-future'}" data-date="${c.date}">${head}${body || '<div class="mkweek-note">\u2014</div>'}${add}</div>`;
   }).join('');
 
   host.querySelectorAll('.mkweek-add').forEach(b =>
-    b.addEventListener('click', () => mkweekOpenAdd(b.dataset.date, data.students || [])));
+    b.addEventListener('click', () => mkweekOpenRegister(b.dataset.register, !!b.dataset.past, data)));
 }
 
 // The teacher's forward-looking entry: mark a student expected haa'idha
@@ -89,45 +91,84 @@ async function mkweekPaint(){
 // existed since V3.76.0); 'predicted-absent' is a planning marker only
 // and never touches the attendance stats (user: informing is courtesy,
 // not excusal).
-function mkweekOpenAdd(date, students){
+// ============================================================
+// V4.2.2 — THE MARK REGISTER SHEET (user, improving Claude's one-at-a-
+// time idea). One sheet per day, listing the active students, so several
+// are marked in one sitting.
+//
+// It ADAPTS to the day, because absence means different things either
+// side of today:
+//   TODAY / FUTURE → Haidh · Absent · Clear. An explicit mark is the ONLY
+//     way anything is recorded here (V4.0.2 made today deliberately
+//     unresolved), so this is where the register is genuinely taken.
+//   PAST → Haidh · Clear, with each student's DERIVED state shown, so the
+//     teacher sees what she is correcting. "Absent" is not offered: the
+//     derivation already infers it from "no log", so the mark would add
+//     nothing.
+// The V3.98/V4.0.2 rulings stand: haidh excuses, an informed absence
+// never does.
+// ============================================================
+function mkweekOpenRegister(date, past, data){
+  const students = data.students || [];
+  const col = (data.columns || []).find(c => c.date === date) || {};
+  const stateOf = (name) => {
+    if((col.haidh || []).includes(name) || (col.predictedHaidh || []).includes(name)) return 'haidh';
+    if((col.present || []).includes(name)) return 'present';
+    if((col.predictedAbsent || []).includes(name)) return 'absent-informed';
+    if((col.absent || []).includes(name)) return 'absent';
+    return '';
+  };
+  const STATE_TEXT = { haidh: "Haa'idha", present: 'Present', absent: 'Absent', 'absent-informed': 'Absent (informed)' };
+  const f = (d) => (typeof fmtDMY === 'function' ? fmtDMY(d) : d);
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay history-popup-modal';
-  const f = (d) => (typeof fmtDMY === 'function' ? fmtDMY(d) : d);
-  overlay.innerHTML = `<div class="modal-card mkweek-add-card">
-    <button type="button" class="close-btn" id="mkweekAddClose">&times;</button>
-    <h2>Add \u2014 ${f(date)}</h2>
-    <label for="mkweekAddStudent">Student</label>
-    <select id="mkweekAddStudent">${students.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select>
-    <label for="mkweekAddKind">Expected</label>
-    <select id="mkweekAddKind">
-      <option value="predicted-haidh">Haa'idha</option>
-      <option value="predicted-absent">Absent (informed the maktab)</option>
-    </select>
-    <div class="cal-stage-actions">
-      <button type="button" class="secondary" id="mkweekAddCancel">Cancel</button>
-      <button type="button" class="history-btn" id="mkweekAddSave">Add</button>
-    </div>
-    <div class="form-error" id="mkweekAddError"></div>
+  overlay.innerHTML = `<div class="modal-card mkweek-register-card">
+    <button type="button" class="close-btn" id="mkregClose">&times;</button>
+    <h2>Register \u2014 ${f(date)}</h2>
+    <div class="form-hint">${past
+      ? 'Correct the record: mark a day as haa\u2019idha, or clear a mark. Absence is derived from the logs, so it is not set here.'
+      : 'Mark who is expected haa\u2019idha, or absent because she has told the maktab. An informed absence does not excuse attendance.'}</div>
+    <div class="mkreg-list">${students.map(s => `
+      <div class="mkreg-row" data-id="${s.id}">
+        <span class="mkreg-name">${s.name}</span>
+        <span class="mkreg-state">${STATE_TEXT[stateOf(s.name)] || ''}</span>
+        <span class="mkreg-actions">
+          <button type="button" class="mkreg-btn" data-set="haidh">Haidh</button>
+          ${past ? '' : '<button type="button" class="mkreg-btn" data-set="absent">Absent</button>'}
+          <button type="button" class="mkreg-btn mkreg-clear" data-set="clear">Clear</button>
+        </span>
+      </div>`).join('')}</div>
+    <div class="form-error" id="mkregError"></div>
   </div>`;
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
   overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
-  overlay.querySelector('#mkweekAddClose').addEventListener('click', close);
-  overlay.querySelector('#mkweekAddCancel').addEventListener('click', close);
-  overlay.querySelector('#mkweekAddSave').addEventListener('click', async () => {
-    const btn = overlay.querySelector('#mkweekAddSave');
-    btn.disabled = true;
-    try{
-      await apiSetAttendanceFor(
-        overlay.querySelector('#mkweekAddStudent').value,
-        date,
-        overlay.querySelector('#mkweekAddKind').value
-      );
-      close();
-      await mkweekPaint();
-    } catch(e){
-      overlay.querySelector('#mkweekAddError').textContent = e.message;
-      btn.disabled = false;
-    }
+  overlay.querySelector('#mkregClose').addEventListener('click', async () => { close(); await mkweekPaint(); });
+  overlay.querySelectorAll('.mkreg-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = btn.closest('.mkreg-row');
+      const id = row.dataset.id;
+      const what = btn.dataset.set;
+      const err = overlay.querySelector('#mkregError');
+      err.textContent = '';
+      row.querySelectorAll('.mkreg-btn').forEach(b => { b.disabled = true; });
+      try{
+        if(what === 'clear'){
+          await apiClearAttendanceFor(id, date);
+          row.querySelector('.mkreg-state').textContent = '';
+        } else {
+          // haidh on a past/today column is a CONFIRMED mark; ahead of
+          // today it is a prediction — the same distinction the calendar
+          // draws. 'absent' here is the informed-absence marker.
+          const status = what === 'haidh' ? (past ? 'haidh' : 'predicted-haidh') : 'predicted-absent';
+          await apiSetAttendanceFor(id, date, status);
+          row.querySelector('.mkreg-state').textContent = what === 'haidh' ? "Haa'idha" : 'Absent (informed)';
+        }
+      } catch(e){
+        err.textContent = e.message;
+      }
+      row.querySelectorAll('.mkreg-btn').forEach(b => { b.disabled = false; });
+    });
   });
 }
+

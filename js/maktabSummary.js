@@ -297,9 +297,11 @@ async function renderMaktabSummaryScreen(){
     tr.appendChild(nameTd);
 
     const hasAnyLog = ['sabaq', 'sabaqDhor', 'dhor'].some(t => (byStudent[t][stu.id] || []).length);
+    const CELL_LABEL = { sabaq: 'Sabaq', sabaqDhor: 'Sabaq Dhor', dhor: 'Dhor' };
     ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
       const td = document.createElement('td');
       td.className = 'journal-cell';
+      td.setAttribute('data-label', CELL_LABEL[type]);   // V4.2.2: the mobile card's caption
       const d = derived[stu.id];
       if(type === 'sabaq' && !hasAnyLog && (haidhByStudent[stu.id] || (d && d.status === 'haidh'))){
         td.className = 'journal-cell journal-cell-haidh';

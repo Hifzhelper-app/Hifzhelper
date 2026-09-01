@@ -74,12 +74,17 @@ function haidhCalClient(){
       get:       ()           => apiGetAttendanceFor(id),
       clear:     (date)       => apiClearAttendanceFor(id, date),
       markRange: (start, end, opts) => apiMarkHaidhRangeFor(id, start, end, opts),   // opts: V3.76.2 teacher decision
+      setDay:    (date, status) => apiSetAttendanceFor(id, date, status),           // V4.0.0: "Mark absent"
     };
   }
   return {
     get:       ()           => apiGetAttendance(),
     clear:     (date)       => apiDeleteAttendance(date),
     markRange: (start, end) => apiMarkHaidhRange(start, end),   // the student's own: no decision, the rules stand
+    // V4.0.0: no setDay in the PJ. "Mark absent" records that a student
+    // INFORMED THE MAKTAB — a teacher's observation about her, not a
+    // self-report; and the PJ-side setter was removed in V3.40.2. The
+    // button is hidden outside maktab context (renderHaidhRangeBar).
   };
 }
 
@@ -225,9 +230,11 @@ function haidhRangeTouchesPastOrToday(bounds){
 
 function renderHaidhRangeBar(){
   const bar = document.getElementById('haidhRangeBar');
+  const actions = document.getElementById('haidhRangeActions');   // V4.0.0: its own centred row under the calendar
   const bounds = (haidhRangeStart != null && haidhRangeEnd != null) ? haidhPendingRangeBounds() : null;
   if(!bounds){
     bar.classList.add('hidden');
+    if(actions) actions.classList.add('hidden');
     return;
   }
   const n = haidhDaysBetween(bounds[0], bounds[1]) + 1;
@@ -242,7 +249,14 @@ function renderHaidhRangeBar(){
   // feature; innerHTML instead of textContent since it's icon+text now.
   document.getElementById('haidhRangeConfirmBtn').innerHTML =
     iconHtml('save') + '<span>' + (haidhRangeTouchesPastOrToday(bounds) ? 'Confirm as haidh' : 'Predict as haidh') + '</span>';
+  // V4.0.0 (user): "Mark absent" — the V3.98.0 informed-absence marker,
+  // forward-looking only, so it is offered only for a range that does
+  // NOT reach into the past. It never excuses (that ruling stands).
+  const absentBtn = document.getElementById('haidhRangeAbsentBtn');
+  const maktabCtx = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+  if(absentBtn) absentBtn.classList.toggle('hidden', !maktabCtx || haidhRangeTouchesPastOrToday(bounds));
   bar.classList.remove('hidden');
+  if(actions) actions.classList.remove('hidden');
 }
 
 function haidhClearPendingRange(){
@@ -379,12 +393,36 @@ document.getElementById('haidhCalNextBtn').addEventListener('click', () => shift
 // once here (its label never changes) -- reuses `close`, the same icon
 // already used elsewhere for a discard/cancel action (the Dhor timer's
 // own Close button).
-document.getElementById('haidhRangeCancelBtn').innerHTML = iconHtml('close') + '<span>Cancel</span>';
+// V4.0.0 (user): the band's right-hand control is a bare X, not a labelled Cancel.
 document.getElementById('haidhRangeCancelBtn').addEventListener('click', () => {
   haidhClearPendingRange();
   renderHaidhCalGrid();
 });
 document.getElementById('haidhRangeConfirmBtn').addEventListener('click', onHaidhRangeConfirm);
+// V4.0.0: "Mark absent" writes the informed-absence marker for each day
+// of the selection through the teacher path that already exists.
+// guarded: the fixtures that drive this module build only the markup
+// they test, as the other optional wirings here already allow for
+const haidhAbsentBtnEl = document.getElementById('haidhRangeAbsentBtn');
+if(haidhAbsentBtnEl) haidhAbsentBtnEl.addEventListener('click', async () => {
+  const bounds = (haidhRangeStart != null && haidhRangeEnd != null) ? haidhPendingRangeBounds() : null;
+  if(!bounds) return;
+  const btn = document.getElementById('haidhRangeAbsentBtn');
+  btn.disabled = true;
+  const err = document.getElementById('haidhCalError');
+  try{
+    const client = haidhCalClient();
+    for(let d = bounds[0]; d <= bounds[1]; d = haidhAddDaysISO(d, 1)){
+      await client.setDay(d, 'predicted-absent');
+    }
+    haidhClearPendingRange();
+    await loadHaidhCalAttendance();
+    renderHaidhCalGrid();
+  } catch(e){
+    if(err) err.textContent = e.message;
+  }
+  btn.disabled = false;
+});
 
 // V3.76.2: the decision bar's three buttons.
 document.getElementById('haidhDecisionAdjustBtn').addEventListener('click', () => {
@@ -420,7 +458,10 @@ async function renderAttendancePage(param){
   }
   const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
   document.getElementById('attendanceHeaderIcon').innerHTML = iconHtml('attendance');
-  document.getElementById('attendanceTitle').textContent = inMaktab ? 'Attendance — ' + logCtxStudentName() : 'Attendance';
+  // V4.2.2 (user): "Attendance" is the page title above the card now, so
+  // the card carries only WHOSE attendance this is — her name alone, on
+  // one line. In the PJ there is no name to show, so it stays "Mine".
+  document.getElementById('attendanceTitle').textContent = inMaktab ? logCtxStudentName() : 'Mine';
   // V3.88.0 (user schematic): the haidh card heading carries the name
   const hTitle = document.getElementById('haidhDetailTitle');
   if(hTitle) hTitle.textContent = 'Haidh: ' + (inMaktab ? logCtxStudentName() : (typeof currentUser !== 'undefined' && currentUser && currentUser.name) || '');
