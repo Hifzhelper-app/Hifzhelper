@@ -131,3 +131,56 @@ button.secondary.danger {
   color: var(--color-error);
   border-color: var(--color-error);
 }
+
+/* ============================================================
+   V4.1.0 (user's mock, 2026-09-01) — the admin table.
+   Colour: the app's OWN palette, not the mock's pink — sage on the id
+   column and mauve across the rest, the same pairing the journal and
+   summary tables use, so this reads as their sibling. */
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table thead th {
+  background: var(--color-table-header-log);
+  text-align: left; padding: 10px 8px; font-size: 12px;
+  text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
+}
+.admin-table thead th.admin-th-id { background: var(--color-table-header-date); }
+.admin-table thead th:first-child { border-top-left-radius: var(--radius-md); }
+.admin-table thead th:last-child { border-top-right-radius: var(--radius-md); }
+.admin-table td { padding: 8px; border-bottom: 1px solid var(--color-table-border); vertical-align: middle; }
+.admin-cell-id { font-size: 12px; opacity: .75; white-space: nowrap; }
+.admin-dash { opacity: .55; }
+/* the inline controls read as text until touched — the quiet pattern the
+   settings rows already use */
+.admin-inline {
+  width: 100%; box-sizing: border-box; font: inherit;
+  border: 1px solid transparent; background: transparent;
+  border-radius: var(--radius-sm); padding: 6px;
+}
+.admin-inline:focus { border-color: var(--color-table-border); background: var(--color-surface, #fff); outline: none; }
+.admin-inline[type="checkbox"] { width: 20px; height: 20px; }
+.admin-status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.admin-actions-cell { white-space: nowrap; }
+.admin-actions-cell .icon-btn, .admin-actions-strip .icon-btn { vertical-align: middle; }
+.admin-pin-btn { width: auto; padding: 4px 10px; font-size: 12px; }
+.admin-delete-btn { color: var(--color-error, #b3261e); }
+.admin-add-row {
+  display: block; width: 100%; margin-top: var(--space-md);
+  border: 1px dashed var(--color-table-border); background: transparent;
+  border-radius: 999px; padding: 10px; font: inherit; cursor: pointer;
+}
+.admin-status-line { min-height: 18px; font-size: 13px; opacity: .8; margin: 4px 0; }
+.admin-status-line.is-error { color: var(--color-error, #b3261e); opacity: 1; }
+/* DESKTOP: one wide row per user, the actions in their own cell */
+.admin-row-actions { display: none; }
+/* MOBILE: two rows per user — fields, then every icon/button — tethered
+   so the pair reads as one record (no divider between them). */
+@media (max-width: 767px) {
+  .admin-table thead { display: none; }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
+  .admin-row-fields td { border-bottom: none; padding: 4px 8px; }
+  .admin-row-fields td::before { content: attr(data-label); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
+  .admin-row-fields .admin-actions-cell { display: none; }
+  .admin-row-actions { display: block; }
+  .admin-row-actions td { border-bottom: 2px solid var(--color-table-border); padding: 4px 8px 14px; }
+  .admin-actions-strip { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+}

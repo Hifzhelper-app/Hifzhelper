@@ -8,12 +8,25 @@
 
 let adminUsers = [];
 
+// V4.1.0: the add row — the register box, revealed by "+ Add new
+// student" and hidden again once the student is created. Its fields,
+// its duplicate-name guard and its Continue/Cancel path are untouched.
+function adminShowAddRow(show){
+  const box = document.getElementById('adminRegisterBox');
+  const btn = document.getElementById('adminAddRowBtn');
+  if(!box || !btn) return;
+  box.classList.toggle('hidden', !show);
+  btn.classList.toggle('hidden', show);
+  if(show) document.getElementById('admin_new_name').focus();
+}
+
 async function renderAdminScreen(){
   document.getElementById('adminRegisterError').textContent = '';
   document.getElementById('adminRegisterResult').textContent = '';
   document.getElementById('admin_new_name').value = '';
   document.getElementById('admin_new_whatsapp').value = '';
   cancelAdminMatch();
+  adminShowAddRow(false);   // V4.1.0
   document.getElementById('admin_search').value = '';
   await loadAdminUsers();
 }
@@ -29,6 +42,45 @@ async function loadAdminUsers(){
   }
 }
 
+// ============================================================
+// V4.1.0 (user's mock, 2026-09-01) — ONE SCREEN, INLINE EDITING.
+// The register box + list + detail card become a single table edited in
+// place. Existing rows AUTOSAVE PER FIELD (the user's call — the mock's
+// Save column existed only because the old screens had both register and
+// save); a NEW row keeps one register action, because a create needs its
+// fields together and must run the duplicate-name check.
+//
+// Nothing was dropped: copy, share, reset PIN, delete-with-confirm, the
+// active toggle, the role change with its confirm, GROUP assignment and
+// teaching-profile creation (both absent from the mock) all live on.
+//
+// Mobile: two rows per user — fields above, every icon/button below —
+// tethered so the pair reads as one record.
+// ============================================================
+let adminGroupsCache = null;
+
+function adminFlash(msg, isError){
+  const el = document.getElementById('adminRowStatus');
+  if(!el) return;
+  el.textContent = msg;
+  el.classList.toggle('is-error', !!isError);
+  clearTimeout(adminFlash._t);
+  adminFlash._t = setTimeout(() => { el.textContent = ''; el.classList.remove('is-error'); }, 2500);
+}
+
+// one field, saved the moment it changes; the row's own copy of the user
+// is updated so later edits diff against the truth
+async function adminSaveField(user, fields, describe){
+  try{
+    await apiAdminUpdateUser(user.id, fields);
+    Object.assign(user, fields);
+    adminFlash(describe + ' saved');
+  } catch(e){
+    adminFlash("Couldn't save: " + e.message, true);
+    renderAdminUsersList();   // put the cell back to the stored value
+  }
+}
+
 function renderAdminUsersList(){
   const query = (document.getElementById('admin_search').value || '').trim().toLowerCase();
   const filtered = adminUsers.filter(u =>
@@ -36,46 +88,168 @@ function renderAdminUsersList(){
   );
   const list = document.getElementById('adminUsersList');
   const canShare = typeof navigator.share === 'function';
-  list.innerHTML = filtered.map(u => `
-    <div class="admin-list-row">
-      <button type="button" class="admin-list-open" data-open-user="${u.id}">
-        <!-- V3.74.2: the id is no longer shown in the list. Copy still
-             copies it, search still matches on it, and tapping the name
-             still reveals it — it is simply not on screen by default. -->
-        <span class="mono admin-list-id" hidden>${u.id}</span>
-        <span class="admin-list-name ${u.active ? '' : 'inactive'}">${u.name}</span>
-        ${u.role !== 'student' ? `<span class="admin-role-chip">${u.role}</span>` : ''}
-      </button>
+  if(!filtered.length){
+    list.innerHTML = '<div class="admin-list-empty">No matching users.</div>';
+    return;
+  }
+
+  list.innerHTML = `<table class="admin-table"><thead><tr>
+      <th class="admin-th-id">Unique ID</th><th>Name</th><th>WhatsApp</th><th>Role</th>
+      <th>Group</th><th>Teacher profile</th><th>Status</th><th class="admin-th-actions">Actions</th>
+    </tr></thead><tbody></tbody></table>`;
+  const tbody = list.querySelector('tbody');
+
+  filtered.forEach(u => {
+    const teaching = u.role === 'student' ? teachingProfileFor(u.id) : null;
+    const canCreateTeaching = u.role === 'student' && u.active && !teaching;
+    const derivedFrom = isTeachingId(u.id) ? adminUsers.find(x => x.id === u.id.slice(0, -TEACHING_ID_SUFFIX.length)) : null;
+
+    const tr = document.createElement('tr');
+    tr.className = 'admin-row admin-row-fields';
+    tr.innerHTML = `
+      <td class="mono admin-cell-id">${u.id}</td>
+      <td><input type="text" class="admin-inline" data-f="name" value="${(u.name || '').replace(/"/g, '&quot;')}"></td>
+      <td><input type="text" class="admin-inline" data-f="whatsapp_number" value="${(u.whatsapp_number || '').replace(/"/g, '&quot;')}"></td>
+      <td><select class="admin-inline" data-f="role">
+        <option value="student"${u.role === 'student' ? ' selected' : ''}>Student</option>
+        <option value="teacher"${u.role === 'teacher' ? ' selected' : ''}>Teacher</option>
+        <option value="admin"${u.role === 'admin' ? ' selected' : ''}>Admin</option>
+      </select></td>
+      <td>${u.role === 'student' ? '<select class="admin-inline" data-f="group_id" disabled><option>…</option></select>' : '<span class="admin-dash">—</span>'}</td>
+      <td class="admin-cell-teaching">${
+        teaching ? `<span class="mono admin-teaching-id">${teaching.id}</span>${teaching.active ? '' : ' <span class="admin-dash">(inactive)</span>'}`
+        : canCreateTeaching ? '<input type="checkbox" class="admin-inline" data-create-teaching aria-label="Create teaching profile">'
+        : derivedFrom ? `<span class="admin-dash">of ${derivedFrom.name}</span>`
+        : '<span class="admin-dash">—</span>'}</td>
+      <td><label class="admin-status"><input type="checkbox" class="admin-inline" data-f="active"${u.active ? ' checked' : ''}><span>${u.active ? 'Active' : 'Inactive'}</span></label></td>
+      <td class="admin-actions-cell"></td>`;
+    tbody.appendChild(tr);
+
+    // the actions — their own row on mobile, the last cell on desktop
+    const actionsHtml = `
       <button type="button" class="icon-btn" data-copy-url="${u.id}" aria-label="Copy personal URL"></button>
       ${canShare ? `<button type="button" class="icon-btn" data-share-url="${u.id}" aria-label="Share personal URL"></button>` : ''}
-    </div>
-  `).join('') || `<div class="admin-list-empty">No matching users.</div>`;
+      <button type="button" class="secondary admin-pin-btn" data-reset-pin>Reset PIN</button>
+      <button type="button" class="icon-btn admin-delete-btn" data-delete aria-label="Delete user"></button>`;
+    tr.querySelector('.admin-actions-cell').innerHTML = actionsHtml;
+    const trActions = document.createElement('tr');
+    trActions.className = 'admin-row admin-row-actions';
+    trActions.innerHTML = `<td colspan="8"><div class="admin-actions-strip">${actionsHtml}</div></td>`;
+    tbody.appendChild(trActions);
 
-  list.querySelectorAll('[data-open-user]').forEach(btn => {
-    btn.addEventListener('click', () => openUserCard(btn.dataset.openUser));
-  });
-  list.querySelectorAll('[data-copy-url]').forEach(btn => {
-    btn.innerHTML = iconHtml('copy');
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const url = window.location.origin + '/' + btn.dataset.copyUrl;
-      try{ await navigator.clipboard.writeText(url); } catch(err){ /* nothing else to fall back to inline here */ }
-      btn.innerHTML = iconHtml('check');
-      btn.classList.add('copied');
-      setTimeout(() => { btn.innerHTML = iconHtml('copy'); btn.classList.remove('copied'); }, 1500);
-    });
-  });
-  list.querySelectorAll('[data-share-url]').forEach(btn => {
-    btn.innerHTML = iconHtml('share');
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      const url = window.location.origin + '/' + btn.dataset.shareUrl;
-      try{ await navigator.share({ url }); } catch(err){ /* user cancelled, or share failed — not shown as an error */ }
-    });
+    const wire = (scope) => {
+      // ---- per-field autosave ----
+      const nameEl = scope.querySelector('[data-f="name"]');
+      if(nameEl) nameEl.addEventListener('change', () => {
+        const v = nameEl.value.trim();
+        if(!v){ adminFlash('Name cannot be empty.', true); nameEl.value = u.name; return; }
+        if(v !== u.name) adminSaveField(u, { name: v }, 'Name');
+      });
+      const waEl = scope.querySelector('[data-f="whatsapp_number"]');
+      if(waEl) waEl.addEventListener('change', () => {
+        const v = waEl.value.trim();
+        if(v !== (u.whatsapp_number || '')) adminSaveField(u, { whatsapp_number: v }, 'WhatsApp');
+      });
+      const roleEl = scope.querySelector('[data-f="role"]');
+      if(roleEl) roleEl.addEventListener('change', async () => {
+        const v = roleEl.value;
+        if(v === u.role) return;
+        if(!confirm(`Change ${u.id}'s role to "${v}"?`)){ roleEl.value = u.role; return; }
+        try{ await apiAdminChangeRole(u.id, v); adminFlash('Role saved'); await loadAdminUsers(); }
+        catch(e){ adminFlash("Couldn't change the role: " + e.message, true); roleEl.value = u.role; }
+      });
+      const activeEl = scope.querySelector('[data-f="active"]');
+      if(activeEl) activeEl.addEventListener('change', async () => {
+        const v = activeEl.checked;
+        if(!v && u.active && !confirm(`Mark ${u.id} inactive? They won't be able to log in until reactivated.`)){
+          activeEl.checked = true; return;
+        }
+        await adminSaveField(u, { active: v }, 'Status');
+        renderAdminUsersList();
+      });
+      const groupEl = scope.querySelector('[data-f="group_id"]');
+      if(groupEl) groupEl.addEventListener('change', () => {
+        const v = groupEl.value === '' ? null : Number(groupEl.value);
+        if(String(v ?? '') !== String(u.group_id ?? '')) adminSaveField(u, { group_id: v }, 'Group');
+      });
+      // ---- teaching profile: unchanged behaviour, its own confirm ----
+      const teachEl = scope.querySelector('[data-create-teaching]');
+      if(teachEl) teachEl.addEventListener('change', async () => {
+        if(!teachEl.checked) return;
+        if(!confirm(`Create a teaching profile for ${u.name}? Her teaching ID will be ${u.id}${TEACHING_ID_SUFFIX}. She sets its PIN on first login.`)){
+          teachEl.checked = false; return;
+        }
+        try{
+          const result = await apiAdminCreateTeachingProfile(u.id);
+          adminFlash(`Teaching profile created: ${result.id}`);
+          await loadAdminUsers();
+        } catch(e){
+          teachEl.checked = false;
+          adminFlash("Couldn't create the teaching profile: " + e.message, true);
+        }
+      });
+      // ---- the actions ----
+      const copyBtn = scope.querySelector('[data-copy-url]');
+      if(copyBtn){
+        copyBtn.innerHTML = iconHtml('copy');
+        copyBtn.addEventListener('click', async () => {
+          try{ await navigator.clipboard.writeText(window.location.origin + '/' + u.id); } catch(err){ /* nothing to fall back to */ }
+          copyBtn.innerHTML = iconHtml('check');
+          copyBtn.classList.add('copied');
+          setTimeout(() => { copyBtn.innerHTML = iconHtml('copy'); copyBtn.classList.remove('copied'); }, 1500);
+        });
+      }
+      const shareBtn = scope.querySelector('[data-share-url]');
+      if(shareBtn){
+        shareBtn.innerHTML = iconHtml('share');
+        shareBtn.addEventListener('click', async () => {
+          try{ await navigator.share({ url: window.location.origin + '/' + u.id }); } catch(err){ /* cancelled */ }
+        });
+      }
+      const pinBtn = scope.querySelector('[data-reset-pin]');
+      if(pinBtn) pinBtn.addEventListener('click', async () => {
+        if(!confirm(`Reset ${u.id}'s PIN? They'll set a new one on their next login.`)) return;
+        try{ await apiAdminResetPin(u.id); adminFlash(`PIN reset for ${u.id}.`); }
+        catch(e){ adminFlash("Couldn't reset PIN: " + e.message, true); }
+      });
+      const delBtn = scope.querySelector('[data-delete]');
+      if(delBtn){
+        delBtn.innerHTML = iconHtml('trash') || '&times;';
+        delBtn.addEventListener('click', async () => {
+          if(!confirm(`Delete ${u.id} (${u.name}) permanently? This cannot be undone.`)) return;
+          try{ await apiAdminDeleteUser(u.id); await loadAdminUsers(); }
+          catch(e){ adminFlash(e.message, true); }   // the "blocked because history exists" case
+        });
+      }
+    };
+    wire(tr); wire(trActions);
+
+    // the group select, populated once and reused (V3.78.0 semantics kept:
+    // a retired group she is already in stays selectable so a save cannot
+    // silently move her)
+    if(u.role === 'student'){
+      const sel = tr.querySelector('[data-f="group_id"]');
+      const fill = (groups) => {
+        if(!sel) return;
+        sel.innerHTML = '';
+        [{ id: '', name: 'No group' }].concat(groups.filter(g => !g.retired || g.id === u.group_id)).forEach(g => {
+          const o = document.createElement('option');
+          o.value = String(g.id);
+          o.textContent = g.name + (g.retired ? ' (retired)' : '');
+          if(String(u.group_id ?? '') === String(g.id)) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.disabled = false;
+      };
+      if(adminGroupsCache) fill(adminGroupsCache);
+      else apiGetMaktabGroups().then(g => { adminGroupsCache = g; fill(g); }).catch(() => {});
+    }
   });
 }
 
 document.getElementById('admin_search').addEventListener('input', renderAdminUsersList);
+const adminAddRowBtnEl = document.getElementById('adminAddRowBtn');   // guarded: fixtures build only the markup they test
+if(adminAddRowBtnEl) adminAddRowBtnEl.addEventListener('click', () => adminShowAddRow(true));
 
 // ---------- user detail card ----------
 // V3.77.0 (j): the teaching id is the student's id + 'TEACHER' (worker
@@ -317,5 +491,6 @@ function finishAdminRegisterUI(result){
   document.getElementById('admin_new_whatsapp').value = '';
   document.getElementById('adminRegisterResult').textContent =
     `Created — ID: ${result.id}. Share this with ${result.name} so they can log in for the first time.`;
+  adminShowAddRow(false);   // V4.1.0: the add row closes; the new student appears in the table
   loadAdminUsers();
 }
