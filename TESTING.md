@@ -2313,6 +2313,22 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.10 — log-detail student search / name pill / Sabaq Dhor selector checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.10**. No worker deploy or migration is required.
+
+1. **Search on all three detail cards:** from Maktab Summary open a student's Sabaq, Sabaq Dhor and Dhor detail views in turn. On phone, tablet and desktop, **Search student** remains available above the shared rail.
+2. **Switch student without backing out:** while on Sabaq Dhor (repeat once on Dhor), type another student's name or Unique ID, choose the result, and confirm that student's data loads while the same detail card and selected date remain active.
+3. **Search privacy/context:** open the Personal Journal log-detail screen as a student and the student's own read-only Maktab day. The roster search must not appear in either context.
+4. **Student identity:** in teacher/admin Maktab detail, the active student's name appears in a soft-blue rounded pill on Sabaq, Sabaq Dhor and Dhor. It should remain normal-sized text and ellipsise rather than overflow if exceptionally long.
+5. **No-history Sabaq Dhor:** use a student with no derived Sabaq Dhor rows. Juz, the **1 | 2 | 3 | 4** Quarter/Ru'b switch and the confirmation checkbox must read as one horizontal selector group. The Juz selector and segmented pill must be the same visual height and the checkbox must be vertically centred on that control line.
+6. **Picker behaviour:** change Juz and position, tick the checkbox and Save. Confirm the same structural quarter continues to save; there is still no old quarter dropdown or **Use** button.
+7. **Rail-width regression:** check phone and desktop/tablet. The Sabaq Dhor card must remain the same width as its neighbours; the new full-width aligned picker must not widen the horizontal rail.
+
+**Automated coverage:** `node tests/verify_v4210_ui.mjs` = **11/11**; cumulative `verify_v428_ui.mjs` = **17/17**; `verify_v4291_ui.mjs` = **6/6**; `verify_v4292_ui.mjs` = **11/11**; `verify_build_stamp.mjs` = **6/6**; `verify_syntax.mjs` = **36/36**. `run-all.mjs` reports **300 passed, 0 failed** among harnesses that can report in this container; 27 older harnesses remain unavailable because `jsdom` and/or legacy fixtures are absent.
+
+---
+
 ## V4.2.9.2 — mobile Student Management registration-card checks
 
 After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9.2**. No worker deploy or migration is required.

@@ -27,9 +27,9 @@ const parts = v => v.split('.').map(Number);
 const atLeast4291 = v => { const a = parts(v), b = [4,2,9,1]; for(let i=0;i<4;i++){ if((a[i]||0)!==(b[i]||0)) return (a[i]||0)>(b[i]||0); } return true; };
 check('page release key is V4.2.9.1 or later', atLeast4291(pageVersion));
 check('service-worker cache key follows the page release', cacheVersion === pageVersion);
+const headerVersion = text => ((text.match(/^\/\* Hifzhelper build ([0-9.]+) \|/) || [])[1] || '');
 check('the corrected CSS and service worker still carry headers from V4.2.9.1 or later',
-  /^\/\* Hifzhelper build 4\.2\.9(?:\.[1-9][0-9]*)? \| css\/admin\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.9(?:\.[1-9][0-9]*)? \| js\/sw\.js \*\//.test(sw));
+  atLeast4291(headerVersion(css)) && atLeast4291(headerVersion(sw)));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

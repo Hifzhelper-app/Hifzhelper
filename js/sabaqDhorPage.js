@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/sabaqDhorPage.js */
+/* Hifzhelper build 4.2.10 | js/sabaqDhorPage.js */
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
 // Current as of V3.45.13
@@ -733,7 +733,6 @@ function sabaqDhorQuarterPickerHtml(){
   const qButtons = Array.from({ length: 4 }, (_, i) =>
     `<button type="button" class="switch-option" data-value="${i + 1}">${i + 1}</button>`).join('');
   return `<p class="form-hint sdq-hint">No history yet — choose the portion she is revising.</p>
-      <span></span><span></span>
       <div class="sdq-picker" id="sabaqDhorQuarterPicker">
         <div class="sdq-row">
           <span class="sdq-field"><label class="dhor-sel-label">Juz</label><select id="sdq_juz">${juzOpts}</select></span>
@@ -741,12 +740,10 @@ function sabaqDhorQuarterPickerHtml(){
             <input type="hidden" id="sdq_quarter" value="1">
             <div class="switch-track" id="sdq_quarter_switch"><div class="switch-thumb"></div>${qButtons}</div>
           </span>
+          <span class="checkbox-box sdq-confirm-box"><input type="checkbox" id="sdq_confirm" aria-label="Confirm selected Sabaq Dhor portion"></span>
         </div>
-      </div>
-      <span></span>
-      <span class="checkbox-box"><input type="checkbox" id="sdq_confirm" aria-label="Confirm selected Sabaq Dhor portion"></span>
-      <div class="sdq-preview" id="sdq_preview"></div>
-      <span></span><span></span>`;
+        <div class="sdq-preview" id="sdq_preview"></div>
+      </div>`;
 }
 
 function sdqBounds(){

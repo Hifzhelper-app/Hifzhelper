@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/detail-pages.css */
+/* Hifzhelper build 4.2.10 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2112,20 +2112,83 @@
 .mkreg-btn:disabled { opacity: .5; }
 .mkreg-clear { color: var(--color-ink-soft); }
 
-/* V4.2.8 / item 72: the Sabaq Dhor empty-state picker now uses the
-   Dhor card's 1|2|3|4 segmented position control and the shared grid's
-   right-hand confirm checkbox. It no longer spans all three columns:
-   control in column 1, spacer in 2, checkbox in 3. This also retains the
-   V4.2.5/item-67 shrink guards so the picker cannot widen the rail. */
-.sdq-hint { grid-column: 1; min-width: 0; margin: 0 0 var(--space-xs); }
-.sdq-picker { grid-column: 1; min-width: 0; margin: var(--space-xs) 0; }
-.sdq-row { display: flex; align-items: flex-end; gap: var(--space-sm); flex-wrap: wrap; min-width: 0; }
-.sdq-field { display: flex; flex-direction: column; flex: 1 1 120px; min-width: 0; }
+/* V4.2.10: Sabaq Dhor empty-state selector. Juz + structural
+   1|2|3|4 + confirmation are one visual row now. The two controls have
+   the shared 42px control height, and the checkbox is aligned to that
+   same control line rather than floating against the label line. The
+   minmax(0,1fr) tracks preserve V4.2.5/item-67's rail-width guard. */
+.sdq-hint { grid-column: 1 / -1; min-width: 0; margin: 0 0 var(--space-xs); }
+.sdq-picker { grid-column: 1 / -1; min-width: 0; margin: var(--space-xs) 0; }
+.sdq-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+  align-items: end;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.sdq-field { display: flex; flex-direction: column; min-width: 0; }
 .sdq-field select {
   min-width: 0;
+  height: 42px;
   background: var(--color-accent-soft, #D0DBE7); border: none;
-  border-radius: 999px; padding: 8px 14px; font: inherit; width: 100%; box-sizing: border-box;
+  border-radius: 999px; padding: 0 14px; font: inherit; width: 100%; box-sizing: border-box;
 }
-#sdq_quarter_switch { width: 100%; min-width: 0; }
+#sdq_quarter_switch { width: 100%; min-width: 0; height: 42px; }
 #sdq_quarter_switch .switch-option { flex: 1 1 0; min-width: 0; padding-left: 0; padding-right: 0; text-align: center; }
-.sdq-preview { grid-column: 1; min-width: 0; font-size: 13px; color: var(--color-ink-soft); min-height: 18px; }
+.sdq-confirm-box { align-self: end; justify-self: center; height: 42px; width: 44px; margin-left: 0; }
+.sdq-preview { min-width: 0; font-size: 13px; color: var(--color-ink-soft); min-height: 18px; margin-top: var(--space-xs); }
+@media (max-width: 767px) {
+  .sdq-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px; gap: var(--space-xs); }
+  #sabaqDhor_sections .sdq-confirm-box { width: 32px; }
+}
+@media (min-width: 768px) {
+  #sabaqDhor_sections .sdq-confirm-box { width: 36px; margin-left: 0; }
+}
+
+/* V4.2.10: one search across all three log-detail cards. It is a
+   Maktab teaching control only; JS keeps it hidden for PJ and read-only
+   student contexts. Results float over the rail rather than changing
+   card height, and every width track is shrink-safe on phones. */
+.log-detail-student-search {
+  position: relative;
+  width: min(100%, 520px);
+  margin: 0 auto var(--space-sm);
+  z-index: 5;
+}
+.log-detail-student-search > input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  padding: 9px 16px;
+  font: inherit;
+}
+.log-detail-student-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+  padding: 4px;
+}
+.log-detail-student-search-result {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font: inherit;
+  cursor: pointer;
+}
+.log-detail-student-search-result:hover,
+.log-detail-student-search-result:focus { background: var(--color-accent-soft, #D0DBE7); }
+.log-detail-student-search-empty { padding: 8px 12px; color: var(--color-ink-soft); font-size: 13px; }

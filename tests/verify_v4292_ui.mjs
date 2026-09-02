@@ -38,13 +38,21 @@ check('newly registered account is pinned and mobile search is cleared',
 check('mobile status choice is applied after registration while desktop defaults active',
   /const active = activeEl \? activeEl\.checked : true/.test(js)
   && /if\(!active\) fields\.active = false/.test(js));
-check('page/cache release key is V4.2.9.2',
-  /js\/app\.js\?v=4\.2\.9\.2/.test(html)
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.9\.2'/.test(sw));
-check('only edited served files carry V4.2.9.2 headers',
+const pageVersion = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1] || '';
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1] || '';
+const atLeast = (v, floor) => {
+  const a = String(v).split('.').map(Number), b = String(floor).split('.').map(Number);
+  for(let i = 0; i < Math.max(a.length, b.length); i++){
+    const d = (a[i] || 0) - (b[i] || 0);
+    if(d) return d > 0;
+  }
+  return true;
+};
+check('page/cache release key is not older than V4.2.9.2',
+  pageVersion === cacheVersion && atLeast(pageVersion, '4.2.9.2'));
+check('V4.2.9.2 edited source files retain their last-edit headers after later releases',
   /^\/\* Hifzhelper build 4\.2\.9\.2 \| css\/admin\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.9\.2 \| js\/adminPage\.js \*\//.test(js)
-  && /^\/\* Hifzhelper build 4\.2\.9\.2 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.9\.2 \| js\/adminPage\.js \*\//.test(js));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

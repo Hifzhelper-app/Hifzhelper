@@ -423,7 +423,7 @@ vm.runInContext(read('shared/data.js'), dataCtx);
     /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
     && !/sabaqDhorQuarterPicker/.test(read('index.html'))
     && /id="sabaqDhorManual_from_ayah"/.test(sdSrc)
-    && /\.sdq-picker \{ grid-column: 1; min-width: 0;/.test(read('css/detail-pages.css')));
+    && /\.sdq-picker \{ grid-column: 1(?: \/ -1)?; min-width: 0;/.test(read('css/detail-pages.css')));
   check('v428: the picker is a real composite source — its checkbox contributes the selected structural quarter without changing storage shape',
     /const sdqConfirm = document\.getElementById\('sdq_confirm'\);/.test(sdSrc)
     && /const picked = sdqConfirm && sdqConfirm\.checked \? sdqBounds\(\) : null;/.test(sdSrc)

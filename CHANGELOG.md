@@ -26,6 +26,21 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.10 — Log-detail student switcher + active-name pill + Sabaq Dhor selector alignment (2026-09-02)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `css/journal-table.css`, `js/logDetailScreen.js`, `js/sabaqDhorPage.js`, `js/sw.js`, `tests/verify_v4210_ui.mjs` (new), `tests/verify_v428_ui.mjs`, `tests/verify_v4291_ui.mjs`, `tests/verify_v4292_ui.mjs`, `tests/verify_v3850_batch.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Student search on every Maktab log-detail card and screen size.** A shared **Search student** field now sits above the Sabaq / Sabaq Dhor / Dhor rail for teacher/admin Maktab use on phone, tablet and desktop. It reuses the Maktab Summary's in-memory roster when available, falls back to the existing summary read only if needed, matches by name or Unique ID, and switches directly to the selected student while preserving the currently active detail card and date. It remains hidden in Personal Journal mode and in a student's read-only Maktab view so the roster is not exposed there.
+2. **Active student highlighted with a pill, not larger typography.** The existing Maktab-only student-name row on each of the three detail cards now uses the established soft-blue pill treatment (`--color-accent-soft`) with single-line ellipsis protection. Font sizing remains balanced.
+3. **No-history Sabaq Dhor selector aligned as one control row.** The Juz select and 1|2|3|4 Quarter/Ru'b segmented control now both have an explicit **42px** control height. The confirmation checkbox is moved inside that same selector row and aligned to the control baseline, so Juz + structural position + confirmation read as one coordinated unit. The picker spans the available group width with `minmax(0,1fr)` shrink guards, preserving the earlier rail-width fix.
+4. **Version discipline preserved.** Only served files genuinely edited in this release receive a `4.2.10` top build header: `css/detail-pages.css`, `css/journal-table.css`, `js/logDetailScreen.js`, `js/sabaqDhorPage.js`, and `js/sw.js`. `index.html` and the service-worker precache move the shared page/cache key to 4.2.10; untouched served-file headers retain their previous last-edit versions.
+
+**Regression coverage:** new dependency-free `verify_v4210_ui.mjs` pins the shared search, teaching-only visibility, roster/cache behaviour, active-card preservation, name pill and 42px Juz/position/checkbox row. Earlier V4.2.8 and V4.2.9.x harnesses were made release-forward where their assertions described a contract that remains valid after this release.
+
+**Verification in this build container:** V4.2.10 UI **11/11**, cumulative V4.2.8 UI **17/17**, V4.2.9.1 **6/6**, V4.2.9.2 **11/11**, build/version **6/6**, served-script syntax **36/36**. `run-all.mjs` reports **300 passed, 0 failed** among harnesses able to report; 27 older harnesses do not report because this checkout lacks `jsdom` and/or their legacy fixtures.
+
+---
+
 ## V4.2.9.2 — Mobile Student Management registration card (2026-09-02)
 
 **Files touched:** `css/admin.css`, `js/adminPage.js`, `index.html`, `js/sw.js`, `tests/verify_v4292_ui.mjs` (new), `tests/verify_v4291_ui.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
