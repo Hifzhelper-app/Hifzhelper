@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/journal-table.css */
+/* Hifzhelper build 4.2.8.2 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -508,7 +508,16 @@
      the full card width. This fixes the structure; the uniform pill rule
      itself remains unchanged for desktop/tablet. */
   .maktab-summary-table td:nth-child(n) { width: 100%; }
-  .maktab-summary-table tr {
+  /* V4.2.8.2: the mobile card's top line is a REAL two-column grid:
+     name pill | attendance button. The previous absolute-positioned icon
+     reserved a corner INSIDE the name cell, which made the two controls
+     look nested/overlaid and left the cached skeleton vulnerable to an
+     unbounded raw SVG. Keep them as sibling table cells and let CSS place
+     them beside one another. The three log cells span both columns below. */
+  .maktab-summary-table tr:not(.maktab-group-gap) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-sm);
     background: var(--color-surface);
     border-radius: var(--radius-md);
     padding: var(--space-sm) var(--space-md);
@@ -516,12 +525,19 @@
     border: 1px solid var(--color-table-border);
     position: relative;
   }
-  /* line 1: the name pill, with the attendance icon beside it */
-  .maktab-summary-table .maktab-haidh-col {
-    position: absolute; top: var(--space-sm); right: var(--space-md); width: auto; padding: 0;
+  .maktab-summary-table td.maktab-haidh-col {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+    padding: 0 0 6px;
+    align-self: center;
+    justify-self: start;
   }
   .maktab-summary-table .maktab-student-name {
-    padding: 0 52px 6px 0;   /* reserve the attendance icon's corner */
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0 0 6px;
     min-width: 0;
   }
   /* V4.2.8 / item 68: a REAL two-column line. The flex version left the
@@ -529,6 +545,7 @@
      could collapse to one word per line. Grid gives the value the whole
      remaining track and keeps every caption/value pair aligned. */
   .maktab-summary-table .journal-cell {
+    grid-column: 1 / -1;
     padding: 4px 0;
     border: none;
     display: grid;
@@ -544,5 +561,6 @@
     color: var(--color-ink-soft);
   }
   .maktab-summary-table .journal-cell > * { min-width: 0; }
+  .maktab-summary-skeleton-attendance { cursor: default; }
   .maktab-summary-table tr:last-child td { border-bottom: none; }
 }

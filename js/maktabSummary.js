@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.8.2 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -414,7 +414,16 @@ function maktabSummaryPaintSkeleton(host, roster){
     tr.className = 'journal-row maktab-summary-skeleton-row';
     const haidhTd = document.createElement('td');
     haidhTd.className = 'maktab-haidh-col';
-    haidhTd.innerHTML = typeof iconHtml === 'function' ? iconHtml('attendance') : '';
+    // V4.2.8.2: never paint iconHtml('attendance') naked. The real row
+    // sizes that SVG through .maktab-haidh-check; the cached instant-name
+    // paint used to omit the wrapper, so Safari briefly rendered the SVG at
+    // its intrinsic/available size before fresh data replaced the row. Use
+    // the same visual wrapper here (non-interactive until the real render).
+    const attendanceGhost = document.createElement('span');
+    attendanceGhost.className = 'maktab-haidh-check maktab-summary-skeleton-attendance';
+    attendanceGhost.setAttribute('aria-hidden', 'true');
+    attendanceGhost.innerHTML = typeof iconHtml === 'function' ? iconHtml('attendance') : '';
+    haidhTd.appendChild(attendanceGhost);
     tr.appendChild(haidhTd);
     const nameTd = document.createElement('td');
     nameTd.className = 'cell-date maktab-student-name';

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.8 — items 68 + 72, plus the user's same-width name-pill trial.
+// V4.2.8.2 cumulative UI pins — items 68 + 72 plus the mobile-summary follow-up patches.
 // Static/structural pins only: no jsdom dependency, so this harness can run
 // even in a bare checkout before the broader test dependencies are present.
 
@@ -36,8 +36,21 @@ check('name pills: long names are visually ellipsised, not allowed to stretch th
   /\.maktab-student-name \.maktab-name-pill \{[\s\S]*overflow: hidden;[\s\S]*white-space: nowrap;[\s\S]*text-overflow: ellipsis;/.test(journalCss));
 check('name pills: full name remains available in the real render and skeleton render',
   (summaryJs.match(/\.title = stu\.name;/g) || []).length >= 2);
-check('name pills: mobile reserves the attendance-icon corner instead of letting the full-width pill run underneath it',
-  /\.maktab-summary-table \.maktab-student-name \{[\s\S]*padding: 0 52px 6px 0;/.test(journalCss));
+check('4.2.8.2: mobile top line is a name + attendance sibling grid, not an absolute icon over the name cell',
+  /\.maktab-summary-table tr:not\(\.maktab-group-gap\) \{[\s\S]*display: grid;[\s\S]*grid-template-columns: minmax\(0, 1fr\) auto;/.test(journalCss)
+  && /\.maktab-summary-table td\.maktab-haidh-col \{[\s\S]*position: static;[\s\S]*grid-column: 2;[\s\S]*grid-row: 1;/.test(journalCss)
+  && /\.maktab-summary-table \.maktab-student-name \{[\s\S]*grid-column: 1;[\s\S]*grid-row: 1;/.test(journalCss)
+  && !/padding: 0 52px 6px 0/.test(journalCss));
+check('4.2.8.2: all three mobile log cells span underneath both top-line columns',
+  /\.maktab-summary-table \.journal-cell \{[\s\S]*grid-column: 1 \/ -1;/.test(journalCss));
+check('4.2.8.2: instant-name paint wraps attendance SVG in the same sizing class (no giant naked SVG flash)',
+  /attendanceGhost\.className = 'maktab-haidh-check maktab-summary-skeleton-attendance';/.test(summaryJs)
+  && /haidhTd\.appendChild\(attendanceGhost\);/.test(summaryJs)
+  && !/haidhTd\.innerHTML = typeof iconHtml/.test(summaryJs));
+check('4.2.8.2: existing summary navigation targets remain distinct',
+  /nameTd\.addEventListener\('click',[\s\S]{0,220}openStudentSummaryPage/.test(summaryJs)
+  && /btn\.addEventListener\('click',[\s\S]{0,220}openMaktabAttendancePage/.test(summaryJs)
+  && /td\.addEventListener\('click',[\s\S]{0,260}openMaktabDay\([^\n]+date, type\)/.test(summaryJs));
 
 check('72: old quarter select and Use button are gone',
   !/id="sdq_apply"|class="secondary sdq-apply"|>Use</.test(sdJs)

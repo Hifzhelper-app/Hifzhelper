@@ -1035,13 +1035,22 @@ No code change needed for any of the three — all are live as built.
    .journal-cell with the caption in column 1, and `min-width: 0` +
    `white-space: normal` on the value so it uses the whole column and
    only wraps when genuinely too long.
-   DEVICE-REVIEW CORRECTION (same V4.2.8): the first build exposed the
+   DEVICE-REVIEW CORRECTION (V4.2.8.1): the first build exposed the
    deeper mobile width leak: desktop `td:nth-child(...)` rules (Student
    21%, logs 24%) were more specific than the mobile `td { width:100% }`
    reset, so the stacked cells still occupied only those fractions of the
    card. Mobile now resets the nth-child widths at matching specificity.
    The user's already-correct equal-width name-pill styling on larger
    screens is left untouched; only the mobile card structure is widened.
+   V4.2.8.2 FOLLOW-UP (2026-09-02): returning to the Maktab Summary could
+   briefly paint a giant attendance SVG before the fresh data render, because
+   item 66's instant-name skeleton omitted the `.maktab-haidh-check` wrapper
+   that sizes the real icon. The skeleton now uses the same sizing wrapper.
+   On mobile the first line is now a real `name | attendance` sibling grid
+   rather than an absolutely positioned attendance control over a reserved
+   corner of the name cell; the three log rows span underneath. Name ->
+   individual summary, attendance -> attendance page, and each log cell ->
+   its matching detail screen remain separate tap targets.
 
 67. ~~**V4.2.4 PICKER WIDENS THE CARD AND BREAKS THE RAIL**~~ **IMPLEMENTED; V4.2.8 preserves the shrink guards (user confirmed 2026-09-02):** the Sabaq
    Dhor card is far wider than its neighbours and Dhor has wrapped below
@@ -1081,6 +1090,9 @@ No code change needed for any of the three — all are live as built.
    KNOWN COSMETIC EDGE: if the roster changed since the last visit, a
    removed student can flash for the round trip's duration before the
    fresh list replaces her. Acceptable; noted so it isn't a surprise.
+   V4.2.8.2 NOTE: the separate giant-attendance-icon flash in this cached
+   paint was a markup mismatch, not stale data; fixed by wrapping the interim
+   SVG in the same `.maktab-haidh-check` sizing class as the finished row.
    (b2) NAME PILLS ALL ONE SIZE (user, same message): today each pill
    hugs its text, so a column of them is ragged. Give .maktab-name-pill
    a shared width — it fills the name column (display:block / width:100%
