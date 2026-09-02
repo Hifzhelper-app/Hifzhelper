@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { DatabaseSync } from 'node:sqlite';
-import { handleMaktabRegister } from '../worker/src/maktabAttendance.js';
+import { handleMaktabRegister, handleAttendancePage } from '../worker/src/maktabAttendance.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -20,8 +20,8 @@ check('current term register focuses the current Maktab week after paint',
   && /requestAnimationFrame\(focusCurrentWeek\)/.test(page));
 check('historical or future terms are not forcibly repositioned',
   /if\(data\.today < data\.from \|\| data\.today > data\.to\) return;/.test(page));
-check('attendance page source header advances because this served file changed',
-  /^\/\* Hifzhelper build 4\.2\.11\.1 \| js\/maktabAttendancePage\.js \*\//.test(page));
+check('attendance page source header advances because this served file changed again in V4.2.11.2',
+  /^\/\* Hifzhelper build 4\.2\.11\.2 \| js\/maktabAttendancePage\.js \*\//.test(page));
 
 const iso = d => d.toISOString().slice(0, 10);
 const shift = (base, n) => { const d = new Date(base + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
@@ -58,6 +58,12 @@ const currentWeek = result.weeks.find(w => w.monday === thisMon);
 check('register endpoint returns real log-derived present data', s1 && s1.cells[thisMon] === 'present');
 check('register endpoint returns confirmed Haidh data', s2 && s2.cells[tue] === 'haidh');
 check('register payload contains the current Maktab week', currentWeek && currentWeek.columns.length > 0);
+
+const own = (await handleAttendancePage({ url: `https://x/attendance/page?student_id=S1&from=${shift(thisMon, -7)}&to=${shift(thisMon, 13)}` }, env, { id:'T1', role:'teacher' })).data;
+check('register Attendance % is exactly the individual Attendance-page percentage',
+  s1 && s1.attendance_percent === own.percent
+  && s1.attendance_present_days === own.present_days
+  && s1.attendance_maktab_days === own.maktab_days);
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

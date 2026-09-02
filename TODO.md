@@ -28,11 +28,25 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
-| **77** | **Deploy + device-verify V4.2.11.1** | **READY — build complete** | **V4.2.11.1 is a frontend follow-up to V4.2.11.** If V4.2.11 is not deployed yet: deploy its Worker first, its Pages files second, then overlay V4.2.11.1. No migration. Hard-refresh and run both V4.2.11 and V4.2.11.1 checks in `TESTING.md`. Close this row once dev/production verification is complete. |
+| **77** | **Deploy + device-verify V4.2.11.2** | **READY — build complete** | Deploy the V4.2.11.2 Worker file first, then Pages/frontend, then hard-refresh. **No migration.** Verify the new Attendance register marks/percentage/header/menu plus the carried V4.2.11.1 Haidh-calendar fixes. Close this row once dev/production verification is complete. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.11.1 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.11.2 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **No migration.** V4.2.11.2 changes the register read response/UI only.
+2. **Deploy `worker/src/maktabAttendance.js` first**, then the changed Pages files, then hard-refresh until the login version reads **v4.2.11.2**.
+3. Open Maktab Attendance. There must be **no term/date strip and no arrows** above the grid. The current Maktab week must be in view automatically.
+4. Weekly headings must read date range only (for example **31 Aug – 3 Sep**), with no word `Week`. Confirm the thick divider beneath the weekday row.
+5. Confirm **Present = bold lime text ✓**, **Haidh = thin green check**, **Absent = blank**; the yellow Haidh disk must not appear in this register.
+6. Confirm the sticky left columns are **Student | Attendance %**. Compare at least two percentages with those students' individual Attendance pages for the same current term.
+7. Open a student's Attendance page from the name. The white header must read **Attendance — Name** and, on a larger screen, be the same width as the two cards below. Re-run the V4.2.11.1 Haidh checks: larger/full-width calendar, Monday-first alignment, full-width selected-days pill, and no previous-student flash.
+8. Open the hamburger as Admin and confirm primary order: **Home, Maktab, Attendance, Student Management, Maktab Settings, Calendar**. Confirm Home tiles themselves have not been reordered by this menu-only change.
+9. Run `node tests/verify_v42112_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_v42111_ui.mjs`, `node tests/verify_v4211_ui.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+## V4.2.11.1 — SUPERSEDED BY V4.2.11.2
+
+This frontend overlay is already included beneath the V4.2.11.2 follow-up. Its Haidh-calendar/Register/None fixes remain required, but use the V4.2.11.2 deployment checklist above as the active instruction. Historical V4.2.11.1 steps follow for reference:
 
 This is a frontend overlay on V4.2.11:
 

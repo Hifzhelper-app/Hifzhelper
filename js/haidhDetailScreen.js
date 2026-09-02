@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.1 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.11.2 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -494,10 +494,12 @@ async function renderAttendancePage(param){
   }
   const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
   document.getElementById('attendanceHeaderIcon').innerHTML = iconHtml('attendance');
-  // V4.2.2 (user): "Attendance" is the page title above the card now, so
-  // the card carries only WHOSE attendance this is — her name alone, on
-  // one line. In the PJ there is no name to show, so it stays "Mine".
-  document.getElementById('attendanceTitle').textContent = inMaktab ? logCtxStudentName() : 'Mine';
+  // V4.2.11.2: keep the page identity in the same white header row as the
+  // student name. Teacher/admin maktab views name the student; a student's
+  // own attendance page simply reads Attendance.
+  document.getElementById('attendanceTitle').textContent = inMaktab
+    ? `Attendance — ${logCtxStudentName()}`
+    : 'Attendance';
   // V3.88.0 (user schematic): the haidh card heading carries the name
   const hTitle = document.getElementById('haidhDetailTitle');
   if(hTitle) hTitle.textContent = 'Haidh: ' + (inMaktab ? logCtxStudentName() : (typeof currentUser !== 'undefined' && currentUser && currentUser.name) || '');

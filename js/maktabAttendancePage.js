@@ -1,16 +1,15 @@
-/* Hifzhelper build 4.2.11.1 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.11.2 | js/maktabAttendancePage.js */
 // ============================================================
-// Hifzhelper — Maktab Attendance register (V4.2.11).
+// Hifzhelper — Maktab Attendance register (V4.2.11.2).
 //
-// One roster, many narrow teaching-day columns. Maktab weeks are grouped
-// under merged first-row headings, with Mon/Tue/Wed/... on row two.
-// Present = green tick (any Maktab log). Haa'idha = yellow haidh icon.
-// Absent/unresolved = blank. Selecting a student's name opens her own
-// Attendance page, where the teacher edits attendance/haidh.
+// One roster, one existing Attendance % value, then narrow teaching-day
+// columns grouped beneath merged date-range headings. The current Maktab
+// week is put in view automatically when the current term opens.
+// Present = bold lime text tick. Haa'idha = the former thin green present
+// check. Absent/unresolved = blank. Selecting a student's name opens her
+// individual Attendance page, where editing continues to live.
 // ============================================================
 
-let mkregisterTermId = null;
-let mkregisterWired = false;
 let mkregisterData = null;
 
 function mkregEsc(value){
@@ -29,9 +28,8 @@ function mkregWeekLabel(week){
   const cols = week.columns || [];
   if(!cols.length) return '';
   const a = cols[0].date, b = cols[cols.length - 1].date;
-  return a === b ? `Week ${mkregShortDate(a)}` : `Week ${mkregShortDate(a)} – ${mkregShortDate(b)}`;
+  return a === b ? mkregShortDate(a) : `${mkregShortDate(a)} – ${mkregShortDate(b)}`;
 }
-
 
 function mkregMondayOf(iso){
   const d = new Date(iso + 'T00:00:00Z');
@@ -39,11 +37,9 @@ function mkregMondayOf(iso){
   return d.toISOString().slice(0, 10);
 }
 
-// V4.2.11.1: a term register can span many weeks. When the current term
-// opens, put the CURRENT Maktab week beside the sticky Student column
-// rather than leaving the viewport parked at the oldest week. Earlier
-// weeks remain available by scrolling left. Historical/future terms keep
-// their natural start position.
+// V4.2.11.1+: a term register can span many weeks. Put the current Maktab
+// week beside the two sticky identity columns on every opening of the current
+// term. Earlier weeks remain available by scrolling left.
 function mkregFocusCurrentWeek(host, data){
   if(!host || !data || !data.today || !data.from || !data.to) return;
   if(data.today < data.from || data.today > data.to) return;
@@ -55,54 +51,33 @@ function mkregFocusCurrentWeek(host, data){
   const target = host.querySelector(`.mkregister-day-head[data-date="${firstDate}"]`);
   if(!scroll || !target) return;
   const studentHead = host.querySelector('.mkregister-student-head');
-  const stickyWidth = studentHead ? studentHead.offsetWidth : 0;
+  const percentHead = host.querySelector('.mkregister-percent-head');
+  const stickyWidth = (studentHead ? studentHead.offsetWidth : 0) + (percentHead ? percentHead.offsetWidth : 0);
   scroll.scrollLeft = Math.max(0, target.offsetLeft - stickyWidth - 3);
-}
-function mkregPeriodLabel(data){
-  const f = typeof fmtDMY === 'function' ? fmtDMY : (x) => x;
-  const range = `${f(data.from)} – ${f(data.to)}`;
-  return data.period_name ? `${data.period_name} · ${range}` : range;
 }
 
 async function renderMaktabAttendanceScreen(){
   await mkregisterPaint();
-  if(mkregisterWired) return;
-  mkregisterWired = true;
-  const prev = document.getElementById('mkweekPrevBtn');
-  const next = document.getElementById('mkweekNextBtn');
-  prev.addEventListener('click', async () => {
-    if(!mkregisterData || mkregisterData.prev_term_id == null) return;
-    mkregisterTermId = mkregisterData.prev_term_id;
-    await mkregisterPaint();
-  });
-  next.addEventListener('click', async () => {
-    if(!mkregisterData || mkregisterData.next_term_id == null) return;
-    mkregisterTermId = mkregisterData.next_term_id;
-    await mkregisterPaint();
-  });
 }
 
 async function mkregisterPaint(){
   const host = document.getElementById('mkweekCols');
   const err = document.getElementById('mkweekError');
-  const prev = document.getElementById('mkweekPrevBtn');
-  const next = document.getElementById('mkweekNextBtn');
   err.textContent = '';
   host.innerHTML = '<p class="form-hint">Loading…</p>';
 
   let data;
   try{
-    data = await apiGetMaktabRegister(mkregisterTermId);
+    // V4.2.11.2: the register itself is the time navigation. The removed
+    // term-arrow strip no longer selects historical terms, so open the
+    // backend's current/nearest term directly.
+    data = await apiGetMaktabRegister();
   } catch(e){
     host.innerHTML = '';
     err.textContent = e.message;
     return;
   }
   mkregisterData = data;
-  if(data.term_id != null) mkregisterTermId = data.term_id;
-  document.getElementById('mkweekLabel').textContent = mkregPeriodLabel(data);
-  prev.disabled = data.prev_term_id == null;
-  next.disabled = data.next_term_id == null;
 
   const weeks = data.weeks || [];
   const students = data.students || [];
@@ -113,12 +88,9 @@ async function mkregisterPaint(){
   }
 
   const WD = { mon:'Mon', tue:'Tue', wed:'Wed', thu:'Thu', fri:'Fri', sat:'Sat', sun:'Sun' };
-  let columnIndex = 0;
   const weekHead = weeks.map((w, wi) => {
     const count = (w.columns || []).length;
-    const html = `<th class="mkregister-week-head mkregister-week-${wi % 2 ? 'b' : 'a'}${wi ? ' mkregister-week-start' : ''}" colspan="${count}">${mkregEsc(mkregWeekLabel(w))}</th>`;
-    columnIndex += count;
-    return html;
+    return `<th class="mkregister-week-head mkregister-week-${wi % 2 ? 'b' : 'a'}${wi ? ' mkregister-week-start' : ''}" colspan="${count}">${mkregEsc(mkregWeekLabel(w))}</th>`;
   }).join('');
 
   const dayHead = weeks.map((w, wi) => (w.columns || []).map((c, ci) => {
@@ -138,10 +110,12 @@ async function mkregisterPaint(){
       let mark = '';
       let label = 'Absent';
       if(status === 'present'){
-        mark = `<span class="mkregister-status mkregister-status-present" aria-hidden="true">${iconHtml('check')}</span>`;
+        mark = '<span class="mkregister-status mkregister-status-present" aria-hidden="true">✓</span>';
         label = 'Present';
       } else if(status === 'haidh'){
-        mark = `<span class="mkregister-status mkregister-status-haidh" aria-hidden="true">${iconHtml('haidh')}</span>`;
+        // User request: retire the yellow Haidh glyph in this grid and reuse
+        // the former thin green Present check as the distinct Haidh mark.
+        mark = `<span class="mkregister-status mkregister-status-haidh" aria-hidden="true">${iconHtml('check')}</span>`;
         label = "Haa'idha";
       } else if(c.future){
         label = 'Not yet recorded';
@@ -150,20 +124,24 @@ async function mkregisterPaint(){
       }
       return `<td class="mkregister-cell mkregister-week-${wi % 2 ? 'b' : 'a'}${start}${off}${future}" data-date="${c.date}" aria-label="${mkregEsc(`${s.name}, ${WD[c.weekday] || ''} ${mkregShortDate(c.date)}: ${label}`)}" title="${mkregEsc(label)}">${mark}</td>`;
     }).join('')).join('');
-    return `<tr><th class="mkregister-student-cell" scope="row"><button type="button" class="mkregister-student" data-student-id="${mkregEsc(s.id)}" title="Open ${mkregEsc(s.name)} attendance">${mkregEsc(s.name)}</button></th>${cells}</tr>`;
+    const pct = s.attendance_percent == null ? '—' : `${s.attendance_percent}%`;
+    const pctTitle = s.attendance_maktab_days
+      ? `${s.attendance_present_days} of ${s.attendance_maktab_days} maktab days`
+      : 'No maktab days in this period';
+    return `<tr>
+      <th class="mkregister-student-cell" scope="row"><button type="button" class="mkregister-student" data-student-id="${mkregEsc(s.id)}" title="Open ${mkregEsc(s.name)} attendance">${mkregEsc(s.name)}</button></th>
+      <td class="mkregister-percent-cell" title="${mkregEsc(pctTitle)}">${pct}</td>${cells}
+    </tr>`;
   }).join('');
 
   host.innerHTML = `<div class="mkregister-scroll"><table class="mkregister-grid">
     <thead>
-      <tr><th class="mkregister-student-head" rowspan="2">Student</th>${weekHead}</tr>
+      <tr><th class="mkregister-student-head" rowspan="2">Student</th><th class="mkregister-percent-head" rowspan="2">Attendance %</th>${weekHead}</tr>
       <tr>${dayHead}</tr>
     </thead>
-    <tbody>${body || `<tr><td colspan="${colCount + 1}" class="form-hint">No active students.</td></tr>`}</tbody>
+    <tbody>${body || `<tr><td colspan="${colCount + 2}" class="form-hint">No active students.</td></tr>`}</tbody>
   </table></div>`;
 
-  // Put today's Maktab week in view on the current term. Do it after the
-  // table has entered layout so offsetLeft/offsetWidth are real browser
-  // measurements; direct fallback keeps non-browser harnesses harmless.
   const focusCurrentWeek = () => mkregFocusCurrentWeek(host, data);
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(focusCurrentWeek);
   else focusCurrentWeek();

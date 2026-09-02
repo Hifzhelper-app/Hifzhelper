@@ -2313,7 +2313,29 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.11.2 — Attendance register/header/menu checks
+
+Deploy the changed Worker file first, then the frontend overlay, hard-refresh, and confirm the login-card version reads **v4.2.11.2**. No migration is required.
+
+1. **No term strip:** Maktab Attendance starts directly with its header card and register. There must be no left/right term arrows and no `Term …` / date-range strip above the grid.
+2. **Current week:** on the current term, the current Maktab week is automatically beside the sticky identity columns. Earlier weeks remain reachable by scrolling left.
+3. **Two-row header:** merged headings are date range only (`31 Aug – 3 Sep`), with no `Week`. The weekday row (`Mon`, `Tue`, etc.) has a visibly thicker horizontal rule beneath it across the full header, including Student/Attendance %.
+4. **Status marks:** choose known examples. Present must be a **bold lime text ✓**. Haidh must be the thinner muted/sage-green check formerly used for Present. The yellow Haidh disk must not appear. A completed qualifying blank remains absent; future/non-Maktab-day cells remain muted.
+5. **Attendance %:** the second sticky column is **Attendance %**. Open at least two students by name and compare the register percentage with the individual Attendance page's `Present on X of Y maktab days : Z%` for the same term. They must agree exactly.
+6. **Student navigation:** tapping the name still opens that student's existing individual Attendance editor; no day cell becomes an edit control.
+7. **Individual Attendance header:** there is no separate `Attendance` title above the white header. Teacher/admin Maktab context reads **Attendance — Student Name** in that header. At >=768px the header must be exactly the same width as the Attendance and Haidh cards below.
+8. **Carried Haidh-calendar checks:** calendar fills the card, begins Monday (`M T W T F S S`), dates align under the correct day, the selected-days pill spans calendar width, and Student A's marked dates never flash when Student B is opened.
+9. **Menu order:** as Admin, hamburger primary items are **Home → Maktab → Attendance → Student Management → Maktab Settings → Calendar**. Teacher/student omit inaccessible items naturally. Confirm the Home tile grid order is unchanged.
+
+**Automated coverage:** `verify_v42112_ui.mjs` pins the complete UI contract. `verify_v42111_register_data.mjs` dynamically compares the register percentage with `handleAttendancePage()` for the same student/period and also proves real Present/Haidh cells survive. `verify_build_stamp.mjs` and `verify_syntax.mjs` cover page/cache/header discipline and all served JavaScript.
+
+**Current container run:** V4.2.11.2 UI **13/13**, dynamic register-data/percentage parity **7/7**, V4.2.11.1 **12/12**, V4.2.11 **16/16**, build/version **6/6**, served-script syntax **36/36**, Worker syntax **clean**. `run-all.mjs` reports **350 passed, 0 failed** among harnesses able to report; 27 older harnesses still cannot report because `jsdom` is absent and/or their legacy SQL fixtures have pre-existing schema drift.
+
+---
+
 ## V4.2.11.1 — Student Management + Haidh calendar checks
+
+**Historical release check:** V4.2.11.2 supersedes the register icon/header/menu details below; use the V4.2.11.2 section for the current contract.
 
 Apply this overlay **after V4.2.11**, hard-refresh, and confirm the login-card version reads **v4.2.11.1**. No Worker deployment or migration is required for this follow-up.
 

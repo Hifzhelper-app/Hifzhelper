@@ -28,15 +28,15 @@ check('Attendance screen uses register host rather than the old day-card host cl
 check('register API route is wired front to back',
   /apiGetMaktabRegister/.test(api) && /\/maktab\/attendance-register/.test(api)
   && /handleMaktabRegister/.test(workerIndex) && /export async function handleMaktabRegister/.test(workerAtt));
-check('register groups teaching-day columns beneath merged Maktab-week headings',
+check('register groups teaching-day columns beneath merged Maktab-week/date-range headings',
   /rowspan="2">Student/.test(page) && /colspan="\$\{count\}"/.test(page)
-  && /mkregisterWeekLabel|mkregWeekLabel/.test(page) && /`Week \$\{mkregShortDate\(a\)\}/.test(page) && /Mon/.test(page) && /Tue/.test(page));
+  && /mkregisterWeekLabel|mkregWeekLabel/.test(page) && /mkregShortDate\(a\)/.test(page) && /Mon/.test(page) && /Tue/.test(page));
 check('register presents one student roster and clicking a name opens individual attendance',
   /class="mkregister-student"/.test(page) && /openMaktabAttendancePage\(student, data\.today\)/.test(page));
-check('present is a green tick, haidh is the shared haidh icon, and blank remains the absence visual',
-  /iconHtml\('check'\)/.test(page) && /iconHtml\('haidh'\)/.test(page)
-  && /mkregister-status-present/.test(css) && /color: var\(--color-success\)/.test(css)
-  && /mkregister-status-haidh[\s\S]*#FFD400/.test(css));
+check('present and haidh remain compact green checks while blank remains the absence visual',
+  /mkregister-status-present" aria-hidden="true">✓/.test(page) && /iconHtml\('check'\)/.test(page)
+  && /mkregister-status-present/.test(css) && /#78BE3F/.test(css)
+  && /mkregister-status-haidh/.test(css) && !/iconHtml\('haidh'\)/.test(page));
 check('student column and two header rows are sticky and weekly groups are separated',
   /mkregister-student-cell[\s\S]*position: sticky; left: 0/.test(css)
   && /mkregister-week-head[\s\S]*position: sticky; top: 0/.test(css)
