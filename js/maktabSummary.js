@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -180,7 +181,25 @@ async function renderMaktabSummaryScreen(){
   // wireCustomDateDisplay intercepts the value setter (the 2026-08-04
   // fix in customDate.js), no event needed.
   if(input && input.value !== date) input.value = date;
-  host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
+
+  // V4.2.5 (user): the names appeared only after the round trips finished,
+  // though they have nothing to do with the day's data. The last roster is
+  // cached and painted IMMEDIATELY — names, their pills and the attendance
+  // icon — with the log cells left blank and a loading strip under the
+  // header; the cells fill when the responses land.
+  //
+  // Deliberately the ROSTER ONLY, never the log cells: names change
+  // rarely, a day's entries change constantly, and a stale entry on
+  // screen is worse than a wait because a teacher could act on it.
+  // Deliberately in MEMORY, not localStorage: it covers returning to the
+  // screen within a session without leaving a maktab's student names on a
+  // shared or borrowed device. A cold start still waits once.
+  if(maktabRosterCache && maktabRosterCache.length){
+    maktabSummaryPaintSkeleton(host, maktabRosterCache);
+  } else {
+    host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
+  }
+  maktabSummarySetLoading(true);
 
   // V3.59.1: respond() UNWRAPS on the worker (json(result.data)) -- the
   // response body IS the payload, no {data:...} envelope on the wire.
@@ -199,11 +218,13 @@ async function renderMaktabSummaryScreen(){
     td.colSpan = 5;
     td.className = 'journal-cell journal-cell-empty';
     td.textContent = 'Could not load the maktab summary: ' + ((loadErr && loadErr.message) || 'unexpected response');
+    maktabSummarySetLoading(false);   // V4.2.5
     host.innerHTML = '';
     const tr = document.createElement('tr'); tr.appendChild(td); host.appendChild(tr);
     return;
   }
   maktabSummaryData = data;
+  maktabRosterCache = (data.students || []).map(s => ({ id: s.id, name: s.name, track_haidh: s.track_haidh }));   // V4.2.5
 
   // group each table's rows by student for O(1) cell lookup
   const byStudent = { sabaq: {}, sabaqDhor: {}, dhor: {} };
@@ -363,4 +384,47 @@ async function renderMaktabSummaryScreen(){
   if (!(data.students || []).length) {
     host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">No active students.</td></tr>';
   }
+}
+
+// ============================================================
+// V4.2.5 — the roster cache, the skeleton paint and the loading strip.
+// ============================================================
+let maktabRosterCache = null;
+
+function maktabSummarySetLoading(on){
+  const row = document.querySelector('.maktab-summary-headers');
+  if(!row) return;
+  row.classList.toggle('is-loading', !!on);
+}
+
+// The cached paint: real names in real pills with the attendance icon, and
+// EMPTY log cells — never stale ones. Deliberately not wired for taps: the
+// row's handlers are attached by the real render a moment later, and a tap
+// on a half-drawn row would open a card whose data has not arrived.
+function maktabSummaryPaintSkeleton(host, roster){
+  host.innerHTML = '';
+  roster.forEach(stu => {
+    const tr = document.createElement('tr');
+    tr.className = 'journal-row maktab-summary-skeleton-row';
+    const haidhTd = document.createElement('td');
+    haidhTd.className = 'maktab-haidh-col';
+    haidhTd.innerHTML = typeof iconHtml === 'function' ? iconHtml('attendance') : '';
+    tr.appendChild(haidhTd);
+    const nameTd = document.createElement('td');
+    nameTd.className = 'cell-date maktab-student-name';
+    const span = document.createElement('span');
+    span.className = 'maktab-name-pill';
+    span.textContent = stu.name;
+    span.title = stu.name;
+    nameTd.appendChild(span);
+    tr.appendChild(nameTd);
+    ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
+      const td = document.createElement('td');
+      td.className = 'journal-cell';
+      td.setAttribute('data-label', { sabaq: 'Sabaq', sabaqDhor: 'Sabaq Dhor', dhor: 'Dhor' }[type]);
+      td.innerHTML = '<span class="journal-cell-skeleton"></span>';
+      tr.appendChild(td);
+    });
+    host.appendChild(tr);
+  });
 }

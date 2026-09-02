@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -261,11 +262,11 @@ button.secondary.danger {
   .admin-row-fields { border-bottom: none; border-radius: var(--radius-md) var(--radius-md) 0 0; margin-bottom: 0; }
   .admin-row-new { grid-template-areas: 'id id id' 'name name wa' 'role group status' 'act act act'; }
   .admin-row-new .admin-actions-cell { display: block; grid-area: act; }
-  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
-  .admin-row-fields td { border-bottom: none; padding: 4px 8px; }
-  .admin-row-fields td::before { content: attr(data-label); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }
-  .admin-row-fields .admin-actions-cell { display: none; }
+  /* V4.2.5: the V4.1.0 STACKED rules used to follow here and, being
+     later, overrode the card layout above — which is what re-imposed the
+     eight-deep stacking. Deleted; only `.admin-row-actions { display:
+     block }` and the actions strip are kept, since the card needs them. */
   .admin-row-actions { display: block; }
-  .admin-row-actions td { border-bottom: 2px solid var(--color-table-border); padding: 4px 8px 14px; }
+  .admin-row-actions td { border-bottom: none; padding: 4px var(--space-md) var(--space-sm); }
   .admin-actions-strip { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
 }

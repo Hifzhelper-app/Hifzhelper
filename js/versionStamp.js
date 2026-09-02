@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/versionStamp.js */
 // ============================================================
 // versionStamp.js — shows the running version on the login screens.
 //

@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/kaabaTracker.js */
 /* Kaaba Juz Tracker — self-contained isometric Kaaba cube with 30 clickable juz tiles.
  *
  *   <kaaba-juz-tracker persist="hifz.juz" controls="full"></kaaba-juz-tracker>

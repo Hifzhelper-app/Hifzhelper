@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/sabaqDhorPage.js */
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
 // Current as of V3.45.13

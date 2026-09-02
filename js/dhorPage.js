@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/dhorPage.js */
 // ============================================================
 // Hifzhelper — Dhor card (one of 4 in the unified day-log view, V3.6.1)
 // Current as of V3.38

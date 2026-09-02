@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/customDate.js */
 // Hifzhelper -- shared custom date display (2026-08-03, confirmed in
 // chat; reworked V3.50.1). A native <input type="date">'s own displayed
 // text is entirely browser/OS-controlled -- no amount of CSS can

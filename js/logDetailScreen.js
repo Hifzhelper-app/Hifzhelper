@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/logDetailScreen.js */
 // ============================================================
 // Hifzhelper — unified day-log view orchestrator (V3.6.1)
 // Replaces the old 3 separate Sabaq/Sabaq Dhor/Dhor screens with one
