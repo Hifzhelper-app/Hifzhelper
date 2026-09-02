@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8.2 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.12 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -48,6 +48,325 @@ function maktabCellHtml(type, entries){
     /<button type="button" class="entry-count-badge" data-count-badge>(\+\d+)<\/button>/,
     `<button type="button" class="entry-count-badge" data-entry-peek="${type}">$1</button>`
   );
+}
+
+
+// ============================================================
+// V4.2.12 — Summary Quick Log trial.
+//
+// Tapping a Sabaq / Sabaq Dhor / Dhor summary CELL no longer has to leave
+// the daily working table. It opens one deliberately small sheet containing
+// only the fields the teacher needs for a fast confirmed entry. The full
+// detail card is still one explicit action away for history/comments/etc.
+//
+// Writes reuse the existing maktab log endpoints — no new Worker route and
+// no new storage model. Dhor therefore keeps the existing atomic pool merge
+// in worker/src/maktabLog.js. Sabaq's position metadata is best-effort synced
+// after the log exactly like the full card's post-save step; the actual
+// frontier remains computed from real log history, so a failed metadata sync
+// can never erase the saved entry.
+// ============================================================
+let maktabQuickLogState = null;
+
+const MAKTAB_QUICK_LABEL = { sabaq: 'Sabaq', sabaqDhor: 'Sabaq Dhor', dhor: 'Dhor' };
+let maktabQuickLogOpenToken = 0;
+
+function maktabQuickEscape(value){
+  return String(value == null ? '' : value).replace(/[&<>\"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;', "'":'&#39;' }[ch]));
+}
+
+function maktabCloseQuickLog(){
+  maktabQuickLogOpenToken++;
+  const el = document.getElementById('maktabQuickLogSheet');
+  if(el) el.remove();
+  maktabQuickLogState = null;
+}
+
+function maktabQuickRefForMushaf(mushaf){
+  return mushaf === '15line_madani' ? 'uthmani' : 'waterval';
+}
+
+function maktabQuickFormatDate(iso){
+  const d = new Date(String(iso || '') + 'T00:00:00');
+  if(Number.isNaN(d.getTime())) return String(iso || '');
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+function maktabQuickExistingText(type, entries){
+  if(!entries || !entries.length) return '';
+  const text = entries.map(e => journalCellShorthand(type, [e]).replace(/<[^>]+>/g, '').trim()).filter(Boolean).join(' · ');
+  return text ? `<div class="maktab-quick-existing"><span>Already logged</span>${text}</div>` : '';
+}
+
+function maktabQuickVerseField(side, label){
+  return `<div class="maktab-quick-range-row">
+    <label>${label}</label>
+    <div class="verse-ref-field maktab-quick-verse-field">
+      <button type="button" class="verse-ref-chevron" data-mql-surah="${side}" aria-label="Choose Surah for ${label}">&#x25B2;&#x25BC;</button>
+      <span class="verse-ref-surah-label" id="mql_${side}_surah_label">—</span>
+      <span class="verse-ref-ayah-cell">
+        <span class="verse-ref-sep">:</span>
+        <input type="number" inputmode="numeric" class="verse-ref-ayah" id="mql_${side}_ayah" aria-label="${label} ayah">
+      </span>
+      <span class="verse-ref-ayah-stepper">
+        <button type="button" data-mql-step="${side}:1" aria-label="Increase ${label} ayah">&#x25B2;</button>
+        <button type="button" data-mql-step="${side}:-1" aria-label="Decrease ${label} ayah">&#x25BC;</button>
+      </span>
+    </div>
+  </div>`;
+}
+
+function maktabQuickRenderVerse(side){
+  if(!maktabQuickLogState) return;
+  const value = maktabQuickLogState[side];
+  const label = document.getElementById(`mql_${side}_surah_label`);
+  const input = document.getElementById(`mql_${side}_ayah`);
+  if(!label || !input) return;
+  if(!value){
+    label.textContent = '—'; input.value = ''; input.min = ''; input.max = '';
+    return;
+  }
+  label.textContent = `${value.surah} ${surahName(value.surah)}`;
+  input.min = '1'; input.max = String(maxAyahForSurah(value.surah)); input.value = String(value.ayah);
+}
+
+function maktabQuickReadVerse(side){
+  if(!maktabQuickLogState) return null;
+  const current = maktabQuickLogState[side];
+  const input = document.getElementById(`mql_${side}_ayah`);
+  if(!current || !input || !input.value) return null;
+  let ayah = parseInt(input.value, 10);
+  if(!Number.isFinite(ayah)) return null;
+  ayah = Math.max(1, Math.min(maxAyahForSurah(current.surah), ayah));
+  maktabQuickLogState[side] = { surah: current.surah, ayah };
+  input.value = String(ayah);
+  return maktabQuickLogState[side];
+}
+
+function maktabQuickOpenSurahPicker(side){
+  if(!maktabQuickLogState) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay surah-picker-modal maktab-quick-surah-modal';
+  overlay.innerHTML = `<div class="modal-card">
+    <button type="button" class="close-btn" aria-label="Close">&times;</button>
+    <h2>Choose Surah</h2>
+    <div class="surah-picker-list"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const list = overlay.querySelector('.surah-picker-list');
+  list.innerHTML = SURAHS.map(([num, name]) => `<button type="button" class="tajweed-tag surah-picker-row" data-surah="${num}">${num}. ${name}</button>`).join('');
+  list.querySelectorAll('[data-surah]').forEach(btn => btn.addEventListener('click', () => {
+    const surah = parseInt(btn.dataset.surah, 10);
+    maktabQuickLogState[side] = { surah, ayah: 1 };
+    maktabQuickRenderVerse(side);
+    overlay.remove();
+  }));
+  overlay.querySelector('.close-btn').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
+}
+
+function maktabQuickWireVerseFields(){
+  ['from','to'].forEach(side => {
+    const input = document.getElementById(`mql_${side}_ayah`);
+    if(input) input.addEventListener('change', () => maktabQuickReadVerse(side));
+  });
+  document.querySelectorAll('[data-mql-surah]').forEach(btn => btn.addEventListener('click', () => maktabQuickOpenSurahPicker(btn.dataset.mqlSurah)));
+  document.querySelectorAll('[data-mql-step]').forEach(btn => btn.addEventListener('click', () => {
+    const [side, rawDelta] = btn.dataset.mqlStep.split(':');
+    const value = maktabQuickReadVerse(side);
+    if(!value) return;
+    const next = Math.max(1, Math.min(maxAyahForSurah(value.surah), value.ayah + parseInt(rawDelta, 10)));
+    maktabQuickLogState[side] = { surah: value.surah, ayah: next };
+    maktabQuickRenderVerse(side);
+  }));
+}
+
+function maktabQuickDhorControls(){
+  const juzOptions = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
+  return `<div class="maktab-quick-dhor-grid">
+    <label>Juz<select id="mql_dhor_juz"><option value="">Select</option>${juzOptions}</select></label>
+    <div class="maktab-quick-unit-wrap">
+      <span class="maktab-quick-control-label">Portion</span>
+      <div class="unit-pill maktab-quick-unit-pill" id="mql_dhor_unit">
+        <button type="button" data-unit="quarter" class="on">Quarter</button>
+        <button type="button" data-unit="half">Half</button>
+        <button type="button" data-unit="full">Juz</button>
+      </div>
+    </div>
+    <div class="maktab-quick-position-wrap" id="mql_dhor_position_wrap">
+      <span class="maktab-quick-control-label">Quarter</span>
+      <div class="unit-pill maktab-quick-position-pill" id="mql_dhor_position"></div>
+    </div>
+  </div>`;
+}
+
+function maktabQuickRenderDhorPosition(){
+  if(!maktabQuickLogState) return;
+  const wrap = document.getElementById('mql_dhor_position_wrap');
+  const pill = document.getElementById('mql_dhor_position');
+  if(!wrap || !pill) return;
+  const unit = maktabQuickLogState.unit;
+  if(unit === 'full'){
+    wrap.classList.add('hidden');
+    maktabQuickLogState.position = 1;
+    return;
+  }
+  wrap.classList.remove('hidden');
+  const count = unit === 'half' ? 2 : 4;
+  wrap.querySelector('.maktab-quick-control-label').textContent = unit === 'half' ? 'Half' : 'Quarter';
+  if(maktabQuickLogState.position > count) maktabQuickLogState.position = 1;
+  pill.innerHTML = Array.from({length:count}, (_,i) => `<button type="button" data-pos="${i+1}" class="${maktabQuickLogState.position === i+1 ? 'on' : ''}">${i+1}</button>`).join('');
+  pill.querySelectorAll('[data-pos]').forEach(btn => btn.addEventListener('click', () => {
+    maktabQuickLogState.position = parseInt(btn.dataset.pos, 10);
+    maktabQuickRenderDhorPosition();
+  }));
+}
+
+function maktabQuickWireDhor(){
+  const juz = document.getElementById('mql_dhor_juz');
+  if(juz) juz.addEventListener('change', () => { maktabQuickLogState.juz = parseInt(juz.value, 10) || null; });
+  document.querySelectorAll('#mql_dhor_unit [data-unit]').forEach(btn => btn.addEventListener('click', () => {
+    maktabQuickLogState.unit = btn.dataset.unit;
+    maktabQuickLogState.position = 1;
+    document.querySelectorAll('#mql_dhor_unit [data-unit]').forEach(b => b.classList.toggle('on', b === btn));
+    maktabQuickRenderDhorPosition();
+  }));
+  maktabQuickRenderDhorPosition();
+}
+
+async function maktabQuickPost(path, payload, duplicateLabel){
+  let result = await apiFetch(path, { method: 'POST', body: JSON.stringify(payload) });
+  if(result && result.isDuplicate && !result.id){
+    const proceed = confirm(`${duplicateLabel} has already been saved. Select OK to save it again or CANCEL to abort.`);
+    if(!proceed) return null;
+    result = await apiFetch(path, { method: 'POST', body: JSON.stringify(Object.assign({}, payload, { force: true })) });
+  }
+  return result;
+}
+
+async function maktabQuickSyncSabaqPosition(studentId, oldEntries, ref){
+  try{
+    const row = await apiGetMaktabPosition(studentId);
+    let position = {};
+    try{ position = row && row.position_json ? (JSON.parse(row.position_json) || {}) : {}; } catch(e){ position = {}; }
+    const oldFrontier = computeActualSabaqFrontier(oldEntries || [], ref);
+    const freshEntries = await apiGetMaktabSabaq(studentId);
+    const newFrontier = computeActualSabaqFrontier(freshEntries || [], ref);
+    const next = advancePositionAfterSabaq(position, oldFrontier, newFrontier, ref);
+    delete next.sabaqTo; delete next.activeJuz;
+    await apiSaveMaktabPosition(studentId, JSON.stringify(next), null);
+  } catch(e){ /* best effort, matching the full Sabaq card */ }
+}
+
+async function maktabSaveQuickLog(){
+  const state = maktabQuickLogState;
+  if(!state) return;
+  const err = document.getElementById('maktabQuickLogError');
+  const save = document.getElementById('maktabQuickLogSave');
+  if(err) err.textContent = '';
+  if(!document.getElementById('maktabQuickLogConfirm').checked){
+    if(err) err.textContent = 'Please confirm the selection before saving.';
+    return;
+  }
+  let path, payload;
+  if(state.type === 'sabaq' || state.type === 'sabaqDhor'){
+    const from = maktabQuickReadVerse('from');
+    const to = maktabQuickReadVerse('to');
+    if(!from || !to){ if(err) err.textContent = 'Please set both Ayah From and Ayah To.'; return; }
+    if(state.type === 'sabaq' && !crossesAtMostOneJuzBoundary(from.surah, from.ayah, to.surah, to.ayah, state.ref)){
+      if(err) err.textContent = "This Sabaq range crosses more than one juz' boundary — please split it into separate entries.";
+      return;
+    }
+    if(state.type === 'sabaq'){
+      path = '/maktab/sabaq';
+      payload = { student_id: state.student.id, date: state.date, sabaq_from: formatVerseRef(from.surah, from.ayah), sabaq_to: formatVerseRef(to.surah, to.ayah) };
+    } else {
+      path = '/maktab/sabaq-dhor';
+      payload = { student_id: state.student.id, date: state.date, from_surah: from.surah, from_ayah: from.ayah, to_surah: to.surah, to_ayah: to.ayah };
+    }
+  } else {
+    const juzEl = document.getElementById('mql_dhor_juz');
+    const juz = parseInt(juzEl && juzEl.value, 10);
+    if(!juz){ if(err) err.textContent = 'Please select a Juz.'; return; }
+    const unit = state.unit || 'quarter';
+    const unitName = unit === 'full' ? 'juz' : unit;
+    const position = unit === 'full' ? 1 : state.position;
+    const seg = segmentRangeForUnitIndex(juz, position, state.ref, unit === 'full' ? 'juz' : unit);
+    path = '/maktab/dhor';
+    payload = { student_id: state.student.id, date: state.date, segment_from: seg.segment_from, segment_to: seg.segment_to, ref: state.ref };
+    state.duplicateLabel = unit === 'full' ? `Juz ${juz}` : `Juz ${juz} ${unitName} ${position}`;
+  }
+  try{
+    if(save) save.disabled = true;
+    // The Summary only carries THIS DATE's rows. Position sync needs the
+    // real pre-save frontier from ALL Sabaq history, so snapshot it before
+    // the POST rather than incorrectly treating today's first row as the
+    // student's entire history.
+    let oldSabaqHistory = null;
+    if(state.type === 'sabaq'){
+      try{ oldSabaqHistory = await apiGetMaktabSabaq(state.student.id); } catch(e){ oldSabaqHistory = []; }
+    }
+    const result = await maktabQuickPost(path, payload, state.duplicateLabel || MAKTAB_QUICK_LABEL[state.type]);
+    if(!result) return;
+    if(state.type === 'sabaq') await maktabQuickSyncSabaqPosition(state.student.id, oldSabaqHistory, state.ref);
+    maktabCloseQuickLog();
+    await renderMaktabSummaryScreen();
+  } catch(e){
+    if(err) err.textContent = "Couldn't save: " + e.message;
+  } finally {
+    const liveSave = document.getElementById('maktabQuickLogSave');
+    if(liveSave) liveSave.disabled = false;
+  }
+}
+
+async function maktabOpenQuickLog(student, date, type, entries){
+  maktabCloseQuickLog();
+  const openToken = ++maktabQuickLogOpenToken;
+  let settings = null;
+  try{ settings = typeof loadMaktabSettings === 'function' ? await loadMaktabSettings() : await apiGetMaktabSettings(); } catch(e){ settings = null; }
+  if(openToken !== maktabQuickLogOpenToken) return;
+  maktabQuickLogState = {
+    student, date, type, entries: (entries || []).slice(),
+    from: null, to: null, juz: null, unit: 'quarter', position: 1,
+    ref: maktabQuickRefForMushaf(settings && settings.mushaf),
+    duplicateLabel: MAKTAB_QUICK_LABEL[type]
+  };
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay maktab-quick-log-modal';
+  overlay.id = 'maktabQuickLogSheet';
+  const body = type === 'dhor'
+    ? maktabQuickDhorControls()
+    : `<div class="maktab-quick-range-grid">${maktabQuickVerseField('from', 'Ayah From')}${maktabQuickVerseField('to', 'Ayah To')}</div>`;
+  overlay.innerHTML = `<div class="modal-card maktab-quick-log-card" role="dialog" aria-modal="true" aria-labelledby="maktabQuickLogTitle">
+    <button type="button" class="close-btn" aria-label="Close">&times;</button>
+    <div class="maktab-quick-heading">
+      <h2 id="maktabQuickLogTitle">${MAKTAB_QUICK_LABEL[type]}</h2>
+      <span class="maktab-name-pill maktab-quick-student" title="${maktabQuickEscape(student.name)}">${maktabQuickEscape(student.name)}</span>
+      <span class="maktab-quick-date">${maktabQuickEscape(maktabQuickFormatDate(date))}</span>
+    </div>
+    ${maktabQuickExistingText(type, entries)}
+    ${body}
+    <label class="maktab-quick-confirm"><input type="checkbox" id="maktabQuickLogConfirm"> <span>Confirm selection</span></label>
+    <div class="form-error" id="maktabQuickLogError"></div>
+    <div class="maktab-quick-actions">
+      <button type="button" class="primary maktab-quick-save" id="maktabQuickLogSave">Save</button>
+      <button type="button" class="maktab-quick-details" id="maktabQuickLogDetails">Open details</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.close-btn').addEventListener('click', maktabCloseQuickLog);
+  overlay.addEventListener('click', e => { if(e.target === overlay) maktabCloseQuickLog(); });
+  document.getElementById('maktabQuickLogSave').addEventListener('click', maktabSaveQuickLog);
+  document.getElementById('maktabQuickLogDetails').addEventListener('click', () => {
+    const snapshot = maktabQuickLogState;
+    maktabCloseQuickLog();
+    openMaktabDay({ id: snapshot.student.id, name: snapshot.student.name, mushaf: snapshot.student.mushaf || null, track_haidh: !!snapshot.student.track_haidh }, snapshot.date, snapshot.type);
+  });
+  if(type === 'dhor') maktabQuickWireDhor();
+  else {
+    maktabQuickWireVerseFields();
+    maktabQuickRenderVerse('from'); maktabQuickRenderVerse('to');
+  }
 }
 
 // A read-only peek at every entry in one cell — including the one already
@@ -285,7 +604,10 @@ async function renderMaktabSummaryScreen(){
     haidhTd.className = 'maktab-haidh-col';
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'maktab-haidh-check' + (haidhByStudent[stu.id] ? ' marked' : '');
+    // V4.2.11.4: the attendance icon is navigation only. Haidh state is
+    // carried by the small pink text in the Sabaq cell, so the icon stays
+    // neutral instead of duplicating that state with a yellow tint.
+    btn.className = 'maktab-haidh-check';
     btn.innerHTML = iconHtml('attendance');
     btn.setAttribute('aria-label', 'Open attendance for ' + stu.name);
     btn.addEventListener('click', (e) => {
@@ -327,11 +649,12 @@ async function renderMaktabSummaryScreen(){
       td.className = 'journal-cell';
       td.setAttribute('data-label', CELL_LABEL[type]);   // V4.2.2: the mobile card's caption
       const d = derived[stu.id];
-      if(type === 'sabaq' && !hasAnyLog && (haidhByStudent[stu.id] || (d && d.status === 'haidh'))){
+      if(type === 'sabaq' && !hasAnyLog && haidhByStudent[stu.id] === 'haidh'){
         td.className = 'journal-cell journal-cell-haidh';
-        // "Haidh" covers both an explicit mark and a propagated day —
-        // the teacher does not need to know which; both mean the same
-        // thing on the register.
+        // V4.2.11.4: only a CONFIRMED stored Haidh day earns the pink
+        // notation. A propagated/derived day remains excused from absence,
+        // but is surfaced as Probable Haidh on her calendar instead of
+        // being presented here as confirmed fact.
         td.textContent = 'Haidh';
       } else if(type === 'sabaq' && !hasAnyLog && d && d.status === 'absent'){
         td.className = 'journal-cell journal-cell-absent';
@@ -361,12 +684,16 @@ async function renderMaktabSummaryScreen(){
           });
         }
       }
-      // V3.82.0: the cell routes to ITS OWN card — sabaq cell to the
-      // Sabaq card and so on (user: "student sabaq --> sabaq etc").
-      // The peek badge above already stops propagation before this.
+      // V4.2.12: a log cell is now the Quick Log trigger. The full detail
+      // card is still available from inside the sheet; the +N peek keeps
+      // stopping propagation above, so inspecting existing entries never
+      // accidentally opens a new-entry sheet.
       td.addEventListener('click', (e) => {
         e.stopPropagation();
-        openMaktabDay({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date, type);
+        maktabOpenQuickLog(
+          { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh },
+          date, type, byStudent[type][stu.id] || []
+        );
       });
       tr.appendChild(td);
     });

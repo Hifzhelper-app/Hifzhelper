@@ -66,8 +66,8 @@ check('teacher Maktab attendance can show the Haidh calendar before first promot
   /const teacherMaktabEdit = typeof logCtxIsMaktab/.test(haidhPage)
   && /!\(d\.track_haidh \|\| teacherMaktabEdit\)/.test(haidhPage));
 check('V4.2.11-or-later page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.11(?:\.\d+)?/.test(html)
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.11(?:\.\d+)?'/.test(sw));
+  /js\/app\.js\?v=4\.2\.12/.test(html)
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.12'/.test(sw));
 check('only served files edited in this release carry V4.2.11 headers among the pinned set',
   /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/admin\.css \*\//.test(adminCss)
   && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/detail-pages\.css \*\//.test(css)
@@ -75,7 +75,7 @@ check('only served files edited in this release carry V4.2.11 headers among the 
   && /^\/\* Hifzhelper build 4\.2\.11 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
   && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.12 \| js\/sw\.js \*\//.test(sw));
 check('no new migration was introduced for gender/track_haidh',
   fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
 

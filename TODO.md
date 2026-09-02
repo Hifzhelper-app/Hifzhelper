@@ -28,11 +28,33 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
-| **77** | **Deploy + device-verify V4.2.11.3** | **READY — build complete** | V4.2.11.3 is a frontend overlay on V4.2.11.2. If V4.2.11.2 is not deployed yet, deploy its Worker first; then overlay V4.2.11.3 Pages files and hard-refresh. **No new migration or Worker change in 4.2.11.3.** Verify the shared log date and attendance row ordering plus the carried V4.2.11.2 checks. |
+| **79** | **Deploy + device-verify V4.2.12 Quick Log trial** | **READY — build complete** | Frontend-only overlay on V4.2.11.4. **No Worker and no migration.** Verify cell → Quick Log, minimal fields, confirm + Save, existing-entry notice, `+N` peek isolation and Open details fallback. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.11.3 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.12 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **No migration and no Worker deployment.** V4.2.12 reuses the existing three Maktab log POST endpoints.
+2. Overlay the V4.2.12 Pages/frontend files on V4.2.11.4 and hard-refresh until the login/page cache key reads **v4.2.12**.
+3. On Maktab Summary, tap a Sabaq cell. Confirm the Quick Log sheet opens for the tapped student/date instead of navigating away, and exposes only **Ayah From / Ayah To**, confirmation and Save.
+4. Repeat for Sabaq Dhor. For Dhor confirm **Juz + Quarter/Half/Juz**, with 1–4 Quarter / 1–2 Half position choices and no position chooser for a whole Juz.
+5. Save one new entry of each type. The sheet must close and the same Summary date must refresh with the new shorthand. Exact duplicates must retain the established abortable duplicate confirmation.
+6. Use a cell that already has a log. Confirm **Already logged** appears, `+N` still opens only the read-only peek, and **Open details** reaches the correct full card for history/editing.
+7. Confirm quick Dhor still updates the Maktab Dhor pool through the existing Worker save path, and quick Sabaq leaves future position/default behaviour aligned with the full-card path.
+8. Run `node tests/verify_v4212_ui.mjs`, the V4.2.11.4→V4.2.11 cumulative UI harnesses, `verify_v428_ui.mjs`, `verify_build_stamp.mjs`, and `verify_syntax.mjs`.
+
+## V4.2.11.4 — SUPERSEDED BY V4.2.12
+
+1. **No migration.** V4.2.11.4 adds no table/column/index.
+2. **Deploy `worker/src/maktabAttendance.js` first.** The individual Attendance payload gains `probable_haidh_dates`, and the register uses the same derived Haidh truth when deciding whether a cell is excused.
+3. Deploy the changed Pages/frontend files and hard-refresh until the page/cache key reads **v4.2.11.4**.
+4. On Maktab Summary, confirm a student with an explicit confirmed Haidh mark shows the small pink **Haidh** text, while her attendance icon stays neutral (no yellow treatment).
+5. Check a student/date that is Haidh only by propagation. The Summary must show neither pink `Haidh` nor `Absent`; her Attendance register cell must remain excused, and her Haidh calendar must show that date as **Probable Haidh** with the dashed/pale `?` treatment.
+6. Tap a probable calendar date. It must begin a normal selection so it can be confirmed; it must not behave like an existing mark being deleted.
+7. Confirm explicit stored Haidh and future predicted-Haidh calendar styling still work, and that a real log continues to take precedence over any Haidh state in register ordering/status.
+8. Run `node tests/verify_v42114_ui.mjs`, the V4.2.11.3/V4.2.11.2 cumulative harnesses, `verify_v42111_register_data.mjs`, `verify_build_stamp.mjs`, and `verify_syntax.mjs`.
+
+## V4.2.11.3 — SUPERSEDED BY V4.2.11.4
 
 1. **No migration and no new Worker change.** Apply this frontend overlay after V4.2.11.2. If V4.2.11.2 itself is not deployed, follow its Worker-first deployment instructions below before overlaying 4.2.11.3.
 2. Upload the V4.2.11.3 Pages files and hard-refresh until the page/cache key reads **v4.2.11.3**.

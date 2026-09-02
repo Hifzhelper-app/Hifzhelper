@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.10 | css/journal-table.css */
+/* Hifzhelper build 4.2.12 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -336,14 +336,12 @@
 .maktab-summary-toprow .screen-close-btn { justify-self: end; }
 .maktab-summary-date-input { font: inherit; font-weight: 600; }
 
-/* Haidh: one small icon, BRIGHT YELLOW when marked (confirmed in chat
-   -- the old muted-pink tint barely read as a state change across a
-   full roster). Same treatment on both surfaces: the summary's leading
-   column and the day view's icon beside the student name. */
+/* V4.2.11.4: the leading attendance icon is a neutral navigation
+   control. Confirmed Haidh is already stated by the small pink Haidh text
+   in the Sabaq cell; colouring this icon yellow duplicated the same state. */
 .maktab-haidh-col { padding: 0 2px; text-align: center; }
 .maktab-haidh-check { font: inherit; padding: 3px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); background: #fff; line-height: 0; cursor: pointer; }
 .maktab-haidh-check svg { width: 16px; height: 16px; }
-.maktab-haidh-check.marked { background: #FFD400; border-color: #E6BE00; }
 
 /* V3.64.0: the maktab day view IS the PJ day view (js/logContext.js), so
    there is no maktab card layout to style any more — every V3.60.0–
@@ -508,9 +506,9 @@
 /* ============================================================
    V4.2.2 (user) — MOBILE: one compact CARD per student on the maktab
    summary. Done entirely in CSS over the existing table rows, so all
-   five tap targets survive untouched: the name opens her summary page,
-   each log cell opens its own card, the row opens the day view, the +N
-   pill peeks, and the attendance icon opens her attendance.
+   tap targets survive: the name opens her summary page, each log cell opens
+   V4.2.12 Quick Log, the row opens the day view, the +N pill peeks, and the
+   attendance icon opens her attendance.
    The captions come from data-label (set in js/maktabSummary.js). */
 @media (max-width: 767px) {
   .maktab-summary-headers { display: none; }   /* no columns left to label */
@@ -578,4 +576,112 @@
   .maktab-summary-table .journal-cell > * { min-width: 0; }
   .maktab-summary-skeleton-attendance { cursor: default; }
   .maktab-summary-table tr:last-child td { border-bottom: none; }
+}
+
+/* ============================================================
+   V4.2.12 — Maktab Summary Quick Log trial.
+   The same sheet is a bottom sheet on phones and the app's established
+   centred modal on larger screens. It intentionally contains only the
+   range controls + confirmation + one Save action; full history/editing
+   stays on the existing detail cards behind Open details.
+   ============================================================ */
+.maktab-quick-log-card { max-width: 520px; }
+.maktab-quick-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding-right: 28px;
+  margin-bottom: 10px;
+}
+.maktab-quick-heading h2 { margin: 0; }
+.maktab-quick-student {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--color-accent-soft, #D0DBE7);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 600;
+}
+.maktab-quick-date { font-size: 12px; color: var(--color-ink-soft); white-space: nowrap; }
+.maktab-quick-existing {
+  margin: 4px 0 12px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: var(--color-canvas);
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.maktab-quick-existing span { font-weight: 700; margin-right: 6px; }
+.maktab-quick-range-grid { display: grid; gap: 10px; }
+.maktab-quick-range-row {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.modal-card .maktab-quick-range-row > label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+.maktab-quick-verse-field { min-width: 0; }
+.maktab-quick-verse-field input { border: 0; border-radius: 0; padding: 0; }
+.maktab-quick-dhor-grid { display: grid; gap: 10px; }
+.maktab-quick-dhor-grid > label { margin: 0; }
+.maktab-quick-dhor-grid select { margin-top: 4px; }
+.maktab-quick-unit-wrap,
+.maktab-quick-position-wrap {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+.maktab-quick-control-label { font-size: 12px; font-weight: 600; color: var(--color-ink-soft); }
+.maktab-quick-unit-pill,
+.maktab-quick-position-pill {
+  position: static;
+  right: auto;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+.maktab-quick-unit-pill button,
+.maktab-quick-position-pill button { flex: 1 1 0; min-width: 0; }
+.maktab-quick-confirm {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0 !important;
+  font-size: 13px !important;
+  font-weight: 600;
+  color: var(--color-ink) !important;
+}
+.modal-card .maktab-quick-confirm input { width: 18px; height: 18px; margin: 0; accent-color: var(--palette-evergreen, #344C3D); }
+.maktab-quick-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-top: 12px; }
+.maktab-quick-actions .maktab-quick-save { width: 100%; }
+.maktab-quick-details {
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 4px;
+  cursor: pointer;
+}
+.maktab-quick-log-card .form-error { min-height: 18px; margin-top: 4px; }
+.maktab-quick-surah-modal { z-index: 320; }
+
+@media (max-width: 719px) {
+  .maktab-quick-log-card { padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom)); }
+  .maktab-quick-heading { grid-template-columns: auto minmax(0, 1fr); }
+  .maktab-quick-date { grid-column: 1 / -1; }
+  .maktab-quick-range-row { grid-template-columns: 74px minmax(0, 1fr); }
+  .maktab-quick-unit-wrap,
+  .maktab-quick-position-wrap { grid-template-columns: 74px minmax(0, 1fr); }
 }

@@ -14,6 +14,29 @@ Base URLs:
 
 ---
 
+## V4.2.12 — Maktab Summary Quick Log trial
+
+1. Open Maktab Summary on a teaching date. Tap a student's **Sabaq** cell. A Quick Log sheet must open on the same student/date with only **Ayah From**, **Ayah To**, confirmation, Save and Open details. It must not navigate away immediately.
+2. Choose From/To, tick confirmation and Save. The sheet must close and the same Summary date must refresh with the new Sabaq shorthand in that student's cell. Repeat with a cell that already has an entry: **Already logged** must be visible before saving another row. An exact duplicate must still offer the established OK/Cancel duplicate confirmation.
+3. Tap **Sabaq Dhor** and repeat. Confirm its payload path remains independent of Sabaq and only the From/To range is requested.
+4. Tap **Dhor**. Confirm the sheet provides **Juz**, **Quarter / Half / Juz**, and a 1–4 Quarter or 1–2 Half position switch as appropriate; the position row disappears for a whole Juz. Save one of each portion type and verify the Summary shorthand after refresh.
+5. On a cell with `+N`, tap the badge itself. The existing-entry peek must open; Quick Log must not. Close it, tap the rest of the cell, then use **Open details** and confirm the correct Sabaq/Sabaq Dhor/Dhor full card opens for the same student/date.
+6. Verify a quick Dhor save still grows the student's existing Maktab Dhor pool through the current Worker logic. Verify a quick Sabaq save does not disturb the next Sabaq defaults/position compared with a full-card save.
+7. Run `node tests/verify_v4212_ui.mjs`, `node tests/verify_v428_ui.mjs`, `node tests/verify_v42114_ui.mjs`, `node tests/verify_v42113_ui.mjs`, `node tests/verify_v42112_ui.mjs`, `node tests/verify_v42111_ui.mjs`, `node tests/verify_v4211_ui.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+**Automated coverage in the build container:** V4.2.12 **15/15**; cumulative V4.2.8 **17/17**; V4.2.11.4 **10/10**; V4.2.11.3 **11/11**; V4.2.11.2 **13/13**; V4.2.11.1 **12/12**; V4.2.11 **16/16**; build/version **6/6**; served-JS syntax **36/36**. `run-all.mjs` reports **386 passed, 0 failed among reporting harnesses**. The same 27 older harnesses cannot report in this checkout because `jsdom` is not installed; this is an environment limitation, not a reported product failure.
+
+## V4.2.11.4 — confirmed vs probable Haidh
+
+1. On Maktab Summary, use a student with an explicit confirmed Haidh row on the selected date. The small pink **Haidh** text must appear in Sabaq when there is no log; the attendance icon beside her name must remain neutral with no yellow background.
+2. Use a student/date whose attendance is Haidh only by propagation from an earlier confirmed run. On Maktab Summary that date must show **neither** pink `Haidh` nor `Absent`.
+3. Open that student's Attendance page. The propagated date must appear in the Haidh calendar as **Probable Haidh**: pale Haidh fill, dashed Haidh border and `?` cue. Confirm a stored Haidh date still uses the full confirmed treatment and a future prediction still uses the planned treatment.
+4. Tap the probable date. It must start the normal selection/confirmation flow; it must not try to clear/delete the date immediately.
+5. Open the Attendance register for the same period. The probable date must remain excused (Haidh-style thin check), not the blank=absent state. A real log on that date must still win.
+6. Run `node tests/verify_v42114_ui.mjs`, `node tests/verify_v42113_ui.mjs`, `node tests/verify_v42112_ui.mjs`, `node tests/verify_v42111_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+**Automated coverage in the build container:** V4.2.11.4 **10/10**; V4.2.11.3 **11/11**; V4.2.11.2 **13/13**; V4.2.11.1 **12/12**; register-data/percentage parity **7/7**; build/version **6/6**; served-JS syntax **36/36**; Worker syntax check **clean**. `run-all.mjs` reports **371 passed, 0 failed among reporting harnesses**. The same 27 older harnesses still cannot report because this checkout lacks `jsdom` and/or carries the pre-existing legacy fixture limitations.
+
 ## V4.2.11.3 — shared log date + register ordering
 
 1. Open the unified log-detail screen. There must be one shared date above the cards. In teacher/admin Maktab context it sits to the **left of Student Search**; the Sabaq, Sabaq Dhor and Dhor cards must not show their own normal date rows.
