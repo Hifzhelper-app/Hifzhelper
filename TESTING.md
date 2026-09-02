@@ -2313,6 +2313,21 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.9 — Student Management mobile device checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9**. No worker deploy or migration is required.
+
+1. **Name everywhere:** the menu/home tile and page heading say **Student Management**. Role selectors still correctly offer Student / Teacher / Admin — only the page name changed.
+2. **Heading:** on a phone compare Student Management with Maktab Attendance. The icon/title/X should use the same tidy white header-card treatment and alignment. On larger layouts the established Student Management/Admin header structure should remain as before.
+3. **Search + underlay:** on a phone the placeholder reads **Search**. There is no coloured table header row and no second white table/body panel behind the student cards; the cards sit directly on the page surface.
+4. **Card row 1:** each student begins with her editable **name as the card heading**, with no `NAME` caption above it.
+5. **Card row 2:** **Unique ID** and **WhatsApp** sit side-by-side and remain readable/editable as applicable.
+6. **Card row 3:** **Role**, **Group** and **Status** share one compact row. Change each control once and confirm the existing autosave behaviour still works.
+7. **Card row 4:** **Reset PIN** is a green text button followed by **Delete, Copy, Share** icons. Exercise copy; if native Share is available on the device, exercise Share. Confirm Delete still asks before destructive action and Reset PIN still asks before resetting.
+8. **Larger layouts:** at >=768px confirm the existing aligned editable table/header row is unchanged apart from the global **Student Management** name and concise Search placeholder.
+
+---
+
 ## V4.2.8.2 — mobile Maktab Summary return + tap-target checks
 
 After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.8.2**. No worker deploy or migration is required.

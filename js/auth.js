@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/auth.js */
+/* Hifzhelper build 4.2.9 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -37,7 +37,7 @@ const NAV_ITEMS = [
 // Admin-only destination — appended conditionally, not shown to students/
 // teachers even though the backend already 403s them regardless (this is
 // just about not showing a button that would only ever fail for them).
-const ADMIN_NAV_ITEM = { id: 'admin', label: 'Admin', icon: 'admin' };
+const ADMIN_NAV_ITEM = { id: 'admin', label: 'Student Management', icon: 'admin' };
 // V3.39: shown only once the student has opted in via the Setup Haidh
 // section's "Haaidha" checkbox (track_haidh) — matches the field's own
 // female-only gating (a male student's track_haidh can never become true

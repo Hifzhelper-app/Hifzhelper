@@ -404,10 +404,10 @@ check('v422: the student attendance page titles ABOVE the card; the card carries
   /<div class="att-page-title screen-cap">Attendance<\/div>/.test(read('index.html'))
   && /textContent = inMaktab \? logCtxStudentName\(\) : 'Mine';/.test(read('js/haidhDetailScreen.js'))
   && /#screen-attendancePage \.juz-tracker-header-row h2 \{\n  font-size: 17px;\n  white-space: nowrap;/.test(read('css/detail-pages.css')));
-check('v422: admin on mobile is a four-row CARD with a caption above every input (compression by layout, not by dropping labels)',
-  /grid-template-areas: 'id id id' 'name name wa' 'role group status';/.test(read('css/admin.css'))
-  && /\.admin-row-fields td::before \{\n    content: attr\(data-label\);/.test(read('css/admin.css'))
-  && /\.admin-row-fields \.admin-cell-id::before \{ display: none; \}/.test(read('css/admin.css')));
+check('v429: admin mobile is a four-row CARD: name heading / id+WhatsApp / role+group+status / actions',
+  /'name name name name name name'\n      'id id id wa wa wa'\n      'role role group group status status'/.test(read('css/admin.css'))
+  && /td\[data-label="Name"\]::before \{ display: none; \}/.test(read('css/admin.css'))
+  && /\.admin-row-fields td::before \{[\s\S]{0,80}content: attr\(data-label\);/.test(read('css/admin.css')));
 
 // V4.2.3: a live context for the shared dataset, so the picker's numbers
 // are asserted rather than assumed

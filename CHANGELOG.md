@@ -26,6 +26,18 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.9 — Student Management mobile card refinement (2026-09-02)
+
+**Files touched:** `index.html`, `css/admin.css`, `js/auth.js`, `js/sw.js`, `tests/verify_v429_ui.mjs` (new), `tests/verify_v3850_batch.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Global page rename.** The management destination is now **Student Management** everywhere the page is named: its page heading and the shared admin-only nav/home-tile label. The account role named **Admin** is unchanged.
+2. **Attendance-style heading on mobile only.** The established desktop/tablet Admin header structure is retained. Below 768px its icon/title/close row receives the same white-card, flex-aligned treatment used by Maktab Attendance.
+3. **Mobile search + table chrome.** The search placeholder is simply **Search**. Below 768px the desktop header table stays hidden and the old `.admin-wrap` white bordered/scrolled underlay is removed visually, leaving independent student cards directly on the page surface. Desktop/tablet keep the existing table.
+4. **Four-row mobile student cards.** Row 1 is the editable student **name as the card heading**, with no `Name` caption. Row 2 is **Unique ID | WhatsApp**. Row 3 is **Role | Group | Status**. Row 4 is the actions strip: **Reset PIN** in the app success green, then **Delete / Copy / Share** icons. Existing inline autosave, reset, delete, copy and native-share behaviours are unchanged.
+5. **Version discipline retained.** Only served files genuinely edited in this release receive a `4.2.9` top build header (`css/admin.css`, `js/auth.js`, `js/sw.js`). The page/cache `?v=` key and service-worker cache/precache key move together to 4.2.9 as required. Untouched served source headers stay at their own last-edit versions.
+
+---
+
 ## V4.2.8.2 — Maktab Summary return-paint + mobile attendance placement (2026-09-02)
 
 **Files touched:** `css/journal-table.css`, `js/maktabSummary.js`, `index.html`, `js/sw.js`, `tests/verify_v428_ui.mjs`, `tests/verify_build_stamp.mjs`, `CONVENTIONS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**

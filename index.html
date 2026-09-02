@@ -22,19 +22,19 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=4.2.8.2"></script>
+<script src="js/pwaManifest.js?v=4.2.9"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/base.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/nav.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/journal-table.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/components.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/detail-pages.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/settings.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/admin.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/haidh.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/juzTracker.css?v=4.2.8.2">
-<link rel="stylesheet" href="css/sih.css?v=4.2.8.2">
+<link rel="stylesheet" href="css/tokens.css?v=4.2.9">
+<link rel="stylesheet" href="css/base.css?v=4.2.9">
+<link rel="stylesheet" href="css/nav.css?v=4.2.9">
+<link rel="stylesheet" href="css/journal-table.css?v=4.2.9">
+<link rel="stylesheet" href="css/components.css?v=4.2.9">
+<link rel="stylesheet" href="css/detail-pages.css?v=4.2.9">
+<link rel="stylesheet" href="css/settings.css?v=4.2.9">
+<link rel="stylesheet" href="css/admin.css?v=4.2.9">
+<link rel="stylesheet" href="css/haidh.css?v=4.2.9">
+<link rel="stylesheet" href="css/juzTracker.css?v=4.2.9">
+<link rel="stylesheet" href="css/sih.css?v=4.2.9">
 </head>
 <body>
 
@@ -1073,9 +1073,11 @@
            class .card-header-row-left was deleted — base.css's :has()
            rule always outranked it, which is why the close button had
            been sitting on a row of its own. -->
-      <div class="card-header-row">
+      <!-- V4.2.9: desktop keeps the established Admin header; on mobile
+           css/admin.css gives this row the same treatment as Attendance. -->
+      <div class="card-header-row admin-header-row">
         <span class="card-header-icon" id="adminHeaderIcon"></span>
-        <h2>Admin</h2>
+        <h2>Student Management</h2>
         <button type="button" class="screen-close-btn" id="adminCloseBtn" aria-label="Close"></button>
       </div>
 
@@ -1095,7 +1097,7 @@
              one place that still commits explicitly, because a create
              needs its fields together and runs the duplicate check. -->
         <div class="admin-toolbar">
-          <input type="text" id="admin_search" placeholder="Search by ID or name…">
+          <input type="text" id="admin_search" placeholder="Search">
           <button type="button" class="admin-add-row" id="adminRegisterOpenBtn">+ Register a user</button>
         </div>
         <div class="admin-status-line" id="adminRowStatus"></div>
@@ -1359,39 +1361,39 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=4.2.8.2"></script>
-<script src="shared/haidhRules.js?v=4.2.8.2"></script>
-<script src="js/icons.js?v=4.2.8.2"></script>
-<script src="js/customDate.js?v=4.2.8.2"></script>
-<script src="js/api.js?v=4.2.8.2"></script>
-<script src="js/logContext.js?v=4.2.8.2"></script>
-<script src="js/uiSwitch.js?v=4.2.8.2"></script>
-<script src="js/position.js?v=4.2.8.2"></script>
-<script src="js/auth.js?v=4.2.8.2"></script>
-<script src="js/home.js?v=4.2.8.2"></script>
-<script src="js/tajweed.js?v=4.2.8.2"></script>
-<script src="js/commentPrivacy.js?v=4.2.8.2"></script>
-<script src="js/session-timer.js?v=4.2.8.2"></script>
-<script src="js/journal.js?v=4.2.8.2"></script>
-<script src="js/maktabSummary.js?v=4.2.8.2"></script>
-<script src="js/maktabSettings.js?v=4.2.8.2"></script>
-<script src="js/maktabSetup.js?v=4.2.8.2"></script>
-<script src="js/maktabDay.js?v=4.2.8.2"></script>
-<script src="js/maktabJournal.js?v=4.2.8.2"></script>
-<script src="js/maktabCalendarPage.js?v=4.2.8.2"></script>
-<script src="js/maktabAttendancePage.js?v=4.2.8.2"></script>
-<script src="js/dhorPage.js?v=4.2.8.2"></script>
-<script src="js/sabaqPage.js?v=4.2.8.2"></script>
-<script src="js/sabaqDhorPage.js?v=4.2.8.2"></script>
-<script src="js/reflectionCard.js?v=4.2.8.2"></script>
-<script src="js/logDetailScreen.js?v=4.2.8.2"></script>
-<script src="js/haidhDetailScreen.js?v=4.2.8.2"></script>
-<script src="js/kaabaTracker.js?v=4.2.8.2"></script>
-<script src="js/juzTrackerScreen.js?v=4.2.8.2"></script>
-<script src="js/sihScreen.js?v=4.2.8.2"></script>
-<script src="js/settingsScreen.js?v=4.2.8.2"></script>
-<script src="js/adminPage.js?v=4.2.8.2"></script>
-<script src="js/versionStamp.js?v=4.2.8.2"></script>
-<script src="js/app.js?v=4.2.8.2"></script>
+<script src="shared/data.js?v=4.2.9"></script>
+<script src="shared/haidhRules.js?v=4.2.9"></script>
+<script src="js/icons.js?v=4.2.9"></script>
+<script src="js/customDate.js?v=4.2.9"></script>
+<script src="js/api.js?v=4.2.9"></script>
+<script src="js/logContext.js?v=4.2.9"></script>
+<script src="js/uiSwitch.js?v=4.2.9"></script>
+<script src="js/position.js?v=4.2.9"></script>
+<script src="js/auth.js?v=4.2.9"></script>
+<script src="js/home.js?v=4.2.9"></script>
+<script src="js/tajweed.js?v=4.2.9"></script>
+<script src="js/commentPrivacy.js?v=4.2.9"></script>
+<script src="js/session-timer.js?v=4.2.9"></script>
+<script src="js/journal.js?v=4.2.9"></script>
+<script src="js/maktabSummary.js?v=4.2.9"></script>
+<script src="js/maktabSettings.js?v=4.2.9"></script>
+<script src="js/maktabSetup.js?v=4.2.9"></script>
+<script src="js/maktabDay.js?v=4.2.9"></script>
+<script src="js/maktabJournal.js?v=4.2.9"></script>
+<script src="js/maktabCalendarPage.js?v=4.2.9"></script>
+<script src="js/maktabAttendancePage.js?v=4.2.9"></script>
+<script src="js/dhorPage.js?v=4.2.9"></script>
+<script src="js/sabaqPage.js?v=4.2.9"></script>
+<script src="js/sabaqDhorPage.js?v=4.2.9"></script>
+<script src="js/reflectionCard.js?v=4.2.9"></script>
+<script src="js/logDetailScreen.js?v=4.2.9"></script>
+<script src="js/haidhDetailScreen.js?v=4.2.9"></script>
+<script src="js/kaabaTracker.js?v=4.2.9"></script>
+<script src="js/juzTrackerScreen.js?v=4.2.9"></script>
+<script src="js/sihScreen.js?v=4.2.9"></script>
+<script src="js/settingsScreen.js?v=4.2.9"></script>
+<script src="js/adminPage.js?v=4.2.9"></script>
+<script src="js/versionStamp.js?v=4.2.9"></script>
+<script src="js/app.js?v=4.2.9"></script>
 </body>
 </html>

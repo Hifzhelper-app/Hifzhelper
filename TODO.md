@@ -1001,6 +1001,8 @@ No code change needed for any of the three — all are live as built.
    that they match CACHE_NAME in sw.js. That turns a silent drift into
    a red test before a release ever ships.
 
+73. ~~**STUDENT MANAGEMENT MOBILE CARD REFINEMENT**~~ **BUILT V4.2.9 (2026-09-02):** mobile-only layout pass requested from the Admin screenshot. The page itself is globally renamed **Student Management** (nav/home tile + heading; the Admin role is still named Admin). On mobile the heading now copies the same clean header-card treatment as Maktab Attendance; desktop/tablet keep their existing header structure. Mobile removes the table header and the old white `.admin-wrap` underlay, then renders each user as a short four-row visual card: (1) name as the heading with no caption, (2) Unique ID + WhatsApp, (3) Role + Group + Status, (4) green Reset PIN then delete/copy/share icons. Search placeholder is simply **Search**. Desktop/tablet table layout remains unchanged.
+
 72. ~~**SABAQ DHOR PICKER TAKES THE DHOR CARD'S FORMAT**~~ **BUILT V4.2.8 (2026-09-02):** stated in the 2026-09-02 handoff brief; this
    entry is its first record in the repo (the workspace TODO carrying it
    was lost with that session). The user's words: remove the Use button;
