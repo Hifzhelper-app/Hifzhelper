@@ -28,11 +28,24 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
-| **77** | **Deploy + device-verify V4.2.11.2** | **READY — build complete** | Deploy the V4.2.11.2 Worker file first, then Pages/frontend, then hard-refresh. **No migration.** Verify the new Attendance register marks/percentage/header/menu plus the carried V4.2.11.1 Haidh-calendar fixes. Close this row once dev/production verification is complete. |
+| **77** | **Deploy + device-verify V4.2.11.3** | **READY — build complete** | V4.2.11.3 is a frontend overlay on V4.2.11.2. If V4.2.11.2 is not deployed yet, deploy its Worker first; then overlay V4.2.11.3 Pages files and hard-refresh. **No new migration or Worker change in 4.2.11.3.** Verify the shared log date and attendance row ordering plus the carried V4.2.11.2 checks. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.11.2 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.11.3 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **No migration and no new Worker change.** Apply this frontend overlay after V4.2.11.2. If V4.2.11.2 itself is not deployed, follow its Worker-first deployment instructions below before overlaying 4.2.11.3.
+2. Upload the V4.2.11.3 Pages files and hard-refresh until the page/cache key reads **v4.2.11.3**.
+3. Open Sabaq / Sabaq Dhor / Dhor detail. Confirm there is **one date pill above the rail**, immediately left of Student Search in teaching context, and no repeated date pill inside the three normal cards.
+4. Change that date, then move among all three cards. Save-date context must remain the same. Switch students via Search; the selected date and active card must remain unchanged.
+5. Open History edit on each of Sabaq, Sabaq Dhor and Dhor. The historical entry's own date must still appear and remain editable in the edit header. Cancel/save and confirm normal mode returns to the shared date. Dhor Plan must remain visible.
+6. Open Attendance on a current teaching day with known data. Students with **a log** today must be listed first, then Haidh students, then the remainder. Within every band, order must be alphabetical by first name. A student who has both a log and Haidh state must be in the log/Present band.
+7. Run `node tests/verify_v42113_ui.mjs`, then the V4.2.11.2 cumulative checks and build/syntax harnesses.
+
+## V4.2.11.2 — SUPERSEDED BY V4.2.11.3
+
+The V4.2.11.2 Worker/register/header/menu changes remain the required base. Use the V4.2.11.3 checklist above as the active deployment instruction. Historical V4.2.11.2 steps follow for reference:
+
 
 1. **No migration.** V4.2.11.2 changes the register read response/UI only.
 2. **Deploy `worker/src/maktabAttendance.js` first**, then the changed Pages files, then hard-refresh until the login version reads **v4.2.11.2**.

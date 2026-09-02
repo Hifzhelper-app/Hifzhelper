@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.10 | js/logDetailScreen.js */
+/* Hifzhelper build 4.2.11.3 | js/logDetailScreen.js */
 // ============================================================
 // Hifzhelper — unified day-log view orchestrator (V3.6.1)
 // Replaces the old 3 separate Sabaq/Sabaq Dhor/Dhor screens with one
@@ -34,6 +34,47 @@ document.getElementById('dhorSaveIcon').innerHTML = iconHtml('save');
 document.getElementById('sabaqTimerBtnIcon').innerHTML = iconHtml('timer');
 document.getElementById('sabaqDhorTimerBtnIcon').innerHTML = iconHtml('timer');
 document.getElementById('dhorTimerBtnIcon').innerHTML = iconHtml('timer');
+
+
+// V4.2.11.3: ONE date for Sabaq / Sabaq Dhor / Dhor. The original three
+// inputs stay in the DOM as hidden source controls because edit-history mode
+// moves the selected entry's real date into its edit header. In normal mode
+// this shared date is the only visible date and mirrors to all three sources.
+const LOG_DETAIL_DATE_INPUT_IDS = ['sabaq_date', 'sabaqDhor_date', 'dhor_date'];
+
+function logDetailDefaultDate(){
+  if(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab() && typeof logCtxDate === 'function' && logCtxDate()) return logCtxDate();
+  if(typeof appTodayISO === 'function') return appTodayISO();
+  if(typeof todayISO === 'function') return todayISO();
+  return new Date().toISOString().slice(0, 10);
+}
+
+function applyLogDetailSharedDate(date, updateContext){
+  const value = date || logDetailDefaultDate();
+  const shared = document.getElementById('logDetailSharedDate');
+  if(shared && shared.value !== value) shared.value = value;
+  LOG_DETAIL_DATE_INPUT_IDS.forEach(id => {
+    const input = document.getElementById(id);
+    if(input && input.value !== value) input.value = value;
+  });
+  if(updateContext && typeof setLogCtxDate === 'function') setLogCtxDate(value);
+  return value;
+}
+
+function syncLogDetailSharedDate(){
+  return applyLogDetailSharedDate(logDetailDefaultDate(), false);
+}
+function logDetailSelectedDate(){
+  const shared = document.getElementById('logDetailSharedDate');
+  return (shared && shared.value) || logDetailDefaultDate();
+}
+
+(function wireLogDetailSharedDate(){
+  const input = document.getElementById('logDetailSharedDate');
+  if(!input) return;
+  if(typeof wireCustomDateDisplay === 'function') wireCustomDateDisplay('logDetailSharedDate');
+  input.addEventListener('change', () => applyLogDetailSharedDate(input.value, true));
+})();
 
 // V3.41: xclose now exits to Home like every other screen (confirmed
 // in chat -- was Journal-only before, per the reasoning below, which no
@@ -297,6 +338,10 @@ function exitEditScreenMode(cardId){
 }
 
 async function renderLogDetailScreen(initialCard){
+  // V4.2.11.3: establish the shared day before the cards load; each card's
+  // reset still runs independently, then the same day is mirrored back to
+  // all three source inputs once those resets are complete.
+  const sharedDate = syncLogDetailSharedDate();
   // V4.2.10: paint the teaching-only student switcher immediately from
   // the summary's memory cache; card data may continue loading below.
   syncLogDetailStudentSearch();
@@ -308,6 +353,7 @@ async function renderLogDetailScreen(initialCard){
     renderSabaqDhorScreen(),
     renderDhorScreen()
   ]);
+  applyLogDetailSharedDate(sharedDate, false);
 
   const rail = document.getElementById('logDetailRail');
   const startIndex = Math.max(0, LOG_DETAIL_CARD_ORDER.indexOf(initialCard));

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/logContext.js */
+/* Hifzhelper build 4.2.11.3 | js/logContext.js */
 // ============================================================
 // Hifzhelper -- log context (V3.64.0, maktab delivery (e) rework).
 //
@@ -40,6 +40,11 @@ function logCtxIsMaktab(){ return LOG_CTX.mode === 'maktab'; }
 function logCtxStudentId(){ return LOG_CTX.studentId; }
 function logCtxStudentName(){ return LOG_CTX.studentName; }
 function logCtxDate(){ return LOG_CTX.date; }
+// V4.2.11.3: the unified detail screen has one shared date control. Keep
+// the Maktab context date in step so switching students preserves that date.
+function setLogCtxDate(date){
+  if(LOG_CTX.mode === 'maktab') LOG_CTX.date = date || null;
+}
 function logCtxTrackHaidh(){ return !!LOG_CTX.trackHaidh; }
 // V3.71.0. ONE flag, asked once, rather than a list of individually
 // suppressed controls — a list leaves the next control anyone adds exposed

@@ -127,6 +127,16 @@ Newest first.
 
 ---
 
+## V4.2.11.3 — Shared log-detail date + attendance row ordering
+
+**Shared log date.** The unified Sabaq / Sabaq Dhor / Dhor detail screen has one visible date control above the rail, positioned immediately to the left of the teaching-only student search. That date is the new-entry/save date for all three cards. The three original card date inputs are retained only as hidden source controls because historical-entry edit mode still needs to relocate the selected row's own editable date into the edit popup. Normal card view must never show three repeated dates. Changing the shared date in Maktab mode updates the log context so switching students preserves both the selected date and active detail card.
+
+**Attendance roster order.** For the register's current Maktab date, student rows are grouped by evidence: **a log first**, **Haidh second**, then students with neither state. A log takes precedence over Haidh when both exist for the date. Within each group order alphabetically by the student's **first name**. This is presentation ordering only; no attendance state or percentage calculation changes.
+
+**Deployment boundary.** Frontend only; no Worker or D1 migration.
+
+---
+
 ## V4.2.11.2 — Attendance register scanability + shared percentage
 
 **Register header.** The overview has no separate term-navigation strip. The current/nearest term is the register period and, when today lies inside it, the current Maktab week is brought into view automatically. Each weekly merged heading is date range only (`31 Aug – 3 Sep`), followed by narrow weekday headings. A strong horizontal rule under the weekday row closes the header block.

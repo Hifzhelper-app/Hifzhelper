@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.2 | css/detail-pages.css */
+/* Hifzhelper build 4.2.11.3 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2170,14 +2170,35 @@
   #sabaqDhor_sections .sdq-confirm-box { width: 36px; margin-left: 0; }
 }
 
+/* V4.2.11.3: one visible date + student search form the shared context
+   row above all three log cards. Date gets a compact fixed lane; search
+   takes the remaining width. PJ/read-only contexts simply hide search and
+   leave the shared date at the left of the same centred row. */
+.log-detail-context-row {
+  width: min(100%, 720px); margin: 0 auto var(--space-sm);
+  display: flex; align-items: center; gap: var(--space-sm); min-width: 0;
+  position: relative; z-index: 5;
+}
+.log-detail-shared-date { flex: 0 0 150px; height: 38px; min-width: 0; }
+.log-detail-shared-date .custom-date-wrap { height: 38px; }
+.log-detail-card-date-source.hidden { display: none !important; }
+.dhor-shared-date-plan-row { display: flex; justify-content: flex-end; margin-bottom: var(--space-sm); }
+.dhor-shared-date-plan-row #dhorViewPlanBtn { min-height: var(--dhor-row2-h); }
+@media (max-width: 520px) {
+  .log-detail-context-row { gap: var(--space-xs); }
+  .log-detail-shared-date { flex-basis: 132px; }
+}
+
 /* V4.2.10: one search across all three log-detail cards. It is a
    Maktab teaching control only; JS keeps it hidden for PJ and read-only
    student contexts. Results float over the rail rather than changing
    card height, and every width track is shrink-safe on phones. */
 .log-detail-student-search {
   position: relative;
-  width: min(100%, 520px);
-  margin: 0 auto var(--space-sm);
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  margin: 0;
   z-index: 5;
 }
 .log-detail-student-search > input {
