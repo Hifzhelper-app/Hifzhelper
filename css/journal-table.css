@@ -501,6 +501,13 @@
   .maktab-summary-headers { display: none; }   /* no columns left to label */
   .maktab-summary-table, .maktab-summary-table tbody,
   .maktab-summary-table tr, .maktab-summary-table td { display: block; width: 100%; }
+  /* V4.2.8 mobile correction: the desktop nth-child widths above carry
+     more specificity than `.maktab-summary-table td`, so Student stayed
+     at 21% and each log cell at 24% on phones even after display:block.
+     Match that specificity here and let every stacked card cell consume
+     the full card width. This fixes the structure; the uniform pill rule
+     itself remains unchanged for desktop/tablet. */
+  .maktab-summary-table td:nth-child(n) { width: 100%; }
   .maktab-summary-table tr {
     background: var(--color-surface);
     border-radius: var(--radius-md);

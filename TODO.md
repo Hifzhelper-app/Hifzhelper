@@ -1035,6 +1035,13 @@ No code change needed for any of the three — all are live as built.
    .journal-cell with the caption in column 1, and `min-width: 0` +
    `white-space: normal` on the value so it uses the whole column and
    only wraps when genuinely too long.
+   DEVICE-REVIEW CORRECTION (same V4.2.8): the first build exposed the
+   deeper mobile width leak: desktop `td:nth-child(...)` rules (Student
+   21%, logs 24%) were more specific than the mobile `td { width:100% }`
+   reset, so the stacked cells still occupied only those fractions of the
+   card. Mobile now resets the nth-child widths at matching specificity.
+   The user's already-correct equal-width name-pill styling on larger
+   screens is left untouched; only the mobile card structure is widened.
 
 67. ~~**V4.2.4 PICKER WIDENS THE CARD AND BREAKS THE RAIL**~~ **IMPLEMENTED; V4.2.8 preserves the shrink guards (user confirmed 2026-09-02):** the Sabaq
    Dhor card is far wider than its neighbours and Dhor has wrapped below

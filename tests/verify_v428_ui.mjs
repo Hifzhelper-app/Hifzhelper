@@ -24,6 +24,8 @@ check('68: mobile summary values use a 96px + remaining-space GRID, not the old 
   && !/\.maktab-summary-table \.journal-cell \{[\s\S]{0,180}display: flex;/.test(journalCss));
 check('68: value track is shrink-safe and normal wrapping is restored',
   /\.maktab-summary-table \.journal-cell \{[\s\S]*min-width: 0;[\s\S]*white-space: normal;/.test(journalCss));
+check('68 mobile correction: stacked cells override the higher-specificity desktop 7/21/24% column widths',
+  /@media \(max-width: 767px\)[\s\S]*\.maktab-summary-table td:nth-child\(n\) \{ width: 100%; \}/.test(journalCss));
 check('68: +N stays with the value as one mobile grid item, scoped to Summary only',
   /td\.innerHTML = `<span class="maktab-summary-cell-value">\${maktabCellHtml\(type, byStudent\[type\]\[stu\.id\]\)}<\/span>`;/.test(summaryJs)
   && /td\.innerHTML = maktabCellHtml\(type, days\[date\]\[type\]\);/.test(maktabJournalJs));
