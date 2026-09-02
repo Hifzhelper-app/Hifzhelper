@@ -1001,6 +1001,26 @@ No code change needed for any of the three — all are live as built.
    that they match CACHE_NAME in sw.js. That turns a silent drift into
    a red test before a release ever ships.
 
+72. **SABAQ DHOR PICKER TAKES THE DHOR CARD'S FORMAT (user,
+   2026-09-02; queued):** stated in the 2026-09-02 handoff brief; this
+   entry is its first record in the repo (the workspace TODO carrying it
+   was lost with that session). The user's words: remove the Use button;
+   the quarter dropdown becomes the 1|2|3|4 position switch; checkbox on
+   the right.
+   READINGS, open to veto: the "1|2|3|4 switch" is the Dhor card's own
+   control — a `switch-track` of `switch-option` buttons wired through
+   js/uiSwitch.js (as `dhor_position_switch`, dhorPage.js:313), replacing
+   the `#sdq_quarter` <select>; the Juz <select> stays; with Use gone,
+   "checkbox on the right" means the picker row ends in the same
+   right-hand checkbox as the section rows above it (the shared
+   `1fr auto 44px` grid), and TICKING it is what applies the picked
+   quarter. In quarter-word mode ("Quarter/Nisf/Thalatha arba"), the
+   switch shows 1|2|3|4 positions all the same — the words were the
+   dropdown's labels; whether they survive anywhere is open.
+   NOTE: build together with item 67 (same element — 67's `min-width: 0`
+   fix may be mooted or reshaped by this rebuild; if 72 lands first,
+   re-test 67's symptom before fixing it separately).
+
 68. **MOBILE SUMMARY CARD: values wrap to one word per line — my
    defect (user's photo, 2026-09-02; DIAGNOSED, queued):** on the
    mobile card every value breaks up — "Juz 28 H1" over THREE lines,

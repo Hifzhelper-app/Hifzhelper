@@ -26,6 +26,20 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.7 — Harness repair + item 72 recorded (2026-09-02)
+
+**Files touched:** `tests/verify_timer.js`, `TODO.md`, `CHANGELOG.md`. **DOCS AND TESTS ONLY — nothing the browser serves changed, so there is NO `?v=`/`CACHE_NAME` bump and no deploy step beyond uploading these three files. Build headers everywhere stay 4.2.6, correctly: the header names the build each served file last changed in.**
+
+**Context.** GitHub `main` was found carrying current code but stale docs and tests (4 docs + 19 test files behind); the V4.2.6 cumulative zip restores them. This entry covers the two items the cumulative could not fix.
+
+**verify_timer.js scenario G3 dropped.** G3 read a stale root-level `auth.js` and asserted it was "deliberately left untouched as Journal". That stale duplicate has since been deleted from the repo — the right call under process rule 3 — so the read threw ENOENT and the throw took the harness's other 29 checks down with it (the suite reported 1172 rather than 1201, with `verify_timer.js` BROKEN). G1 and G2 (the real `js/auth.js` label checks) stay. A comment at the site records why G3 went.
+
+**Item 72 written into TODO.md.** The Sabaq Dhor picker taking the Dhor card's format was stated on 2026-09-02 but survived only in the handoff brief — the workspace TODO carrying it was lost with that session. Now recorded in the queue with the user's words plus the readings open to veto, and cross-linked to item 67 (same element; 67's fix may be mooted if 72 lands first).
+
+**Verification: 1200 passed, 0 failed across 37 harnesses, no BROKEN line.** One fewer than the handoff's 1201 by construction: that count included G3 passing in a workspace where the stale file still existed. 1200/0 is the new baseline.
+
+---
+
 ## V4.2.6 — FIX: screens stacked on one page (2026-09-02)
 
 **Files touched:** `index.html` (one line), `tests/verify_dom_structure.mjs` (NEW — the 37th harness), every asset's build header, `js/sw.js`, docs. **FRONTEND ONLY. Deploy promptly — V4.2.4 and V4.2.5 both carry the fault.**
