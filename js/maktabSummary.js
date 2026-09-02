@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.12 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.12.1 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -52,19 +52,20 @@ function maktabCellHtml(type, entries){
 
 
 // ============================================================
-// V4.2.12 — Summary Quick Log trial.
+// V4.2.12 / V4.2.12.1 — Summary Quick Log trial + compact card pass.
 //
-// Tapping a Sabaq / Sabaq Dhor / Dhor summary CELL no longer has to leave
-// the daily working table. It opens one deliberately small sheet containing
-// only the fields the teacher needs for a fast confirmed entry. The full
-// detail card is still one explicit action away for history/comments/etc.
+// Desktop/tablet keeps the direct per-cell Quick Log entry points. V4.2.12.1
+// compacts all three sheets into the same two-line identity/date header and
+// makes Dhor's Portion -> Juz/position/confirm flow read as one short form.
 //
-// Writes reuse the existing maktab log endpoints — no new Worker route and
-// no new storage model. Dhor therefore keeps the existing atomic pool merge
-// in worker/src/maktabLog.js. Sabaq's position metadata is best-effort synced
-// after the log exactly like the full card's post-save step; the actual
-// frontier remains computed from real log history, so a failed metadata sync
-// can never erase the saved entry.
+// On phones, the whole log area becomes one Quick Log target. The sheet then
+// owns a Sabaq | Sabaq Dhor | Dhor selector, so the teacher does not have to
+// hit one narrow log cell precisely. Name and attendance remain their own
+// explicit destinations and keep stopping propagation.
+//
+// Writes still reuse the existing maktab log endpoints — no second backend or
+// storage model. Dhor keeps the existing atomic pool merge. Sabaq's position
+// metadata remains best-effort synced after the saved log.
 // ============================================================
 let maktabQuickLogState = null;
 
@@ -86,16 +87,33 @@ function maktabQuickRefForMushaf(mushaf){
   return mushaf === '15line_madani' ? 'uthmani' : 'waterval';
 }
 
+function maktabQuickIsMobile(){
+  return !!(window.matchMedia && window.matchMedia('(max-width: 767px)').matches);
+}
+
 function maktabQuickFormatDate(iso){
   const d = new Date(String(iso || '') + 'T00:00:00');
   if(Number.isNaN(d.getTime())) return String(iso || '');
-  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`;
 }
 
 function maktabQuickExistingText(type, entries){
   if(!entries || !entries.length) return '';
   const text = entries.map(e => journalCellShorthand(type, [e]).replace(/<[^>]+>/g, '').trim()).filter(Boolean).join(' · ');
   return text ? `<div class="maktab-quick-existing"><span>Already logged</span>${text}</div>` : '';
+}
+
+function maktabQuickTypeDraft(type){
+  const state = maktabQuickLogState;
+  return state && state.drafts ? state.drafts[type || state.type] : null;
+}
+
+function maktabQuickEntries(type){
+  const state = maktabQuickLogState;
+  if(!state) return [];
+  return (state.entriesByType && state.entriesByType[type || state.type]) || [];
 }
 
 function maktabQuickVerseField(side, label){
@@ -116,9 +134,17 @@ function maktabQuickVerseField(side, label){
   </div>`;
 }
 
+function maktabQuickConfirmControl(compact){
+  return `<label class="maktab-quick-confirm${compact ? ' maktab-quick-confirm-compact' : ''}">
+    <input type="checkbox" id="maktabQuickLogConfirm" aria-label="Confirm selection">
+    ${compact ? '' : '<span>Confirm selection</span>'}
+  </label>`;
+}
+
 function maktabQuickRenderVerse(side){
-  if(!maktabQuickLogState) return;
-  const value = maktabQuickLogState[side];
+  const draft = maktabQuickTypeDraft();
+  if(!draft) return;
+  const value = draft[side];
   const label = document.getElementById(`mql_${side}_surah_label`);
   const input = document.getElementById(`mql_${side}_ayah`);
   if(!label || !input) return;
@@ -131,20 +157,22 @@ function maktabQuickRenderVerse(side){
 }
 
 function maktabQuickReadVerse(side){
-  if(!maktabQuickLogState) return null;
-  const current = maktabQuickLogState[side];
+  const draft = maktabQuickTypeDraft();
+  if(!draft) return null;
+  const current = draft[side];
   const input = document.getElementById(`mql_${side}_ayah`);
   if(!current || !input || !input.value) return null;
   let ayah = parseInt(input.value, 10);
   if(!Number.isFinite(ayah)) return null;
   ayah = Math.max(1, Math.min(maxAyahForSurah(current.surah), ayah));
-  maktabQuickLogState[side] = { surah: current.surah, ayah };
+  draft[side] = { surah: current.surah, ayah };
   input.value = String(ayah);
-  return maktabQuickLogState[side];
+  return draft[side];
 }
 
 function maktabQuickOpenSurahPicker(side){
-  if(!maktabQuickLogState) return;
+  const draft = maktabQuickTypeDraft();
+  if(!draft) return;
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay surah-picker-modal maktab-quick-surah-modal';
   overlay.innerHTML = `<div class="modal-card">
@@ -157,7 +185,7 @@ function maktabQuickOpenSurahPicker(side){
   list.innerHTML = SURAHS.map(([num, name]) => `<button type="button" class="tajweed-tag surah-picker-row" data-surah="${num}">${num}. ${name}</button>`).join('');
   list.querySelectorAll('[data-surah]').forEach(btn => btn.addEventListener('click', () => {
     const surah = parseInt(btn.dataset.surah, 10);
-    maktabQuickLogState[side] = { surah, ayah: 1 };
+    draft[side] = { surah, ayah: 1 };
     maktabQuickRenderVerse(side);
     overlay.remove();
   }));
@@ -176,62 +204,95 @@ function maktabQuickWireVerseFields(){
     const value = maktabQuickReadVerse(side);
     if(!value) return;
     const next = Math.max(1, Math.min(maxAyahForSurah(value.surah), value.ayah + parseInt(rawDelta, 10)));
-    maktabQuickLogState[side] = { surah: value.surah, ayah: next };
+    const draft = maktabQuickTypeDraft();
+    draft[side] = { surah: value.surah, ayah: next };
     maktabQuickRenderVerse(side);
   }));
 }
 
 function maktabQuickDhorControls(){
-  const juzOptions = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
+  const draft = maktabQuickTypeDraft('dhor') || { juz:null, unit:'quarter', position:1 };
+  const juzOptions = Array.from({length:30}, (_,i) => `<option value="${i+1}"${draft.juz === i+1 ? ' selected' : ''}>Juz ${i+1}</option>`).join('');
   return `<div class="maktab-quick-dhor-grid">
-    <label>Juz<select id="mql_dhor_juz"><option value="">Select</option>${juzOptions}</select></label>
-    <div class="maktab-quick-unit-wrap">
-      <span class="maktab-quick-control-label">Portion</span>
+    <div class="maktab-quick-dhor-unit-row">
+      <span class="maktab-quick-control-label">Juz Portion</span>
       <div class="unit-pill maktab-quick-unit-pill" id="mql_dhor_unit">
-        <button type="button" data-unit="quarter" class="on">Quarter</button>
-        <button type="button" data-unit="half">Half</button>
-        <button type="button" data-unit="full">Juz</button>
+        <button type="button" data-unit="quarter" class="${draft.unit === 'quarter' ? 'on' : ''}">Quarter</button>
+        <button type="button" data-unit="half" class="${draft.unit === 'half' ? 'on' : ''}">Half</button>
+        <button type="button" data-unit="full" class="${draft.unit === 'full' ? 'on' : ''}">Juz</button>
       </div>
     </div>
-    <div class="maktab-quick-position-wrap" id="mql_dhor_position_wrap">
-      <span class="maktab-quick-control-label">Quarter</span>
-      <div class="unit-pill maktab-quick-position-pill" id="mql_dhor_position"></div>
+    <div class="maktab-quick-dhor-selection-row">
+      <select id="mql_dhor_juz" aria-label="Juz"><option value="">Select Juz</option>${juzOptions}</select>
+      <div class="unit-pill maktab-quick-position-pill" id="mql_dhor_position" aria-label="Portion number"></div>
+      ${maktabQuickConfirmControl(true)}
     </div>
   </div>`;
 }
 
 function maktabQuickRenderDhorPosition(){
-  if(!maktabQuickLogState) return;
-  const wrap = document.getElementById('mql_dhor_position_wrap');
+  const draft = maktabQuickTypeDraft('dhor');
   const pill = document.getElementById('mql_dhor_position');
-  if(!wrap || !pill) return;
-  const unit = maktabQuickLogState.unit;
+  if(!draft || !pill) return;
+  const unit = draft.unit || 'quarter';
   if(unit === 'full'){
-    wrap.classList.add('hidden');
-    maktabQuickLogState.position = 1;
+    pill.classList.add('hidden');
+    draft.position = 1;
     return;
   }
-  wrap.classList.remove('hidden');
+  pill.classList.remove('hidden');
   const count = unit === 'half' ? 2 : 4;
-  wrap.querySelector('.maktab-quick-control-label').textContent = unit === 'half' ? 'Half' : 'Quarter';
-  if(maktabQuickLogState.position > count) maktabQuickLogState.position = 1;
-  pill.innerHTML = Array.from({length:count}, (_,i) => `<button type="button" data-pos="${i+1}" class="${maktabQuickLogState.position === i+1 ? 'on' : ''}">${i+1}</button>`).join('');
+  if(draft.position > count) draft.position = 1;
+  pill.innerHTML = Array.from({length:count}, (_,i) => `<button type="button" data-pos="${i+1}" class="${draft.position === i+1 ? 'on' : ''}">${i+1}</button>`).join('');
   pill.querySelectorAll('[data-pos]').forEach(btn => btn.addEventListener('click', () => {
-    maktabQuickLogState.position = parseInt(btn.dataset.pos, 10);
+    draft.position = parseInt(btn.dataset.pos, 10);
     maktabQuickRenderDhorPosition();
   }));
 }
 
 function maktabQuickWireDhor(){
+  const draft = maktabQuickTypeDraft('dhor');
+  if(!draft) return;
   const juz = document.getElementById('mql_dhor_juz');
-  if(juz) juz.addEventListener('change', () => { maktabQuickLogState.juz = parseInt(juz.value, 10) || null; });
+  if(juz) juz.addEventListener('change', () => { draft.juz = parseInt(juz.value, 10) || null; });
   document.querySelectorAll('#mql_dhor_unit [data-unit]').forEach(btn => btn.addEventListener('click', () => {
-    maktabQuickLogState.unit = btn.dataset.unit;
-    maktabQuickLogState.position = 1;
+    draft.unit = btn.dataset.unit;
+    draft.position = 1;
     document.querySelectorAll('#mql_dhor_unit [data-unit]').forEach(b => b.classList.toggle('on', b === btn));
     maktabQuickRenderDhorPosition();
   }));
   maktabQuickRenderDhorPosition();
+}
+
+function maktabQuickBodyHtml(type){
+  if(type === 'dhor') return maktabQuickDhorControls();
+  return `<div class="maktab-quick-range-grid">${maktabQuickVerseField('from', 'Ayah From')}${maktabQuickVerseField('to', 'Ayah To')}</div>${maktabQuickConfirmControl(false)}`;
+}
+
+function maktabQuickRenderBody(){
+  const state = maktabQuickLogState;
+  if(!state) return;
+  const existing = document.getElementById('maktabQuickExisting');
+  const body = document.getElementById('maktabQuickBody');
+  const err = document.getElementById('maktabQuickLogError');
+  if(existing) existing.innerHTML = maktabQuickExistingText(state.type, maktabQuickEntries(state.type));
+  if(body) body.innerHTML = maktabQuickBodyHtml(state.type);
+  if(err) err.textContent = '';
+  document.querySelectorAll('[data-mql-type]').forEach(btn => btn.classList.toggle('on', btn.dataset.mqlType === state.type));
+  if(state.type === 'dhor') maktabQuickWireDhor();
+  else {
+    maktabQuickWireVerseFields();
+    maktabQuickRenderVerse('from');
+    maktabQuickRenderVerse('to');
+  }
+}
+
+function maktabQuickTypeSelector(){
+  return `<div class="unit-pill maktab-quick-type-switch" id="maktabQuickTypeSwitch" aria-label="Quick Log type">
+    <button type="button" data-mql-type="sabaq">Sabaq</button>
+    <button type="button" data-mql-type="sabaqDhor">Sabaq Dhor</button>
+    <button type="button" data-mql-type="dhor">Dhor</button>
+  </div>`;
 }
 
 async function maktabQuickPost(path, payload, duplicateLabel){
@@ -263,12 +324,13 @@ async function maktabSaveQuickLog(){
   if(!state) return;
   const err = document.getElementById('maktabQuickLogError');
   const save = document.getElementById('maktabQuickLogSave');
+  const confirmBox = document.getElementById('maktabQuickLogConfirm');
   if(err) err.textContent = '';
-  if(!document.getElementById('maktabQuickLogConfirm').checked){
+  if(!confirmBox || !confirmBox.checked){
     if(err) err.textContent = 'Please confirm the selection before saving.';
     return;
   }
-  let path, payload;
+  let path, payload, duplicateLabel = MAKTAB_QUICK_LABEL[state.type];
   if(state.type === 'sabaq' || state.type === 'sabaqDhor'){
     const from = maktabQuickReadVerse('from');
     const to = maktabQuickReadVerse('to');
@@ -285,28 +347,26 @@ async function maktabSaveQuickLog(){
       payload = { student_id: state.student.id, date: state.date, from_surah: from.surah, from_ayah: from.ayah, to_surah: to.surah, to_ayah: to.ayah };
     }
   } else {
+    const draft = maktabQuickTypeDraft('dhor');
     const juzEl = document.getElementById('mql_dhor_juz');
-    const juz = parseInt(juzEl && juzEl.value, 10);
+    const juz = parseInt(juzEl && juzEl.value, 10) || (draft && draft.juz);
     if(!juz){ if(err) err.textContent = 'Please select a Juz.'; return; }
-    const unit = state.unit || 'quarter';
+    if(draft) draft.juz = juz;
+    const unit = (draft && draft.unit) || 'quarter';
     const unitName = unit === 'full' ? 'juz' : unit;
-    const position = unit === 'full' ? 1 : state.position;
+    const position = unit === 'full' ? 1 : ((draft && draft.position) || 1);
     const seg = segmentRangeForUnitIndex(juz, position, state.ref, unit === 'full' ? 'juz' : unit);
     path = '/maktab/dhor';
     payload = { student_id: state.student.id, date: state.date, segment_from: seg.segment_from, segment_to: seg.segment_to, ref: state.ref };
-    state.duplicateLabel = unit === 'full' ? `Juz ${juz}` : `Juz ${juz} ${unitName} ${position}`;
+    duplicateLabel = unit === 'full' ? `Juz ${juz}` : `Juz ${juz} ${unitName} ${position}`;
   }
   try{
     if(save) save.disabled = true;
-    // The Summary only carries THIS DATE's rows. Position sync needs the
-    // real pre-save frontier from ALL Sabaq history, so snapshot it before
-    // the POST rather than incorrectly treating today's first row as the
-    // student's entire history.
     let oldSabaqHistory = null;
     if(state.type === 'sabaq'){
       try{ oldSabaqHistory = await apiGetMaktabSabaq(state.student.id); } catch(e){ oldSabaqHistory = []; }
     }
-    const result = await maktabQuickPost(path, payload, state.duplicateLabel || MAKTAB_QUICK_LABEL[state.type]);
+    const result = await maktabQuickPost(path, payload, duplicateLabel);
     if(!result) return;
     if(state.type === 'sabaq') await maktabQuickSyncSabaqPosition(state.student.id, oldSabaqHistory, state.ref);
     maktabCloseQuickLog();
@@ -319,38 +379,47 @@ async function maktabSaveQuickLog(){
   }
 }
 
-async function maktabOpenQuickLog(student, date, type, entries){
+async function maktabOpenQuickLog(student, date, type, entries, entriesByType){
   maktabCloseQuickLog();
   const openToken = ++maktabQuickLogOpenToken;
   let settings = null;
   try{ settings = typeof loadMaktabSettings === 'function' ? await loadMaktabSettings() : await apiGetMaktabSettings(); } catch(e){ settings = null; }
   if(openToken !== maktabQuickLogOpenToken) return;
+  const combined = maktabQuickIsMobile();
+  const entryMap = entriesByType || { sabaq: [], sabaqDhor: [], dhor: [] };
+  if(!entriesByType) entryMap[type] = (entries || []).slice();
   maktabQuickLogState = {
-    student, date, type, entries: (entries || []).slice(),
-    from: null, to: null, juz: null, unit: 'quarter', position: 1,
-    ref: maktabQuickRefForMushaf(settings && settings.mushaf),
-    duplicateLabel: MAKTAB_QUICK_LABEL[type]
+    student, date, type, combined,
+    entriesByType: {
+      sabaq: (entryMap.sabaq || []).slice(),
+      sabaqDhor: (entryMap.sabaqDhor || []).slice(),
+      dhor: (entryMap.dhor || []).slice()
+    },
+    drafts: {
+      sabaq: { from:null, to:null },
+      sabaqDhor: { from:null, to:null },
+      dhor: { juz:null, unit:'quarter', position:1 }
+    },
+    ref: maktabQuickRefForMushaf(settings && settings.mushaf)
   };
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay maktab-quick-log-modal';
   overlay.id = 'maktabQuickLogSheet';
-  const body = type === 'dhor'
-    ? maktabQuickDhorControls()
-    : `<div class="maktab-quick-range-grid">${maktabQuickVerseField('from', 'Ayah From')}${maktabQuickVerseField('to', 'Ayah To')}</div>`;
-  overlay.innerHTML = `<div class="modal-card maktab-quick-log-card" role="dialog" aria-modal="true" aria-labelledby="maktabQuickLogTitle">
+  const desktopHeading = `<span class="maktab-quick-kind">${MAKTAB_QUICK_LABEL[type]} :</span>`;
+  overlay.innerHTML = `<div class="modal-card maktab-quick-log-card" role="dialog" aria-modal="true" aria-label="Quick Log">
     <button type="button" class="close-btn" aria-label="Close">&times;</button>
-    <div class="maktab-quick-heading">
-      <h2 id="maktabQuickLogTitle">${MAKTAB_QUICK_LABEL[type]}</h2>
+    <div class="maktab-quick-heading${combined ? ' is-combined' : ''}">
+      ${combined ? '' : desktopHeading}
       <span class="maktab-name-pill maktab-quick-student" title="${maktabQuickEscape(student.name)}">${maktabQuickEscape(student.name)}</span>
-      <span class="maktab-quick-date">${maktabQuickEscape(maktabQuickFormatDate(date))}</span>
     </div>
-    ${maktabQuickExistingText(type, entries)}
-    ${body}
-    <label class="maktab-quick-confirm"><input type="checkbox" id="maktabQuickLogConfirm"> <span>Confirm selection</span></label>
+    <div class="maktab-quick-date-row"><span class="maktab-quick-date">${maktabQuickEscape(maktabQuickFormatDate(date))}</span></div>
+    ${combined ? maktabQuickTypeSelector() : ''}
+    <div id="maktabQuickExisting"></div>
+    <div id="maktabQuickBody"></div>
     <div class="form-error" id="maktabQuickLogError"></div>
     <div class="maktab-quick-actions">
       <button type="button" class="primary maktab-quick-save" id="maktabQuickLogSave">Save</button>
-      <button type="button" class="maktab-quick-details" id="maktabQuickLogDetails">Open details</button>
+      <button type="button" class="maktab-quick-details" id="maktabQuickLogDetails">Detail</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
@@ -362,11 +431,12 @@ async function maktabOpenQuickLog(student, date, type, entries){
     maktabCloseQuickLog();
     openMaktabDay({ id: snapshot.student.id, name: snapshot.student.name, mushaf: snapshot.student.mushaf || null, track_haidh: !!snapshot.student.track_haidh }, snapshot.date, snapshot.type);
   });
-  if(type === 'dhor') maktabQuickWireDhor();
-  else {
-    maktabQuickWireVerseFields();
-    maktabQuickRenderVerse('from'); maktabQuickRenderVerse('to');
-  }
+  document.querySelectorAll('[data-mql-type]').forEach(btn => btn.addEventListener('click', () => {
+    if(!maktabQuickLogState) return;
+    maktabQuickLogState.type = btn.dataset.mqlType;
+    maktabQuickRenderBody();
+  }));
+  maktabQuickRenderBody();
 }
 
 // A read-only peek at every entry in one cell — including the one already
@@ -475,6 +545,55 @@ document.addEventListener('click', (e) => {
   if(!e.target.closest || !e.target.closest('#maktabEntryPeek')) maktabCloseEntryPeek();
 });
 
+// V4.2.12.1 — Summary ordering is based on the DISPLAYED day, not
+// historical attendance. A real log is the strongest state. Logged students
+// are grouped by Group then first name; confirmed Haidh and the remainder are
+// each plain first-name alphabetical bands. Probable/derived Haidh is not a
+// confirmed-Haidh sort state.
+function maktabSummaryNameKey(student){
+  const full = String((student && student.name) || '').trim();
+  const first = (full.split(/\s+/)[0] || '').toLocaleLowerCase();
+  return { first, full: full.toLocaleLowerCase(), id: String((student && student.id) || '').toLocaleLowerCase() };
+}
+
+function maktabSummaryHasLog(studentId, byStudent){
+  return ['sabaq', 'sabaqDhor', 'dhor'].some(type => ((byStudent[type] && byStudent[type][studentId]) || []).length > 0);
+}
+
+function maktabSummarySortBand(student, byStudent, haidhByStudent){
+  if(maktabSummaryHasLog(student.id, byStudent)) return 0;
+  if(haidhByStudent[student.id] === 'haidh') return 1;
+  return 2;
+}
+
+function maktabSummaryCompareName(a, b){
+  const aa = maktabSummaryNameKey(a), bb = maktabSummaryNameKey(b);
+  return aa.first.localeCompare(bb.first, undefined, { sensitivity:'base', numeric:true })
+    || aa.full.localeCompare(bb.full, undefined, { sensitivity:'base', numeric:true })
+    || aa.id.localeCompare(bb.id, undefined, { sensitivity:'base', numeric:true });
+}
+
+function maktabSummaryCompareGroup(a, b){
+  const ga = String(a.group_name || '').trim();
+  const gb = String(b.group_name || '').trim();
+  if(!ga && gb) return 1;
+  if(ga && !gb) return -1;
+  return ga.localeCompare(gb, undefined, { sensitivity:'base', numeric:true });
+}
+
+function maktabSummarySortedStudents(students, byStudent, haidhByStudent){
+  return (students || []).slice().sort((a, b) => {
+    const ab = maktabSummarySortBand(a, byStudent, haidhByStudent);
+    const bb = maktabSummarySortBand(b, byStudent, haidhByStudent);
+    if(ab !== bb) return ab - bb;
+    if(ab === 0){
+      const groupCmp = maktabSummaryCompareGroup(a, b);
+      if(groupCmp) return groupCmp;
+    }
+    return maktabSummaryCompareName(a, b);
+  });
+}
+
 function maktabSummaryWireDate(){
   const input = document.getElementById('maktabSummaryDatePicker');
   if(!input) return;
@@ -566,15 +685,18 @@ async function renderMaktabSummaryScreen(){
   } catch(e){ derived = {}; }
 
   host.innerHTML = '';
-  // V3.78.0 (item 8): the worker orders by group name (ungrouped LAST),
-  // then by name. A SPACER ROW is drawn where the group changes — the gap
-  // alone carries the meaning (user's call: no heading rows, no labels),
-  // so it must read as clearly more than the normal row separation
-  // (css: .maktab-group-gap). <tr> takes no margin, hence a row.
-  let prevGroup;
-  (data.students || []).forEach((stu, i) => {
+  const sortedStudents = maktabSummarySortedStudents(data.students || [], byStudent, haidhByStudent);
+  // V4.2.12.1: group spacing belongs only to the LOGGED band, because that
+  // is the only band whose requested order is Group -> first name. Confirmed
+  // Haidh and the remaining students are deliberately plain alphabetical
+  // lists, so applying group gaps there would imply a grouping that is not
+  // part of their sort rule.
+  let prevGroup = null;
+  let prevBand = null;
+  sortedStudents.forEach((stu, i) => {
+    const band = maktabSummarySortBand(stu, byStudent, haidhByStudent);
     const groupKey = stu.group_name || null;
-    if(i > 0 && groupKey !== prevGroup){
+    if(i > 0 && band === 0 && prevBand === 0 && groupKey !== prevGroup){
       const gap = document.createElement('tr');
       gap.className = 'maktab-group-gap';
       gap.setAttribute('aria-hidden', 'true');
@@ -583,7 +705,8 @@ async function renderMaktabSummaryScreen(){
       gap.appendChild(gtd);
       host.appendChild(gap);
     }
-    prevGroup = groupKey;
+    prevBand = band;
+    prevGroup = band === 0 ? groupKey : null;
     const tr = document.createElement('tr');
     tr.className = 'maktab-summary-row';
 
@@ -690,9 +813,14 @@ async function renderMaktabSummaryScreen(){
       // accidentally opens a new-entry sheet.
       td.addEventListener('click', (e) => {
         e.stopPropagation();
+        const entriesByType = {
+          sabaq: byStudent.sabaq[stu.id] || [],
+          sabaqDhor: byStudent.sabaqDhor[stu.id] || [],
+          dhor: byStudent.dhor[stu.id] || []
+        };
         maktabOpenQuickLog(
           { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh },
-          date, type, byStudent[type][stu.id] || []
+          date, type, entriesByType[type], entriesByType
         );
       });
       tr.appendChild(td);
@@ -706,13 +834,24 @@ async function renderMaktabSummaryScreen(){
     // so past-day rows open the day view for that day (confirmed).
     // V3.64.0: opens the PJ's OWN day view with a maktab context — not a
     // maktab copy of it. See js/logContext.js.
-    tr.addEventListener('click', () => openMaktabDay({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date));
+    tr.addEventListener('click', () => {
+      const student = { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh };
+      if(maktabQuickIsMobile()){
+        const entriesByType = {
+          sabaq: byStudent.sabaq[stu.id] || [],
+          sabaqDhor: byStudent.sabaqDhor[stu.id] || [],
+          dhor: byStudent.dhor[stu.id] || []
+        };
+        maktabOpenQuickLog(student, date, 'sabaq', entriesByType.sabaq, entriesByType);
+      } else {
+        openMaktabDay(student, date);
+      }
+    });
     host.appendChild(tr);
   });
-  // V3.78.0 (item 9): the search box above the table. Typing lists
-  // matching students; picking one opens her DAY VIEW on the summary's
-  // picked date — the same deliberate date-carry the row tap makes.
-  wireMaktabSummarySearch(data.students || [], date);
+  // Search follows the visible ordering for predictable results, while its
+  // destination remains the student's full day view on the selected date.
+  wireMaktabSummarySearch(sortedStudents, date);
 
   if (!(data.students || []).length) {
     host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">No active students.</td></tr>';

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.2 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.13 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -169,6 +169,19 @@ async function loadHaidhCalAttendance(expectedGeneration){
   (data || []).forEach(row => {
     if(row.status === 'haidh' || row.status === 'predicted-haidh') nextAttendance[row.date] = row.status;
   });
+
+  // V4.2.11.4: attendance propagation can excuse a later Maktab day even
+  // though no Haidh row was explicitly stored for that date. The Attendance
+  // page returns those dates separately as Probable Haidh. Merge them only
+  // for the SAME student currently loaded, and never overwrite a real mark.
+  const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+  const currentStudentId = inMaktab
+    ? (typeof logCtxStudentId === 'function' ? logCtxStudentId() : null)
+    : (typeof currentUser !== 'undefined' && currentUser ? currentUser.id : null);
+  const probableDates = attPageData && String(attPageData.student_id) === String(currentStudentId)
+    ? (attPageData.probable_haidh_dates || [])
+    : [];
+  probableDates.forEach(date => { if(!nextAttendance[date]) nextAttendance[date] = 'probable-haidh'; });
   if(expectedGeneration != null && expectedGeneration !== haidhCalRenderGeneration) return false;
   haidhCalAttendance = nextAttendance;
   return true;
@@ -237,6 +250,11 @@ function haidhCalDayCell(dateISO, inCurrentMonth){
   const isFuture = dateISO > haidhTodayISO();
   if(status === 'haidh' || (status === 'predicted-haidh' && !isFuture)) btn.classList.add('haidh-cal-day-confirmed');
   else if(status === 'predicted-haidh' && isFuture) btn.classList.add('haidh-cal-day-planned');
+  else if(status === 'probable-haidh') {
+    btn.classList.add('haidh-cal-day-probable');
+    btn.title = btn.title ? btn.title + ' · Probable Haidh' : 'Probable Haidh';
+    btn.setAttribute('aria-label', dateISO + ': Probable Haidh');
+  }
   // V3.40.2: the pending (not-yet-saved) range being built takes visual
   // priority over a saved status if they ever overlap -- see the CSS
   // ordering in css/haidh.css.
@@ -256,8 +274,18 @@ function haidhCalDayCell(dateISO, inCurrentMonth){
 // loaded as a plain global script same as everywhere else it's used.
 function haidhRangeTouchesPastOrToday(bounds){
   let runStart = bounds[0];
-  while(haidhCalAttendance[haidhAddDaysISO(runStart, -1)]) runStart = haidhAddDaysISO(runStart, -1);
-  return runStart <= haidhTodayISO();
+  const today = haidhTodayISO();
+  // Mirror worker/src/attendance.js::haidhEvidenceDates. Probable Haidh is
+  // display-only and a FUTURE prediction is a plan, so neither may extend
+  // the range backward as if it were stored factual evidence.
+  while(true){
+    const prev = haidhAddDaysISO(runStart, -1);
+    const status = haidhCalAttendance[prev];
+    const isEvidence = status === 'haidh' || (status === 'predicted-haidh' && prev <= today);
+    if(!isEvidence) break;
+    runStart = prev;
+  }
+  return runStart <= today;
 }
 
 function renderHaidhRangeBar(){
@@ -310,7 +338,10 @@ async function onHaidhCalDayTap(dateISO){
   // to clear it" behavior, which only ever applied to removing, never
   // to adding (Claude's own judgment call, not separately asked — see
   // TODO.md).
-  if(status && haidhRangeStart == null){
+  // A probable day is derived, not a saved mark, so tapping it begins a
+  // normal selection (allowing the teacher to confirm it) rather than
+  // attempting to DELETE a row that does not exist.
+  if(status && status !== 'probable-haidh' && haidhRangeStart == null){
     try{
       await haidhCalClient().clear(dateISO);   // V3.76.0: routed by context
       await loadHaidhCalAttendance();
@@ -530,14 +561,24 @@ async function loadAttendancePeriod(opts){
     return false;
   }
   attPageData = d;
-  // V3.88.0 (user schematic): the heading names the period kind and the
-  // stats read as ONE sentence — "Present on X of Y maktab days : Z%".
-  // The V3.85.0 empty-period explanation stays, in the same slot.
+  // V4.2.13: reporting distinguishes ACTIVE logs from Haidh instead of
+  // labelling every excused day "Present". Probable Haidh remains visible
+  // in the detail count without being promoted to confirmed fact.
   document.getElementById('attCardTitle').textContent =
     d.source === 'term' ? 'Attendance this Term' : 'Attendance';
-  document.getElementById('attSentence').textContent = d.maktab_days
-    ? `Present on ${d.present_days} of ${d.maktab_days} maktab days : ${d.percent}%`
-    : `No maktab days in this period (fewer than ${d.maktab_day_min || '?'} students logged per day).`;
+  if(d.maktab_days){
+    const activeDays = Number(d.active_days || 0);
+    const haidhDays = Number(d.haidh_days || 0);
+    const probableDays = Number(d.probable_haidh_days || 0);
+    const absentDays = Array.isArray(d.absent_dates) ? d.absent_dates.length : 0;
+    const dayWord = n => n === 1 ? 'day' : 'days';
+    const haidhPart = `${haidhDays} Haidh ${dayWord(haidhDays)}${probableDays ? ` (${probableDays} probable)` : ''}`;
+    document.getElementById('attSentence').textContent =
+      `${activeDays} active ${dayWord(activeDays)} · ${haidhPart} · ${absentDays} absent · ${d.percent}% attendance`;
+  } else {
+    document.getElementById('attSentence').textContent =
+      `No resolved maktab days in this period (fewer than ${d.maktab_day_min || '?'} students logged per day, or the current day is still in progress).`;
+  }
   const label = d.source === 'term' ? ' (current term)' : d.source === '4w' ? ' (last 4 weeks)' : ' (custom)';
   const fD = typeof fmtDMY === 'function' ? fmtDMY : (x) => x;   // V3.88.0: dd-mmm-yy for prose
   document.getElementById('attPeriod').textContent = `${fD(d.from)} \u2013 ${fD(d.to)}${label}`;

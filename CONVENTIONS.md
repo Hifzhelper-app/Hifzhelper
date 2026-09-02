@@ -252,6 +252,38 @@ is never revisited. `TODO.md` was split at V3.67.3 (delivered specs to
 `SPECS.md`) so the action list is short enough to actually be read, which is
 the other half of the fix.
 
+## 14. Derived Attendance uses explicit evidence precedence and one history window
+
+Attendance is especially vulnerable to “leakage” because one stored fact can
+affect later dates. V4.2.13 made the evidence order a standing invariant rather
+than an implementation accident.
+
+**For Maktab attendance the order is:**
+
+1. a real **Maktab log** on the date (Active),
+2. stored confirmed **Haidh**,
+3. stored teacher **Absent**,
+4. an exact stored **predicted-Haidh** date (legacy prediction semantics),
+5. read-only **Probable Haidh** derived from a confirmed run,
+6. unresolved current/future date,
+7. otherwise **Absent** on a completed qualifying Maktab day.
+
+A probable run is biological/calendar-day state, but **a later Maktab log or
+explicit teacher Absent is hard stopping evidence**. The old run may never
+resume after that stop; only a new confirmed Haidh mark can begin a new one.
+Predictions do not seed probable propagation.
+
+**One history window:** any surface deriving a period (individual Attendance,
+register, weekly view) must load enough history to see both the Haidh seed and
+all possible stopping evidence **before** filtering to its visible period. Never
+load all historical Haidh but term-clip logs; that asymmetry is exactly how a
+pre-term return log leaked into the V4.2.12-era register.
+
+**Reporting:** Active, Haidh and Absent are different facts. Attendance % may
+count Active + excused Haidh in the numerator, but UI text must not relabel
+Haidh as “Present”. Unresolved today is not a free Present day and does not
+extend the no-log warning streak before the day resolves.
+
 
 ```
 /frontend/

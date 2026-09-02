@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.3 | css/detail-pages.css */
+/* Hifzhelper build 4.2.13 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2318,6 +2318,9 @@
 /* Haidh: the old thin green Present check, with no yellow disk/icon. */
 .mkregister-status-haidh { width: 24px; height: 24px; color: var(--color-success); }
 .mkregister-status-haidh svg { width: 16px; height: 16px; }
+/* V4.2.13: probable/predicted Haidh are assumptions, not confirmed facts. */
+.mkregister-status-probable { opacity: .5; }
+.mkregister-status-predicted { opacity: .35; }
 @media (max-width: 767px) {
   .mkregister-scroll { max-height: calc(100vh - var(--auth-band-height, 60px) - 115px); }
   .mkregister-student-head, .mkregister-student-cell { width: 150px; min-width: 150px; max-width: 150px; }

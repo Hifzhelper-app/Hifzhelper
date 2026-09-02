@@ -14,6 +14,35 @@ Base URLs:
 
 ---
 
+## V4.2.13 — Attendance / Haidh derivation audit checks
+
+1. **Return-log stop (Ammarah regression):** create/identify a student with confirmed Haidh, then a later Maktab log, then a later completed qualifying Maktab day with no log. The blank day must be **Absent**, never probable Haidh from the old run.
+2. **No resumption after stop:** inspect later blank days still within the old ruling maximum. None may become probable from that old run. Add a new confirmed Haidh mark after the stop and confirm that new mark can start a fresh probable run.
+3. **Teacher-Absent stop:** after confirmed Haidh, explicitly mark a later day Absent. Probable must stop before that date and may not reappear after it unless a new confirmed Haidh mark occurs.
+4. **Calendar-day probable range:** after confirmed Haidh with no stopping evidence, inspect the individual Haidh calendar. Probable styling must continue across weekends/non-teaching days up to the allowed range; those non-Maktab days must not enter Attendance %. On a configured teaching day that is below threshold/future, the register must still be able to paint the probable state without counting it in the percentage.
+5. **Prediction isolation:** future `predicted-haidh` must render as planned on its exact dates but must not generate extra probable days. A passed exact prediction retains the established lazy exact-date behavior.
+6. **Individual report:** verify the headline reports separate counts, e.g. `2 active days · 2 Haidh days · 0 absent · 100% attendance`, rather than “Present on 4 of 4”. When probable days exist, the probable count must be identified.
+7. **Unresolved today:** on an in-progress Maktab day before the student has logged, today must not be included in the student's denominator and must not extend the no-log warning streak. Add a log today and confirm it immediately counts Active and resets the streak.
+8. **Register parity:** the same student's term register must show confirmed and probable Haidh as excused, and its Attendance %/tooltip counts must match the individual Attendance page. Specifically test a **pre-term log** that terminates an earlier Haidh run; neither surface may propagate past that log.
+9. **Calendar confirmation wording:** tapping a probable date begins confirmation, but probable itself must not count as stored evidence when the range decides Confirm-vs-Predict. Future predictions likewise do not act as existing evidence.
+10. Run `node tests/verify_v4213_attendance_model.mjs`, `node tests/verify_attendance_derived.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`.
+
+**Automated coverage in the build container:** V4.2.13 model audit **18/18**; core derived-attendance **30/30**; build/version **6/6**; served-JS syntax **36/36**. `run-all.mjs` reports **416 passed, 0 failed among reporting harnesses**. The same 27 older harnesses cannot report because `jsdom` is absent and/or their legacy SQLite fixtures have pre-existing schema drift; they are not represented as passes.
+
+## V4.2.12.1 — Quick Log compact-card + Summary-order checks
+
+1. **Desktop/tablet identity/date:** open Sabaq, Sabaq Dhor and Dhor Quick Log. Each shows `Type : Student Name` on one aligned line and the selected Summary date on the next line in `Wed 02 Sep` form.
+2. **Dhor compact flow:** Portion is `Quarter | Half | Juz`; below it Juz + number pill + confirmation share one row. Quarter gives 1–4, Half gives 1–2, Juz hides the number pill.
+3. **Actions:** Save is no longer near-full-width; **Detail** remains beside it and opens the correct full detail card.
+4. **Mobile combined target:** on a phone, tap Sabaq, Sabaq Dhor, Dhor and unused log-row space. All routes open the same card with a `Sabaq | Sabaq Dhor | Dhor` selector. Name and attendance taps must not open Quick Log.
+5. **Mobile draft preservation:** start a Sabaq range, switch to Dhor and make a Dhor selection, then switch back. The Sabaq draft must still be present.
+6. **Displayed-day ordering:** prepare examples with logs in at least two Groups, confirmed Haidh, probable Haidh and no state. Expected order is logged students by **Group then first name**, confirmed Haidh by first name, then remaining students by first name. A log outranks confirmed Haidh and probable Haidh stays in the remaining band.
+7. Run `node tests/verify_v42121_ui.mjs`, `node tests/verify_v4212_ui.mjs`, `node tests/verify_v42114_ui.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+**Automated coverage in the build container:** V4.2.12.1 **12/12**; V4.2.12 **15/15**; V4.2.11.4 **10/10**; V4.2.11.3 **11/11**; V4.2.11.2 **13/13**; build/version **6/6**; served-JS syntax **36/36**. `run-all.mjs` reports **398 passed, 0 failed among reporting harnesses**; the same 27 older harnesses cannot report because `jsdom` is absent and/or their legacy SQLite fixtures have pre-existing schema drift.
+
+---
+
 ## V4.2.12 — Maktab Summary Quick Log trial
 
 1. Open Maktab Summary on a teaching date. Tap a student's **Sabaq** cell. A Quick Log sheet must open on the same student/date with only **Ayah From**, **Ayah To**, confirmation, Save and Open details. It must not navigate away immediately.

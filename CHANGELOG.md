@@ -26,6 +26,40 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.13 — Attendance / Haidh derivation audit and leakage fixes (2026-09-02)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `worker/src/maktabAttendance.js`, `tests/verify_v4213_attendance_model.mjs` (new), `tests/verify_attendance_derived.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v4212_ui.mjs`, `CONVENTIONS.md`, `SCHEMA.md`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**
+
+1. **A log now ends an assumed Haidh run.** Probable Haidh is derived only from a stored confirmed Haidh mark, across calendar days up to the student's ruling maximum. The first later **Maktab log** is hard return-to-activity evidence: probable Haidh stops immediately before it and cannot resume afterward from that old run. A later new confirmed Haidh mark may start a new run.
+2. **An explicit teacher Absent mark also terminates the run.** Previously an old Haidh assumption could disappear on the explicitly absent date and then reappear afterward. That leakage is closed: teacher Absent is stopping evidence just like a return log.
+3. **Register and individual Attendance now use the same historical stop evidence.** The register used to load all historical Haidh marks but only term-clipped logs, so a log immediately before a term could stop propagation on the individual page while the register missed it. Both now derive against full Maktab log history before filtering the requested period.
+4. **Probable Haidh is a calendar-day state.** Assumed days after confirmed Haidh are returned for weekends/non-teaching days too, so the Haidh calendar shows the whole probable biological run. Only qualifying Maktab days participate in Attendance %. The term register still paints probable state on a configured teaching-day cell even when that date is below threshold/future, so the visible table does not hide the biological assumption; such a date remains outside the percentage until it is a resolved qualifying Maktab day. Predictions retain their established exact-date semantics but **never seed additional probable days**.
+5. **Reporting separates Active from Haidh.** The individual Attendance page no longer labels every excused day “Present”. It reports **Active**, **Haidh** (including probable, with the probable count shown), **Absent**, and Attendance %. The register's percentage tooltip exposes the same split.
+6. **Unresolved today no longer inflates statistics or warning streaks.** A current Maktab day with no evidence yet is excluded from the Attendance denominator rather than implicitly counted as present, and an unlogged in-progress day does not extend the no-log attention streak. A real log today still resets the streak immediately.
+7. **Calendar confirmation language now follows stored evidence.** A derived probable day and a future prediction are not treated as stored confirmed evidence when choosing Confirm-vs-Predict wording. This prevents the calendar UI from implying a fact the Worker has not stored.
+8. **One explicit state precedence is shared everywhere:** Maktab log → confirmed Haidh → explicit Absent → exact predicted Haidh → probable Haidh → unresolved today/future → Absent. This precedence is pinned in regression coverage.
+9. **Version discipline preserved.** Only edited served files receive a `4.2.13` top build header: `css/detail-pages.css`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, and `js/sw.js`. The edited Worker file also carries its own 4.2.13 trace header. Untouched served-file headers retain their last-edit versions; the page/cache key moves to 4.2.13.
+
+**Deployment:** deploy `worker/src/maktabAttendance.js` first, then the changed Pages/frontend files, then hard-refresh. **No D1 migration.**
+
+**Audit regression coverage:** `tests/verify_v4213_attendance_model.mjs` drives the Ammarah pattern (confirmed Haidh → later log → later blank), explicit-Absent stop, fresh run after a later confirmed mark, calendar-day probable dates, prediction non-propagation, Active/Haidh/Absent reporting, unresolved-today denominator/streak behavior, calendar evidence wording and register/page history parity.
+
+---
+
+## V4.2.12.1 — Quick Log compact-card pass + Summary ordering (2026-09-02)
+
+**Files touched:** `index.html`, `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`, `tests/verify_v42121_ui.mjs` (new), `tests/verify_v4212_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**
+
+1. **Quick Log cards are shorter and consistent.** Desktop/tablet Sabaq, Sabaq Dhor and Dhor now use one aligned first row (`Type : Student Name`) and a separate compact `Wed 02 Sep` date row. Save is deliberately narrower and the secondary action is labelled **Detail**.
+2. **Dhor is one compact selection flow.** `Quarter | Half | Juz` is the Juz Portion switch (about 60% width). The next row carries the Juz selector (about 30%), the 1–4 / 1–2 portion-number pill when applicable, and the confirmation checkbox. Whole-Juz selection hides the unnecessary number pill.
+3. **Mobile uses one combined Quick Log card.** Any log-cell/row tap opens the same card for that student/date with a `Sabaq | Sabaq Dhor | Dhor` selector. Each type keeps its own in-progress draft while switching. Student-name and attendance taps retain their existing destinations. Desktop/tablet keeps direct per-cell Quick Log.
+4. **Maktab Summary ordering now follows the displayed day's evidence.** Students with at least one log come first, ordered by **Group then first name** (ungrouped logged students last within the log band). Next are **confirmed Haidh** students alphabetically by first name, then everyone else alphabetically by first name. A log outranks Haidh; probable/derived Haidh is not promoted into the confirmed-Haidh band.
+5. **Version discipline preserved.** Only edited served files receive a `4.2.12.1` top header: `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`. The page/cache query key moves to 4.2.12.1; untouched served-file headers remain at their last edit version.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.12 and hard-refresh. **No Worker deployment and no D1 migration.**
+
+---
+
 ## V4.2.12 — Maktab Summary Quick Log trial (2026-09-02)
 
 **Files touched:** `index.html`, `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`, `tests/verify_v4212_ui.mjs` (new), `tests/verify_v428_ui.mjs`, `tests/verify_v3820_student_summary.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**

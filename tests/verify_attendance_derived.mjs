@@ -32,7 +32,7 @@ const days = (...d) => d;
   const md = days('2026-08-02', '2026-08-05', '2026-08-09', '2026-08-11', '2026-08-15');
   const r = deriveStudentAttendance(md, [], ['2026-08-01'], 'hanafi', 30);
   check('propagation: continues on later maktab days with no log',
-    r.statuses['2026-08-02'] === 'haidh' && r.statuses['2026-08-05'] === 'haidh' && r.statuses['2026-08-09'] === 'haidh');
+    r.statuses['2026-08-02'] === 'probable-haidh' && r.statuses['2026-08-05'] === 'probable-haidh' && r.statuses['2026-08-09'] === 'probable-haidh');
   check('propagation: stops at the hanafi max of 10 CALENDAR days → absent after',
     r.statuses['2026-08-11'] === 'absent' && r.statuses['2026-08-15'] === 'absent');
 
@@ -42,7 +42,7 @@ const days = (...d) => d;
   // expectation was off by the inclusive start day.)
   const shafii = deriveStudentAttendance(md.concat('2026-08-16'), [], ['2026-08-01'], 'shafii', 30);
   check('propagation: shafii covers 15 days — the 11th and 15th are haidh, the 16th absent',
-    shafii.statuses['2026-08-11'] === 'haidh' && shafii.statuses['2026-08-15'] === 'haidh'
+    shafii.statuses['2026-08-11'] === 'probable-haidh' && shafii.statuses['2026-08-15'] === 'probable-haidh'
     && shafii.statuses['2026-08-16'] === 'absent');
 }
 
@@ -59,7 +59,7 @@ const days = (...d) => d;
   // and the inverse: a dense run inside the window is still haidh
   const dense = deriveStudentAttendance(days('2026-08-02','2026-08-03','2026-08-04'), [], ['2026-08-01'], 'hanafi', 30);
   check('inverse: maktab days inside the window are all haidh',
-    Object.values(dense.statuses).every(v => v === 'haidh'));
+    Object.values(dense.statuses).every(v => v === 'probable-haidh'));
 }
 
 // ---- consecutive marks form one run, measured from its START ----
@@ -67,7 +67,7 @@ const days = (...d) => d;
   // marks on 01,02,03 are one run starting 01 → hanafi covers to the 10th
   const r = deriveStudentAttendance(days('2026-08-09', '2026-08-12'), [], ['2026-08-01','2026-08-02','2026-08-03'], 'hanafi', 30);
   check('a consecutive run is measured from its start, not its last mark',
-    r.statuses['2026-08-09'] === 'haidh' && r.statuses['2026-08-12'] === 'absent');
+    r.statuses['2026-08-09'] === 'probable-haidh' && r.statuses['2026-08-12'] === 'absent');
 }
 
 // ---- the attention flag: MAKTAB days, resets on any log ----
