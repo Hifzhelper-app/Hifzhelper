@@ -44,8 +44,8 @@ check('tapping probable Haidh starts confirmation instead of deleting a nonexist
   /status && status !== 'probable-haidh' && haidhRangeStart == null/.test(haidh));
 check('register uses the same derived Haidh truth so probable Haidh is not blank/absent',
   /else if \(derived\.statuses\[c\.date\] === 'haidh'\) status = 'haidh'/.test(worker));
-check('V4.2.12 page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.12/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.12'/.test(sw));
+check('V4.2.12.1 page/cache keys agree',
+  /js\/app\.js\?v=4\.2\.12\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.12\.1'/.test(sw));
 
 // Dynamic proof: an explicit Haidh on Monday propagates to Tuesday when
 // another student logs Tuesday, so Tuesday is a real Maktab day. The

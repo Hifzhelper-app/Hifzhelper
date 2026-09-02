@@ -28,11 +28,22 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
-| **79** | **Deploy + device-verify V4.2.12 Quick Log trial** | **READY — build complete** | Frontend-only overlay on V4.2.11.4. **No Worker and no migration.** Verify cell → Quick Log, minimal fields, confirm + Save, existing-entry notice, `+N` peek isolation and Open details fallback. |
+| **79** | **Deploy + device-verify V4.2.12.1 Quick Log refinement** | **READY — build complete** | Frontend-only overlay on V4.2.12. **No Worker and no migration.** Verify compact cards, mobile combined type selector, and Summary log → confirmed Haidh → remainder ordering. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.12 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.12.1 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **No migration and no Worker deployment.** Overlay on V4.2.12 and hard-refresh until the page/cache key reads **v4.2.12.1**.
+2. Desktop/tablet: open each Quick Log type. Confirm row 1 is `Type : Student Name`, row 2 is the compact date, and **Save** is narrower with **Detail** beside it.
+3. Dhor: confirm `Quarter | Half | Juz` occupies the compact Portion row; the next row contains Juz, the appropriate 1–4 / 1–2 number pill, and confirmation. Whole Juz must not show a number pill.
+4. Phone: tap any of the student's log rows/row space. One Quick Log card must open with student, date and `Sabaq | Sabaq Dhor | Dhor`. Switch types and confirm each type's unfinished selection survives when switching away and back.
+5. Confirm student-name and attendance-icon taps still open their existing destinations; `+N` still opens only the entry peek; **Detail** opens the currently selected full detail card.
+6. Summary ordering for the displayed date: students with logs first (**Group → first name**), then confirmed Haidh alphabetically, then everyone else alphabetically. A logged+Haidh student must remain in the log band; probable Haidh must not enter the confirmed band.
+7. Run `node tests/verify_v42121_ui.mjs`, `node tests/verify_v4212_ui.mjs`, cumulative Summary/Haidh harnesses, `verify_build_stamp.mjs`, and `verify_syntax.mjs`.
+
+## V4.2.12 — SUPERSEDED BY V4.2.12.1
+
 
 1. **No migration and no Worker deployment.** V4.2.12 reuses the existing three Maktab log POST endpoints.
 2. Overlay the V4.2.12 Pages/frontend files on V4.2.11.4 and hard-refresh until the login/page cache key reads **v4.2.12**.

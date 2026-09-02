@@ -26,6 +26,20 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.12.1 — Quick Log compact-card pass + Summary ordering (2026-09-02)
+
+**Files touched:** `index.html`, `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`, `tests/verify_v42121_ui.mjs` (new), `tests/verify_v4212_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**
+
+1. **Quick Log cards are shorter and consistent.** Desktop/tablet Sabaq, Sabaq Dhor and Dhor now use one aligned first row (`Type : Student Name`) and a separate compact `Wed 02 Sep` date row. Save is deliberately narrower and the secondary action is labelled **Detail**.
+2. **Dhor is one compact selection flow.** `Quarter | Half | Juz` is the Juz Portion switch (about 60% width). The next row carries the Juz selector (about 30%), the 1–4 / 1–2 portion-number pill when applicable, and the confirmation checkbox. Whole-Juz selection hides the unnecessary number pill.
+3. **Mobile uses one combined Quick Log card.** Any log-cell/row tap opens the same card for that student/date with a `Sabaq | Sabaq Dhor | Dhor` selector. Each type keeps its own in-progress draft while switching. Student-name and attendance taps retain their existing destinations. Desktop/tablet keeps direct per-cell Quick Log.
+4. **Maktab Summary ordering now follows the displayed day's evidence.** Students with at least one log come first, ordered by **Group then first name** (ungrouped logged students last within the log band). Next are **confirmed Haidh** students alphabetically by first name, then everyone else alphabetically by first name. A log outranks Haidh; probable/derived Haidh is not promoted into the confirmed-Haidh band.
+5. **Version discipline preserved.** Only edited served files receive a `4.2.12.1` top header: `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`. The page/cache query key moves to 4.2.12.1; untouched served-file headers remain at their last edit version.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.12 and hard-refresh. **No Worker deployment and no D1 migration.**
+
+---
+
 ## V4.2.12 — Maktab Summary Quick Log trial (2026-09-02)
 
 **Files touched:** `index.html`, `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`, `tests/verify_v4212_ui.mjs` (new), `tests/verify_v428_ui.mjs`, `tests/verify_v3820_student_summary.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**

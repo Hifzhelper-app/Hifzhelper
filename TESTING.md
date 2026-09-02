@@ -14,6 +14,20 @@ Base URLs:
 
 ---
 
+## V4.2.12.1 — Quick Log compact-card + Summary-order checks
+
+1. **Desktop/tablet identity/date:** open Sabaq, Sabaq Dhor and Dhor Quick Log. Each shows `Type : Student Name` on one aligned line and the selected Summary date on the next line in `Wed 02 Sep` form.
+2. **Dhor compact flow:** Portion is `Quarter | Half | Juz`; below it Juz + number pill + confirmation share one row. Quarter gives 1–4, Half gives 1–2, Juz hides the number pill.
+3. **Actions:** Save is no longer near-full-width; **Detail** remains beside it and opens the correct full detail card.
+4. **Mobile combined target:** on a phone, tap Sabaq, Sabaq Dhor, Dhor and unused log-row space. All routes open the same card with a `Sabaq | Sabaq Dhor | Dhor` selector. Name and attendance taps must not open Quick Log.
+5. **Mobile draft preservation:** start a Sabaq range, switch to Dhor and make a Dhor selection, then switch back. The Sabaq draft must still be present.
+6. **Displayed-day ordering:** prepare examples with logs in at least two Groups, confirmed Haidh, probable Haidh and no state. Expected order is logged students by **Group then first name**, confirmed Haidh by first name, then remaining students by first name. A log outranks confirmed Haidh and probable Haidh stays in the remaining band.
+7. Run `node tests/verify_v42121_ui.mjs`, `node tests/verify_v4212_ui.mjs`, `node tests/verify_v42114_ui.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+**Automated coverage in the build container:** V4.2.12.1 **12/12**; V4.2.12 **15/15**; V4.2.11.4 **10/10**; V4.2.11.3 **11/11**; V4.2.11.2 **13/13**; build/version **6/6**; served-JS syntax **36/36**. `run-all.mjs` reports **398 passed, 0 failed among reporting harnesses**; the same 27 older harnesses cannot report because `jsdom` is absent and/or their legacy SQLite fixtures have pre-existing schema drift.
+
+---
+
 ## V4.2.12 — Maktab Summary Quick Log trial
 
 1. Open Maktab Summary on a teaching date. Tap a student's **Sabaq** cell. A Quick Log sheet must open on the same student/date with only **Ayah From**, **Ayah To**, confirmation, Save and Open details. It must not navigate away immediately.

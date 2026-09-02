@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.12.1** — Quick Log compact-card/mobile-combined refinement + displayed-day Summary ordering
 - **V4.2.12** — Trial Quick Log from Maktab Summary cells: minimal Sabaq / Sabaq Dhor / Dhor entry without leaving the table
 - **V4.2.11** — Term-wide Maktab Attendance register grid; Female/Haaidha registration; confirmed teacher Haidh auto-promotes profile
 - **V3.88.0** — Staged propose→edit→confirm calendar flows; duplicate fix (0027 unique index); attendance/haidh layout; dd-mmm-yy; 4-card settings rail at 25%
@@ -125,6 +126,18 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.12.1 — Quick Log compact card + displayed-day Summary order
+
+**Quick Log presentation.** On desktop/tablet each cell still opens its own log type, but the sheet uses a common compact identity row (`Type : Name`), a separate shared date row and smaller `Save | Detail` actions. Dhor is reduced to two selection rows: Juz Portion (`Quarter | Half | Juz`) and then Juz + portion number + confirmation.
+
+**Mobile combined entry.** At the phone breakpoint the Summary row/log area opens one Quick Log card instead of requiring a precise type-cell tap. The card shows student, date and a `Sabaq | Sabaq Dhor | Dhor` selector; changing the selector swaps only the lower controls and preserves a separate draft for each type. Name and attendance remain independent controls.
+
+**Summary order.** Sorting is presentation-only and is recomputed from the Summary's selected date. The three bands are: **has any log**, **confirmed Haidh**, **all remaining**. Logged students sort by Group then first name; confirmed-Haidh and remaining bands sort by first name only. A log wins over Haidh. Probable/derived Haidh remains in the final alphabetical band because it is not a confirmed mark.
+
+**Deployment boundary.** Frontend only; no Worker or D1 migration.
 
 ---
 

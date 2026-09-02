@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.12 | css/journal-table.css */
+/* Hifzhelper build 4.2.12.1 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -507,8 +507,9 @@
    V4.2.2 (user) — MOBILE: one compact CARD per student on the maktab
    summary. Done entirely in CSS over the existing table rows, so all
    tap targets survive: the name opens her summary page, each log cell opens
-   V4.2.12 Quick Log, the row opens the day view, the +N pill peeks, and the
-   attendance icon opens her attendance.
+   Quick Log, the +N pill peeks, and attendance opens her attendance page.
+   From V4.2.12.1 the phone row itself opens the combined Quick Log card;
+   desktop/tablet row whitespace still opens the full day view.
    The captions come from data-label (set in js/maktabSummary.js). */
 @media (max-width: 767px) {
   .maktab-summary-headers { display: none; }   /* no columns left to label */
@@ -579,34 +580,56 @@
 }
 
 /* ============================================================
-   V4.2.12 — Maktab Summary Quick Log trial.
-   The same sheet is a bottom sheet on phones and the app's established
-   centred modal on larger screens. It intentionally contains only the
-   range controls + confirmation + one Save action; full history/editing
-   stays on the existing detail cards behind Open details.
+   V4.2.12 / V4.2.12.1 — Maktab Summary Quick Log.
+   V4.2.12.1 compacts the identity/date/action rows, gives Dhor one short
+   Portion -> Juz/position/confirm flow, and turns the phone sheet into one
+   combined Sabaq | Sabaq Dhor | Dhor entry card.
    ============================================================ */
 .maktab-quick-log-card { max-width: 520px; }
 .maktab-quick-heading {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding-right: 28px;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
-.maktab-quick-heading h2 { margin: 0; }
+.maktab-quick-kind {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: nowrap;
+  color: var(--color-ink);
+}
 .maktab-quick-student {
   display: block;
+  width: 100%;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   background: var(--color-accent-soft, #D0DBE7);
   border-radius: 999px;
-  padding: 4px 12px;
+  padding: 5px 12px;
   font-weight: 600;
 }
-.maktab-quick-date { font-size: 12px; color: var(--color-ink-soft); white-space: nowrap; }
+.maktab-quick-date-row {
+  display: flex;
+  align-items: center;
+  margin: 0 0 12px;
+}
+.maktab-quick-date {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--color-canvas);
+  color: var(--color-ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
 .maktab-quick-existing {
   margin: 4px 0 12px;
   padding: 7px 10px;
@@ -631,27 +654,59 @@
 }
 .maktab-quick-verse-field { min-width: 0; }
 .maktab-quick-verse-field input { border: 0; border-radius: 0; padding: 0; }
-.maktab-quick-dhor-grid { display: grid; gap: 10px; }
-.maktab-quick-dhor-grid > label { margin: 0; }
-.maktab-quick-dhor-grid select { margin-top: 4px; }
-.maktab-quick-unit-wrap,
-.maktab-quick-position-wrap {
-  display: grid;
-  grid-template-columns: 82px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-}
-.maktab-quick-control-label { font-size: 12px; font-weight: 600; color: var(--color-ink-soft); }
-.maktab-quick-unit-pill,
-.maktab-quick-position-pill {
+
+.maktab-quick-type-switch {
   position: static;
   right: auto;
   display: flex;
   width: 100%;
   min-width: 0;
+  margin: 0 0 12px;
+}
+.maktab-quick-type-switch button { flex: 1 1 0; min-width: 0; }
+
+.maktab-quick-dhor-grid { display: grid; gap: 10px; }
+.maktab-quick-dhor-unit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.maktab-quick-control-label {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+}
+.maktab-quick-unit-pill,
+.maktab-quick-position-pill {
+  position: static;
+  right: auto;
+  display: flex;
+  min-width: 0;
+}
+.maktab-quick-unit-pill {
+  width: 60%;
+  max-width: 310px;
 }
 .maktab-quick-unit-pill button,
 .maktab-quick-position-pill button { flex: 1 1 0; min-width: 0; }
+.maktab-quick-dhor-selection-row {
+  display: grid;
+  grid-template-columns: minmax(112px, 30%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.modal-card .maktab-quick-dhor-selection-row select {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  margin: 0;
+  padding: 0 34px 0 12px;
+  border-radius: 999px;
+}
+.maktab-quick-position-pill { width: 100%; min-height: 42px; }
+.maktab-quick-position-pill button { min-height: 42px; }
 .maktab-quick-confirm {
   display: flex !important;
   align-items: center;
@@ -661,8 +716,26 @@
   font-weight: 600;
   color: var(--color-ink) !important;
 }
-.modal-card .maktab-quick-confirm input { width: 18px; height: 18px; margin: 0; accent-color: var(--palette-evergreen, #344C3D); }
-.maktab-quick-actions { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; margin-top: 12px; }
+.maktab-quick-confirm-compact {
+  justify-content: center;
+  margin: 0 !important;
+  width: 34px;
+  height: 42px;
+}
+.modal-card .maktab-quick-confirm input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--palette-evergreen, #344C3D);
+}
+.maktab-quick-actions {
+  display: grid;
+  grid-template-columns: minmax(140px, 230px) auto;
+  justify-content: start;
+  gap: 12px;
+  align-items: center;
+  margin-top: 10px;
+}
 .maktab-quick-actions .maktab-quick-save { width: 100%; }
 .maktab-quick-details {
   border: 0;
@@ -677,11 +750,24 @@
 .maktab-quick-log-card .form-error { min-height: 18px; margin-top: 4px; }
 .maktab-quick-surah-modal { z-index: 320; }
 
-@media (max-width: 719px) {
+@media (max-width: 767px) {
+  /* The whole mobile row is a Quick Log affordance now. The explicit name
+     and attendance controls still stop propagation and keep their original
+     destinations. Give the three visible log rows a little more tap depth. */
+  .maktab-summary-table .journal-cell { min-height: 38px; align-content: center; cursor: pointer; }
+
   .maktab-quick-log-card { padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom)); }
-  .maktab-quick-heading { grid-template-columns: auto minmax(0, 1fr); }
-  .maktab-quick-date { grid-column: 1 / -1; }
+  .maktab-quick-heading.is-combined {
+    grid-template-columns: minmax(0, 1fr);
+    padding-right: 28px;
+  }
+  .maktab-quick-heading.is-combined .maktab-quick-student { width: 100%; }
+  .maktab-quick-date-row { margin-bottom: 10px; }
   .maktab-quick-range-row { grid-template-columns: 74px minmax(0, 1fr); }
-  .maktab-quick-unit-wrap,
-  .maktab-quick-position-wrap { grid-template-columns: 74px minmax(0, 1fr); }
+  .maktab-quick-dhor-unit-row { align-items: center; }
+  .maktab-quick-unit-pill { width: 60%; max-width: none; }
+  .maktab-quick-dhor-selection-row {
+    grid-template-columns: minmax(100px, 30%) minmax(0, 1fr) auto;
+  }
+  .maktab-quick-actions { grid-template-columns: minmax(120px, 55%) auto; }
 }
