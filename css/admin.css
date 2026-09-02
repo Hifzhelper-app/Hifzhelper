@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/admin.css */
+/* Hifzhelper build 4.2.9.2 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -215,58 +215,188 @@ button.secondary.danger {
 .admin-status-line.is-error { color: var(--color-error, #b3261e); opacity: 1; }
 /* DESKTOP: one wide row per user, the actions in their own cell */
 .admin-row-actions { display: none; }
-/* MOBILE: two rows per user — fields, then every icon/button — tethered
-   so the pair reads as one record (no divider between them). */
-/* V4.2.2 (user): on mobile each user is a compact CARD of FOUR ROWS —
-   id (small grey) / Name · WhatsApp / Role · Group · Status / actions —
-   with a small caption above every input. The old treatment put one
-   label and one field per LINE, eight deep, so a single user filled the
-   screen; the compression comes from grouping fields ACROSS a row, not
-   from dropping their captions. */
+/* MOBILE: the fields TR + following actions TR are styled as one visual
+   card. V4.2.9 final order: Name heading / Unique ID + WhatsApp /
+   Role + Group + Status / actions. */
 @media (max-width: 767px) {
-  .admin-table-head { display: none; }
-  .admin-table { min-width: 0; }
+  /* V4.2.9: mobile heading copies the Maktab Attendance header-card
+     treatment without changing the established desktop Admin header. */
+  #screen-admin .admin-header-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    background: var(--color-surface);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-md);
+  }
+  #screen-admin .admin-header-row h2 { margin: 0; }
+  #screen-admin .admin-header-row .screen-close-btn { margin-left: auto; }
+
+  /* V4.2.9: mobile is a CARD LIST, not a table inside a white table
+     container. Desktop/tablet retain the real table unchanged. */
+  .admin-table.admin-table-head { display: none; }
+  .admin-wrap {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    max-height: none;
+    overflow: visible;
+  }
+  .admin-table { min-width: 0; background: transparent; }
   .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
-  .admin-row-fields {
+
+  /* Four short visual rows:
+       1 name (card heading, no caption)
+       2 Unique ID | WhatsApp
+       3 Role | Group | Status
+       4 Reset PIN + delete/copy/share actions (the following action TR). */
+  .admin-table tr.admin-row-fields {
+    display: grid;
     background: var(--color-surface);
     border: 1px solid var(--color-table-border);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--space-sm);
+    border-bottom: none;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    margin-bottom: 0;
     padding: var(--space-sm) var(--space-md) 0;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-areas: 'id id id' 'name name wa' 'role group status';
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-areas:
+      'name name name name name name'
+      'id id id wa wa wa'
+      'role role group group status status';
     gap: 0 var(--space-sm);
   }
-  .admin-row-fields td { padding: 0 0 var(--space-sm); border: none; }
+  .admin-row-fields td { padding: 0 0 var(--space-sm); border: none; min-width: 0; }
   .admin-row-fields td::before {
     content: attr(data-label);
-    display: block; font-size: 10px; text-transform: uppercase;
-    letter-spacing: .04em; color: var(--color-ink-soft); margin-bottom: 2px;
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-ink-soft);
+    margin-bottom: 2px;
+  }
+  .admin-row-fields td[data-label="Name"] { grid-area: name; }
+  .admin-row-fields td[data-label="Name"]::before { display: none; }
+  .admin-row-fields td[data-label="Name"] .admin-inline {
+    font-size: 17px;
+    font-weight: 700;
+    padding: 2px 0 6px;
   }
   .admin-row-fields .admin-cell-id { grid-area: id; font-size: 11px; color: var(--color-ink-soft); }
-  .admin-row-fields .admin-cell-id::before { display: none; }   /* the id needs no caption */
-  .admin-row-fields td[data-label="Name"] { grid-area: name; }
   .admin-row-fields td[data-label="WhatsApp"] { grid-area: wa; }
   .admin-row-fields td[data-label="Role"] { grid-area: role; }
   .admin-row-fields td[data-label="Group"] { grid-area: group; }
   .admin-row-fields td[data-label="Status"] { grid-area: status; }
-  .admin-row-fields .admin-actions-cell { display: none; }      /* row 4 is the actions row */
+  .admin-row-fields .admin-actions-cell { display: none; }
+
   .admin-row-actions {
+    display: block;
     background: var(--color-surface);
-    border: 1px solid var(--color-table-border); border-top: none;
+    border: 1px solid var(--color-table-border);
+    border-top: none;
     border-radius: 0 0 var(--radius-md) var(--radius-md);
-    margin-top: calc(var(--space-sm) * -1 - 1px);
-    margin-bottom: var(--space-md);
+    margin: 0 0 var(--space-md);
   }
-  .admin-row-fields { border-bottom: none; border-radius: var(--radius-md) var(--radius-md) 0 0; margin-bottom: 0; }
-  .admin-row-new { grid-template-areas: 'id id id' 'name name wa' 'role group status' 'act act act'; }
-  .admin-row-new .admin-actions-cell { display: block; grid-area: act; }
-  /* V4.2.5: the V4.1.0 STACKED rules used to follow here and, being
-     later, overrode the card layout above — which is what re-imposed the
-     eight-deep stacking. Deleted; only `.admin-row-actions { display:
-     block }` and the actions strip are kept, since the card needs them. */
-  .admin-row-actions { display: block; }
   .admin-row-actions td { border-bottom: none; padding: 4px var(--space-md) var(--space-sm); }
-  .admin-actions-strip { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+  .admin-actions-strip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: nowrap;
+  }
+  .admin-row-actions [data-reset-pin] {
+    order: 1;
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+    font-weight: 600;
+    padding: 6px 12px;
+  }
+  .admin-row-actions [data-delete] { order: 2; }
+  .admin-row-actions [data-copy-url] { order: 3; }
+  .admin-row-actions [data-share-url] { order: 4; }
+
+  /* V4.2.9.2: registration is a purpose-built MOBILE card instead of
+     forcing the desktop table row into the card grid. Desktop/tablet still
+     use the original inline table row. */
+  .admin-mobile-register-card {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--color-surface);
+    border: 1px solid var(--color-table-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin: 0 0 var(--space-md);
+  }
+  .admin-mobile-register-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .admin-mobile-register-heading strong {
+    flex: 1 1 auto;
+    font-size: 17px;
+    line-height: 1.25;
+  }
+  .admin-mobile-register-heading .icon-btn { flex: 0 0 auto; }
+  .admin-mobile-register-inputs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .admin-mobile-register-options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-sm);
+    align-items: end;
+    margin-bottom: var(--space-sm);
+  }
+  .admin-mobile-register-card label > span:first-child {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-ink-soft);
+    margin-bottom: 2px;
+  }
+  .admin-mobile-register-card .admin-inline:not([type="checkbox"]) {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .admin-mobile-new-status {
+    min-height: 32px;
+    align-items: center;
+  }
+  .admin-mobile-new-status > span {
+    font-size: 14px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: inherit;
+    margin: 0;
+  }
+  .admin-mobile-register-actions {
+    display: flex;
+    align-items: center;
+  }
+  .admin-mobile-register-actions .admin-register-btn {
+    width: auto;
+    min-width: 110px;
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+    font-weight: 600;
+    padding: 7px 16px;
+  }
+  .admin-mobile-register-match { margin-top: var(--space-sm); }
+  .admin-mobile-register-card .admin-match-actions {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    margin-top: var(--space-xs);
+  }
 }
+

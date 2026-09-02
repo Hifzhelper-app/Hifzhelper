@@ -61,17 +61,17 @@ check('72: quarter position is a shared 1|2|3|4 switch with hidden value',
   && /Array\.from\(\{ length: 4 \}/.test(sdJs)
   && /wireSwitch\('sdq_quarter_switch'/.test(sdJs));
 check('72: the picker has its own right-hand checkbox',
-  /class="checkbox-box"><input type="checkbox" id="sdq_confirm"/.test(sdJs));
+  /class="checkbox-box(?: [^"]*)?"><input type="checkbox" id="sdq_confirm"/.test(sdJs));
 check('72: ticking the picker contributes structuralQuarterBounds directly to the existing save composite',
   /const picked = sdqConfirm && sdqConfirm\.checked \? sdqBounds\(\) : null;/.test(sdJs)
   && /fromSurah: picked\.startSurah/.test(sdJs)
   && /toSurah: picked\.endSurah/.test(sdJs));
 check('72: a successful save clears the picker confirmation before the preserving re-render (no duplicate-save carryover)',
   /const sdqConfirm = document\.getElementById\('sdq_confirm'\);\n    if\(sdqConfirm\) sdqConfirm\.checked = false;\n    await renderSabaqDhorScreen\(\);/.test(sdJs));
-check('72/67: picker controls are min-width guarded and no longer span the whole shared grid',
-  /\.sdq-picker \{ grid-column: 1; min-width: 0;/.test(detailCss)
+check('72/67: picker controls remain min-width guarded after later alignment refinements',
+  /\.sdq-picker \{ grid-column: 1(?: \/ -1)?; min-width: 0;/.test(detailCss)
   && /\.sdq-field select \{\n  min-width: 0;/.test(detailCss)
-  && /#sdq_quarter_switch \{ width: 100%; min-width: 0; \}/.test(detailCss));
+  && /#sdq_quarter_switch \{[^}]*width: 100%; min-width: 0;/.test(detailCss));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8.2 | css/journal-table.css */
+/* Hifzhelper build 4.2.10 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -352,6 +352,21 @@
    the PJ's own cards: the student-name row, and the notes block's
    teacher-side variant. */
 .maktab-name-row { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; padding: 2px 0 6px; }
+/* V4.2.10: identify the active student without making the name louder.
+   The same soft-blue pill language already used on the Maktab Summary
+   highlights the name consistently on Sabaq / Sabaq Dhor / Dhor. */
+.maktab-name-text {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: var(--color-accent-soft, #D0DBE7);
+  border-radius: 999px;
+  padding: 4px 14px;
+}
 .maktab-name-haidh { padding: 2px; }
 .maktab-name-haidh svg { width: 14px; height: 14px; }
 .mk-vis-row { display: flex; gap: 10px; align-items: center; font-size: 12px; margin: 0 0 4px; }

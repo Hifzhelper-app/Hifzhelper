@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/logDetailScreen.js */
+/* Hifzhelper build 4.2.10 | js/logDetailScreen.js */
 // ============================================================
 // Hifzhelper — unified day-log view orchestrator (V3.6.1)
 // Replaces the old 3 separate Sabaq/Sabaq Dhor/Dhor screens with one
@@ -42,6 +42,141 @@ document.getElementById('logDetailClose').innerHTML = iconHtml('close');
 // V4.1.1: the day card closes to the maktab summary for a teaching
 // profile, Home for a student — homeScreenFor() in js/app.js.
 document.getElementById('logDetailClose').addEventListener('click', () => showScreen(typeof homeScreenFor === 'function' ? homeScreenFor() : 'home'));
+
+// V4.2.10: one student search above the shared Sabaq / Sabaq Dhor / Dhor
+// rail. It is deliberately a MAKTAB TEACHING control only: PJ mode has no
+// other student to switch to, and a student's read-only Maktab view must
+// never expose the maktab roster. The normal route into this screen is the
+// summary, so its in-memory roster cache is reused instantly. A defensive
+// fallback to the same summary endpoint runs only if that cache is absent.
+let logDetailStudentSearchRoster = [];
+let logDetailStudentSearchLoad = null;
+
+function logDetailCurrentCard(){
+  const active = document.querySelector('#logDetailDots .dot.active');
+  if(active){
+    const idx = parseInt(active.dataset.index, 10);
+    if(Number.isInteger(idx) && LOG_DETAIL_CARD_ORDER[idx]) return LOG_DETAIL_CARD_ORDER[idx];
+  }
+  return 'sabaq';
+}
+
+function seedLogDetailStudentSearchFromCache(){
+  if(typeof maktabRosterCache !== 'undefined' && Array.isArray(maktabRosterCache) && maktabRosterCache.length){
+    logDetailStudentSearchRoster = maktabRosterCache.slice();
+    return true;
+  }
+  return false;
+}
+
+async function ensureLogDetailStudentSearchRoster(){
+  if(seedLogDetailStudentSearchFromCache()) return logDetailStudentSearchRoster;
+  if(logDetailStudentSearchRoster.length) return logDetailStudentSearchRoster;
+  if(logDetailStudentSearchLoad) return logDetailStudentSearchLoad;
+  logDetailStudentSearchLoad = (async () => {
+    try{
+      const date = (typeof logCtxDate === 'function' && logCtxDate())
+        || (typeof appTodayISO === 'function' ? appTodayISO() : null);
+      const data = await apiMaktabSummary(date);
+      logDetailStudentSearchRoster = (data && Array.isArray(data.students))
+        ? data.students.map(stu => ({
+            id: stu.id,
+            name: stu.name,
+            group_name: stu.group_name || '',
+            track_haidh: !!stu.track_haidh
+          }))
+        : [];
+    } catch(e){
+      logDetailStudentSearchRoster = [];
+    } finally {
+      logDetailStudentSearchLoad = null;
+    }
+    return logDetailStudentSearchRoster;
+  })();
+  return logDetailStudentSearchLoad;
+}
+
+function closeLogDetailStudentSearchResults(){
+  const results = document.getElementById('logDetailStudentSearchResults');
+  if(results){ results.innerHTML = ''; results.classList.add('hidden'); }
+}
+
+async function renderLogDetailStudentSearchResults(){
+  const input = document.getElementById('logDetailStudentSearchInput');
+  const results = document.getElementById('logDetailStudentSearchResults');
+  if(!input || !results) return;
+  const q = input.value.trim().toLowerCase();
+  if(!q){ closeLogDetailStudentSearchResults(); return; }
+
+  const roster = await ensureLogDetailStudentSearchRoster();
+  // The context may have changed while the roster was loading.
+  if(!(typeof logCtxIsMaktab === 'function' && logCtxIsMaktab())
+     || (typeof logCtxReadOnly === 'function' && logCtxReadOnly())) return;
+
+  const matches = roster.filter(stu =>
+    String(stu.name || '').toLowerCase().includes(q)
+    || String(stu.id || '').toLowerCase().includes(q)
+  ).slice(0, 10);
+
+  results.innerHTML = '';
+  if(!matches.length){
+    const empty = document.createElement('div');
+    empty.className = 'log-detail-student-search-empty';
+    empty.textContent = 'No matching student.';
+    results.appendChild(empty);
+  } else {
+    matches.forEach(stu => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'log-detail-student-search-result';
+      btn.textContent = stu.name + (stu.group_name ? ' · ' + stu.group_name : '');
+      btn.addEventListener('click', async () => {
+        const initialCard = logDetailCurrentCard();
+        const date = (typeof logCtxDate === 'function' && logCtxDate()) || null;
+        input.value = '';
+        closeLogDetailStudentSearchResults();
+        await openMaktabDay(stu, date, initialCard);
+      });
+      results.appendChild(btn);
+    });
+  }
+  results.classList.remove('hidden');
+}
+
+function syncLogDetailStudentSearch(){
+  const wrap = document.getElementById('logDetailStudentSearch');
+  const input = document.getElementById('logDetailStudentSearchInput');
+  if(!wrap || !input) return;
+  const canSearch = typeof logCtxIsMaktab === 'function'
+    && logCtxIsMaktab()
+    && !(typeof logCtxReadOnly === 'function' && logCtxReadOnly());
+  wrap.classList.toggle('hidden', !canSearch);
+  if(!canSearch){
+    input.value = '';
+    closeLogDetailStudentSearchResults();
+    return;
+  }
+  seedLogDetailStudentSearchFromCache();
+}
+
+(function wireLogDetailStudentSearch(){
+  const input = document.getElementById('logDetailStudentSearchInput');
+  if(!input) return;
+  input.addEventListener('input', renderLogDetailStudentSearchResults);
+  input.addEventListener('focus', renderLogDetailStudentSearchResults);
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Escape'){
+      input.value = '';
+      closeLogDetailStudentSearchResults();
+      input.blur();
+    }
+  });
+  document.addEventListener('click', e => {
+    if(!e.target.closest || !e.target.closest('#logDetailStudentSearch')){
+      closeLogDetailStudentSearchResults();
+    }
+  });
+})();
 
 // V3.51.0 (confirmed in chat): the icon bottombar (Cancel/Delete/Update)
 // is gone -- Cancel is the X in each edit topbar now, and the button flow
@@ -162,6 +297,9 @@ function exitEditScreenMode(cardId){
 }
 
 async function renderLogDetailScreen(initialCard){
+  // V4.2.10: paint the teaching-only student switcher immediately from
+  // the summary's memory cache; card data may continue loading below.
+  syncLogDetailStudentSearch();
   // V3.91.0 (user scribble, 2026-08-29): the calendar-info label is
   // GONE from the day-card date rows — the markers stay on the journal
   // cells, the calendars, and the calendar page.

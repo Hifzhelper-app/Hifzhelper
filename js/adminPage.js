@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/adminPage.js */
+/* Hifzhelper build 4.2.9.2 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -8,6 +8,14 @@
 // ============================================================
 
 let adminUsers = [];
+
+// V4.2.9.2: registration becomes a purpose-built card on phone width only.
+// Desktop/tablet retain the existing inline table row.
+function adminIsMobile(){
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 767px)').matches
+    : false;
+}
 
 // V4.2.1 (user): "Register a user" sits ABOVE the table and opens the new
 // user as its FIRST ROW — no separate register box any more.
@@ -107,7 +115,36 @@ function renderAdminUsersList(){
   const canShare = typeof navigator.share === 'function';
   const esc = (v) => String(v == null ? '' : v).replace(/"/g, '&quot;');
 
-  list.innerHTML = `
+  const mobileRegister = adminAdding && adminIsMobile() ? `
+    <div class="admin-mobile-register-card" id="adminMobileRegisterCard">
+      <div class="admin-mobile-register-heading">
+        <strong>Register a student</strong>
+        <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
+      </div>
+      <div class="admin-mobile-register-inputs">
+        <label><span>Name</span><input type="text" class="admin-inline" id="admin_new_name" placeholder="Name"></label>
+        <label><span>WhatsApp</span><input type="text" class="admin-inline" id="admin_new_whatsapp" placeholder="WhatsApp number"></label>
+      </div>
+      <div class="admin-mobile-register-options">
+        <label><span>Role</span><select class="admin-inline" id="admin_new_role">
+          <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
+        </select></label>
+        <label><span>Group</span><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></label>
+        <label><span>Status</span><span class="admin-status admin-mobile-new-status"><input type="checkbox" class="admin-inline" id="admin_new_active" checked><span>Active</span></span></label>
+      </div>
+      <div class="admin-mobile-register-actions"><button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button></div>
+      <div class="admin-mobile-register-match hidden" id="adminRegisterMatchRow">
+        <div class="form-hint" id="adminRegisterMatchHint"></div>
+        <div class="admin-match-actions">
+          <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
+          <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
+          <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset that student's PIN</button>
+        </div>
+        <div class="form-error" id="adminRegisterError"></div>
+      </div>
+      <div class="form-error" id="adminRegisterRowError"></div>
+    </div>` : '';
+  list.innerHTML = `${mobileRegister}
     <table class="admin-table admin-table-head">${ADMIN_COLGROUP}<thead><tr>
       <th class="admin-th-id">Unique ID</th><th>Name</th><th>WhatsApp</th><th>Role</th>
       <th>Group</th><th>Status</th><th class="admin-th-actions">Actions</th>
@@ -115,50 +152,53 @@ function renderAdminUsersList(){
     <div class="admin-wrap"><table class="admin-table admin-table-body">${ADMIN_COLGROUP}<tbody></tbody></table></div>`;
   const tbody = list.querySelector('tbody');
 
-  // ---- the REGISTER row: first in the table, opened by the button above ----
+  // ---- registration: purpose-built card on mobile; original row on desktop ----
   if(adminAdding){
-    const tr = document.createElement('tr');
-    tr.className = 'admin-row admin-row-fields admin-row-new';
-    tr.innerHTML = `
-      <td class="mono admin-cell-id admin-dash" data-label="Unique ID">new</td>
-      <td data-label="Name"><input type="text" class="admin-inline" id="admin_new_name" placeholder="Name"></td>
-      <td data-label="WhatsApp"><input type="text" class="admin-inline" id="admin_new_whatsapp" placeholder="WhatsApp"></td>
-      <td data-label="Role"><select class="admin-inline" id="admin_new_role">
-        <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
-      </select></td>
-      <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></td>
-      <td data-label="Status"><span class="admin-dash">—</span></td>
-      <td class="admin-actions-cell" data-label="Actions">
-        <button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button>
-        <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
+    if(!adminIsMobile()){
+      const tr = document.createElement('tr');
+      tr.className = 'admin-row admin-row-fields admin-row-new';
+      tr.innerHTML = `
+        <td class="mono admin-cell-id admin-dash" data-label="Unique ID">new</td>
+        <td data-label="Name"><input type="text" class="admin-inline" id="admin_new_name" placeholder="Name"></td>
+        <td data-label="WhatsApp"><input type="text" class="admin-inline" id="admin_new_whatsapp" placeholder="WhatsApp"></td>
+        <td data-label="Role"><select class="admin-inline" id="admin_new_role">
+          <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
+        </select></td>
+        <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></td>
+        <td data-label="Status"><span class="admin-dash">—</span></td>
+        <td class="admin-actions-cell" data-label="Actions">
+          <button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button>
+          <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
+        </td>`;
+      tbody.appendChild(tr);
+      const trMatch = document.createElement('tr');
+      trMatch.className = 'admin-row admin-row-match hidden';
+      trMatch.id = 'adminRegisterMatchRow';
+      trMatch.innerHTML = `<td colspan="7">
+        <div class="form-hint" id="adminRegisterMatchHint"></div>
+        <div class="admin-match-actions">
+          <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
+          <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
+          <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset that student's PIN</button>
+        </div>
+        <div class="form-error" id="adminRegisterError"></div>
       </td>`;
-    tbody.appendChild(tr);
-    const trMatch = document.createElement('tr');
-    trMatch.className = 'admin-row admin-row-match hidden';
-    trMatch.id = 'adminRegisterMatchRow';
-    trMatch.innerHTML = `<td colspan="7">
-      <div class="form-hint" id="adminRegisterMatchHint"></div>
-      <div class="admin-match-actions">
-        <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
-        <button type="button" class="secondary" id="adminRegisterContinueBtn">Continue</button>
-        <button type="button" class="secondary" id="adminRegisterResetPinBtn">Reset that student's PIN</button>
-      </div>
-      <div class="form-error" id="adminRegisterError"></div>
-    </td>`;
-    tbody.appendChild(trMatch);
-    const trErr = document.createElement('tr');
-    trErr.className = 'admin-row admin-row-newerr';
-    trErr.innerHTML = `<td colspan="7"><div class="form-error" id="adminRegisterRowError"></div></td>`;
-    tbody.appendChild(trErr);
+      tbody.appendChild(trMatch);
+      const trErr = document.createElement('tr');
+      trErr.className = 'admin-row admin-row-newerr';
+      trErr.innerHTML = `<td colspan="7"><div class="form-error" id="adminRegisterRowError"></div></td>`;
+      tbody.appendChild(trErr);
+    }
     wireAdminRegisterRow();
-    const gsel = tr.querySelector('#admin_new_group');
+    const gsel = document.getElementById('admin_new_group');
     const fillNew = (groups) => {
+      if(!gsel) return;
       gsel.innerHTML = '<option value="">No group</option>' + groups.filter(g => !g.retired).map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
       gsel.disabled = false;
     };
     if(adminGroupsCache) fillNew(adminGroupsCache);
     else apiGetMaktabGroups().then(g => { adminGroupsCache = g; fillNew(g); }).catch(() => {});
-    setTimeout(() => tr.querySelector('#admin_new_name').focus(), 0);
+    setTimeout(() => { const el = document.getElementById('admin_new_name'); if(el) el.focus(); }, 0);
   }
 
   if(!filtered.length && !adminAdding){
@@ -367,17 +407,26 @@ function cancelAdminMatch(){
 async function finishAdminRegisterUI(result){
   const roleEl = document.getElementById('admin_new_role');
   const groupEl = document.getElementById('admin_new_group');
+  const activeEl = document.getElementById('admin_new_active');
   const role = roleEl ? roleEl.value : 'student';
   const group = groupEl && !groupEl.disabled && groupEl.value !== '' ? Number(groupEl.value) : null;
+  const active = activeEl ? activeEl.checked : true; // mobile card only; desktop remains active-by-default
   try{
     if(role !== 'student') await apiAdminChangeRole(result.id, role);
-    if(group != null && role === 'student') await apiAdminUpdateUser(result.id, { group_id: group });
+    const fields = {};
+    if(group != null && role === 'student') fields.group_id = group;
+    if(!active) fields.active = false;
+    if(Object.keys(fields).length) await apiAdminUpdateUser(result.id, fields);
   } catch(e){
-    adminFlash(`Registered ${result.id}, but couldn't apply ${role !== 'student' ? 'the role' : 'the group'}: ${e.message}`, true);
+    adminFlash(`Registered ${result.id}, but couldn't apply all selected settings: ${e.message}`, true);
   }
   adminMatchedId = null;
   adminAdding = false;
   adminJustCreatedId = result.id;   // V4.2.1: pinned to the top row, highlighted
+  if(adminIsMobile()){
+    const search = document.getElementById('admin_search');
+    if(search) search.value = ''; // V4.2.9.2: ensure the just-created card is immediately visible for Copy/Share
+  }
   adminFlash(`Created — ID: ${result.id}. Share it with ${result.name} for their first login.`);
   await loadAdminUsers();
 }

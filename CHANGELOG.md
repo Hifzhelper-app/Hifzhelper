@@ -26,6 +26,63 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.10 — Log-detail student switcher + active-name pill + Sabaq Dhor selector alignment (2026-09-02)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `css/journal-table.css`, `js/logDetailScreen.js`, `js/sabaqDhorPage.js`, `js/sw.js`, `tests/verify_v4210_ui.mjs` (new), `tests/verify_v428_ui.mjs`, `tests/verify_v4291_ui.mjs`, `tests/verify_v4292_ui.mjs`, `tests/verify_v3850_batch.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Student search on every Maktab log-detail card and screen size.** A shared **Search student** field now sits above the Sabaq / Sabaq Dhor / Dhor rail for teacher/admin Maktab use on phone, tablet and desktop. It reuses the Maktab Summary's in-memory roster when available, falls back to the existing summary read only if needed, matches by name or Unique ID, and switches directly to the selected student while preserving the currently active detail card and date. It remains hidden in Personal Journal mode and in a student's read-only Maktab view so the roster is not exposed there.
+2. **Active student highlighted with a pill, not larger typography.** The existing Maktab-only student-name row on each of the three detail cards now uses the established soft-blue pill treatment (`--color-accent-soft`) with single-line ellipsis protection. Font sizing remains balanced.
+3. **No-history Sabaq Dhor selector aligned as one control row.** The Juz select and 1|2|3|4 Quarter/Ru'b segmented control now both have an explicit **42px** control height. The confirmation checkbox is moved inside that same selector row and aligned to the control baseline, so Juz + structural position + confirmation read as one coordinated unit. The picker spans the available group width with `minmax(0,1fr)` shrink guards, preserving the earlier rail-width fix.
+4. **Version discipline preserved.** Only served files genuinely edited in this release receive a `4.2.10` top build header: `css/detail-pages.css`, `css/journal-table.css`, `js/logDetailScreen.js`, `js/sabaqDhorPage.js`, and `js/sw.js`. `index.html` and the service-worker precache move the shared page/cache key to 4.2.10; untouched served-file headers retain their previous last-edit versions.
+
+**Regression coverage:** new dependency-free `verify_v4210_ui.mjs` pins the shared search, teaching-only visibility, roster/cache behaviour, active-card preservation, name pill and 42px Juz/position/checkbox row. Earlier V4.2.8 and V4.2.9.x harnesses were made release-forward where their assertions described a contract that remains valid after this release.
+
+**Verification in this build container:** V4.2.10 UI **11/11**, cumulative V4.2.8 UI **17/17**, V4.2.9.1 **6/6**, V4.2.9.2 **11/11**, build/version **6/6**, served-script syntax **36/36**. `run-all.mjs` reports **300 passed, 0 failed** among harnesses able to report; 27 older harnesses do not report because this checkout lacks `jsdom` and/or their legacy fixtures.
+
+---
+
+## V4.2.9.2 — Mobile Student Management registration card (2026-09-02)
+
+**Files touched:** `css/admin.css`, `js/adminPage.js`, `index.html`, `js/sw.js`, `tests/verify_v4292_ui.mjs` (new), `tests/verify_v4291_ui.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Mobile registration is now a real card.** Below 768px, tapping **+ Register a user** renders a purpose-built **Register a student** card above the user list rather than trying to force the desktop registration `<tr>` through the mobile table/card CSS. This removes the malformed blue/table-cell block seen in Safari. Desktop/tablet keep the established inline table registration row.
+2. **Requested mobile fields.** The card has **Name** and **WhatsApp number** inputs, then **Role / Group / Status** controls, followed by a dedicated green **Register** button. Status defaults Active; unchecking it applies inactive immediately after account creation. Existing duplicate-match Continue / Reset-PIN safeguards remain available within the card.
+3. **New account stays immediately actionable.** The existing `adminJustCreatedId` pin-to-top behaviour is retained. On mobile any active search text is also cleared after successful registration so the just-created card cannot be filtered out before the admin uses **Copy** or **Share**. The pin remains until leaving Student Management or creating another account.
+4. **Version discipline preserved.** Only served files actually edited here receive a `4.2.9.2` top build header: `css/admin.css`, `js/adminPage.js`, and `js/sw.js`. The page/cache `?v=` key and service-worker cache/precache key advance together to 4.2.9.2; untouched served-file headers stay at their previous last-edit version.
+
+**Regression coverage:** new dependency-free `verify_v4292_ui.mjs` pins the mobile-only card, its fields/status behaviour, desktop-row preservation, pin-to-top/search clearing and V4.2.9.2 release keys. The V4.2.9.1 harness was made release-forward so it continues checking its cascade guarantees after later page/cache keys.
+
+**Verification in this build container:** V4.2.9.2 UI **11/11**, V4.2.9.1 UI **6/6**, V4.2.9 UI **11/11**, build/version **6/6**, served-script syntax **36/36**. `run-all.mjs` reports **289 passed, 0 failed** from harnesses able to run here; 27 older harnesses do not report because this checkout lacks `jsdom` and/or their legacy SQL fixtures.
+
+---
+
+## V4.2.9.1 — Student Management mobile cascade correction (2026-09-02)
+
+**Files touched:** `css/admin.css`, `index.html`, `js/sw.js`, `tests/verify_v4291_ui.mjs` (new), `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **The first V4.2.9 remains the original release.** This follow-up gets its own patch number rather than reusing V4.2.9.
+2. **Mobile table header stays hidden.** The first V4.2.9 used `.admin-table-head { display:none; }`, but the later generic `.admin-table { display:block; }` rule could win because both selectors had equal specificity. The hide rule is now `.admin-table.admin-table-head`, so the desktop header strip cannot reappear on phone width.
+3. **Student card rows stay a grid.** The first V4.2.9 card rule `.admin-row-fields { display:grid; }` could lose to the more-specific generic `.admin-table tr { display:block; }` mobile rule. The field row now uses `.admin-table tr.admin-row-fields { display:grid; }`, preserving the intended Name / ID+WhatsApp / Role+Group+Status / actions structure.
+4. **Version discipline preserved.** Only served files actually edited by this correction receive a `4.2.9.1` top build header: `css/admin.css` and `js/sw.js`. `index.html` advances the page/cache query key to 4.2.9.1 and the service-worker cache/precache key moves with it. Untouched served source headers remain at their own last-edit versions.
+
+**Regression coverage:** new dependency-free `verify_v4291_ui.mjs` pins both specificity fixes, the existing four-row card grid, and the V4.2.9.1 page/cache keys.
+
+**Verification in this build container:** V4.2.9.1 UI **6/6**, build/version **6/6**, served-script syntax **36/36**, original V4.2.9 UI **11/11**. `run-all.mjs` reports **278 passed, 0 failed** from harnesses that can run here; 27 older harnesses do not report because this checkout lacks `jsdom`/legacy fixtures.
+
+---
+
+## V4.2.9 — Student Management mobile card refinement (2026-09-02)
+
+**Files touched:** `index.html`, `css/admin.css`, `js/auth.js`, `js/sw.js`, `tests/verify_v429_ui.mjs` (new), `tests/verify_v3850_batch.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Global page rename.** The management destination is now **Student Management** everywhere the page is named: its page heading and the shared admin-only nav/home-tile label. The account role named **Admin** is unchanged.
+2. **Attendance-style heading on mobile only.** The established desktop/tablet Admin header structure is retained. Below 768px its icon/title/close row receives the same white-card, flex-aligned treatment used by Maktab Attendance.
+3. **Mobile search + table chrome.** The search placeholder is simply **Search**. Below 768px the desktop header table stays hidden and the old `.admin-wrap` white bordered/scrolled underlay is removed visually, leaving independent student cards directly on the page surface. Desktop/tablet keep the existing table.
+4. **Four-row mobile student cards.** Row 1 is the editable student **name as the card heading**, with no `Name` caption. Row 2 is **Unique ID | WhatsApp**. Row 3 is **Role | Group | Status**. Row 4 is the actions strip: **Reset PIN** in the app success green, then **Delete / Copy / Share** icons. Existing inline autosave, reset, delete, copy and native-share behaviours are unchanged.
+5. **Version discipline retained.** Only served files genuinely edited in this release receive a `4.2.9` top build header (`css/admin.css`, `js/auth.js`, `js/sw.js`). The page/cache `?v=` key and service-worker cache/precache key move together to 4.2.9 as required. Untouched served source headers stay at their own last-edit versions.
+
+---
+
 ## V4.2.8.2 — Maktab Summary return-paint + mobile attendance placement (2026-09-02)
 
 **Files touched:** `css/journal-table.css`, `js/maktabSummary.js`, `index.html`, `js/sw.js`, `tests/verify_v428_ui.mjs`, `tests/verify_build_stamp.mjs`, `CONVENTIONS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**

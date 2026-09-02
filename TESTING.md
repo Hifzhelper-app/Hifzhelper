@@ -2313,6 +2313,68 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.10 — log-detail student search / name pill / Sabaq Dhor selector checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.10**. No worker deploy or migration is required.
+
+1. **Search on all three detail cards:** from Maktab Summary open a student's Sabaq, Sabaq Dhor and Dhor detail views in turn. On phone, tablet and desktop, **Search student** remains available above the shared rail.
+2. **Switch student without backing out:** while on Sabaq Dhor (repeat once on Dhor), type another student's name or Unique ID, choose the result, and confirm that student's data loads while the same detail card and selected date remain active.
+3. **Search privacy/context:** open the Personal Journal log-detail screen as a student and the student's own read-only Maktab day. The roster search must not appear in either context.
+4. **Student identity:** in teacher/admin Maktab detail, the active student's name appears in a soft-blue rounded pill on Sabaq, Sabaq Dhor and Dhor. It should remain normal-sized text and ellipsise rather than overflow if exceptionally long.
+5. **No-history Sabaq Dhor:** use a student with no derived Sabaq Dhor rows. Juz, the **1 | 2 | 3 | 4** Quarter/Ru'b switch and the confirmation checkbox must read as one horizontal selector group. The Juz selector and segmented pill must be the same visual height and the checkbox must be vertically centred on that control line.
+6. **Picker behaviour:** change Juz and position, tick the checkbox and Save. Confirm the same structural quarter continues to save; there is still no old quarter dropdown or **Use** button.
+7. **Rail-width regression:** check phone and desktop/tablet. The Sabaq Dhor card must remain the same width as its neighbours; the new full-width aligned picker must not widen the horizontal rail.
+
+**Automated coverage:** `node tests/verify_v4210_ui.mjs` = **11/11**; cumulative `verify_v428_ui.mjs` = **17/17**; `verify_v4291_ui.mjs` = **6/6**; `verify_v4292_ui.mjs` = **11/11**; `verify_build_stamp.mjs` = **6/6**; `verify_syntax.mjs` = **36/36**. `run-all.mjs` reports **300 passed, 0 failed** among harnesses that can report in this container; 27 older harnesses remain unavailable because `jsdom` and/or legacy fixtures are absent.
+
+---
+
+## V4.2.9.2 — mobile Student Management registration-card checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9.2**. No worker deploy or migration is required.
+
+1. **Open registration on phone:** tap **+ Register a user**. A clean white **Register a student** card must appear above the student cards. There must be no blue/malformed table-cell registration block.
+2. **Card fields:** confirm Name and WhatsApp number inputs, then Role / Group / Status controls, then the green Register button. Status starts Active and can be unchecked.
+3. **Duplicate safeguard:** register details matching an existing student and confirm the existing Continue / Cancel / Reset-that-student's-PIN options still appear inside the registration card.
+4. **Successful registration:** create a test student. The registration card closes and the new student's normal card must be the **first student in the list**. Copy and native Share (when supported) must be immediately available on that card.
+5. **Search clearing:** enter search text first, open registration, then create a student that would not match that search. After success, Search should be cleared and the newly-created card should still be visible at the top.
+6. **Status choice:** register one disposable test account with Status unchecked and confirm its resulting card is Inactive.
+7. **Desktop/tablet regression:** at >=768px, **+ Register a user** must still open the existing inline table registration row; the new phone card is not used.
+
+**Automated coverage:** `node tests/verify_v4292_ui.mjs` pins the mobile card structure/fields, desktop registration preservation, status application, pin-to-top/search clearing and V4.2.9.2 page/cache keys.
+Current container run: V4.2.9.2 **11/11**, V4.2.9.1 **6/6**, V4.2.9 **11/11**, build/version **6/6**, syntax **36/36**; `run-all.mjs` totals **289 passed, 0 failed** among harnesses that can report here.
+
+---
+
+## V4.2.9.1 — Student Management mobile cascade correction
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9.1**. No worker deploy or migration is required.
+
+1. **Header strip:** at phone width there must be no `UNIQUE ID / NAME / WHATSAPP / ...` table header above the student cards.
+2. **Card structure:** each student remains one compact four-row card: Name / Unique ID + WhatsApp / Role + Group + Status / Reset PIN + Delete + Copy + Share. The fields must not collapse back into one long vertical stack.
+3. **No underlay regression:** the cards still sit directly on the Student Management page surface with no second white table/body panel behind them.
+4. **Larger layouts:** at 768px and wider, the normal editable Student Management table/header remains unchanged.
+5. **Release identity:** this is a follow-up to the first V4.2.9 and must display **v4.2.9.1**, not v4.2.9.
+
+**Automated coverage:** `node tests/verify_v4291_ui.mjs` = **6/6**; `verify_build_stamp.mjs` = **6/6**; `verify_syntax.mjs` = **36/36**; original `verify_v429_ui.mjs` remains **11/11**. `run-all.mjs` reports **278 passed, 0 failed** across harnesses able to run in this container; the remaining older harnesses are unavailable because `jsdom`/legacy fixtures are absent.
+
+---
+
+## V4.2.9 — Student Management mobile device checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9**. No worker deploy or migration is required.
+
+1. **Name everywhere:** the menu/home tile and page heading say **Student Management**. Role selectors still correctly offer Student / Teacher / Admin — only the page name changed.
+2. **Heading:** on a phone compare Student Management with Maktab Attendance. The icon/title/X should use the same tidy white header-card treatment and alignment. On larger layouts the established Student Management/Admin header structure should remain as before.
+3. **Search + underlay:** on a phone the placeholder reads **Search**. There is no coloured table header row and no second white table/body panel behind the student cards; the cards sit directly on the page surface.
+4. **Card row 1:** each student begins with her editable **name as the card heading**, with no `NAME` caption above it.
+5. **Card row 2:** **Unique ID** and **WhatsApp** sit side-by-side and remain readable/editable as applicable.
+6. **Card row 3:** **Role**, **Group** and **Status** share one compact row. Change each control once and confirm the existing autosave behaviour still works.
+7. **Card row 4:** **Reset PIN** is a green text button followed by **Delete, Copy, Share** icons. Exercise copy; if native Share is available on the device, exercise Share. Confirm Delete still asks before destructive action and Reset PIN still asks before resetting.
+8. **Larger layouts:** at >=768px confirm the existing aligned editable table/header row is unchanged apart from the global **Student Management** name and concise Search placeholder.
+
+---
+
 ## V4.2.8.2 — mobile Maktab Summary return + tap-target checks
 
 After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.8.2**. No worker deploy or migration is required.
