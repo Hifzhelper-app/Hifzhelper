@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.9 | css/admin.css */
+/* Hifzhelper build 4.2.9.1 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -235,7 +235,7 @@ button.secondary.danger {
 
   /* V4.2.9: mobile is a CARD LIST, not a table inside a white table
      container. Desktop/tablet retain the real table unchanged. */
-  .admin-table-head { display: none; }
+  .admin-table.admin-table-head { display: none; }
   .admin-wrap {
     background: transparent;
     border: 0;
@@ -251,14 +251,14 @@ button.secondary.danger {
        2 Unique ID | WhatsApp
        3 Role | Group | Status
        4 Reset PIN + delete/copy/share actions (the following action TR). */
-  .admin-row-fields {
+  .admin-table tr.admin-row-fields {
+    display: grid;
     background: var(--color-surface);
     border: 1px solid var(--color-table-border);
     border-bottom: none;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     margin-bottom: 0;
     padding: var(--space-sm) var(--space-md) 0;
-    display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     grid-template-areas:
       'name name name name name name'

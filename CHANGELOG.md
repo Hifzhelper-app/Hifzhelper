@@ -26,6 +26,21 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.9.1 — Student Management mobile cascade correction (2026-09-02)
+
+**Files touched:** `css/admin.css`, `index.html`, `js/sw.js`, `tests/verify_v4291_ui.mjs` (new), `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **The first V4.2.9 remains the original release.** This follow-up gets its own patch number rather than reusing V4.2.9.
+2. **Mobile table header stays hidden.** The first V4.2.9 used `.admin-table-head { display:none; }`, but the later generic `.admin-table { display:block; }` rule could win because both selectors had equal specificity. The hide rule is now `.admin-table.admin-table-head`, so the desktop header strip cannot reappear on phone width.
+3. **Student card rows stay a grid.** The first V4.2.9 card rule `.admin-row-fields { display:grid; }` could lose to the more-specific generic `.admin-table tr { display:block; }` mobile rule. The field row now uses `.admin-table tr.admin-row-fields { display:grid; }`, preserving the intended Name / ID+WhatsApp / Role+Group+Status / actions structure.
+4. **Version discipline preserved.** Only served files actually edited by this correction receive a `4.2.9.1` top build header: `css/admin.css` and `js/sw.js`. `index.html` advances the page/cache query key to 4.2.9.1 and the service-worker cache/precache key moves with it. Untouched served source headers remain at their own last-edit versions.
+
+**Regression coverage:** new dependency-free `verify_v4291_ui.mjs` pins both specificity fixes, the existing four-row card grid, and the V4.2.9.1 page/cache keys.
+
+**Verification in this build container:** V4.2.9.1 UI **6/6**, build/version **6/6**, served-script syntax **36/36**, original V4.2.9 UI **11/11**. `run-all.mjs` reports **278 passed, 0 failed** from harnesses that can run here; 27 older harnesses do not report because this checkout lacks `jsdom`/legacy fixtures.
+
+---
+
 ## V4.2.9 — Student Management mobile card refinement (2026-09-02)
 
 **Files touched:** `index.html`, `css/admin.css`, `js/auth.js`, `js/sw.js`, `tests/verify_v429_ui.mjs` (new), `tests/verify_v3850_batch.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**

@@ -2313,6 +2313,20 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.9.1 — Student Management mobile cascade correction
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9.1**. No worker deploy or migration is required.
+
+1. **Header strip:** at phone width there must be no `UNIQUE ID / NAME / WHATSAPP / ...` table header above the student cards.
+2. **Card structure:** each student remains one compact four-row card: Name / Unique ID + WhatsApp / Role + Group + Status / Reset PIN + Delete + Copy + Share. The fields must not collapse back into one long vertical stack.
+3. **No underlay regression:** the cards still sit directly on the Student Management page surface with no second white table/body panel behind them.
+4. **Larger layouts:** at 768px and wider, the normal editable Student Management table/header remains unchanged.
+5. **Release identity:** this is a follow-up to the first V4.2.9 and must display **v4.2.9.1**, not v4.2.9.
+
+**Automated coverage:** `node tests/verify_v4291_ui.mjs` = **6/6**; `verify_build_stamp.mjs` = **6/6**; `verify_syntax.mjs` = **36/36**; original `verify_v429_ui.mjs` remains **11/11**. `run-all.mjs` reports **278 passed, 0 failed** across harnesses able to run in this container; the remaining older harnesses are unavailable because `jsdom`/legacy fixtures are absent.
+
+---
+
 ## V4.2.9 — Student Management mobile device checks
 
 After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9**. No worker deploy or migration is required.
