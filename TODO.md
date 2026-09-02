@@ -28,9 +28,24 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
-| **77** | **Deploy + device-verify V4.2.11** | **READY — build complete** | **NO MIGRATION.** Deploy Worker first, then changed Pages files, hard-refresh, and run the V4.2.11 register + Female/Haaidha checks in `TESTING.md`. Close this row once dev/production verification is complete. |
+| **77** | **Deploy + device-verify V4.2.11.1** | **READY — build complete** | **V4.2.11.1 is a frontend follow-up to V4.2.11.** If V4.2.11 is not deployed yet: deploy its Worker first, its Pages files second, then overlay V4.2.11.1. No migration. Hard-refresh and run both V4.2.11 and V4.2.11.1 checks in `TESTING.md`. Close this row once dev/production verification is complete. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
+
+## V4.2.11.1 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+This is a frontend overlay on V4.2.11:
+
+1. **No migration and no Worker change.**
+2. Apply the V4.2.11 release first if it is not already deployed; V4.2.11.1 contains only this follow-up's changed files.
+3. Upload the V4.2.11.1 Pages files, hard-refresh, and confirm the login-card version reads **v4.2.11.1**.
+4. In Student Management, open registration on both phone and desktop/tablet. **Register** must use forest green.
+5. Check a student with no assigned group and both registration group selectors. Blank group must read **None**, while choosing/saving a real group must continue to work unchanged.
+6. Open a Haaidha student's Attendance page on phone and larger screens. The Haidh calendar must use the available card width; the weekday row and date grid must start **Monday**, with dates under the correct weekday.
+7. Select a Haidh date range. The **N days selected** pill must span the same full width as the calendar.
+8. Stale-state check: open Student A's Attendance/Haidh calendar with obvious marked dates, return, then open Student B. Student A's marks/month state must **never flash**, even briefly, before Student B loads.
+9. Open the **current term** Attendance register. It must land on the **current Maktab week** rather than the oldest week in the term; earlier weeks must still be reachable by scrolling left. Confirm a known logged student shows a green tick and a confirmed-Haidh student shows the yellow Haidh icon.
+10. Run `node tests/verify_v42111_ui.mjs` and `node tests/verify_v42111_register_data.mjs`, plus the existing V4.2.11 register/Haidh checks.
 
 ## V4.2.11 — READY TO DEPLOY / COMPLETE THE UPDATE
 

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.11.1 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.11).
 //
@@ -32,6 +32,32 @@ function mkregWeekLabel(week){
   return a === b ? `Week ${mkregShortDate(a)}` : `Week ${mkregShortDate(a)} – ${mkregShortDate(b)}`;
 }
 
+
+function mkregMondayOf(iso){
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+// V4.2.11.1: a term register can span many weeks. When the current term
+// opens, put the CURRENT Maktab week beside the sticky Student column
+// rather than leaving the viewport parked at the oldest week. Earlier
+// weeks remain available by scrolling left. Historical/future terms keep
+// their natural start position.
+function mkregFocusCurrentWeek(host, data){
+  if(!host || !data || !data.today || !data.from || !data.to) return;
+  if(data.today < data.from || data.today > data.to) return;
+  const monday = mkregMondayOf(data.today);
+  const week = (data.weeks || []).find(w => w.monday === monday);
+  if(!week || !(week.columns || []).length) return;
+  const scroll = host.querySelector('.mkregister-scroll');
+  const firstDate = week.columns[0].date;
+  const target = host.querySelector(`.mkregister-day-head[data-date="${firstDate}"]`);
+  if(!scroll || !target) return;
+  const studentHead = host.querySelector('.mkregister-student-head');
+  const stickyWidth = studentHead ? studentHead.offsetWidth : 0;
+  scroll.scrollLeft = Math.max(0, target.offsetLeft - stickyWidth - 3);
+}
 function mkregPeriodLabel(data){
   const f = typeof fmtDMY === 'function' ? fmtDMY : (x) => x;
   const range = `${f(data.from)} – ${f(data.to)}`;
@@ -134,6 +160,13 @@ async function mkregisterPaint(){
     </thead>
     <tbody>${body || `<tr><td colspan="${colCount + 1}" class="form-hint">No active students.</td></tr>`}</tbody>
   </table></div>`;
+
+  // Put today's Maktab week in view on the current term. Do it after the
+  // table has entered layout so offsetLeft/offsetWidth are real browser
+  // measurements; direct fallback keeps non-browser harnesses harmless.
+  const focusCurrentWeek = () => mkregFocusCurrentWeek(host, data);
+  if(typeof requestAnimationFrame === 'function') requestAnimationFrame(focusCurrentWeek);
+  else focusCurrentWeek();
 
   host.querySelectorAll('.mkregister-student').forEach(btn => {
     btn.addEventListener('click', () => {

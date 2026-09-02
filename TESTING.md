@@ -2313,6 +2313,29 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.11.1 — Student Management + Haidh calendar checks
+
+Apply this overlay **after V4.2.11**, hard-refresh, and confirm the login-card version reads **v4.2.11.1**. No Worker deployment or migration is required for this follow-up.
+
+1. **Mobile Register:** open **Register a student** on a phone. The Register button must use the app's forest/evergreen green, not the lighter success/sage green.
+2. **Desktop/tablet Register:** at >=768px open the inline registration row. Its Register button must use the same forest green.
+3. **No semantic-colour regression:** attendance present ticks and unrelated success-state UI must retain their existing success colour; only the Student Management Register action changes.
+4. **Blank group — registration:** before choosing a group, the Group selector must display **None** on mobile and desktop/tablet.
+5. **Blank group — existing student:** find an existing student with no assigned group. Their Group selector must display **None**. Select a real group and save/autosave, then set it back to None; the underlying blank-group behaviour must remain unchanged.
+6. **No stale wording:** there should be no **No group** label left in Student Management.
+7. **Haidh calendar width:** open Attendance for a Haaidha student on phone, tablet and desktop. The calendar must fill the available Haidh card width rather than sitting inside a second 30/50% content cap. Calendar month navigation, weekday headings and date grid must align to the same width.
+8. **Monday-first alignment:** the weekday row must read **M T W T F S S**. Check a known month (September 2026 starts on Tuesday): `1` must appear under Tuesday, with Monday 31-Aug as the leading muted cell.
+9. **Selection-count pill:** select a single Haidh day or range. The **N day(s) selected** blue pill must span the same width as the calendar.
+10. **No previous-student flash:** open Student A and note distinctive confirmed/predicted Haidh dates. Return and immediately open Student B. At no point should Student A's marked dates or month state appear on Student B's page. The calendar may stay hidden while B loads, then appear only with B's own state. Repeat A → B → A once.
+11. **Attendance opens on current week:** open the current term's Maktab Attendance register. Even when the term began several weeks ago, the first visible attendance columns beside Student must be the **current Maktab week**, not the term's oldest week. Scroll left to confirm the earlier weeks are still present. Navigate to a previous term and confirm it is not forcibly jumped to today's week.
+12. **Attendance data remains live:** on the current week choose one student with a known Maktab log and one with a confirmed Haidh mark. The first must show a green tick and the second the yellow Haidh icon. This patch changes only the initial horizontal position, not the register's data source or status rules.
+
+**Automated coverage:** `node tests/verify_v42111_ui.mjs` pins the two Register surfaces, `None` wording with an unchanged empty group value, full-width calendar/selection band, Monday-first offset, synchronous stale-state clearing, render-generation guard, current-week positioning and V4.2.11.1 cache/build identity. `node tests/verify_v42111_register_data.mjs` dynamically inserts a Maktab log + confirmed Haidh mark and proves the register endpoint returns `present` / `haidh` for those cells. Re-run `verify_v4211_ui.mjs` to confirm the Attendance register + Female/Haaidha work remains intact. The older V4.2.9.2 mobile-registration assertion remains release-forwarded to the forest-green Register contract.
+
+**Current container run:** V4.2.11.1 UI **12/12**, dynamic register-data/current-week check **6/6**, V4.2.11 UI **16/16**, V4.2.10 **11/11**, V4.2.9.2 **11/11**, build/version **6/6**, served-script syntax **36/36**. `run-all.mjs` reports **336 passed, 0 failed** among harnesses able to report; 27 older harnesses remain unable to report because `jsdom` is absent and/or their legacy fixtures have pre-existing schema drift.
+
+---
+
 ## V4.2.11 — Attendance register + Female/Haaidha checks
 
 **Deploy order for dev:** no migration. Deploy the **Worker first**, then the changed Pages files, then hard-refresh before these checks.
