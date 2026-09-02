@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | shared/haidhRules.js */
+/* Hifzhelper build 4.2.6 | shared/haidhRules.js */
 // ============================================================
 // Hifzhelper — Haidh validation rules (V3.39)
 // Works as a plain global-scope script in the browser (file:// safe — no

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/sabaqPage.js */
+/* Hifzhelper build 4.2.6 | js/sabaqPage.js */
 // ============================================================
 // Hifzhelper — Sabaq card (one of 4 in the unified day-log view, V3.6.1)
 // Current as of V3.38

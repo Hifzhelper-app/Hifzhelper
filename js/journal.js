@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/journal.js */
+/* Hifzhelper build 4.2.6 | js/journal.js */
 // ============================================================
 // Hifzhelper — Journal landing page
 // Current as of V3.37

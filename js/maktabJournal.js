@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/maktabJournal.js */
+/* Hifzhelper build 4.2.6 | js/maktabJournal.js */
 // ============================================================
 // Hifzhelper -- student Maktab Journal (V3.59.0, maktab delivery (e1)).
 // The student's READ-ONLY view over their own maktab logs -- what the

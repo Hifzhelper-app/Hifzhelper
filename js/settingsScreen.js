@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/settingsScreen.js */
+/* Hifzhelper build 4.2.6 | js/settingsScreen.js */
 // ============================================================
 // Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0, V2 refinements V3.11.0)
 // Current as of V3.38
