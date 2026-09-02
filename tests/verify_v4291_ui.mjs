@@ -21,13 +21,15 @@ check('mobile field row explicitly beats the generic table-row block rule',
   /\.admin-table tr\.admin-row-fields \{\n    display: grid;/.test(css));
 check('the four-row card grid remains present',
   /'name name name name name name'[\s\S]*'id id id wa wa wa'[\s\S]*'role role group group status status'/.test(css));
-check('page release key is V4.2.9.1',
-  /js\/app\.js\?v=4\.2\.9\.1/.test(html));
-check('service-worker cache key is V4.2.9.1',
-  /CACHE_NAME = 'hifzhelper-v4\.2\.9\.1'/.test(sw));
-check('only corrected CSS and service worker carry the 4.2.9.1 served-file headers in this patch',
-  /^\/\* Hifzhelper build 4\.2\.9\.1 \| css\/admin\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.9\.1 \| js\/sw\.js \*\//.test(sw));
+const pageVersion = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1] || '';
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1] || '';
+const parts = v => v.split('.').map(Number);
+const atLeast4291 = v => { const a = parts(v), b = [4,2,9,1]; for(let i=0;i<4;i++){ if((a[i]||0)!==(b[i]||0)) return (a[i]||0)>(b[i]||0); } return true; };
+check('page release key is V4.2.9.1 or later', atLeast4291(pageVersion));
+check('service-worker cache key follows the page release', cacheVersion === pageVersion);
+check('the corrected CSS and service worker still carry headers from V4.2.9.1 or later',
+  /^\/\* Hifzhelper build 4\.2\.9(?:\.[1-9][0-9]*)? \| css\/admin\.css \*\//.test(css)
+  && /^\/\* Hifzhelper build 4\.2\.9(?:\.[1-9][0-9]*)? \| js\/sw\.js \*\//.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

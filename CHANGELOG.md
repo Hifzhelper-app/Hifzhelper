@@ -26,6 +26,21 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.9.2 — Mobile Student Management registration card (2026-09-02)
+
+**Files touched:** `css/admin.css`, `js/adminPage.js`, `index.html`, `js/sw.js`, `tests/verify_v4292_ui.mjs` (new), `tests/verify_v4291_ui.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Mobile registration is now a real card.** Below 768px, tapping **+ Register a user** renders a purpose-built **Register a student** card above the user list rather than trying to force the desktop registration `<tr>` through the mobile table/card CSS. This removes the malformed blue/table-cell block seen in Safari. Desktop/tablet keep the established inline table registration row.
+2. **Requested mobile fields.** The card has **Name** and **WhatsApp number** inputs, then **Role / Group / Status** controls, followed by a dedicated green **Register** button. Status defaults Active; unchecking it applies inactive immediately after account creation. Existing duplicate-match Continue / Reset-PIN safeguards remain available within the card.
+3. **New account stays immediately actionable.** The existing `adminJustCreatedId` pin-to-top behaviour is retained. On mobile any active search text is also cleared after successful registration so the just-created card cannot be filtered out before the admin uses **Copy** or **Share**. The pin remains until leaving Student Management or creating another account.
+4. **Version discipline preserved.** Only served files actually edited here receive a `4.2.9.2` top build header: `css/admin.css`, `js/adminPage.js`, and `js/sw.js`. The page/cache `?v=` key and service-worker cache/precache key advance together to 4.2.9.2; untouched served-file headers stay at their previous last-edit version.
+
+**Regression coverage:** new dependency-free `verify_v4292_ui.mjs` pins the mobile-only card, its fields/status behaviour, desktop-row preservation, pin-to-top/search clearing and V4.2.9.2 release keys. The V4.2.9.1 harness was made release-forward so it continues checking its cascade guarantees after later page/cache keys.
+
+**Verification in this build container:** V4.2.9.2 UI **11/11**, V4.2.9.1 UI **6/6**, V4.2.9 UI **11/11**, build/version **6/6**, served-script syntax **36/36**. `run-all.mjs` reports **289 passed, 0 failed** from harnesses able to run here; 27 older harnesses do not report because this checkout lacks `jsdom` and/or their legacy SQL fixtures.
+
+---
+
 ## V4.2.9.1 — Student Management mobile cascade correction (2026-09-02)
 
 **Files touched:** `css/admin.css`, `index.html`, `js/sw.js`, `tests/verify_v4291_ui.mjs` (new), `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**

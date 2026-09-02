@@ -2313,6 +2313,23 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.9.2 — mobile Student Management registration-card checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9.2**. No worker deploy or migration is required.
+
+1. **Open registration on phone:** tap **+ Register a user**. A clean white **Register a student** card must appear above the student cards. There must be no blue/malformed table-cell registration block.
+2. **Card fields:** confirm Name and WhatsApp number inputs, then Role / Group / Status controls, then the green Register button. Status starts Active and can be unchecked.
+3. **Duplicate safeguard:** register details matching an existing student and confirm the existing Continue / Cancel / Reset-that-student's-PIN options still appear inside the registration card.
+4. **Successful registration:** create a test student. The registration card closes and the new student's normal card must be the **first student in the list**. Copy and native Share (when supported) must be immediately available on that card.
+5. **Search clearing:** enter search text first, open registration, then create a student that would not match that search. After success, Search should be cleared and the newly-created card should still be visible at the top.
+6. **Status choice:** register one disposable test account with Status unchecked and confirm its resulting card is Inactive.
+7. **Desktop/tablet regression:** at >=768px, **+ Register a user** must still open the existing inline table registration row; the new phone card is not used.
+
+**Automated coverage:** `node tests/verify_v4292_ui.mjs` pins the mobile card structure/fields, desktop registration preservation, status application, pin-to-top/search clearing and V4.2.9.2 page/cache keys.
+Current container run: V4.2.9.2 **11/11**, V4.2.9.1 **6/6**, V4.2.9 **11/11**, build/version **6/6**, syntax **36/36**; `run-all.mjs` totals **289 passed, 0 failed** among harnesses that can report here.
+
+---
+
 ## V4.2.9.1 — Student Management mobile cascade correction
 
 After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.9.1**. No worker deploy or migration is required.

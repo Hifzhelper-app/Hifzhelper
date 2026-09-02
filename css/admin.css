@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.9.1 | css/admin.css */
+/* Hifzhelper build 4.2.9.2 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -317,15 +317,86 @@ button.secondary.danger {
   .admin-row-actions [data-copy-url] { order: 3; }
   .admin-row-actions [data-share-url] { order: 4; }
 
-  /* The temporary registration row still fits the same compact card,
-     but keeps its own Register/Cancel controls as its fourth row. */
-  .admin-row-new {
-    grid-template-areas:
-      'name name name name name name'
-      'id id id wa wa wa'
-      'role role group group status status'
-      'act act act act act act';
+  /* V4.2.9.2: registration is a purpose-built MOBILE card instead of
+     forcing the desktop table row into the card grid. Desktop/tablet still
+     use the original inline table row. */
+  .admin-mobile-register-card {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--color-surface);
+    border: 1px solid var(--color-table-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin: 0 0 var(--space-md);
   }
-  .admin-row-new .admin-actions-cell { display: block; grid-area: act; }
+  .admin-mobile-register-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .admin-mobile-register-heading strong {
+    flex: 1 1 auto;
+    font-size: 17px;
+    line-height: 1.25;
+  }
+  .admin-mobile-register-heading .icon-btn { flex: 0 0 auto; }
+  .admin-mobile-register-inputs {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .admin-mobile-register-options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-sm);
+    align-items: end;
+    margin-bottom: var(--space-sm);
+  }
+  .admin-mobile-register-card label > span:first-child {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--color-ink-soft);
+    margin-bottom: 2px;
+  }
+  .admin-mobile-register-card .admin-inline:not([type="checkbox"]) {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .admin-mobile-new-status {
+    min-height: 32px;
+    align-items: center;
+  }
+  .admin-mobile-new-status > span {
+    font-size: 14px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: inherit;
+    margin: 0;
+  }
+  .admin-mobile-register-actions {
+    display: flex;
+    align-items: center;
+  }
+  .admin-mobile-register-actions .admin-register-btn {
+    width: auto;
+    min-width: 110px;
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: #fff;
+    font-weight: 600;
+    padding: 7px 16px;
+  }
+  .admin-mobile-register-match { margin-top: var(--space-sm); }
+  .admin-mobile-register-card .admin-match-actions {
+    display: flex;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    margin-top: var(--space-xs);
+  }
 }
 
