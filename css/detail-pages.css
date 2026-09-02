@@ -2110,3 +2110,14 @@
 .mkreg-btn { border: 1px solid var(--color-table-border); background: transparent; border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .mkreg-btn:disabled { opacity: .5; }
 .mkreg-clear { color: var(--color-ink-soft); }
+
+/* V4.2.3: the Sabaq Dhor juz + quarter picker (below From/To) */
+.sdq-picker { margin-top: var(--space-md); }
+.sdq-row { display: flex; align-items: flex-end; gap: var(--space-sm); flex-wrap: wrap; }
+.sdq-field { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
+.sdq-field select {
+  background: var(--color-accent-soft, #D0DBE7); border: none;
+  border-radius: 999px; padding: 8px 14px; font: inherit; width: 100%; box-sizing: border-box;
+}
+.sdq-apply { flex: 0 0 auto; width: auto; padding: 8px 16px; }
+.sdq-preview { font-size: 13px; color: var(--color-ink-soft); margin-top: 6px; min-height: 18px; }
