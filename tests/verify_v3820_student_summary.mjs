@@ -55,7 +55,9 @@ check('page: registered as a built screen that KEEPS the maktab context',
   && /if\(id === 'studentSummary'\) await renderStudentSummaryScreen\(\);/.test(appSrc));
 check('summary: the NAME tap opens the standalone PAGE now',
   /nameTd\.addEventListener\('click', \(e\) => \{\n\s*e\.stopPropagation\(\);\n\s*openStudentSummaryPage\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date\);/.test(summarySrc));
-check('summary: each log cell still routes to its OWN card', /openMaktabDay\(\{ id: stu\.id, name: stu\.name, mushaf: stu\.mushaf \|\| null, track_haidh: !!stu\.track_haidh \}, date, type\);/.test(summarySrc));
+check('summary: Quick Log replaced direct cell navigation but Open details still routes to the OWN card',
+  /maktabOpenQuickLog/.test(summarySrc)
+  && /maktabQuickLogDetails[\s\S]{0,500}openMaktabDay/.test(summarySrc));
 
 // ---------- the page renderer, driven ----------
 function pageDom(dates) {

@@ -26,6 +26,40 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.12 — Maktab Summary Quick Log trial (2026-09-02)
+
+**Files touched:** `index.html`, `css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`, `tests/verify_v4212_ui.mjs` (new), `tests/verify_v428_ui.mjs`, `tests/verify_v3820_student_summary.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**
+
+1. **Summary log cells are now Quick Log entry points.** Tapping Sabaq, Sabaq Dhor or Dhor opens the app's established responsive modal/bottom-sheet pattern instead of navigating away. The student, selected Summary date and log type are fixed by the tapped cell. The `+N` entry-count badge still opens its read-only peek and does not trigger Quick Log.
+2. **Only the agreed fast-entry fields are exposed.** Sabaq and Sabaq Dhor each provide **Ayah From / Ayah To** using the same Surah + ayah control language as the full cards. Dhor provides **Juz**, **Quarter / Half / Juz**, and the relevant quarter/half position switch. Tajweed, comments, mistakes, duration, history editing and other detail-card fields are deliberately absent.
+3. **One confirmation + one Save.** A confirmation checkbox gates the single Save action. The existing maktab POST endpoints are reused, including their abortable duplicate check/`force` flow. Dhor therefore continues to use the Worker's existing atomic Dhor-pool merge; there is no second quick-log backend.
+4. **Existing entries are visible, not silently overwritten.** When the tapped cell already contains one or more logs, the sheet shows an **Already logged** summary before the new-entry controls. Quick Log adds a new entry; it does not edit an existing row. **Open details** remains available for history, editing, notes and the full card workflow.
+5. **Sabaq metadata stays aligned with the full-card path.** Before a quick Sabaq POST the client snapshots the student's complete Maktab Sabaq history, then best-effort recomputes/saves the same `maktab_position` frontier metadata after a successful insert. The saved log remains the source of truth even if that convenience sync fails.
+6. **Save returns to the same Summary context.** After a successful Quick Log the sheet closes and the Summary refreshes on the same selected date so the new shorthand appears immediately.
+7. **Version discipline preserved.** Only the served files actually edited receive a `4.2.12` top build header: `css/journal-table.css`, `js/maktabSummary.js`, and `js/sw.js`. `index.html` and the service-worker cache/precache use the shared 4.2.12 page key; untouched served-file headers keep their previous last-edit versions.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.11.4 and hard-refresh. **No Worker deployment and no D1 migration.**
+
+**Regression coverage:** `tests/verify_v4212_ui.mjs` pins the three Quick Log triggers, minimal field sets, Dhor portion arithmetic, confirmation gate, duplicate flow, existing-entry notice, detail escape route, Sabaq position sync and page/cache key. Historical Summary/version harnesses are forwarded only where their deliberately superseded direct-cell-navigation or page-key assumptions changed.
+
+---
+
+## V4.2.11.4 — Confirmed vs probable Haidh (2026-09-02)
+
+**Files touched:** `index.html`, `css/journal-table.css`, `css/haidh.css`, `js/maktabSummary.js`, `js/haidhDetailScreen.js`, `js/sw.js`, `worker/src/maktabAttendance.js`, `tests/verify_v42114_ui.mjs` (new), `tests/verify_e1.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**
+
+1. **Confirmed Haidh remains the small pink Summary notation.** The Maktab Summary now writes pink `Haidh` only for a stored, confirmed `attendance.status='haidh'` on that exact date. A propagated attendance-Haidh day is no longer presented as confirmed fact. Future/planned `predicted-haidh` likewise does not receive the confirmed pink notation.
+2. **The Summary attendance icon is neutral.** The yellow marked-state treatment is removed. The icon remains the attendance-navigation control beside every student; Haidh status is not duplicated on it.
+3. **Probable Haidh is surfaced in the student's calendar.** The Attendance endpoint returns `probable_haidh_dates`: Maktab days which the existing attendance derivation keeps excused as Haidh even though no explicit Haidh/predicted-Haidh row exists on that date. The Haidh calendar paints those dates with a pale Haidh fill, dashed Haidh border and `?` cue/accessible label. Tapping a probable date starts a normal selection so it can be confirmed; it never tries to delete a nonexistent attendance row.
+4. **Probable Haidh stays excused everywhere attendance is interpreted.** The term register now uses the same derived per-student attendance truth when painting a Haidh cell, while preserving explicit Haidh on below-threshold/non-Maktab dates. A propagated Haidh date therefore does not fall back to the register's blank = absent state. Attendance percentages remain unchanged because they already used this derivation.
+5. **Version discipline preserved.** Only served files actually edited in this patch receive a `4.2.11.4` top build header: `css/journal-table.css`, `css/haidh.css`, `js/maktabSummary.js`, `js/haidhDetailScreen.js`, and `js/sw.js`. `index.html` and the service-worker cache/precache move to the 4.2.11.4 page key; untouched served-file headers keep their prior last-edit versions.
+
+**Deployment:** deploy `worker/src/maktabAttendance.js` first, then the changed Pages/frontend files, then hard-refresh. **No D1 migration.**
+
+**Regression coverage:** `tests/verify_v42114_ui.mjs` pins the confirmed-only pink Summary notation, neutral attendance icon, probable-calendar state, non-delete tap behaviour and dynamically proves that a propagated Haidh day is returned as probable while remaining excused in the register. Historical release harnesses are forwarded only where the new page/cache key or intentionally superseded yellow-icon contract requires it.
+
+---
+
 ## V4.2.11.3 — Shared log date + attendance row ordering (2026-09-02)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/logContext.js`, `js/logDetailScreen.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `tests/verify_v42113_ui.mjs` (new), `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42111_register_data.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**

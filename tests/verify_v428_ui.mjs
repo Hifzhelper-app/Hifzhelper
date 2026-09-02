@@ -47,10 +47,11 @@ check('4.2.8.2: instant-name paint wraps attendance SVG in the same sizing class
   /attendanceGhost\.className = 'maktab-haidh-check maktab-summary-skeleton-attendance';/.test(summaryJs)
   && /haidhTd\.appendChild\(attendanceGhost\);/.test(summaryJs)
   && !/haidhTd\.innerHTML = typeof iconHtml/.test(summaryJs));
-check('4.2.8.2: existing summary navigation targets remain distinct',
+check('4.2.8.2/V4.2.12: summary targets remain distinct after Quick Log replaces direct cell navigation',
   /nameTd\.addEventListener\('click',[\s\S]{0,220}openStudentSummaryPage/.test(summaryJs)
   && /btn\.addEventListener\('click',[\s\S]{0,220}openMaktabAttendancePage/.test(summaryJs)
-  && /td\.addEventListener\('click',[\s\S]{0,260}openMaktabDay\([^\n]+date, type\)/.test(summaryJs));
+  && /td\.addEventListener\('click',[\s\S]{0,360}maktabOpenQuickLog/.test(summaryJs)
+  && /maktabQuickLogDetails[\s\S]{0,500}openMaktabDay/.test(summaryJs));
 
 check('72: old quarter select and Use button are gone',
   !/id="sdq_apply"|class="secondary sdq-apply"|>Use</.test(sdJs)

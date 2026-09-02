@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.12** — Trial Quick Log from Maktab Summary cells: minimal Sabaq / Sabaq Dhor / Dhor entry without leaving the table
 - **V4.2.11** — Term-wide Maktab Attendance register grid; Female/Haaidha registration; confirmed teacher Haidh auto-promotes profile
 - **V3.88.0** — Staged propose→edit→confirm calendar flows; duplicate fix (0027 unique index); attendance/haidh layout; dd-mmm-yy; 4-card settings rail at 25%
 - **V3.87.0** — The Maktab Calendar: multiple terms drive attendance; pre-loaded Islamic predictions (adjustable); SA public holidays (Sunday rule); info-only page; markers wherever dates appear
@@ -124,6 +125,37 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.12 — Maktab Summary Quick Log trial
+
+The teacher's Maktab Summary is increasingly the daily working surface. The trial therefore shortens the common **add a log** path without replacing the full detail cards. A tap on a Sabaq, Sabaq Dhor or Dhor cell opens one small responsive sheet tied to that student and the Summary's selected date.
+
+The trial is intentionally narrow:
+
+- **Sabaq:** Ayah From + Ayah To only.
+- **Sabaq Dhor:** Ayah From + Ayah To only.
+- **Dhor:** Juz + Quarter/Half/Juz + the quarter/half position where applicable.
+- All three require an explicit confirmation checkbox and use one Save button.
+
+The sheet does **not** expose Tajweed, mistakes, comments, duration, timers, history editing or position/setup controls. Those belong to the full card. If the cell already has entries the teacher sees an **Already logged** summary, and **Open details** remains the deliberate route to history/editing. The `+N` peek continues to be a read-only target of its own.
+
+No alternate data path is introduced. Quick Log POSTs to the existing `/maktab/sabaq`, `/maktab/sabaq-dhor` and `/maktab/dhor` endpoints, so duplicate handling, provenance, Haidh-overwrite behaviour and Dhor's atomic pool merge stay exactly where they already live. Quick Sabaq also mirrors the full card's best-effort post-save position metadata sync, using the student's complete pre-save Sabaq history rather than the Summary's date-only rows.
+
+This is a **trial UI**, not a removal of detail pages. A successful save closes the sheet and refreshes the same Summary/date so the teacher can continue down the table.
+
+## V4.2.11.4 — Confirmed and probable Haidh are distinct
+
+**Maktab Summary.** The small pink `Haidh` notation is the confirmed-state indicator and therefore appears only when that student has an explicit stored `haidh` row for the selected date. The attendance icon beside the name is navigation only and remains neutral; it does not change colour for Haidh. A derived/probable day and a future `predicted-haidh` day are not labelled as confirmed Haidh on this screen.
+
+**Probable Haidh.** Attendance propagation still protects a student from absence during the valid ruling window. When `deriveStudentAttendance()` returns Haidh for a Maktab day but there is no explicit `haidh` or `predicted-haidh` row on that date and no log, that date is exposed as `probable_haidh_dates` by the individual Attendance endpoint. This is derived/read-only state; it is not inserted into `attendance`.
+
+**Calendar presentation.** The student's Haidh calendar merges probable dates only for the currently loaded student and never overwrites a stored confirmed/predicted mark. Probable dates use a pale Haidh fill, dashed Haidh border and a small `?` cue with an accessible `Probable Haidh` label. Tapping a probable date begins the normal range selection, allowing a teacher/student to confirm it; because no row exists yet, it is never treated as a tap-to-delete mark.
+
+**Attendance register.** A probable Haidh day is excused, not absent. Register cells therefore use the same derived attendance truth as the individual page (after direct log evidence and explicit Haidh), while explicit Haidh remains visible even on a below-threshold date. The existing Attendance % formula is unchanged.
+
+**Deployment boundary.** Worker + frontend change, no D1 migration.
 
 ---
 
