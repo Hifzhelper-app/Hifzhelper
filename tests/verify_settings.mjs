@@ -18,6 +18,7 @@ check('0020 is exactly 2 statements (table + defaults row)', statements.length =
 for (const st of statements) db.exec(st);
 db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
 db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
+db.exec("ALTER TABLE maktab_settings ADD COLUMN teaching_days TEXT");   // V3.98.0
 db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT");   // V3.80.0 (migration 0025)   // V3.78.0 (migration 0022)
 
 const DB = { prepare(sql) { return {

@@ -59,8 +59,8 @@ check('the renderer takes its host rather than hardcoding a screen body',
 check('it bails safely if handed nothing', /if\(!host\) return;/.test(setup));
 
 // ---------- the button ----------
-check('the button says Add Juz to Dhor in the maktab, Plan in the PJ (V3.74.0)',
-  /btn\.textContent = setup \? 'Add Juz to Dhor' : 'Plan';/.test(dhor));
+check('the button says Ajzaa Completed in the maktab (V3.93.0 relabel), Plan in the PJ',
+  /btn\.textContent = setup \? 'Ajzaa Completed' : 'Plan';/.test(dhor));
 check('Setup mode is decided by the log context, not a role or a flag',
   /function dhorPlanBtnIsSetup\(\)\{[\s\S]{0,140}logCtxIsMaktab\(\)/.test(dhor));
 check('the click routes to Setup only in the maktab; PJ still opens the plan modal',
@@ -133,12 +133,18 @@ check('setup never reaches for an own-only profile call',
   const appSrc = read('js/app.js');
   const boot = appSrc.slice(appSrc.indexOf('async function bootApp('));
   const bootBody = boot.slice(0, boot.indexOf('\n}'));
-  check('bootApp sends a teaching profile to the maktab summary',
-    /isTeachingProfile\(\)[\s\S]{0,80}showScreen\('maktabSummary'\)/.test(bootBody));
+  // V4.1.1: the destination moved behind homeScreenFor(), which is now the
+  // ONE source of truth for "where does this user belong" — landing and
+  // closing both read it. The lesson this pin protects (V3.74.0: a
+  // teaching profile must not open on the personal journal) is unchanged;
+  // the helper itself is pinned in verify_v3850_batch.
+  check('bootApp sends a teaching profile to its own home — the maktab summary, via homeScreenFor()',
+    /isTeachingProfile\(\)[\s\S]{0,80}showScreen\(homeScreenFor\(\)\)/.test(bootBody)
+    && /return \(typeof isTeachingProfile === 'function' && isTeachingProfile\(\)\) \? 'maktabSummary' : 'home';/.test(read('js/app.js')));
   check('and a student still lands on home / settings',
     /showScreen\(profile\.setup_complete \? 'home' : 'settings'\)/.test(bootBody));
   check('the setup_complete branch is skipped for teaching profiles — Settings is hidden from them',
-    /if\(typeof isTeachingProfile === 'function' && isTeachingProfile\(\)\)\{[\s\S]{0,90}maktabSummary[\s\S]{0,40}\} else \{/.test(bootBody));
+    /if\(typeof isTeachingProfile === 'function' && isTeachingProfile\(\)\)\{[\s\S]{0,90}homeScreenFor\(\)[\s\S]{0,40}\} else \{/.test(bootBody));
 }
 
 // ---------- V3.74.0: the summary date pill ----------

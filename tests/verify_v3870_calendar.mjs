@@ -32,7 +32,7 @@ const runMig = (db, f) => {
 };
 function makeEnv() {
   const db = new DatabaseSync(':memory:');
-  db.exec("CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, term_from TEXT, term_to TEXT);");
+  db.exec("CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, term_from TEXT, term_to TEXT, teaching_days TEXT);");
   db.exec("INSERT INTO maktab_settings (id, term_from, term_to) VALUES (1, '2026-01-14', '2026-03-25');");
   runMig(db, '0026_maktab_calendar.sql');
   runMig(db, '0027_calendar_dedupe.sql');   // V3.88.0: dedupe + the unique index
@@ -68,7 +68,7 @@ const STUDENT = { id: 'S1', role: 'student' };
 }
 { // 0027's DELETE half: pre-existing duplicates collapse to one each
   const db2 = new DatabaseSync(':memory:');
-  db2.exec("CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, term_from TEXT, term_to TEXT); INSERT INTO maktab_settings (id) VALUES (1);");
+  db2.exec("CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, term_from TEXT, term_to TEXT, teaching_days TEXT); INSERT INTO maktab_settings (id) VALUES (1);");
   runMig(db2, '0026_maktab_calendar.sql');
   for (let i = 0; i < 2; i++) {
     db2.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES ('2026-09-24', '2026-09-24', NULL, 'holiday', 'generated')").run();
@@ -147,10 +147,17 @@ const STUDENT = { id: 'S1', role: 'student' };
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 7
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.some(x => x.label === 'Local observance'));
   const prop2 = (await handleGetProposal(req('year=2026'), env, TEACHER, 'islamic')).data;
-  check('stage: the ADJUSTED day is never re-proposed (label dedupe — the V3.87.0 hole closed); only the dropped day returns',
+  check('stage: a NON-EMPTY year proposes NOTHING (V3.94.0 — deletions stick; the dropped \'Aashuraa does NOT return; the adjusted date stands)',
     prop2.current.length === 7
-    && prop2.proposed.length === 1 && prop2.proposed[0].label.startsWith("'Aashuraa")
+    && prop2.proposed.length === 0
+    && !prop2.current.some(x => x.label.startsWith("'Aashuraa"))
     && prop2.current.find(x => x.label.startsWith('First Fast')).date_from === '2026-02-20');
+  // Hijri enrichment: a short pre-V3.89 label upgrades on Confirm
+  const enriched = [...prop2.current.map(r => ({ date_from: r.date_from, label: r.label })), { date_from: '2026-06-26', label: "'Aashuraa" }];
+  await handleConfirmList(post({ year: '2026', type: 'islamic', entries: enriched }), env, TEACHER);
+  check('stage: Confirm ENRICHES a short label to the seed\'s full "Name — Hijri" (V3.94.0 safety net)',
+    (await handleGetCalendar(req('year=2026'), env, TEACHER)).data
+      .find(x => x.label && x.label.startsWith("'Aashuraa")).label === "'Aashuraa \u2014 10 Muharram 1448");
 
   const hprop = (await handleGetProposal(req('year=2026'), env, TEACHER, 'holiday')).data;
   check('stage: the holiday proposal carries the 13 generated dates, each prefilled "Public Holiday" (V3.89.0 — editable text)', hprop.proposed.length === 13
@@ -161,8 +168,8 @@ const STUDENT = { id: 'S1', role: 'student' };
     !c2.error && !c2again.error
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').length === 12
     && (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'holiday').every(x => x.label === 'Public Holiday'));
-  check('stage: confirming holidays leaves the islamic year UNTOUCHED (type-scoped delete)',
-    (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 7);
+  check('stage: confirming holidays leaves the islamic year UNTOUCHED (type-scoped delete; 8 after the enrichment drive re-added Aashuraa)',
+    (await handleGetCalendar(req('year=2026'), env, TEACHER)).data.filter(x => x.type === 'islamic').length === 8);
   check('stage: validation — a date outside the year, a nameless islamic day, a bad type all refuse',
     (await handleConfirmList(post({ year: '2026', type: 'holiday', entries: [{ date_from: '2027-01-01' }] }), env, TEACHER)).status === 400
     && (await handleConfirmList(post({ year: '2026', type: 'islamic', entries: [{ date_from: '2026-01-01', label: '' }] }), env, TEACHER)).status === 400
@@ -235,15 +242,18 @@ check('settings: term rows put the NAME on its own line above the dates (V3.88.1
 check('settings: ADD TERM is the big button only while none exist; the + takes over after',
   /mset_term_add_big'\)\.classList\.toggle\('hidden', terms\.length > 0\)/.test(settingsSrc)
   && /mset_term_add'\)\.classList\.toggle\('hidden', terms\.length === 0\)/.test(settingsSrc));
-check('settings: the popup stages both types with EDITABLE text on every row — islamic "Description — Hijri", holiday prefilled "Public Holiday" — the × on every row; Confirm is the only save and disables in flight (V3.89.0)',
+check('settings: the popup rows — BASE name editable, the Hijri in ITALICS on its own line beneath, reassembled on change (V3.94.0); the × on every row; Confirm the only save, disabled in flight',
   /function openCalStagePopup\(type\)/.test(settingsSrc)
-  && /row\.label \|\| \(type === 'holiday' \? 'Public Holiday' : ''\)/.test(settingsSrc)
+  && /row\._base = base; row\._hijri = hijri;/.test(settingsSrc)
+  && /class="mset-cal-hijri"><i>\$\{hijri\}<\/i>/.test(settingsSrc)
+  && /row\.label = row\._hijri \? `\$\{e\.target\.value\} \\u2014 \$\{row\._hijri\}` : e\.target\.value;/.test(settingsSrc)
   && /class="mset-list-x" aria-label="Remove"/.test(settingsSrc)
   && /btn\.disabled = true;/.test(settingsSrc)
   && /apiConfirmCalList\(year, type, rows\)/.test(settingsSrc));
-check('settings: the Hijri date rides the seed labels and dedupe keys on the BASE name (calBaseName)',
+check('settings: the Hijri rides the seed labels; calBaseName now serves ENRICHMENT (V3.94.0) and the proposal fires only into an empty year',
   /First Taraweeh — 1 Ramadaan 1447/.test(read('worker/src/maktabCalendar.js'))
-  && /calBaseName\(r\.label\)/.test(read('worker/src/maktabCalendar.js')));
+  && /seedByBase\.has\(calBaseName\(label\)\)/.test(read('worker/src/maktabCalendar.js'))
+  && /if \(current\.length === 0\) \{/.test(read('worker/src/maktabCalendar.js')));
 check('settings: the popup rows override the modal\'s width:100% inputs (the render bug — only dates showed)',
   /\.cal-stage-card \.mset-cal-row input\[type="date"\] \{ width: auto; flex: 0 0 auto; \}/.test(read('css/settings.css')));
 check('settings: the rail is back to three — Groups renders inside General (msetGroupsSection)',
@@ -284,11 +294,82 @@ check('desktop: grid-context cards fill their column — no percentage max-width
   /max-width: none; width: 100%; min-width: 0; \}/.test(read('css/detail-pages.css'))
   && !/\.log-detail-card \{ height: calc\([^\n]*max-width: 30%/.test(read('css/detail-pages.css')));
 
-check('settings: the year is a blue pill beside the heading; the pill chevrons are gone (whole pill opens the picker)',
-  /#mset_cal_year \{\n  background: var\(--color-accent-soft/.test(read('css/settings.css'))
-  && /justify-content: flex-start; gap: var\(--space-md\);/.test(read('css/settings.css'))
+check('settings: the year pill is WIDE and baseline-aligned (V3.92.1 — it collapsed to its arrows on iOS); Holidays LEFT, Islamic RIGHT, taller',
+  /min-width: 104px; text-align: center;/.test(read('css/settings.css'))
+  && /align-items: baseline;/.test(read('css/settings.css'))
+  && /id="mset_cal_holidays">Public Holidays<\/button>\n      <button type="button" class="history-btn" id="mset_cal_islamic"/.test(read('js/maktabSettings.js'))
+  && /padding-top: 14px; padding-bottom: 14px;/.test(read('css/settings.css'))
   && /::-webkit-calendar-picker-indicator \{ display: none; \}/.test(read('css/settings.css'))
   && /showPicker\(\)/.test(read('js/maktabSettings.js')));
+
+// ============================================================
+// V3.98.0 — the maktab ATTENDANCE screen, driven end to end.
+// Dates are RELATIVE to the real clock (the handler reads the maktab's
+// today), so the drive is deterministic on any day it runs: one week
+// wholly in the past exercises the register, one wholly ahead the
+// planning columns.
+// ============================================================
+{
+  const { handleMaktabWeek } = await import('../worker/src/maktabAttendance.js');
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const shift = (base, n) => { const d = new Date(base + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
+  const todayISO = iso(new Date());
+  const thisMon = (() => { const d = new Date(todayISO + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return iso(d); })();
+  const pastMon = shift(thisMon, -21), futMon = shift(thisMon, 14);
+
+  const db2 = new DatabaseSync(':memory:');
+  db2.exec(`
+    CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT, role TEXT, active INTEGER DEFAULT 1, track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi');
+    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT, maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT, timezone TEXT, term_from TEXT, term_to TEXT, teaching_days TEXT);
+    CREATE TABLE attendance (student_id TEXT, date TEXT, status TEXT, PRIMARY KEY (student_id, date));
+    CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
+    CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
+    CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
+  `);
+  runMig(db2, '0026_maktab_calendar.sql');
+  db2.exec("INSERT INTO maktab_settings (id, maktab_day_min, teaching_days, timezone) VALUES (1, 1, '[\"mon\",\"tue\",\"wed\",\"thu\"]', 'UTC')");
+  db2.exec("INSERT INTO students (id, name, role) VALUES ('S1','Umme','student'),('S2','Zainab','student'),('S3','Ruqayya','student')");
+  db2.prepare("INSERT INTO maktab_terms (name, term_from, term_to) VALUES ('T', ?, ?)").run(shift(thisMon, -120), shift(thisMon, 120));
+  db2.prepare("INSERT INTO maktab_calendar (date_from, date_to, label, type, source) VALUES (?, ?, 'Public Holiday', 'holiday', 'x')").run(shift(pastMon, 2), shift(pastMon, 2));
+  db2.prepare("INSERT INTO maktab_sabaq_log (student_id, date) VALUES ('S1', ?)").run(pastMon);                       // Mon: S1 present
+  db2.prepare("INSERT INTO attendance (student_id, date, status) VALUES ('S2', ?, 'haidh')").run(pastMon);            // Mon: S2 haidh → S3 absent
+  db2.prepare("INSERT INTO attendance (student_id, date, status) VALUES ('S1', ?, 'predicted-haidh')").run(shift(futMon, 3));
+  db2.prepare("INSERT INTO attendance (student_id, date, status) VALUES ('S3', ?, 'predicted-absent')").run(shift(futMon, 3));
+
+  const stmt2 = (sql, args) => ({
+    async run() { const i = db2.prepare(sql).run(...args); return { meta: { last_row_id: Number(i.lastInsertRowid) } }; },
+    async first() { return db2.prepare(sql).get(...args) ?? null; },
+    async all() { return { results: db2.prepare(sql).all(...args) }; },
+  });
+  const env2 = { DB: { prepare(sql) { return Object.assign(stmt2(sql, []), { bind(...args) { return stmt2(sql, args); } }); } } };
+  const req2 = (q) => ({ url: 'https://x/maktab/attendance-week?' + q });
+  const TEACHER2 = { id: 'T1', role: 'teacher' };
+
+  const past = (await handleMaktabWeek(req2('monday=' + pastMon), env2, TEACHER2)).data;
+  check('week: columns follow the TEACHING DAYS setting, not derived maktab days (4 for Mon-Thu)',
+    past.columns.length === 4 && past.columns.map(c => c.weekday).join(',') === 'mon,tue,wed,thu');
+  const [mon, tue, wed] = past.columns;
+  check('week: a PAST maktab day carries the three lists - present, absent, haaidha',
+    mon.past && mon.present.includes('Umme') && mon.haidh.includes('Zainab') && mon.absent.includes('Ruqayya'));
+  check('week: a past teaching day the maktab did NOT hold is shown and LABELLED, never a wall of false absences (the V3.85 rule)',
+    tue.note === 'No maktab day' && tue.absent.length === 0);
+  check('week: a HOLIDAY column is shown and labelled by its own name - never skipped (user)',
+    wed.note === 'Public Holiday' && wed.present.length === 0);
+
+  const fut = (await handleMaktabWeek(req2('monday=' + futMon), env2, TEACHER2)).data;
+  const thu = fut.columns[3];
+  check('week: a FUTURE column is a planning column - predicted haaidha and informed absentees, no register',
+    !thu.past && thu.predictedHaidh.includes('Umme') && thu.predictedAbsent.includes('Ruqayya')
+    && thu.present.length === 0 && thu.absent.length === 0);
+
+  const outside = (await handleMaktabWeek(req2('monday=' + shift(thisMon, 200)), env2, TEACHER2)).data;
+  check('week: dates outside every term are shown labelled "Term break"',
+    outside.columns.length === 4 && outside.columns.every(c => c.note === 'Term break'));
+  check('week: a student cannot read the maktab register',
+    (await handleMaktabWeek(req2('monday=' + pastMon), env2, { id: 'S1', role: 'student' })).status === 403);
+  check('week: predicted-absent is a PLANNING marker only - the derivation above it never counts one (user: informing is courtesy, not excusal)',
+    !/predicted-absent/.test(read('worker/src/maktabAttendance.js').split('handleMaktabWeek')[0]));
+}
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

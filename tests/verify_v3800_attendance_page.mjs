@@ -32,7 +32,7 @@ function makeEnv() {
   db.exec(`
     CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT DEFAULT '', role TEXT NOT NULL, haidh_ruling TEXT DEFAULT 'hanafi', track_haidh INTEGER DEFAULT 0, active INTEGER DEFAULT 1);
     CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
-    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 2, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT);
+    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 2, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT, teaching_days TEXT);
     CREATE TABLE maktab_terms (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, term_from TEXT NOT NULL, term_to TEXT NOT NULL, created_at TEXT DEFAULT '');   -- V3.87.0: terms drive attendance
     INSERT INTO maktab_settings (id) VALUES (1);
     CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
@@ -216,7 +216,10 @@ const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source:
   w.eval("MODE = 'maktab'");
   await w.eval("renderAttendancePage({ maktab: true, date: '2026-08-28' })");
   await tick(); await tick(); await tick();
-  check('page: maktab mode titles with her name and uses the For endpoint', w.document.getElementById('attendanceTitle').textContent === 'Attendance — Umme'
+  // V4.2.2: "Attendance" moved ABOVE the card as the page title, so the
+  // card carries only WHOSE attendance it is — the name alone, one line.
+  check('page: the card names the student (title is above it since V4.2.2) and uses the For endpoint',
+    w.document.getElementById('attendanceTitle').textContent === 'Umme'
     && w.eval('pageCalls[0]')[0] === 'for' && w.eval('pageCalls[0]')[1] === 'STU2');
   check('page: no haidh block for a non-haa\'idah', w.document.getElementById('attHaidhBlock').classList.contains('hidden'));
 }

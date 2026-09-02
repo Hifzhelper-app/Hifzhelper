@@ -102,6 +102,7 @@ runMig(db, '0020_maktab_settings.sql');
   db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
   try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
   try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
+  db.exec("ALTER TABLE maktab_settings ADD COLUMN teaching_days TEXT");   // V3.98.0
 db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
 db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }   // V3.80.0: 0025 rides the same try
 runMig(db, '0026_maktab_calendar.sql');   // V3.87.0: terms + calendar tables
@@ -174,6 +175,38 @@ const log = (sid, date) => handleSaveMaktabSabaq(post({ student_id: sid, date, s
   check('endpoint: student → 403', s.status === 403);
   const bad = await handleMaktabAttendance(get(''), env, TCH);
   check('endpoint: missing date → 400', bad.status === 400);
+}
+
+// ============================================================
+// V4.0.2 — TODAY IS UNRESOLVED (user, 2026-09-01). A day still in
+// progress must not mark anyone absent; only a teacher's explicit
+// mark can put a status on it. The fault this covers made a
+// student's PERCENTAGE dip through the day and recover when she
+// logged — the stats were wrong, not just the journal's wording.
+// ============================================================
+{
+  const TODAY = '2026-09-01';
+  const week = ['2026-08-31', TODAY];
+  let r = deriveStudentAttendance(week, [], [], 'hanafi', 30, TODAY);
+  check('v402: yesterday still derives absent', r.statuses['2026-08-31'] === 'absent');
+  check('v402: TODAY with no log yields NO status — the day has not finished', r.statuses[TODAY] === undefined);
+
+  r = deriveStudentAttendance(week, [TODAY], [], 'hanafi', 30, TODAY);
+  check('v402: a log on today still reads present', r.statuses[TODAY] === 'present');
+
+  r = deriveStudentAttendance(week, [], [], 'hanafi', 30, TODAY, [TODAY]);
+  check("v402: a TEACHER'S explicit absent mark stands on today", r.statuses[TODAY] === 'absent');
+
+  r = deriveStudentAttendance(week, [], [TODAY], 'hanafi', 30, TODAY);
+  check('v402: haidh on today still wins over the unresolved rule', r.statuses[TODAY] === 'haidh');
+
+  const days = Object.values(deriveStudentAttendance(week, [], [], 'hanafi', 30, TODAY).statuses);
+  check('v402: only resolved days carry a status, so today cannot drag the percentage',
+    days.length === 1 && days[0] === 'absent');
+
+  r = deriveStudentAttendance(week, [], [], 'hanafi', 30);
+  check('v402: with no today passed, nothing is filtered (the pure function stays honest)',
+    r.statuses[TODAY] === 'absent');
 }
 
 console.log(`\n${pass} passed, ${fail} failed`);

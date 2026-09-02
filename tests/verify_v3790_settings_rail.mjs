@@ -123,6 +123,14 @@ const T = [{ id: 1, name: 'Substitution', major: 1, retired: 0 }, { id: 6, name:
   // construction). Staging semantics unchanged: Save commits.
   const w = dom(S, JSON.parse(JSON.stringify(G)), JSON.parse(JSON.stringify(T)));
   await w.eval('renderMaktabSettingsScreen()'); await tick(); await tick();
+  // V3.94.0 regression net (the user's dead-card bug): a SECOND render
+  // must leave the Calendar card alive — the run-once wire guard left
+  // rebuilt elements unpopulated and listener-less. Render again and
+  // assert the year still has its options and the popup opener works.
+  await w.eval('renderMaktabSettingsScreen()'); await tick(); await tick();
+  check('v3940: the year select survives a SECOND render (the wire-once guard is gone)',
+    w.document.getElementById('mset_cal_year').options.length >= 8
+    && w.document.getElementById('mset_cal_year').value !== '');
   const field = () => w.document.getElementById('mset_tz_field');
   const chooser = () => w.document.getElementById('mset_tz_chooser');
   check('tz: unset shows "Not set" in the single field; chooser closed', field().textContent === 'Not set' && chooser().classList.contains('hidden'));
