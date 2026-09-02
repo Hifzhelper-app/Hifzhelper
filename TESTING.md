@@ -2313,6 +2313,28 @@ schema, so there is no migration to run and no data shape to verify.
 
 ---
 
+## V4.2.11 — Attendance register + Female/Haaidha checks
+
+**Deploy order for dev:** no migration. Deploy the **Worker first**, then the changed Pages files, then hard-refresh before these checks.
+
+1. **Register header / term grouping:** open Maktab Attendance as teacher/admin in a term spanning at least two weeks. Row 1 must show one merged heading per Maktab week; row 2 must show only the configured teaching weekdays (for the default setup: Mon / Tue / Wed / Thu). No Fri/Sat/Sun columns unless configured as teaching days.
+2. **Week separation:** scan across two or more weeks. The next week must be visually obvious through the subtle week tint/boundary line without widening the narrow weekday columns.
+3. **Single roster + scrolling:** each student name appears once in the first column. On a narrow phone, horizontal scrolling moves the week/day columns while the student-name column stays visible. On desktop the same register remains readable.
+4. **Present:** choose a date on which a student has any Maktab Sabaq, Sabaq Dhor or Dhor log. Her cell must show the green check. This remains true if the date happens to be below the configured whole-Maktab-day threshold; the column is muted but the direct log evidence is still shown.
+5. **Haidh:** choose a teaching date with a confirmed Haidh mark and no Maktab log. The cell must show the existing yellow Haidh icon, not the word “Haidh”. A log on the same date still wins and shows present.
+6. **Absent / unresolved dates:** on a completed qualifying Maktab day, a student with no log and no Haidh shows a visually blank cell. Future teaching-day cells and past teaching dates that never qualified as a Maktab day are muted; their blanks must not look like asserted absences.
+7. **Name navigation:** tap/click a student's name in the register. It must open that same student's individual Attendance page, where attendance/Haidh can be edited. Back returns to the register.
+8. **Term navigation:** previous/next moves to the previous/next configured term and rebuilds the weekly columns. At the first/last term the unavailable direction is disabled. With no terms configured, the screen uses the four-week fallback and does not crash.
+9. **Register Female → Haaidha:** in Student Management registration, Haaidha starts hidden. Tick Female: Haaidha appears. Untick Female: Haaidha hides and clears. Register one Female+Haaidha student and verify D1 stores `gender='F', track_haidh=1`. Register Female without Haaidha and verify `gender='F', track_haidh=0`.
+10. **First teacher Haidh promotion:** choose an existing student with `track_haidh=0`. From her individual Attendance page as teacher/admin, the Haidh calendar must still be available for editing. Confirm a real Haidh day/range; verify D1 now has `gender='F', track_haidh=1`. Log in as that student and verify her own Attendance page now exposes the Haidh calendar.
+11. **Prediction must not promote:** for a `track_haidh=0` student, create a future-only predicted Haidh range. Verify the prediction saves but `gender` / `track_haidh` are not promoted by that prediction.
+12. **Existing attendance rules:** recheck ruling max, minimum gap, teacher gap decision, clearing a Haidh mark and “log wins” behaviour. Clearing a later confirmed mark must not silently revert `track_haidh`.
+13. **No migration:** confirm the V4.2.11 package contains no new `worker/migrations/*` file. Existing `gender` and `track_haidh` columns are reused.
+
+**Automated coverage:** `node tests/verify_v4211_ui.mjs` pins the register shape/status presentation, teaching-day grouping, navigation, registration fields and promotion rules; `verify_v3761_haidh_predictions.mjs` dynamically exercises teacher-confirmed promotion versus prediction-only non-promotion.
+
+**Current container run:** V4.2.11 UI **16/16**, dynamic Haidh promotion/prediction **24/24**, V4.2.10 **11/11**, V4.2.9.2 **11/11**, V4.2.9.1 **6/6**, V4.2.9 **11/11**, cumulative V4.2.8 **17/17**, build/version **6/6**, served-script syntax **36/36**, Worker syntax **4/4**. `run-all.mjs` reports **318 passed, 0 failed** among harnesses able to report; 27 older harnesses cannot report in this checkout because `jsdom` is absent and/or their legacy fixtures have pre-existing schema drift.
+
 ## V4.2.10 — log-detail student search / name pill / Sabaq Dhor selector checks
 
 After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.10**. No worker deploy or migration is required.

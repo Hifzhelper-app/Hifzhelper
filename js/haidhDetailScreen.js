@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.11 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -509,7 +509,13 @@ async function loadAttendancePeriod(){
   // V3.86.0 (user): the absent list lives in a POPUP behind a small
   // green history-style button now; the inline toggle list is gone.
   document.getElementById('attAbsentBtn').textContent = `Absent days (${d.absent_dates.length})`;
-  document.getElementById('attHaidhBlock').classList.toggle('hidden', !d.track_haidh);
+  // V4.2.11: teachers/admins editing a maktab student's attendance must
+  // be able to place the FIRST confirmed haidh mark even before that
+  // student is flagged haa'idha. The worker promotes Female + Haaidha
+  // on that confirmed mark; the student's own page still hides this
+  // calendar until track_haidh is actually true.
+  const teacherMaktabEdit = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+  document.getElementById('attHaidhBlock').classList.toggle('hidden', !(d.track_haidh || teacherMaktabEdit));
 }
 let attPageData = null;
 

@@ -28,8 +28,21 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
+| **77** | **Deploy + device-verify V4.2.11** | **READY — build complete** | **NO MIGRATION.** Deploy Worker first, then changed Pages files, hard-refresh, and run the V4.2.11 register + Female/Haaidha checks in `TESTING.md`. Close this row once dev/production verification is complete. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
+
+## V4.2.11 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+Implementation is built. The remaining actions are deployment and device verification:
+
+1. **Do not run a migration.** V4.2.11 reuses the existing `students.gender` and `students.track_haidh` columns.
+2. **Deploy the Worker first.** Required worker changes: new `GET /maktab/attendance-register`, registration writes for Female/Haaidha, and automatic Female+Haaidha promotion after a teacher/admin confirms real Haidh.
+3. **Deploy the changed Pages files second.** The Attendance screen then begins calling the new register endpoint.
+4. **Hard-refresh / clear the old page cache** and verify the page is requesting the 4.2.11 `?v=` assets.
+5. **Run the V4.2.11 device checklist in `TESTING.md`**, especially: two-row weekly register headings; green tick / yellow Haidh icon / blank absence; sticky single roster; student-name navigation; Female→Haaidha registration; first confirmed teacher Haidh promotes the profile; future prediction does not.
+6. Once dev and production checks pass, strike live item **77** above.
+
 
 **SHIPPED TODAY, no longer actions:** (i) read-routing rewrite (V3.68.0);
 the server-side Dhor pool merge (V3.68.0); Home header row removal (V3.69.0);

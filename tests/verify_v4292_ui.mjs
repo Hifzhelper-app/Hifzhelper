@@ -50,9 +50,10 @@ const atLeast = (v, floor) => {
 };
 check('page/cache release key is not older than V4.2.9.2',
   pageVersion === cacheVersion && atLeast(pageVersion, '4.2.9.2'));
-check('V4.2.9.2 edited source files retain their last-edit headers after later releases',
-  /^\/\* Hifzhelper build 4\.2\.9\.2 \| css\/admin\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.9\.2 \| js\/adminPage\.js \*\//.test(js));
+const buildOf = txt => (txt.match(/^\/\* Hifzhelper build ([0-9.]+) \|/) || [])[1] || '';
+check('V4.2.9.2 edited source files retain headers at V4.2.9.2 or later',
+  atLeast(buildOf(css), '4.2.9.2')
+  && atLeast(buildOf(js), '4.2.9.2'));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

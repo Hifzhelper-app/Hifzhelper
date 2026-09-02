@@ -9,6 +9,11 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 let pass = 0, fail = 0;
 const check = (label, cond) => { if(cond) pass++; else { fail++; console.log('FAIL:', label); } };
+const atLeast = (v, floor) => {
+  const a = String(v).split('.').map(Number), b = String(floor).split('.').map(Number);
+  for(let i = 0; i < Math.max(a.length, b.length); i++){ const d=(a[i]||0)-(b[i]||0); if(d) return d>0; }
+  return true;
+};
 
 const html = read('index.html');
 const detailCss = read('css/detail-pages.css');
@@ -42,15 +47,17 @@ check('empty-state confirmation checkbox is inside the same selector row',
 check('picker remains shrink-safe and full-span inside the sections group',
   /\.sdq-picker \{ grid-column: 1 \/ -1; min-width: 0;/.test(detailCss)
   && /\.sdq-row \{[\s\S]*min-width: 0;/.test(detailCss));
-check('V4.2.10 page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.10/.test(html)
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.10'/.test(sw));
-check('only edited served files checked here carry V4.2.10 headers',
-  /^\/\* Hifzhelper build 4\.2\.10 \| css\/detail-pages\.css \*\//.test(detailCss)
-  && /^\/\* Hifzhelper build 4\.2\.10 \| css\/journal-table\.css \*\//.test(journalCss)
-  && /^\/\* Hifzhelper build 4\.2\.10 \| js\/logDetailScreen\.js \*\//.test(logJs)
-  && /^\/\* Hifzhelper build 4\.2\.10 \| js\/sabaqDhorPage\.js \*\//.test(sdJs)
-  && /^\/\* Hifzhelper build 4\.2\.10 \| js\/sw\.js \*\//.test(sw));
+const pageVersion = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1] || '';
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1] || '';
+check('page/cache release key is not older than V4.2.10',
+  pageVersion === cacheVersion && atLeast(pageVersion, '4.2.10'));
+const buildOf = txt => (txt.match(/^\/\* Hifzhelper build ([0-9.]+) \|/) || [])[1] || '';
+check('V4.2.10 edited source files retain headers at V4.2.10 or later',
+  atLeast(buildOf(detailCss), '4.2.10')
+  && atLeast(buildOf(journalCss), '4.2.10')
+  && atLeast(buildOf(logJs), '4.2.10')
+  && atLeast(buildOf(sdJs), '4.2.10')
+  && atLeast(buildOf(sw), '4.2.10'));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

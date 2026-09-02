@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.11** — Term-wide Maktab Attendance register grid; Female/Haaidha registration; confirmed teacher Haidh auto-promotes profile
 - **V3.88.0** — Staged propose→edit→confirm calendar flows; duplicate fix (0027 unique index); attendance/haidh layout; dd-mmm-yy; 4-card settings rail at 25%
 - **V3.87.0** — The Maktab Calendar: multiple terms drive attendance; pre-loaded Islamic predictions (adjustable); SA public holidays (Sunday rule); info-only page; markers wherever dates appear
 - **V3.86.0** — The six-comment batch: Apply check, popup attendance buttons, de-pilled history buttons, add-row flip, SAVE row, wider inputs
@@ -123,6 +124,24 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.11 — Attendance register grid + Haaidha profile promotion
+
+**Goal.** Replace the Attendance overview's repeated per-day name lists with a register that can be scanned across weeks, while keeping attendance derivation and the individual editing page as the source of truth. At the same time, make Haaidha eligibility manageable at registration and self-correcting when a teacher records the first real Haidh.
+
+**Register shape.** The selected configured term is rendered as one matrix. The first column contains each active student exactly once and remains sticky. Every configured teaching day becomes a narrow status column. Two header rows keep those columns narrow without losing date context: row 1 merges all teaching-day columns belonging to a Maktab week; row 2 is only the weekday (`Mon`, `Tue`, etc.). Week blocks alternate a subtle tint and receive a stronger leading divider. Previous/next changes term, not day. If no terms exist, the safe fallback is four weeks containing today.
+
+**Cell semantics.** A real Maktab log is direct evidence and therefore gets a green check. A Haidh / predicted-Haidh attendance row gets the existing yellow Haidh icon. A blank is only interpreted as absence on a completed date that qualifies as a Maktab day under `maktab_day_min`; future dates and below-threshold past teaching dates are muted so a blank there does not assert absence. The Calendar's public-holiday/islamic-event entries remain informational and do not redefine attendance; terms + teaching-day settings + Maktab-day threshold continue to govern the register.
+
+**Editing boundary.** The grid itself is intentionally not a mass-edit table. Selecting the student's name opens the existing individual Attendance page under Maktab context, preserving the established Haidh range rules and manual attendance editor rather than duplicating them in every cell.
+
+**Female / Haaidha registration.** Student Management registration gains a Female checkbox; Haaidha is revealed only while Female is selected. Both map to the existing `students.gender` and `students.track_haidh` columns, so V4.2.11 needs no migration. Role, group, status, duplicate handling and the just-created-student pin remain independent of those profile fields.
+
+**First Haidh mark promotes the profile.** A teacher/admin must be able to record the first confirmed Haidh even for a student who was not registered as Haaidha. Therefore Maktab-context individual Attendance exposes the Haidh calendar to the teacher/admin regardless of the student's current `track_haidh`. Once a teacher/admin successfully writes a **confirmed** Haidh day/range, the Worker sets `gender='F'` and `track_haidh=1`. Her own Attendance page then exposes the calendar normally. A future predicted range is not enough evidence and never promotes the profile. Promotion is one-way; later clearing a mark does not revert it.
+
+**Deployment boundary.** Worker + frontend change, no D1 migration. Worker must be deployed first because Pages switches to the new `GET /maktab/attendance-register` response and registration begins sending the existing profile fields.
 
 ---
 

@@ -386,3 +386,127 @@ export async function handleMaktabWeek(request, env, auth) {
 
   return { data: { monday, today, teaching_days: teaching, columns: out, students: students.results.map(s => ({ id: s.id, name: s.name })) } };
 }
+
+
+// ============================================================
+// V4.2.11 — TERM REGISTER GRID.
+//
+// The Attendance overview is now a conventional register: one student
+// roster down the left, teaching-day columns across the current term,
+// grouped beneath merged Maktab-week headings. Absence has no glyph — a
+// blank cell is the register's absence state. Present is a log-derived
+// green tick; confirmed/planned haidh uses the shared haidh status.
+//
+// This is a READ shape only. Attendance remains derived from the same
+// maktab logs + attendance rows; no attendance table or migration is
+// introduced. The older one-week endpoint stays in place for regression
+// compatibility, but the V4.2.11 screen uses this endpoint.
+// ============================================================
+function registerAddDays(iso, days) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function registerMondayOf(iso) {
+  const d = new Date(iso + 'T00:00:00Z');
+  const dow = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dow);
+  return d.toISOString().slice(0, 10);
+}
+
+export async function handleMaktabRegister(request, env, auth) {
+  if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
+  const url = new URL(request.url);
+  const settings = await readMaktabSettings(env);
+  const today = await maktabTodayISO(env);
+  const teaching = teachingDaysOf(settings);
+
+  const { results: terms } = await env.DB.prepare(
+    'SELECT id, name, term_from, term_to FROM maktab_terms ORDER BY term_from, id'
+  ).all();
+  const requestedId = url.searchParams.get('term_id');
+  let term = null;
+  if (requestedId != null && requestedId !== '') {
+    const n = Number(requestedId);
+    if (!Number.isInteger(n)) return { error: 'term_id must be an integer', status: 400 };
+    term = terms.find(t => Number(t.id) === n) || null;
+    if (!term) return { error: 'Term not found', status: 404 };
+  } else {
+    term = terms.find(t => t.term_from <= today && t.term_to >= today) || null;
+    if (!term && terms.length) {
+      // Outside a term: use the nearest term, preferring the most recent
+      // past term. This keeps the register useful during a break.
+      term = [...terms].reverse().find(t => t.term_from <= today) || terms[0];
+    }
+  }
+
+  let from, to, periodName, prevTermId = null, nextTermId = null;
+  if (term) {
+    from = term.term_from; to = term.term_to; periodName = term.name;
+    const idx = terms.findIndex(t => Number(t.id) === Number(term.id));
+    if (idx > 0) prevTermId = Number(terms[idx - 1].id);
+    if (idx >= 0 && idx < terms.length - 1) nextTermId = Number(terms[idx + 1].id);
+  } else {
+    // No terms configured at all: a four-week register containing today.
+    const thisMon = registerMondayOf(today);
+    from = registerAddDays(thisMon, -21);
+    to = registerAddDays(thisMon, 6);
+    periodName = 'Last 4 weeks';
+  }
+
+  const [students, marks, maktabDays, logged] = await Promise.all([
+    env.DB.prepare("SELECT id, name, track_haidh FROM students WHERE role = 'student' AND active = 1 ORDER BY name").all(),
+    env.DB.prepare('SELECT student_id, date, status FROM attendance WHERE date >= ? AND date <= ?').bind(from, to).all(),
+    loadMaktabDays(env, settings.maktab_day_min),
+    env.DB.prepare(
+      `SELECT DISTINCT student_id, date FROM (
+         SELECT date, student_id FROM maktab_sabaq_log
+         UNION ALL SELECT date, student_id FROM maktab_sabaq_dhor_log
+         UNION ALL SELECT date, student_id FROM maktab_dhor_log
+       ) WHERE date >= ? AND date <= ?`
+    ).bind(from, to).all(),
+  ]);
+
+  const maktabDaySet = new Set(maktabDays);
+  const loggedOn = new Set(logged.results.map(r => `${r.student_id}|${r.date}`));
+  const markAt = new Map(marks.results.map(r => [`${r.student_id}|${r.date}`, r.status]));
+
+  const weeks = [];
+  for (let mon = registerMondayOf(from); mon <= to; mon = registerAddDays(mon, 7)) {
+    const columns = [];
+    for (let i = 0; i < 7; i++) {
+      const date = registerAddDays(mon, i);
+      const key = WEEKDAY_KEYS[i];
+      if (date < from || date > to || !teaching.includes(key)) continue;
+      const past = date < today;
+      const noMaktabDay = past && !maktabDaySet.has(date);
+      columns.push({ date, weekday: key, past, future: date > today, no_maktab_day: noMaktabDay });
+    }
+    if (columns.length) weeks.push({ monday: mon, columns });
+  }
+
+  const rows = students.results.map(s => {
+    const cells = {};
+    for (const w of weeks) for (const c of w.columns) {
+      const key = `${s.id}|${c.date}`;
+      let status = '';
+      // Even a below-threshold day can contain a real student's log; show
+      // that evidence while the column itself stays muted as No maktab day.
+      // What we never do on such a column is infer absence from a blank.
+      if (loggedOn.has(key)) status = 'present';
+      else {
+        const mark = markAt.get(key);
+        if (mark === 'haidh' || mark === 'predicted-haidh') status = 'haidh';
+      }
+      cells[c.date] = status;
+    }
+    return { id: s.id, name: s.name, track_haidh: !!s.track_haidh, cells };
+  });
+
+  return { data: {
+    today, from, to, period_name: periodName,
+    term_id: term ? Number(term.id) : null,
+    prev_term_id: prevTermId, next_term_id: nextTermId,
+    teaching_days: teaching, weeks, students: rows,
+  } };
+}

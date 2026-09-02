@@ -25,7 +25,7 @@ const day = (n) => haidhAddDaysISO(TODAY, n);
 function makeDb() {
   const db = new DatabaseSync(':memory:');
   db.exec(`
-    CREATE TABLE students (id TEXT PRIMARY KEY, role TEXT NOT NULL, haidh_ruling TEXT NOT NULL DEFAULT 'hanafi');
+    CREATE TABLE students (id TEXT PRIMARY KEY, role TEXT NOT NULL, gender TEXT, track_haidh INTEGER NOT NULL DEFAULT 0, haidh_ruling TEXT NOT NULL DEFAULT 'hanafi');
     CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL,
       status TEXT NOT NULL CHECK (status IN ('present','absent','haidh','predicted-haidh')),
       PRIMARY KEY (student_id, date));
@@ -43,7 +43,8 @@ function makeDb() {
   const put = (d, status) => db.prepare('INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?)').run('STU1', d, status);
   const rows = () => db.prepare('SELECT date, status FROM attendance WHERE student_id = ? ORDER BY date').all('STU1');
   const has = (d, status) => rows().some(r => r.date === d && r.status === status);
-  return { env: { DB }, put, rows, has };
+  const profile = () => db.prepare('SELECT gender, track_haidh FROM students WHERE id = ?').get('STU1');
+  return { env: { DB }, put, rows, has, profile };
 }
 const TEACHER = { id: 'TCH1', role: 'teacher' };
 const range = (a, b) => ({ json: async () => ({ student_id: 'STU1', startDate: a, endDate: b }), url: 'https://x/' });
@@ -65,7 +66,7 @@ const single = (d, status) => ({ json: async () => ({ student_id: 'STU1', date: 
 
 // ---------- THE device case: real range, prediction 5 days ahead, last real haidh 3 weeks back ----------
 {
-  const { env, put, rows, has } = makeDb();
+  const { env, put, rows, has, profile } = makeDb();
   for (let n = -26; n <= -22; n++) put(day(n), 'haidh');   // last real period, ended 22 days ago
   put(day(5), 'predicted-haidh');                          // the plan that used to block
   put(day(20), 'predicted-haidh');                         // a later plan, outside the window
@@ -76,6 +77,7 @@ const single = (d, status) => ({ json: async () => ({ student_id: 'STU1', date: 
   check('device case: the prediction 20 days ahead SURVIVES (outside the window)', has(day(20), 'predicted-haidh'));
   check('device case: the response names what it cleared', JSON.stringify(r.data.clearedPredictions) === JSON.stringify([day(5)]), JSON.stringify(r.data));
   check('device case: the old real period is untouched', rows().filter(x => x.status === 'haidh').length === 10);
+  check('V4.2.11: teacher-confirmed haidh promotes Female + Haaidha', profile().gender === 'F' && profile().track_haidh === 1);
 }
 
 // ---------- the rule still holds in the other direction ----------
@@ -99,12 +101,13 @@ const single = (d, status) => ({ json: async () => ({ student_id: 'STU1', date: 
   check('a PASSED prediction still counts as evidence (gap 3 → refused)', r.error && /days have not passed/.test(r.error));
 }
 {
-  const { env, put, has } = makeDb();
+  const { env, put, has, profile } = makeDb();
   put(day(-30), 'haidh');
   put(day(6), 'predicted-haidh');
   const r = await handleMarkHaidhRange(range(day(3), day(5)), env, TEACHER);
   check('a predicted range written NEXT TO another prediction is accepted (plans do not veto plans)', !r.error && r.data.status === 'predicted-haidh', JSON.stringify(r));
   check('…and a predicted write clears nothing', has(day(6), 'predicted-haidh') && r.data.clearedPredictions.length === 0);
+  check('V4.2.11: a future prediction alone does NOT promote Haaidha', !profile().track_haidh && profile().gender == null);
 }
 {
   const { env, put, has } = makeDb();

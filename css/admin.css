@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.9.2 | css/admin.css */
+/* Hifzhelper build 4.2.11 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -132,6 +132,17 @@ button.secondary.danger {
   color: var(--color-error);
   border-color: var(--color-error);
 }
+
+
+/* V4.2.11: registration captures Female and, only when Female is on,
+   Haaidha. The same compact controls are used by the mobile card and the
+   temporary desktop register row; existing student rows are unchanged. */
+.admin-register-check {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--color-ink-soft); white-space: nowrap;
+}
+.admin-register-check input[type="checkbox"] { width: 18px; height: 18px; margin: 0; }
+.admin-new-profile-inline { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 
 /* ============================================================
    V4.1.0 (user's mock, 2026-09-01) — the admin table.
@@ -377,6 +388,10 @@ button.secondary.danger {
     letter-spacing: 0;
     color: inherit;
     margin: 0;
+  }
+  .admin-mobile-register-profile {
+    display: flex; align-items: center; gap: var(--space-md);
+    min-height: 28px; margin: 0 0 var(--space-sm);
   }
   .admin-mobile-register-actions {
     display: flex;
