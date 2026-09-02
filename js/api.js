@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/api.js */
+/* Hifzhelper build 4.2.6 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability

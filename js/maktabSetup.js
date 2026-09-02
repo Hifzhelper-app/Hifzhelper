@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/maktabSetup.js */
+/* Hifzhelper build 4.2.6 | js/maktabSetup.js */
 // ============================================================
 // Hifzhelper -- Maktab student setup (V3.66.0, delivery (h)).
 // Per student, marks the COMPLETED AJZAA and writes their quarter units

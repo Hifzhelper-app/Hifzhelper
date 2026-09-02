@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/home.js */
+/* Hifzhelper build 4.2.6 | js/home.js */
 // ============================================================
 // Hifzhelper — Home page
 // Icon tiles mirroring the dropdown menu's nav items (minus logout/

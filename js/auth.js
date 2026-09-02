@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/auth.js */
+/* Hifzhelper build 4.2.6 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================

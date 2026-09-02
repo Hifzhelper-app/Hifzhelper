@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/session-timer.js */
+/* Hifzhelper build 4.2.6 | js/session-timer.js */
 /* Session Timer — dependency-free <session-timer> custom element.
  *
  * Hifzhelper-adapted copy of the originally-supplied session-timer.js.

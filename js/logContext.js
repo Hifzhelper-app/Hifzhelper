@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/logContext.js */
+/* Hifzhelper build 4.2.6 | js/logContext.js */
 // ============================================================
 // Hifzhelper -- log context (V3.64.0, maktab delivery (e) rework).
 //

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/adminPage.js */
+/* Hifzhelper build 4.2.6 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a

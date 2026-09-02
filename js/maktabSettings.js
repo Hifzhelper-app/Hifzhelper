@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/maktabSettings.js */
+/* Hifzhelper build 4.2.6 | js/maktabSettings.js */
 // ============================================================
 // Hifzhelper -- Maktab settings screen (V3.65.0, delivery (g);
 // restructured V3.79.0 into a THREE-CARD RAIL like the day view —

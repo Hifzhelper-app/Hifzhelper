@@ -1,7 +1,8 @@
-/* Hifzhelper build 4.2.5 | css/admin.css */
+/* Hifzhelper build 4.2.6 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
+
 /* V3.44: the screen-level width cap that used to live here is REMOVED
    entirely, confirmed in chat -- #screen-admin is never independently
    capped now, it's just another --surface-track screen (css/base.css's

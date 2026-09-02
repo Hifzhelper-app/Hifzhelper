@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.5 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.6 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
