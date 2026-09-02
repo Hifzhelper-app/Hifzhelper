@@ -94,8 +94,16 @@ function renderSabaqDhorRows(){
   // Every row emits exactly 3 direct grid children (text, move-button-or-
   // empty-placeholder, checkbox) so column position is never at the mercy
   // of which rows happen to have a Move to Dhor button and which don't.
+  // V4.2.4 (user's choice of three options): when there are NO rows, this
+  // block shows the JUZ + QUARTER PICKER in their place — the rows are
+  // DERIVED from her position, so a student who has memorised but never
+  // logged has nothing here to pick. The picker occupies exactly the space
+  // the missing information would have filled, costs nothing when she does
+  // have history, and never competes with the rows for attention.
+  // (V4.2.3 put it below the From/To block, inside a FLEX row — it stole
+  // the sections list's width and crushed the pills. Placement, not style.)
   const rowsHtml = sabaqDhorRows.length === 0
-    ? `<p class="form-hint">Nothing to revise yet -- log a Sabaq entry first.</p>`
+    ? sabaqDhorQuarterPickerHtml()
     : sabaqDhorRows.map(r => `
     <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
     <span></span>
@@ -178,6 +186,7 @@ function renderSabaqDhorRows(){
   // Reapply preserved manual-field state to the freshly-created nodes,
   // then re-wire this row's own listeners fresh -- the previous nodes
   // (and whatever was attached to them) are gone now.
+  wireSabaqDhorQuarterPicker();   // V4.2.4: no-op unless the picker is on screen
   renderSabaqDhorManualField('from', preservedManualFrom);
   renderSabaqDhorManualField('to', preservedManualTo);
   document.getElementById('sabaqDhorManual_cb').checked = preservedManualChecked;
@@ -239,7 +248,6 @@ function rebuildRowsFromPosition(){
   // two can never describe different states.
   sabaqDhorMoveOptions = computeSabaqDhorMoveOptions(sabaqDhorPosition, sabaqDhorRef, sabaqDhorBaselineSelection);
   renderSabaqDhorRows();
-  renderSabaqDhorQuarterPicker();   // V4.2.3: follows her mushaf's terminology
   updateRollupStepperVisibility();
 }
 
@@ -658,22 +666,23 @@ function openSurahPickerForSabaqDhorManual(side){
 // moment the card's own Save button is tapped.
 
 // ============================================================
-// V4.2.3 (user, 2026-09-01) — THE JUZ + QUARTER PICKER.
+// V4.2.4 — THE JUZ + QUARTER PICKER, as the rows block's EMPTY STATE.
 //
-// Why it exists: the card's suggestion rows are derived from the
-// student's own history, so a student who HAS MEMORISED but has no
-// journal history yet is offered nothing. This lets the teacher pick the
-// portion directly.
+// Why it exists: the suggestion rows are DERIVED from the student's own
+// position, so a student who HAS MEMORISED but has no journal history is
+// offered nothing — computeSabaqDhorRows returns [] for her, verified.
+// Rather than adding a second control below (V4.2.3, which also landed in
+// the wrong container), the picker fills the space those rows would have
+// occupied: visible exactly when it is needed, invisible when it is not.
 //
-// It is ADDITIVE: it fills the From/To ayah fields and nothing else. The
-// stored shape (from/to surah+ayah) is unchanged, so the save path, the
-// merge logic and every downstream reader stay exactly as they are.
+// It is ADDITIVE to the data: it fills the From/To ayah fields through the
+// card's own setter, so the stored shape (from/to surah+ayah), the save
+// path and every downstream reader are untouched.
 //
-// The conversion is the app's own, already proven: structuralQuarterBounds
-// (shared/data.js) is what the suggestion rows themselves use. The unit's
-// WORD follows her mushaf — Quarter for IndoPak, Ru'b for 15-line Madani
-// (quarterUnitWord, migration 0017's terminology) — so the picker reads
-// in her language rather than a hardcoded "Quarter".
+// The conversion is the app's own proven helper, structuralQuarterBounds
+// (shared/data.js) — the same one the suggestion rows use. The unit's WORD
+// follows her mushaf: Quarter for IndoPak, Ru'b for 15-line Madani
+// (quarterUnitWord, migration 0017's terminology).
 // ============================================================
 function sdqRef(){
   return (typeof sabaqDhorRef !== 'undefined' && sabaqDhorRef)
@@ -681,27 +690,31 @@ function sdqRef(){
     || 'waterval';
 }
 
-function renderSabaqDhorQuarterPicker(){
-  const juzSel = document.getElementById('sdq_juz');
-  const qSel = document.getElementById('sdq_quarter');
-  if(!juzSel || !qSel) return;
-  const ref = sdqRef();
-  const word = typeof quarterUnitWord === 'function' ? quarterUnitWord(ref) : 'Quarter';
-  const unitLabel = document.getElementById('sdq_unit_label');
-  if(unitLabel) unitLabel.textContent = word;
-  if(!juzSel.options.length){
-    juzSel.innerHTML = Array.from({ length: 30 }, (_, i) => `<option value="${i + 1}">Juz ${i + 1}</option>`).join('');
-  }
-  // structuralQuarterBounds works in STRUCTURAL quarters (1-4) for every
-  // print — the ayah boundaries differ by mushaf, the count does not.
-  qSel.innerHTML = Array.from({ length: 4 }, (_, i) => `<option value="${i + 1}">${word} ${i + 1}</option>`).join('');
-  sdqUpdatePreview();
+function sabaqDhorQuarterPickerHtml(){
+  const word = typeof quarterUnitWord === 'function' ? quarterUnitWord(sdqRef()) : 'Quarter';
+  const juzOpts = Array.from({ length: 30 }, (_, i) => `<option value="${i + 1}">Juz ${i + 1}</option>`).join('');
+  // structural quarters are 1-4 for every print — the ayah boundaries
+  // differ by mushaf, the count does not
+  const qOpts = Array.from({ length: 4 }, (_, i) => `<option value="${i + 1}">${word} ${i + 1}</option>`).join('');
+  return `<div class="sdq-picker" id="sabaqDhorQuarterPicker">
+      <p class="form-hint">No history yet — choose the portion she is revising.</p>
+      <div class="sdq-row">
+        <span class="sdq-field"><label class="dhor-sel-label">Juz</label><select id="sdq_juz">${juzOpts}</select></span>
+        <span class="sdq-field"><label class="dhor-sel-label">${word}</label><select id="sdq_quarter">${qOpts}</select></span>
+        <button type="button" class="secondary sdq-apply" id="sdq_apply">Use</button>
+      </div>
+      <div class="sdq-preview" id="sdq_preview"></div>
+    </div>
+    <span></span><span></span>`;   // the block is a 3-column grid: keep the row shape
 }
 
 function sdqBounds(){
-  const juz = parseInt(document.getElementById('sdq_juz').value, 10);
-  const q = parseInt(document.getElementById('sdq_quarter').value, 10);
-  if(!juz || !q || typeof structuralQuarterBounds !== 'function') return null;
+  const juzEl = document.getElementById('sdq_juz');
+  const qEl = document.getElementById('sdq_quarter');
+  if(!juzEl || !qEl || typeof structuralQuarterBounds !== 'function') return null;
+  const juz = parseInt(juzEl.value, 10);
+  const q = parseInt(qEl.value, 10);
+  if(!juz || !q) return null;
   try{ return structuralQuarterBounds(juz, q, sdqRef()); } catch(e){ return null; }
 }
 
@@ -712,22 +725,25 @@ function sdqUpdatePreview(){
   el.textContent = b ? `${b.startSurah}:${b.startAyah} \u2013 ${b.endSurah}:${b.endAyah}` : '';
 }
 
-(function wireSabaqDhorQuarterPicker(){
+// Wired per render — the block's innerHTML is rebuilt each time, so the
+// previous nodes and their listeners are gone (the same reason the manual
+// row re-wires itself in renderSabaqDhorRows).
+function wireSabaqDhorQuarterPicker(){
   const juzSel = document.getElementById('sdq_juz');
   const qSel = document.getElementById('sdq_quarter');
   const apply = document.getElementById('sdq_apply');
-  if(!juzSel || !qSel || !apply) return;
+  if(!juzSel || !qSel || !apply) return;   // rows exist: no picker on screen
   juzSel.addEventListener('change', sdqUpdatePreview);
   qSel.addEventListener('change', sdqUpdatePreview);
   apply.addEventListener('click', () => {
     const b = sdqBounds();
     if(!b) return;
-    // fill the manual From/To fields — the same setter the rest of the
-    // card uses, so the checkbox, the save path and the dirty-tracking
-    // all behave exactly as if the teacher had typed the range
+    // the card's own setter, so the checkbox, the save path and the
+    // dirty-tracking behave exactly as if the range had been typed
     renderSabaqDhorManualField('from', { surah: b.startSurah, ayah: b.startAyah });
     renderSabaqDhorManualField('to', { surah: b.endSurah, ayah: b.endAyah });
     const cb = document.getElementById('sabaqDhorManual_cb');
     if(cb){ cb.checked = true; cb.dispatchEvent(new Event('change')); }
   });
-})();
+  sdqUpdatePreview();
+}
