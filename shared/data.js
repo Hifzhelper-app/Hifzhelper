@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | shared/data.js */
+/* Hifzhelper build 4.2.8 | shared/data.js */
 // ============================================================
 // Hifzhelper — Quran structural data
 // Current as of V3.37

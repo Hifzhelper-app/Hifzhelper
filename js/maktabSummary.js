@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.8.2 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -300,6 +300,9 @@ async function renderMaktabSummaryScreen(){
     const nameSpan = document.createElement('span');
     nameSpan.className = 'maktab-name-pill';   // V4.2.0 (user): reads as the button it already is
     nameSpan.textContent = stu.name;
+    // V4.2.8 (user): every pill has the same width; long names are
+    // visually ellipsised by CSS, so keep the full name available on hover.
+    nameSpan.title = stu.name;
     nameTd.appendChild(nameSpan);
     // V3.85.0 (was V3.82.0's rail card): tapping the NAME opens her
     // STANDALONE student summary page; the rest of the row keeps opening
@@ -334,7 +337,10 @@ async function renderMaktabSummaryScreen(){
         td.className = 'journal-cell journal-cell-absent';
         td.textContent = 'Absent';
       } else {
-        td.innerHTML = maktabCellHtml(type, byStudent[type][stu.id]);
+        // V4.2.8 / item 68: one summary-only wrapper makes the value +
+        // its +N badge ONE grid item on mobile. Keep maktabCellHtml itself
+        // unchanged because Maktab Journal reuses that helper too.
+        td.innerHTML = `<span class="maktab-summary-cell-value">${maktabCellHtml(type, byStudent[type][stu.id])}</span>`;
         // V3.74.2: the peek reads its entries from the cell rather than
         // re-querying — the rows are already here, and re-deriving them
         // from the DOM would be parsing text back into data.
@@ -408,7 +414,16 @@ function maktabSummaryPaintSkeleton(host, roster){
     tr.className = 'journal-row maktab-summary-skeleton-row';
     const haidhTd = document.createElement('td');
     haidhTd.className = 'maktab-haidh-col';
-    haidhTd.innerHTML = typeof iconHtml === 'function' ? iconHtml('attendance') : '';
+    // V4.2.8.2: never paint iconHtml('attendance') naked. The real row
+    // sizes that SVG through .maktab-haidh-check; the cached instant-name
+    // paint used to omit the wrapper, so Safari briefly rendered the SVG at
+    // its intrinsic/available size before fresh data replaced the row. Use
+    // the same visual wrapper here (non-interactive until the real render).
+    const attendanceGhost = document.createElement('span');
+    attendanceGhost.className = 'maktab-haidh-check maktab-summary-skeleton-attendance';
+    attendanceGhost.setAttribute('aria-hidden', 'true');
+    attendanceGhost.innerHTML = typeof iconHtml === 'function' ? iconHtml('attendance') : '';
+    haidhTd.appendChild(attendanceGhost);
     tr.appendChild(haidhTd);
     const nameTd = document.createElement('td');
     nameTd.className = 'cell-date maktab-student-name';

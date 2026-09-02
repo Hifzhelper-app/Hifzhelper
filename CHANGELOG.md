@@ -26,6 +26,46 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.8.2 — Maktab Summary return-paint + mobile attendance placement (2026-09-02)
+
+**Files touched:** `css/journal-table.css`, `js/maktabSummary.js`, `index.html`, `js/sw.js`, `tests/verify_v428_ui.mjs`, `tests/verify_build_stamp.mjs`, `CONVENTIONS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **No broken return-to-Maktab paint.** Item 66's instant-name skeleton painted `iconHtml('attendance')` directly into the attendance cell, while the finished row wrapped that SVG in `.maktab-haidh-check`. The wrapper is what supplies the 16×16 SVG sizing. On Safari the unwrapped interim SVG could therefore expand across the card until the fresh summary response replaced the skeleton. The instant paint now uses the same sizing wrapper (non-interactive), so the cached names can still appear immediately without ever showing the giant-icon state.
+2. **Attendance is beside the name pill on mobile.** The mobile card's first line is now a real two-column grid: `name pill | attendance`. The attendance cell is no longer absolutely positioned over a reserved corner of the name cell. Sabaq, Sabaq Dhor and Dhor each span both grid columns beneath it. The uniform-width/ellipsis name-pill treatment remains unchanged.
+3. **Navigation preserved.** Student name still opens the student's individual summary; attendance opens that student's attendance page; Sabaq / Sabaq Dhor / Dhor cells still open their matching detail card for the selected date. The instant skeleton remains deliberately non-interactive until fresh data is present.
+4. **Versioning rule corrected.** The page/service-worker `?v=` cache key still moves together for a served release, but a source file's top `Hifzhelper build ...` header now records the last release that actually edited that file. Untouched assets are no longer mass-edited just to change their header. The build-stamp harness and `CONVENTIONS.md` now enforce/document those separate meanings. For this release only the edited served files (`css/journal-table.css`, `js/maktabSummary.js`, `js/sw.js`) receive a 4.2.8.2 build header.
+
+**Regression coverage:** cumulative `verify_v428_ui.mjs` now pins the mobile two-column top line, log-row full-span, wrapped instant attendance icon and all four distinct navigation targets. `verify_build_stamp.mjs` continues to require one page/cache release key and matching service-worker precache while allowing older last-edit headers on untouched files.
+
+**Verification in this build container:** 17/17 V4.2.8.x UI pins, 6/6 build/version pins, 36/36 served-script syntax checks and the same 202/202 dependency-free existing checks = **261 passed, 0 failed** from harnesses able to run here. The repository's broader jsdom/fixture-dependent harnesses still cannot complete in this container because `jsdom` is not installed (with several older SQL fixture harnesses also lacking their expected schema setup); they are reported as unavailable/broken by `run-all.mjs`, not counted as passing.
+
+---
+
+## V4.2.8.1 — Mobile Maktab Summary width correction (2026-09-02)
+
+**Files actually changed from V4.2.8:** `css/journal-table.css`, `tests/verify_v428_ui.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. This follow-up was initially packaged under the V4.2.8 name; the user corrected the release identity to **V4.2.8.1**. **FRONTEND ONLY.**
+
+The mobile card was still constrained to the desktop table's 21% Student / 24% log-column widths because those `td:nth-child(...)` selectors were more specific than the first mobile `td { width:100% }` reset. Mobile now resets the nth-child widths at matching specificity, allowing the name and log cells to consume the usable card width. Larger-screen equal-width name pills were not changed.
+
+---
+
+## V4.2.8 — Maktab summary mobile repair + Sabaq Dhor picker redesign (2026-09-02)
+
+**Files touched:** served build headers across `css/*.css`, `js/*.js`, `shared/*.js`; functional changes in `css/journal-table.css`, `css/detail-pages.css`, `js/maktabSummary.js`, `js/sabaqDhorPage.js`; `index.html`, `js/sw.js`; tests (`tests/verify_v3850_batch.mjs`, `tests/verify_v428_ui.mjs` NEW); docs (`TODO.md`, `CHANGELOG.md`, `TESTING.md`). **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Item 68 — mobile Maktab Summary values stop collapsing.** The three log lines are now a real `96px + 1fr` grid instead of the V4.2.2 flex line that let the value fall to min-content width. `Juz 28 H1`, `Juz 4 Q2`, short verse ranges and similar values now use the full right-hand column and wrap only when genuinely necessary. The value and its `+N` badge are wrapped as one grid item so the badge cannot auto-flow onto a stray second row.
+2. **Same-width student-name pills (user refinement during the build).** Every Maktab Summary name pill fills the same Student-column width. Long names are trialled with single-line ellipsis instead of stretching the pill; the full name remains in the DOM and `title`.
+3. **Item 72 — Sabaq Dhor empty-state picker takes the Dhor format.** The old quarter `<select>` and **Use** button are gone. Juz remains a select; the portion is now the shared `switch-track` **1 | 2 | 3 | 4** control, with the mushaf-appropriate Quarter/Ru'b word retained as the field label. A right-hand checkbox in the shared Sabaq-Dhor grid selects that structural quarter directly into the existing composite save range. Stored fields and backend shape do not change.
+4. **The picker remains rail-safe.** The V4.2.8 structure no longer spans all three Sabaq-Dhor grid columns, and the picker/select/switch all carry `min-width:0`; this preserves the already-completed item-67 behaviour while replacing the control itself.
+
+**Regression coverage:** new dependency-free `verify_v428_ui.mjs` pins the mobile full-width cell reset, mobile grid, same-width ellipsis pills, `+N` wrapper, no-Use/no-quarter-select rule, 1|2|3|4 switch, right-hand checkbox, composite structural-quarter path and min-width guards. The older cumulative V4.2.x pins in `verify_v3850_batch.mjs` were realigned to the shipped design.
+
+**Verification in the build container:** 14/14 V4.2.8 UI pins, 6/6 build/version pins, 36/36 served-script syntax checks, plus 202/202 dependency-free existing checks across attendance, derived attendance, maktab, migration, pool, routing, setup-sheet and haidh-prediction harnesses. The recorded 1200/0 full-suite baseline could not be re-run here because this checkout does not provide the `jsdom` test dependency and the container has no network access to install it; that is an environment limitation, not counted as a test failure. Device checks are listed in `TESTING.md`.
+
+**Versioning (historical V4.2.8 behaviour):** this release moved all asset `?v=` tags, `CACHE_NAME`, the service-worker precache list and every css/js/shared build header together to **4.2.8**. The build-header part of that practice is superseded by the V4.2.8.2 rule above: future untouched source files keep their own last-edit header.
+
+---
+
 ## V4.2.7 — Harness repair + item 72 recorded (2026-09-02)
 
 **Files touched:** `tests/verify_timer.js`, `TODO.md`, `CHANGELOG.md`. **DOCS AND TESTS ONLY — nothing the browser serves changed, so there is NO `?v=`/`CACHE_NAME` bump and no deploy step beyond uploading these three files. Build headers everywhere stay 4.2.6, correctly: the header names the build each served file last changed in.**

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/sihScreen.js */
+/* Hifzhelper build 4.2.8 | js/sihScreen.js */
 // ============================================================
 // Hifzhelper — "Surahs in my Heart" screen (V3.48.0)
 //

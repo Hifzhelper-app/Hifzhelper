@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/tajweed.js */
+/* Hifzhelper build 4.2.8 | js/tajweed.js */
 // ============================================================
 // Hifzhelper -- shared tajweed tag picker
 // Used on all detail-view cards (Sabaq / Sabaq Dhor / Dhor), PJ and maktab.

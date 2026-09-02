@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/maktabDay.js */
+/* Hifzhelper build 4.2.8 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //

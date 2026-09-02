@@ -2309,3 +2309,30 @@ there is then harmless but unexercised, which is worth knowing.
 
 **Not checkable here, by design:** nothing in this delivery touches the
 schema, so there is no migration to run and no data shape to verify.
+
+
+---
+
+## V4.2.8.2 — mobile Maktab Summary return + tap-target checks
+
+After uploading the changed files, hard-refresh and confirm the login-card version reads **v4.2.8.2**. No worker deploy or migration is required.
+
+1. **Return paint:** open Maktab, navigate into a student/detail page, then return to Maktab several times on Safari/iPhone. Cached student names may appear instantly, but there must be **no giant attendance SVG / broken-card flash** before fresh log data arrives.
+2. **Top line:** every mobile student card shows the uniform name pill on the left and the attendance icon immediately **beside** it on the right as a separate control. The icon must not overlay or appear inside the pill. Long names still ellipsise within the same pill width.
+3. **Log width:** Sabaq, Sabaq Dhor and Dhor remain full-width rows underneath the top line; the V4.2.8.1 fix for leaked desktop 21%/24% widths must remain intact.
+4. **Tap destinations:** tap the **name pill** -> that student's individual summary. Tap **attendance** -> that student's attendance page. Tap **Sabaq**, **Sabaq Dhor** and **Dhor** independently -> each opens its corresponding detail screen for the selected date.
+5. **No accidental skeleton navigation:** during the brief instant-name paint, controls are visual only until fresh data replaces the row; there should be no navigation to a half-loaded detail page.
+
+---
+
+## V4.2.8 — device checks (items 68 + 72)
+
+After deploying the frontend, hard-refresh and confirm the login-card version reads **v4.2.8**. No worker deploy or migration is required.
+
+1. **Maktab Summary, phone width:** every student name pill is the same width. A short name such as `Ali` leaves unused space inside the same pill width; a deliberately long name stays on one line and ends with an ellipsis rather than widening the pill or wrapping. The attendance icon remains visible at the top-right and does not overlap the pill.
+2. **Summary log lines:** check values that previously broke badly — e.g. `Juz 28 H1`, `Juz 4 Q2`, `2:24–2:29`. Each stays in the right-hand value column; captions line up on the left. A genuinely long value may wrap normally, but not one word per line.
+   **V4.2.8.1 follow-up:** also confirm the name row and all three log rows use the usable width of the mobile card. There must not be a large blank area on the right caused by the desktop 21%/24% table-column widths leaking into the stacked mobile layout.
+3. **Summary `+N`:** use a day/type with multiple entries. The `+N` badge stays beside that cell's value and still opens the read-only entry peek without opening the day view.
+4. **Sabaq Dhor, student with no derived revision rows:** the empty state shows **Juz** plus a **1 | 2 | 3 | 4** segmented control and a checkbox at the right. There is no quarter dropdown and no **Use** button.
+5. **Picker semantics:** choose Juz + position, tick the right-hand checkbox, Save. The saved Sabaq Dhor range must match that structural quarter. Repeat once on a 15-line Madani student to confirm the field label follows the mushaf terminology while the control remains 1|2|3|4.
+6. **Rail regression:** on mobile and desktop/tablet, the Sabaq Dhor card must remain the same rail width as its neighbours and Dhor must not wrap below because of the picker.

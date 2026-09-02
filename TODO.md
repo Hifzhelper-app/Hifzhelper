@@ -1001,13 +1001,12 @@ No code change needed for any of the three — all are live as built.
    that they match CACHE_NAME in sw.js. That turns a silent drift into
    a red test before a release ever ships.
 
-72. **SABAQ DHOR PICKER TAKES THE DHOR CARD'S FORMAT (user,
-   2026-09-02; queued):** stated in the 2026-09-02 handoff brief; this
+72. ~~**SABAQ DHOR PICKER TAKES THE DHOR CARD'S FORMAT**~~ **BUILT V4.2.8 (2026-09-02):** stated in the 2026-09-02 handoff brief; this
    entry is its first record in the repo (the workspace TODO carrying it
    was lost with that session). The user's words: remove the Use button;
    the quarter dropdown becomes the 1|2|3|4 position switch; checkbox on
    the right.
-   READINGS, open to veto: the "1|2|3|4 switch" is the Dhor card's own
+   SHIPPED READING: the "1|2|3|4 switch" is the Dhor card's own
    control — a `switch-track` of `switch-option` buttons wired through
    js/uiSwitch.js (as `dhor_position_switch`, dhorPage.js:313), replacing
    the `#sdq_quarter` <select>; the Juz <select> stays; with Use gone,
@@ -1015,21 +1014,19 @@ No code change needed for any of the three — all are live as built.
    right-hand checkbox as the section rows above it (the shared
    `1fr auto 44px` grid), and TICKING it is what applies the picked
    quarter. In quarter-word mode ("Quarter/Nisf/Thalatha arba"), the
-   switch shows 1|2|3|4 positions all the same — the words were the
-   dropdown's labels; whether they survive anywhere is open.
-   NOTE: build together with item 67 (same element — 67's `min-width: 0`
-   fix may be mooted or reshaped by this rebuild; if 72 lands first,
-   re-test 67's symptom before fixing it separately).
+   switch shows 1|2|3|4 and the configured unit word remains as the
+   control label, so the terminology is retained without widening the
+   four-position switch. Item 67's shrink guards were retained in the
+   rebuilt picker and are pinned by the V4.2.8 harness.
 
-68. **MOBILE SUMMARY CARD: values wrap to one word per line — my
-   defect (user's photo, 2026-09-02; DIAGNOSED, queued):** on the
+68. ~~**MOBILE SUMMARY CARD: values wrap to one word per line**~~ **BUILT V4.2.8 (2026-09-02):** on the
    mobile card every value breaks up — "Juz 28 H1" over THREE lines,
    "2:24–2:29" over two — while the captions sit fine.
    CAUSE: my V4.2.2 rule gave the caption a fixed `flex: 0 0 92px` and
    left the value to take the rest, but the value sits in a table cell
    that was never told it may use the card's full width, so it collapses
    to its minimum and wraps at every space.
-   FIX (the user's shape): make each log line a real two-column GRID —
+   SHIPPED FIX (V4.2.8, the user's shape): make each log line a real two-column GRID —
    caption left, value right, values aligned down the card:
      SABAQ        2:23 – 2:46
      SABAQ DHOR   Juz 4 Q2
@@ -1038,9 +1035,24 @@ No code change needed for any of the three — all are live as built.
    .journal-cell with the caption in column 1, and `min-width: 0` +
    `white-space: normal` on the value so it uses the whole column and
    only wraps when genuinely too long.
+   DEVICE-REVIEW CORRECTION (V4.2.8.1): the first build exposed the
+   deeper mobile width leak: desktop `td:nth-child(...)` rules (Student
+   21%, logs 24%) were more specific than the mobile `td { width:100% }`
+   reset, so the stacked cells still occupied only those fractions of the
+   card. Mobile now resets the nth-child widths at matching specificity.
+   The user's already-correct equal-width name-pill styling on larger
+   screens is left untouched; only the mobile card structure is widened.
+   V4.2.8.2 FOLLOW-UP (2026-09-02): returning to the Maktab Summary could
+   briefly paint a giant attendance SVG before the fresh data render, because
+   item 66's instant-name skeleton omitted the `.maktab-haidh-check` wrapper
+   that sizes the real icon. The skeleton now uses the same sizing wrapper.
+   On mobile the first line is now a real `name | attendance` sibling grid
+   rather than an absolutely positioned attendance control over a reserved
+   corner of the name cell; the three log rows span underneath. Name ->
+   individual summary, attendance -> attendance page, and each log cell ->
+   its matching detail screen remain separate tap targets.
 
-67. **V4.2.4 PICKER WIDENS THE CARD AND BREAKS THE RAIL — my defect
-   again (user's screenshot, 2026-09-02; DIAGNOSED, queued):** the Sabaq
+67. ~~**V4.2.4 PICKER WIDENS THE CARD AND BREAKS THE RAIL**~~ **IMPLEMENTED; V4.2.8 preserves the shrink guards (user confirmed 2026-09-02):** the Sabaq
    Dhor card is far wider than its neighbours and Dhor has wrapped below
    the rail.
    CAUSE: .sdq-picker spans the sections grid (grid-column: 1 / -1), and
@@ -1050,7 +1062,7 @@ No code change needed for any of the three — all are live as built.
    .sdq-picker nor the selects carry min-width: 0 (only .sdq-field
    does, which is not enough — the select itself must be allowed to
    shrink). So the grid widens, the card widens, the rail breaks.
-   FIX: min-width: 0 on .sdq-picker AND on .sdq-field select; let the
+   SHIPPED/PRESERVED FIX: min-width: 0 on .sdq-picker AND on .sdq-field select; let the
    row wrap (it already may). Verify the card returns to the rail's
    third and that the picker still reads sensibly when narrow.
    PATTERN NOTE, twice now on one feature: V4.2.3 was a FLEX placement
@@ -1059,15 +1071,15 @@ No code change needed for any of the three — all are live as built.
    existing layout container, check what it does to the container's
    sizing — not just that it looks right by itself.
 
-66. **INSTANT NAMES on the maktab summary (user, 2026-09-02; queued):**
+66. ~~**INSTANT NAMES on the maktab summary**~~ **IMPLEMENTED (user confirmed 2026-09-02):**
    returning to the summary shows "Loading…" until one round trip
    completes — apiMaktabSummary returns the roster AND the day's logs
    together, so the names wait on data that has nothing to do with them.
-   PLAN: cache the ROSTER (id, name, track_haidh) from the last
+   SHIPPED SHAPE: cache the ROSTER (id, name, track_haidh) from the last
    successful load; on entry paint the rows from it IMMEDIATELY with
    empty log cells, show a LOADING STRIP under the header row, then fill
    the cells when the response lands.
-   CLAUDE'S TWO DECISIONS, open to veto:
+   IMPLEMENTED DECISIONS:
    (a) Cache the ROSTER ONLY — never the log cells. Names change rarely;
    a day's entries change constantly, and stale entries on screen are
    worse than a short wait, because a teacher could act on them.
@@ -1078,13 +1090,16 @@ No code change needed for any of the three — all are live as built.
    KNOWN COSMETIC EDGE: if the roster changed since the last visit, a
    removed student can flash for the round trip's duration before the
    fresh list replaces her. Acceptable; noted so it isn't a surprise.
+   V4.2.8.2 NOTE: the separate giant-attendance-icon flash in this cached
+   paint was a markup mismatch, not stale data; fixed by wrapping the interim
+   SVG in the same `.maktab-haidh-check` sizing class as the finished row.
    (b2) NAME PILLS ALL ONE SIZE (user, same message): today each pill
    hugs its text, so a column of them is ragged. Give .maktab-name-pill
    a shared width — it fills the name column (display:block / width:100%
-   with centred text) rather than shrink-wrapping. Long names then need
-   a decision: ellipsis or wrap. Claude proposes ELLIPSIS with the full
-   name in a title attribute, so every row stays one line high and the
-   table's rhythm holds.
+   rather than shrink-wrapping. Long names then need
+   a decision: V4.2.8 is trialling ELLIPSIS with the full name in a title
+   attribute, so every row stays one line high and the table's rhythm
+   holds.
 
 65. ~~**V4.2.3 PICKER IS IN THE WRONG CONTAINER**~~ **FIXED V4.2.4** — resolved by the user's option 2: the picker became the rows block's EMPTY STATE, so the container question disappeared entirely. ( the picker WORKS (the
    preview reads 1:1 – 2:46 correctly) but it crushed the card:

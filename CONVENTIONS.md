@@ -122,13 +122,21 @@ columns, because nothing constrained its container's max-width. Same
 underlying discipline, two different symptoms depending on screen size —
 worth checking both, not just the one that happens to get noticed first.
 
-## 10. Every CSS/JS reference carries a version query string — bump it on every change
+## 10. Asset query version = release/cache key; file header = that file's last edit
 
 `index.html`'s `<link>`/`<script>` tags (and `sw.js`'s own `ASSETS` list, kept
 in sync) point at `css/*.css?v=X.Y.Z` / `js/*.js?v=X.Y.Z`, not bare
-filenames. Whenever ANY of those files changes, the version string bumps
-across all of them together — not just the one file that changed. There's
-no build step generating this automatically; it's manual discipline.
+filenames. Whenever a served frontend release changes any of those assets,
+the **query-string release key** still bumps across the page and service-worker
+precache together. There's no build step generating this automatically; it is
+manual discipline.
+
+The top-of-file build header has a DIFFERENT meaning.
+`/* Hifzhelper build X.Y.Z | css/foo.css */` records the release in which
+**that file itself was last edited**. Only files actually changed in a release
+get a new header. Untouched files keep their older header even though the
+page may request them with a newer `?v=` cache key. Do not mass-edit source
+files merely to make their headers match the current release number.
 
 *Why this is here:* `sw.js`'s `CACHE_NAME` was already bumped on every
 release, but that only ever evicts the *service worker's own* cache — it
