@@ -141,7 +141,7 @@ export async function handleDeleteUser(request, env, auth) {
   return { data: { deleted: true } };
 }
 
-// POST /admin/register-student — body: { name, whatsapp_number?, force? }.
+// POST /admin/register-student — body: { name, whatsapp_number?, force?, gender?, track_haidh? }.
 // Creates a new student with an app-generated unique ID, no PIN yet — same
 // first-login flow as every other account. Runs the same duplicate check
 // as self-registration (V3.4/V3.4.2, see findDuplicateMatch in auth.js) —
@@ -198,6 +198,9 @@ export async function handleRegisterStudent(request, env, auth) {
 
   const trimmedName = body.name.trim();
   const whatsapp = body.whatsapp_number ? body.whatsapp_number.trim() : null;
+  const gender = body.gender == null ? null : String(body.gender);
+  if (gender != null && !['M', 'F'].includes(gender)) return { error: 'gender must be M or F', status: 400 };
+  const trackHaidh = gender === 'F' && body.track_haidh === true ? 1 : 0;
 
   const match = await findDuplicateMatch(env, trimmedName, whatsapp);
   if (match && !body.force) return { data: { matched: true, matchedId: match.id, matchedActive: match.active } };
@@ -207,8 +210,8 @@ export async function handleRegisterStudent(request, env, auth) {
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
   await env.DB.prepare(
-    'INSERT INTO students (id, name, role, created_date, active, whatsapp_number) VALUES (?, ?, ?, ?, 1, ?)'
-  ).bind(id, finalName, 'student', today, whatsapp).run();
+    'INSERT INTO students (id, name, role, created_date, active, whatsapp_number, gender, track_haidh) VALUES (?, ?, ?, ?, 1, ?, ?, ?)'
+  ).bind(id, finalName, 'student', today, whatsapp, gender, trackHaidh).run();
 
-  return { data: { id, name: finalName, matchedId: match ? match.id : undefined, matchedActive: match ? match.active : undefined } };
+  return { data: { id, name: finalName, gender, track_haidh: !!trackHaidh, matchedId: match ? match.id : undefined, matchedActive: match ? match.active : undefined } };
 }

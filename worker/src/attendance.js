@@ -20,6 +20,17 @@ export function haidhEvidenceDates(rows, todayISO) {
   return rows.filter((r) => r.status === 'haidh' || r.date <= todayISO).map((r) => r.date);
 }
 
+// V4.2.11: a teacher/admin confirming a real haidh day is itself enough
+// evidence that this student should be treated as female + haa'idha.
+// No schema change is needed: gender and track_haidh have existed since
+// migration 0004. Predictions do NOT promote — only confirmed haidh.
+async function promoteHaaidhaFromTeacherMark(env, auth, studentId) {
+  if (!isTeacherOrAbove(auth)) return;
+  await env.DB.prepare(
+    "UPDATE students SET gender = 'F', track_haidh = 1 WHERE id = ? AND role = 'student'"
+  ).bind(studentId).run();
+}
+
 // V3.76.1 — after a CONFIRMED mark is written, predictions that can no
 // longer be true go. User's call 2026-08-27: "delete predicted rows that
 // fall inside the 14-day window after the newly confirmed range, since they
@@ -107,6 +118,7 @@ export async function handleSetAttendance(request, env, auth) {
   let cleared = [];
   if (body.status === 'haidh') {
     cleared = await clearSupersededPredictions(env, studentId, body.date, await maktabTodayISO(env));
+    await promoteHaaidhaFromTeacherMark(env, auth, studentId);
   }
 
   return { data: { saved: true, clearedPredictions: cleared } };
@@ -211,7 +223,10 @@ export async function handleMarkHaidhRange(request, env, auth) {
 
   // V3.76.1: a CONFIRMED range supersedes predictions in the window after it.
   let cleared = [];
-  if (status === 'haidh') cleared = await clearSupersededPredictions(env, studentId, runEnd, todayISO);
+  if (status === 'haidh') {
+    cleared = await clearSupersededPredictions(env, studentId, runEnd, todayISO);
+    await promoteHaaidhaFromTeacherMark(env, auth, studentId);
+  }
 
   return { data: { saved: true, count: dates.length, status, clearedPredictions: cleared } };
 }

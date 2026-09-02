@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/api.js */
+/* Hifzhelper build 4.2.11 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -245,7 +245,7 @@ function apiGetMaktabGroups(){ return apiFetch('/maktab-groups'); }
 function apiCreateMaktabGroup(name){ return apiFetch('/maktab-groups', { method: 'POST', body: JSON.stringify({ name }) }); }
 function apiUpdateMaktabGroup(id, fields){ return apiFetch('/maktab-groups/update', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminCreateTeachingProfile(id){ return apiFetch('/admin/create-teaching-profile', { method: 'POST', body: JSON.stringify({ id }) }); }   // V3.77.0 (j)
-function apiAdminRegisterStudent(name, whatsapp_number, force){ return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force }) }); }
+function apiAdminRegisterStudent(name, whatsapp_number, force, profile){ const p = profile || {}; return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force, gender: p.gender || null, track_haidh: !!p.track_haidh }) }); }
 function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminDeleteUser(id){ return apiFetch('/admin/users?id=' + encodeURIComponent(id), { method: 'DELETE' }); }
 
@@ -357,6 +357,8 @@ function apiUpdateMaktabTerm(id, body){ return apiFetch('/maktab/terms/' + id, {
 function apiDeleteMaktabTerm(id){ return apiFetch('/maktab/terms/' + id, { method: 'DELETE' }); }
 // V3.98.0: the maktab Attendance screen — one week of columns
 function apiGetMaktabWeek(monday){ return apiFetch('/maktab/attendance-week?monday=' + monday); }
+// V4.2.11: term register grid — grouped Maktab weeks, one student roster.
+function apiGetMaktabRegister(termId){ return apiFetch('/maktab/attendance-register' + (termId != null ? '?term_id=' + encodeURIComponent(termId) : '')); }
 
 function apiGetMaktabCalendar(year){ return apiFetch('/maktab/calendar' + (year ? '?year=' + year : '')); }
 function apiCreateMaktabCalEntry(body){ return apiFetch('/maktab/calendar', { method: 'POST', body: JSON.stringify(body) }); }

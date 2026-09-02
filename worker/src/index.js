@@ -12,7 +12,7 @@ import {
   handleGetMaktabPosition, handleSaveMaktabPosition,
 } from './maktabLog.js';
 import { handleGetMaktabSettings, handleSaveMaktabSettings } from './maktabSettings.js';
-import { handleMaktabAttendance, handleAttendancePage, handleMaktabWeek } from './maktabAttendance.js';
+import { handleMaktabAttendance, handleAttendancePage, handleMaktabWeek, handleMaktabRegister } from './maktabAttendance.js';
 import { handleGetTerms, handleCreateTerm, handleUpdateTerm, handleDeleteTerm, handleGetCalendar, handleCreateCalendarEntry, handleUpdateCalendarEntry, handleDeleteCalendarEntry, handleGetProposal, handleConfirmList } from './maktabCalendar.js';   // V3.87.0/V3.88.0
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
@@ -100,6 +100,7 @@ export default {
       // V3.87.0: the maktab calendar — terms drive attendance; entries are info-only
       // V3.98.0: the maktab Attendance screen — one week of columns
       if (path === '/maktab/attendance-week' && request.method === 'GET') return respond(await handleMaktabWeek(request, env, auth));
+      if (path === '/maktab/attendance-register' && request.method === 'GET') return respond(await handleMaktabRegister(request, env, auth));
       if (path === '/maktab/terms' && request.method === 'GET') return respond(await handleGetTerms(request, env, auth));
       if (path === '/maktab/terms' && request.method === 'POST') return respond(await handleCreateTerm(request, env, auth));
       {

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.9.2 | js/adminPage.js */
+/* Hifzhelper build 4.2.11 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -132,6 +132,10 @@ function renderAdminUsersList(){
         <label><span>Group</span><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></label>
         <label><span>Status</span><span class="admin-status admin-mobile-new-status"><input type="checkbox" class="admin-inline" id="admin_new_active" checked><span>Active</span></span></label>
       </div>
+      <div class="admin-mobile-register-profile">
+        <label class="admin-register-check"><input type="checkbox" id="admin_new_female"><span>Female</span></label>
+        <label class="admin-register-check hidden" id="admin_new_haidh_wrap"><input type="checkbox" id="admin_new_haidh"><span>Haaidha</span></label>
+      </div>
       <div class="admin-mobile-register-actions"><button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button></div>
       <div class="admin-mobile-register-match hidden" id="adminRegisterMatchRow">
         <div class="form-hint" id="adminRegisterMatchHint"></div>
@@ -165,7 +169,10 @@ function renderAdminUsersList(){
           <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
         </select></td>
         <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></td>
-        <td data-label="Status"><span class="admin-dash">—</span></td>
+        <td data-label="Status"><span class="admin-new-profile-inline">
+          <label class="admin-register-check"><input type="checkbox" id="admin_new_female"><span>Female</span></label>
+          <label class="admin-register-check hidden" id="admin_new_haidh_wrap"><input type="checkbox" id="admin_new_haidh"><span>Haaidha</span></label>
+        </span></td>
         <td class="admin-actions-cell" data-label="Actions">
           <button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button>
           <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
@@ -347,7 +354,28 @@ let adminMatchedId = null;
 // "Register a user" above the table. Wired per render (the row is rebuilt
 // each time). Continue re-submits whatever the row CURRENTLY holds with
 // force:true — the V3.4.2 semantics, unchanged.
+function adminRegistrationProfileValues(){
+  const femaleEl = document.getElementById('admin_new_female');
+  const haidhEl = document.getElementById('admin_new_haidh');
+  const female = !!(femaleEl && femaleEl.checked);
+  return { gender: female ? 'F' : 'M', track_haidh: !!(female && haidhEl && haidhEl.checked) };
+}
+
+function wireAdminRegistrationProfile(){
+  const femaleEl = document.getElementById('admin_new_female');
+  const haidhEl = document.getElementById('admin_new_haidh');
+  const wrap = document.getElementById('admin_new_haidh_wrap');
+  if(!femaleEl || !haidhEl || !wrap) return;
+  const sync = () => {
+    wrap.classList.toggle('hidden', !femaleEl.checked);
+    if(!femaleEl.checked) haidhEl.checked = false;
+  };
+  femaleEl.addEventListener('change', sync);
+  sync();
+}
+
 function wireAdminRegisterRow(){
+  wireAdminRegistrationProfile();
   document.getElementById('adminRegisterBtn').addEventListener('click', attemptAdminRegister);
   document.getElementById('adminRegisterCloseBtn').addEventListener('click', () => { adminAdding = false; adminMatchedId = null; renderAdminUsersList(); });
   document.getElementById('adminRegisterCancelBtn').addEventListener('click', cancelAdminMatch);
@@ -358,7 +386,7 @@ function wireAdminRegisterRow(){
     const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
     if(!name){ errEl.textContent = 'Enter a name.'; return; }
     try{
-      const result = await apiAdminRegisterStudent(name, whatsapp || null, true);
+      const result = await apiAdminRegisterStudent(name, whatsapp || null, true, adminRegistrationProfileValues());
       await finishAdminRegisterUI(result);
     } catch(e){ errEl.textContent = "Couldn't register: " + e.message; }
   });
@@ -377,7 +405,7 @@ async function attemptAdminRegister(){
   const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
   if(!name){ errEl.textContent = 'Enter a name.'; return; }
   try{
-    const result = await apiAdminRegisterStudent(name, whatsapp || null, false);
+    const result = await apiAdminRegisterStudent(name, whatsapp || null, false, adminRegistrationProfileValues());
     if(result.matched){
       adminMatchedId = result.matchedId;
       // V3.4.3 item 5: names the actual matched student — the list can

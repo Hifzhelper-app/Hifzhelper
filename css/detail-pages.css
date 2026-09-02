@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.10 | css/detail-pages.css */
+/* Hifzhelper build 4.2.11 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2192,3 +2192,74 @@
 .log-detail-student-search-result:hover,
 .log-detail-student-search-result:focus { background: var(--color-accent-soft, #D0DBE7); }
 .log-detail-student-search-empty { padding: 8px 12px; color: var(--color-ink-soft); font-size: 13px; }
+
+/* ============================================================
+   V4.2.11 — Attendance register grid. One sticky student roster on the
+   left; two-row sticky header; narrow teaching days grouped beneath a
+   merged Maktab-week heading. Weekly groups alternate subtly and begin
+   with a stronger divider. Blank active cells are absent/unresolved. */
+.mkregister-host { min-width: 0; }
+.mkregister-scroll {
+  width: 100%; overflow: auto; -webkit-overflow-scrolling: touch;
+  background: var(--color-surface, #fff); border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md); max-height: calc(100vh - var(--auth-band-height, 60px) - 190px);
+}
+.mkregister-grid {
+  border-collapse: separate; border-spacing: 0; table-layout: fixed;
+  width: max-content; min-width: 100%; font-size: 13px;
+}
+.mkregister-grid th, .mkregister-grid td {
+  box-sizing: border-box; border-right: 1px solid var(--color-table-border);
+  border-bottom: 1px solid var(--color-table-border);
+}
+.mkregister-grid thead th { z-index: 4; }
+.mkregister-student-head {
+  position: sticky; top: 0; left: 0; z-index: 7 !important;
+  width: 180px; min-width: 180px; max-width: 180px;
+  text-align: left; padding: 8px 12px; background: var(--color-table-header-date);
+  border-top-left-radius: var(--radius-md);
+}
+.mkregister-week-head {
+  position: sticky; top: 0; height: 34px; min-width: 46px;
+  text-align: center; padding: 6px 4px; font-weight: 700; white-space: nowrap;
+  background: var(--color-table-header-log);
+}
+.mkregister-day-head {
+  position: sticky; top: 34px; height: 32px; width: 46px; min-width: 46px; max-width: 46px;
+  text-align: center; padding: 5px 2px; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .03em; background: var(--color-surface, #fff);
+}
+.mkregister-student-cell {
+  position: sticky; left: 0; z-index: 3; width: 180px; min-width: 180px; max-width: 180px;
+  padding: 0; background: var(--color-surface, #fff); text-align: left;
+}
+.mkregister-student {
+  display: block; width: 100%; min-width: 0; border: 0; background: transparent;
+  padding: 8px 12px; text-align: left; color: var(--color-ink); font: inherit; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
+}
+.mkregister-student:hover { background: var(--color-accent-soft, #D0DBE7); }
+.mkregister-cell {
+  width: 46px; min-width: 46px; max-width: 46px; height: 38px; padding: 4px;
+  text-align: center; vertical-align: middle; background: var(--color-surface, #fff);
+}
+.mkregister-week-b.mkregister-cell, .mkregister-week-b.mkregister-day-head { background: rgba(208, 219, 231, .18); }
+.mkregister-week-start { border-left: 3px solid var(--color-ink-soft) !important; }
+.mkregister-day-off { background: var(--color-page-bg, #f3f3f1) !important; opacity: .62; }
+.mkregister-day-future { opacity: .62; }
+.mkregister-status {
+  width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+  margin: auto; line-height: 0;
+}
+.mkregister-status svg { width: 16px; height: 16px; }
+.mkregister-status-present { color: var(--color-success); }
+.mkregister-status-haidh {
+  background: #FFD400; color: #5A4700; border-radius: 999px;
+}
+.mkregister-status-haidh svg { width: 15px; height: 15px; }
+@media (max-width: 767px) {
+  .mkregister-scroll { max-height: calc(100vh - var(--auth-band-height, 60px) - 165px); }
+  .mkregister-student-head, .mkregister-student-cell { width: 150px; min-width: 150px; max-width: 150px; }
+  .mkregister-student { padding-left: 10px; padding-right: 10px; }
+  .mkregister-day-head, .mkregister-cell { width: 42px; min-width: 42px; max-width: 42px; }
+}

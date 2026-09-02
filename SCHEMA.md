@@ -23,8 +23,8 @@ human-readable reference for the same thing.
 | `active` | INTEGER | `1`/`0`. Disable without deleting history. |
 | `failed_attempts` | INTEGER | Added in migration 0002, for login rate-limiting. Resets to 0 on success. |
 | `locked_until` | TEXT | Added in migration 0002. ISO timestamp; NULL = not locked. |
-| `gender` | TEXT | Added in migration 0004. `M` or `F`. Stored directly (not just derived haidh eligibility) — may drive different styling later. |
-| `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Only ever shown as an option to females; not auto-set from gender. V3.39: finally wired to real UI — Setup's Haidh section "Haaidha" checkbox, saved instantly via `apiSaveProfile({track_haidh})` outside that section's own Save button. Gates the "Haidh" nav item (`js/auth.js`). |
+| `gender` | TEXT | Added in migration 0004. `M` or `F`. Stored directly (not just derived Haidh eligibility). **V4.2.11, no migration:** Student Management registration now writes it from the Female control; a teacher/admin's first **confirmed** Haidh mark also sets `gender='F'` automatically. A prediction alone never changes it. |
+| `track_haidh` | INTEGER | Added in migration 0004. `1`/`0`. Registration shows Haaidha only when Female is selected; gender by itself does not imply Haaidha. V3.39 wired the student's Setup **Haaidha** checkbox to `apiSaveProfile({track_haidh})` and this field gates her Haidh UI. **V4.2.11, no migration:** a teacher/admin's first **confirmed** Haidh day/range automatically sets `track_haidh=1` (and `gender='F'`) so her own Attendance page exposes the Haidh calendar thereafter. Future `predicted-haidh` alone never promotes the profile. |
 | `setup_complete` | INTEGER | Added in migration 0004. `1`/`0`. Gates whether the setup wizard shows on login. |
 | `journal_name` | TEXT | Added in migration 0009. A custom title for the student's own journal — not their real name. |
 | `mushaf` | TEXT | Added in migration 0009. `13line` / `15line_madani` / `15line_indopak`. V3.36, confirmed in chat: the earlier `hybrid` value removed entirely (migration 0016) — traced and confirmed it never actually behaved differently from `13line` (its `ref` logic fell through to the same `waterval` branch), so nothing real was lost by removing it. Replaced with `15line_indopak`, using its own verified page/line dataset (`shared/data.js`'s `AYAH_LINE_INDOPAK`) for Sabaq's Lines/Pages, not Madina's. |
@@ -136,7 +136,7 @@ Each mirrors its PJ counterpart's full current column set (the rule: ALL PJ colu
 | `teacher_name` | TEXT NOT NULL | Snapshot at save time, deliberately denormalized — provenance reads as it was when confirmed, even if the teacher's row is later renamed or deactivated. |
 | `teacher_feedback_visibility` | TEXT | Same enum and semantics as the PJ, but DEFAULT **`'teachers_only'`** here (PJ default is `'all'`) — the one agreed divergence. |
 
-Maktab attendance is NOT a table — it's derived at read time (delivery (f)): present assumed, haidh from the PJ's `attendance`, absent when no maktab log exists on a maktab day (≥N distinct students logged; N is a worker env var). A teacher's save overwrites a haidh mark — log always wins, same as the PJ.
+Maktab attendance is NOT a table — it's derived at read time (delivery (f)): present assumed, Haidh from the shared `attendance` rows, absent when no Maktab log exists on a qualifying Maktab day (≥N distinct students logged; N comes from Maktab settings). A teacher's log save wins over a Haidh mark, same as the PJ. **V4.2.11 adds no table:** the term-wide Attendance register is another derived read shape over these same sources.
 
 ## Tables: `tajweed_tags`, `maktab_groups` (migration 0022 — V3.78.0, delivery 3)
 
@@ -212,7 +212,7 @@ Composite primary key `(student_id, date)`.
 |---|---|---|
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
-| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh`. Auto-set to `present` whenever any entry is logged that day — sabaq always wins, overriding even a prior `haidh`. V3.39: setting `haidh`/`predicted-haidh` (`handleSetAttendance`, `worker/src/attendance.js`) is capped two ways, both via `shared/haidhRules.js`'s `evaluateHaidhMark` — a continuous run can't exceed the student's `haidh_ruling` max (+1 calendar day, for a haidh that starts/ends mid-day), and a new run can't start until 15 official / 14 code days have passed since the last one. Never touches `sabaq_log`/`sabaq_dhor_log`/`dhor_log` in either direction (confirmed in chat: "no log deletion, nothing changes on detail cards"). |
+| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh` (and `predicted-absent` since 0029). Auto-set to `present` whenever any entry is logged that day — a log always wins, overriding even a prior `haidh`. V3.39: setting `haidh`/`predicted-haidh` (`handleSetAttendance`, `worker/src/attendance.js`) is capped by the student's ruling duration and the 15-official/14-code-day gap via `shared/haidhRules.js`. Never deletes log rows. **V4.2.11:** a teacher/admin write whose final status is confirmed `haidh` also promotes that student's existing profile to `gender='F', track_haidh=1`; `predicted-haidh` does not. |
 
 ## Table: `position`
 
