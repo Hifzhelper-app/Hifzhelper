@@ -2045,6 +2045,27 @@ anything obviously:
 If all three pass, production is healthy. If anything fails, that's the
 signal to look closer — not a reason to assume it's fine and move on.
 
+## V3.98.0 — the maktab Attendance screen (MIGRATION 0029 → WORKER → FRONTEND)
+
+Run 0029 in the console first (it also rebuilds the attendance table), then worker, then frontend. Login card 3.98.0.
+
+1. **Maktab Settings → General:** a "Teaching days" row of weekday chips, Mon–Thu lit. Toggle one, Save, reopen — it holds.
+2. **Menu → Attendance** (as teacher/admin): this week's teaching days as columns, ‹ › pages weeks. A student logging in still gets her own attendance page under the same menu label.
+3. **Past weeks:** each column lists Present, Absent and Haa'idha. A holiday shows its name; a week outside term shows "Term break"; a teaching day the maktab didn't hold shows "No maktab day" with nobody marked absent.
+4. **This week and ahead:** columns list predicted haa'idha and informed absentees, with "+ Add" — pick a student, choose Haa'idha or Absent (informed), and she appears in that column. A haidh added here also shows in her own journal; an informed absence does NOT change her attendance percentage when the day passes.
+
+## V3.97.0 — the archive (MIGRATION 0028 → WORKER; NO frontend upload)
+
+Run 0028 in the D1 console, deploy the worker. Nothing should look different — that is the point. To witness it: a student with maktab entries older than 60 days opens her journal once (the copy happens silently); those old entries keep showing exactly once with the teacher's name. A teacher editing or deleting such an old entry sees the student's journal follow. Recent entries behave exactly as before.
+
+## V3.94.0 — deletions stick + the revived card (WORKER → FRONTEND; delta 8 files)
+
+Login card 3.94.0. **First:** settings → leave → RETURN — the year pill must show 2026 and the +, year, and both green buttons must work (the dead-card bug). **Second:** open Islamic Calendar — names with the Hijri in italics beneath; delete a day, Confirm, reopen — it must STAY deleted. Confirm once also completes any short-named day to its full Hijri form. Then: "Calendar" as a header, no Terms label, bigger +; the Ajzaa popup titled with the X at the left and smaller centred pills; on the day cards the suggestion rows are true pills, the 1|2 switch sits properly beside the juz, the three labels line up, tag boxes read "Select tags", and the history pair sits right.
+
+## V3.93.0 — the day-card set + setup popup (FRONTEND ONLY — delta: 8 files)
+
+Login card 3.93.0. **The search first:** maktab summary → tap Student → type one letter of a test student — the dropdown must FINALLY appear (matches, or "No matching student."). Then: timer boxed with air after the title (all cards); Sabaq shows one Lines/Pages box (pill flips the unit, auto-calc fills both) with Tajweed beside it; Sabaq Dhor suggestions are pills; Dhor's 1|2 switch sits on the juz line, Duration(min)/Mistakes/Tajweed share a row, the button reads "Ajzaa Completed", and its popup is a 3×10 chip grid with a save icon top-right and no paragraph. Settings → Calendar content is centred.
+
 ## V3.90.0 — the queued polish batch (FRONTEND ONLY — upload, hard-refresh)
 
 Login card 3.90.0. Settings→Calendar: term names look like text (edge appears when tapped), dates are pills, rows breathe. Maktab summary (desktop): date + X line up with the table. Student summary: the attendance icon hugs the name. Any day card: air under the date pill ("Term 2" on its own line above it), From/To over the dhor selectors, the surah:ayah selectors are pills, and the history buttons sit clear of the note box.

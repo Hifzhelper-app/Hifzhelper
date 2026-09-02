@@ -287,3 +287,9 @@ Information-only entries. `id, date_from, date_to, label (NULL for holidays — 
 
 ## 0027 (V3.88.0)
 `maktab_calendar` gains a UNIQUE expression index on `(type, date_from, date_to, COALESCE(label,''))` after a one-time duplicate purge (oldest row kept per group). Writes go through the confirm endpoint (regenerate type+year) with INSERT OR IGNORE behind the index.
+
+## 0028 (V3.97.0 — the archive)
+`sabaq_log`, `sabaq_dhor_log`, `dhor_log` each gain `maktab_log_id INTEGER` (unique-indexed, NULLs exempt) and `maktab_teacher TEXT`. A row with `maktab_log_id` set is an archived copy of that maktab row; the merged read excludes the original when a copy exists and presents the copy with maktab provenance.
+
+## 0029 (V3.98.0 — the Attendance screen)
+`maktab_settings` gains `teaching_days TEXT` (JSON weekday array, seeded `["mon","tue","wed","thu"]`), which drives the Attendance screen's columns only. `attendance` is rebuilt so `status` also admits `predicted-absent` — a forward-looking planning marker that never enters the attendance derivation or the statistics.

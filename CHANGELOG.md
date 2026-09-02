@@ -26,6 +26,307 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.6 — FIX: screens stacked on one page (2026-09-02)
+
+**Files touched:** `index.html` (one line), `tests/verify_dom_structure.mjs` (NEW — the 37th harness), every asset's build header, `js/sw.js`, docs. **FRONTEND ONLY. Deploy promptly — V4.2.4 and V4.2.5 both carry the fault.**
+
+**The regression, mine.** From V4.2.4 the app stacked screens: open Admin, then the Calendar, and Admin stayed on the page below it. Seven screens behaved this way — reflections, attendancePage, juzTracker, sih, admin, placeholder, settings.
+
+**Cause.** Removing the V4.2.3 picker markup, my slice searched for a twelve-space `</div>` — which matched INSIDE the fourteen-space line, leaving the picker's own closing tag behind. That extra `</div>` closed `#appContent` early, so those seven `<section>`s ended up in `<body>`. `showScreen` hides `#appContent > .screen`, so nothing outside that set is ever hidden again once shown. Proven by bisect: V4.2.0–V4.2.3 have 16 of 16 screens direct; V4.2.4 and V4.2.5 have 9.
+
+**The real failure was the test suite.** 36 harnesses and 1194 checks, and not one asserted the document's STRUCTURE — they all read index.html as text, so an unbalanced tag was invisible. Every markup removal done by string-slicing carried this risk with nothing watching. The new 37th harness asserts: every `.screen` is a direct child of `#appContent` (the invariant showScreen depends on), the document survives a parse round trip without silent re-nesting, every screen has an id, and no two share one. **It was verified by re-injecting the exact regression — it fires and names all seven orphaned screens.**
+
+**Verification: 1201 passed, 0 failed across 37 harnesses.**
+
+**A second fault, found and fixed during this build — worth recording because it was nearly shipped.** The V4.2.5 build-header script used the pattern `[^|]+` to strip a previous header. In Python a negated character class MATCHES NEWLINES, so it swallowed everything up to the last `*/` in the file: ten CSS files were gutted (base.css went from 257 lines to 2, settings.css from 541 to 3). It surfaced only because three unrelated pins failed and I read the file rather than trusting the count. All ten were restored from the V4.2.5 artefact and re-stamped with a line-anchored pattern (`[^|\n]*?`), plus an assertion that refuses to write if stripping a header removes more than 80 characters. Every file now differs from V4.2.5 by exactly its header line — verified file by file.
+
+---
+
+## V4.2.5 — Build stamps, a version safety net, and the admin-mobile duplicates removed (2026-09-02)
+
+**Files touched:** every `css/*.css`, `js/*.js` and `shared/*.js` (a one-line header each), `index.html`, `js/sw.js`, `tests/verify_build_stamp.mjs` (NEW — the 36th harness), docs. **FRONTEND ONLY.**
+
+1. **My duplicates, removed.** `css/admin.css`'s mobile block held the V4.2.2 CARD rules and then the OLD V4.1.0 stacked rules — `.admin-row-fields td::before` appeared twice, and the later copy won. That is what re-imposed the eight-deep stacking on the user's phone. **Correction to the record: I blamed a stale deployment for this; the fault was in the file I wrote.** The trailing duplicates are gone; only the actions-row rules the card genuinely needs remain.
+2. **Every file now carries a build header** — `/* Hifzhelper build 4.2.5 | css/admin.css */` — the user's request. "Which build is actually deployed?" is now answered by opening the file rather than inferring from behaviour.
+3. **The release step is no longer fragile.** It used to rewrite only the PREVIOUS version string, so a tag that ever drifted would be skipped silently and that file would never refresh again. Every `?v=` is now rewritten wholesale regardless of its current value.
+4. **The service worker's precache is real again.** Its list had carried `?v=3.67.0` for months — URLs nothing requests — so it cached files nobody asked for and offline support was quietly broken. All 48 entries now carry the current version.
+5. **The 36th harness enforces all of it:** every linked asset is versioned; every tag names the same version; `CACHE_NAME` matches; every css/js file starts with a header naming that version and its own path; and the precache list is not stale. Silent drift is now a failed test before release rather than a phone screenshot weeks later.
+
+**Verification: 1194 passed, 0 failed across 36 harnesses.**
+
+---
+
+## V4.2.4 — The juz picker becomes the rows block's empty state (2026-09-02)
+
+**Files touched:** `js/sabaqDhorPage.js`, `index.html`, `css/detail-pages.css`, `js/sw.js`, tests (+2 pins, 2 realigned, 2 stubs), docs. **FRONTEND ONLY.**
+
+Two things at once — the user's design choice, and the defect V4.2.3 shipped with it.
+
+**The defect, named:** V4.2.3 put the picker inside `.sabaq-dhor-sections-row`, which is a FLEX row (rollup stepper · sections list). A third flex child takes its own share of the width, so the suggestion pills were crushed into ovals and the picker sat beside them instead of below. Nothing to do with its styling — placement. The harness pin that should have caught it asserted only that the picker came after the sections list in SOURCE ORDER, which says nothing about flex placement; it is replaced by one asserting the picker is not in that markup at all.
+
+**The design (the user chose it from three options):** rather than a second control competing for attention, the picker now IS the rows block's empty state. The suggestion rows are DERIVED from the student's position — verified: `computeSabaqDhorRows` returns `[]` for a student with no history, and still `[]` one quarter in — so a student who has memorised but never logged is offered nothing. The picker fills exactly the space that missing information would have occupied: present when it is needed, absent when it is not, reading "No history yet — choose the portion she is revising."
+
+Everything else is unchanged from V4.2.3: it fills the From/To fields through the card's own setter (stored shape, save path and downstream readers untouched), converts with the app's own `structuralQuarterBounds`, and takes its unit word from her mushaf (Quarter / Ru'b).
+
+**Verification: 1188 passed, 0 failed across 35 harnesses.**
+
+---
+
+## V4.2.3 — Sabaq Dhor: a juz + quarter picker (2026-09-01)
+
+**Files touched:** `index.html`, `js/sabaqDhorPage.js`, `css/detail-pages.css`, `js/sw.js`, tests (+6 checks incl. a live dataset context), docs. **FRONTEND ONLY.**
+
+**Why it exists** (the user's reason, which settled the design): the card's suggestion rows are derived from the student's own history, so a student who **has memorised but has no journal history yet** is offered nothing to pick. The picker lets the teacher choose the portion directly.
+
+- It sits **below** the From/To ayah section and is **additive** — both ways of entering a range remain.
+- It **fills** the From/To fields through the card's own setter, so the stored shape (from/to surah+ayah), the save path, the merge logic and every downstream reader are untouched.
+- The conversion is the app's own proven helper — `structuralQuarterBounds`, the same one the suggestion rows use — rather than a second copy of the boundary maths.
+- **The unit's word follows her mushaf**: Quarter for IndoPak, Ru'b for 15-line Madani (migration 0017's terminology), so the picker reads in her language rather than a hardcoded "Quarter". Easy to get wrong, and it would have read falsely for half the students.
+
+**Verification: 1186 passed, 0 failed across 35 harnesses.** The numbers are asserted, not assumed: the harness now runs the shared dataset in a live context and checks that juz 1 quarter 1 starts at 1:1 in both prints while their ends differ correctly (2:46 vs 2:43), and that juz 30 quarter 4 ends at 114:6.
+
+---
+
+## V4.2.2 — The mobile pass, and the mark-register sheet (2026-09-01)
+
+**Files touched:** `index.html`, `js/maktabAttendancePage.js`, `js/maktabSummary.js`, `js/haidhDetailScreen.js`, `css/detail-pages.css`, `css/journal-table.css`, `css/admin.css`, `js/sw.js`, tests (+6 pins, 2 realigned), docs. **FRONTEND ONLY.** From four production screenshots.
+
+1. **MARK REGISTER sheet** (user, improving Claude's one-student-at-a-time idea): an icon on a day opens a sheet of the active students, so several are marked in one sitting. It ADAPTS to the day, because absence means different things either side of today — **today/future** offers Haidh · Absent · Clear (an explicit mark is the only way anything is recorded there, since V4.0.2 made today unresolved); **past** offers Haidh · Clear and shows each student's DERIVED state, because marking "absent" on a past day would add nothing — the derivation already infers it from "no log". Writes go through the existing teacher paths; the V3.98/V4.0.2 rulings stand, haidh excuses and an informed absence never does.
+2. **Maktab summary: one compact CARD per student on mobile** — name pill and attendance icon on the first line, then Sabaq / Sabaq Dhor / Dhor as captioned lines. Done entirely in CSS over the existing rows, deliberately: that table carries FIVE distinct tap targets (name → her summary page, each log cell → its own card, the row → the day view, the +N pill → the entry peek, the icon → her attendance), and a rewrite would have quietly collapsed them.
+3. **The summary sheds its grey panel** (user), scoped to that screen. The app-wide V3.44 rule — screens are surface-track, their content white cards — is untouched; changing it globally is a much larger decision than the one asked for. Its padding goes too, handing the table the width it was short of.
+4. **Attendance week: one day per screen on mobile**, swiped by CSS scroll-snap — native, no gesture library — with the ‹ › buttons still paging the week. Desktop keeps its columns.
+5. **Student attendance page:** "Attendance" moved ABOVE the card as the page title, so the card carries only her name, at a smaller size, on one line without wrapping (it read "Attendance — Amina Aslam" over two lines).
+6. **Admin on mobile: a four-row card** — id (small grey) / Name · WhatsApp / Role · Group · Status / actions — with a small caption above every input (user). The compression comes from grouping fields ACROSS a row, not from dropping their labels; the old treatment stacked one label and one field per line, eight deep.
+
+**Verification: 1180 passed, 0 failed across 35 harnesses.** Layout cannot be proven in jsdom, so these pins encode the rules; the phone remains the test.
+
+---
+
+## V4.2.1 — Admin: register as the first row, columns that fit, teaching-profile column retired (2026-09-01)
+
+**Files touched:** `js/adminPage.js`, `index.html`, `css/admin.css`, `js/sw.js`, tests (register-row drive +7; 6 realigned; 4 retired with the feature), docs. **FRONTEND ONLY.**
+
+1. **Columns that fit.** Header and body are now two tables sharing ONE `<colgroup>` — identical column widths, so they align exactly (the V4.2.0 flex header over a fixed table never reliably did: "TEACHER PROF" sat over the wrong cells). Name takes the leftover width; every other column has an honest fixed width, so nothing truncates and delete is always visible. Action buttons hug their content. Below ~1100px the pair scrolls sideways together rather than crushing.
+2. **"Register a user"** (renamed from "Register a student") sits ABOVE the table and opens the new user as its **FIRST ROW** — Name · WhatsApp · Role (Student / Teacher / Admin, all three kept per the user) · Group — with a Register button. The duplicate-name guard survives the move intact: its hint and Cancel / Continue / Reset-that-PIN appear beneath the row, and Continue re-submits whatever the row CURRENTLY holds with force:true (the V3.4.2 semantics). Register creates a student, so the row's role and group are applied as follow-ups. The separate register box is gone.
+3. **After registering, the new user is PINNED to the top row and highlighted** (user), so her role, group, copy and share are right there. Cleared on leaving the screen or registering another.
+4. **The Teacher-profile column is RETIRED** (user, tested: the Role select already promotes a student to teacher or admin directly, so the second-…TEACHER-account path was redundant for this maktab). The trade was stated and accepted: promotion is a role change on one account. Existing …TEACHER accounts remain ordinary rows. The worker endpoint stays, unused — removing an API is a separate decision.
+5. **The old per-user detail card (`openUserCard`) is removed** — the tidy-up V4.1.0 promised, now forced: it was the last surface still offering teaching-profile creation. 156 lines gone; four drives that exercised it retired with it, replaced by assertions that no creation control exists anywhere.
+
+**Verification: 1174 passed, 0 failed across 35 harnesses** — the new drive proves the register row opens first, the guard fires on a duplicate, Continue forces past it with the current values, the role follow-up runs, and the new user lands pinned at the top.
+
+---
+
+## V4.2.0 — The admin table takes the summary's shape; name pills (2026-09-01)
+
+**Files touched:** `index.html`, `js/adminPage.js`, `js/maktabSummary.js`, `css/admin.css`, `css/journal-table.css`, `js/sw.js`, tests (+2 pins, 5 realigned), docs. **FRONTEND ONLY.**
+
+1. **The admin card is gone.** The table now has the maktab summary's shape — a coloured header row above a white rows region — both moving as ONE width (the journal-table lesson: a width on only one of them splits the table in half visually). The screen drops `.screen-content`, and with it the shared 30% desktop cap; the width now comes from **not opting in** rather than from an override a future change could silently defeat. Capped and centred at **80%** for the eight columns (the summary uses 70% for four), with the region scrolling sideways on narrower desktops instead of crushing cells. Five structural pins were realigned: admin has deliberately LEFT the card-pattern set, which base.css anticipated in as many words.
+2. **Student names are light-blue pills** on the maktab summary — they were already buttons (tapping one opens her day) but gave no sign of it. The pill wraps the NAME only; the cell also carries the attendance icon.
+
+**Verification: 1168 passed, 0 failed across 35 harnesses.**
+
+---
+
+## V4.1.1 — The maktab is the teacher's home (2026-09-01)
+
+**Files touched:** `js/app.js`, `js/logDetailScreen.js`, `index.html` (?v), `js/sw.js`, tests (+2 pins, 2 realigned). **FRONTEND ONLY.**
+
+Closing a screen dropped a teacher on the generic Home page — an unnecessary step in daily use. LANDING was already right (bootApp has sent teaching profiles to the maktab summary since V3.74.0); only the close paths disagreed. `homeScreenFor()` is now the single answer to "where does this user belong" — the maktab summary for a teaching profile, Home for a student — and both close paths read it: the generic wiring behind every `.screen-close-btn`, and the day card's own close, which is wired separately. bootApp now reads the same helper, so landing and closing can never drift apart again.
+
+**Deliberately unchanged:** the menu's HOME button still goes Home. A button labelled Home going elsewhere was a bug once (V3.71.0, fixed in V3.74.1), and a teacher may still want her personal journal. Students see no change at all.
+
+**Verification: 1168 passed, 0 failed across 35 harnesses.**
+
+---
+
+## V4.1.0 — Admin: one screen, inline editing (2026-09-01)
+
+**Files touched:** `js/adminPage.js`, `index.html`, `css/admin.css`, `js/sw.js`, tests (+6 pins, 2 realigned), docs. **FRONTEND ONLY — no new backend:** every operation already had an API (list, register, update, change role, create teaching profile, reset PIN, delete).
+
+The register box + list + per-user detail card become ONE editable table, per the user's mock.
+
+- **Columns:** Unique ID (read-only) · Name · WhatsApp · Role · **Group** · **Teacher profile** · Status · actions (copy, share, Reset PIN, delete). Group and teaching-profile creation were absent from the mock but are existing functionality, so they became columns rather than being lost.
+- **Per-field autosave** on existing rows (the user's call — the mock's Save column existed only because the old screens had both register and save). Each field commits on change, with one status line for the page; a failed save restores the stored value rather than leaving a lie on screen.
+- **The create path keeps its explicit commit**, because a create needs its fields together and must run the duplicate-name guard. "+ Add new student" reveals the register row; it closes itself once the student exists.
+- **Nothing was dropped:** copy, share, reset PIN, delete-with-confirm, the role-change confirm, the mark-inactive confirm, teaching-profile creation with its own confirm, and the V3.78.0 retired-group semantics (a retired group she is already in stays selectable, so a save cannot silently move her).
+- **Mobile:** two rows per user — fields above, every icon and button below — tethered with no divider between them so the pair reads as one record; desktop keeps the single wide row.
+- **Colour:** the app's own palette rather than the mock's pink — sage on the id column, mauve across the header, the pairing the journal and summary tables already use, so the admin table reads as their sibling.
+
+**Note for a follow-up:** `openUserCard` (the old detail modal) is now unreachable from the UI — the table does everything it did. It is left in place because harnesses still drive it; removing it is a tidy-up, not a fix.
+
+**Verification: 1166 passed, 0 failed across 35 harnesses.**
+
+---
+
+## V4.0.2 — Today is not an absence; the +N pill works on the student summary (2026-09-01)
+
+**Files touched:** `worker/src/maktabAttendance.js`, `js/maktabDay.js`, `tests/verify_attendance_derived.mjs` (+7 drives), `tests/verify_v3850_batch.mjs` (+2 pins), `index.html` (?v), `js/sw.js`, docs. **Deploy: WORKER → FRONTEND. No migration.**
+
+1. **ABSENCE WAS PREMATURE ON TODAY** (user). `deriveStudentAttendance` walked every maktab day and fell through to `absent` with no today-guard — so the moment anyone else's logs pushed today over the maktab-day threshold, every student who had not logged YET was scored absent. Because that one function feeds the journal cell, the **attendance percentage and absent-day list**, and the inactivity flag, a student's percentage genuinely **dipped through the day and recovered when she logged**: the statistics were wrong, not merely the wording. Per the user's rule, absence now derives only for days STRICTLY BEFORE today; today is **unresolved** and takes a status only from a teacher's explicit `absent` mark (a status the table already carried). Both callers now pass today and the explicit marks. This also brings the derivation into agreement with the V3.98.0 Attendance screen, which already drew the past/today line.
+2. **The +N pill was inert on the student summary.** The cells rendered the badge but only the ROW was wired, so tapping the pill just opened the day. Fixed with the pattern the maktab summary already uses: retarget the badge, give it its own listener, stop propagation — the pill peeks at that cell's entries while the rest of the row still opens the day.
+
+**Verification: 1158 passed, 0 failed across 35 harnesses** — the drives cover yesterday-still-absent, today-unresolved, a log on today, a teacher's mark on today, haidh precedence, the percentage consequence, and the pure function's unchanged behaviour when today isn't passed.
+
+---
+
+## V4.0.1 — The sabaq unit follows the amount; page counts follow the mushaf (2026-09-01)
+
+**Files touched:** `shared/data.js`, `js/sabaqPage.js`, `tests/verify_v3991_linecalc.mjs` (+8 checks), `index.html` (?v), `js/sw.js`, docs. **FRONTEND ONLY.**
+
+The user's report: sabaq should display in pages. Two faults behind it.
+
+1. **The pill could never hold Pages.** `sabaqSyncUnitPill` showed pages only when the lines box was EMPTY — but the auto-calc fills both boxes, so it snapped back to Lines on every recompute. Replaced by the user's rule, which removes the question entirely: **more than one page's worth of lines → show PAGES; otherwise → LINES**, with pages meaning TEXT QUANTITY (lines ÷ linesPerPage, in quarter-page units) rather than the physical pages a span touches. The pill stays switchable by hand; the rule only decides what is shown first.
+2. **The page derivation hardcoded ÷ 13** — so every 15-line maktab has had its page counts computed against the wrong divisor since the feature shipped, overstating them by about 15%. `linesPerPageForMushaf()` now supplies 13 or 15 from the maktab's own mushaf, and the same value sets the unit threshold, so the rule moves with the print. (This maktab is 13-line, so its own figures were never affected.)
+
+The user's case, 3:187–200 on a 13-line mushaf: 36 lines → **2.75 pages**, and the unit flips to pages by the rule.
+
+**Verification: 1151 passed, 0 failed across 35 harnesses** — the drive now covers both mushafs, the "more than" boundary at exactly one page, and the empty-box fallback.
+
+---
+
+## V4.0.0 — The student Attendance page reworked (2026-08-31)
+
+**Files touched:** `index.html`, `js/haidhDetailScreen.js`, `css/detail-pages.css`, `js/sw.js`, tests (+5 pins, 2 realigned), docs. **FRONTEND ONLY.** First release since production launch; the per-student page now matches the chrome the rest of the app gained across V3.98–V3.99.
+
+1. **The shared header card** (icon, title, close X) and the same `.screen-cap` width both cards now respect.
+2. **The date row comes first** and reads **From [pill] to [pill] [✓]**, all three held on ONE line — phones included: the pills flex and shrink rather than wrap, and the native picker chevron is hidden so the date text keeps its room. The term's dates are the pills' own values; the "Calculate for another period" label is gone, as the user asked.
+3. **Card 1 order:** date row, then "Attendance" with "Present on Y of Z maktab days : N%", then **Days absent on its own line**. End of card.
+4. **The haidh selection is a full-width band** across the calendar — "N days selected" at the left, a bare X at the right — replacing the pill-plus-Cancel pair; and **the actions sit centred beneath the calendar** on their own line.
+5. **"Mark absent"** joins Confirm/Predict as haidh, writing the V3.98.0 informed-absence marker for each selected day through the calendar's existing context client. Deliberately scoped: **maktab context only** (it records that a student informed the maktab — a teacher's observation, and the PJ-side setter was removed back in V3.40.2) and **future ranges only**. The V3.98.0 ruling stands untouched: an informed absence never excuses and never enters the percentage.
+
+**Verification: 1143 passed, 0 failed across 35 harnesses.**
+
+---
+
+## V3.99.1 — BUG: Lines/Pages never calculated (2026-08-31)
+
+**Files touched:** `js/sabaqPage.js` (3 lines), `tests/verify_v3991_linecalc.mjs` (NEW — the 35th harness), `index.html` (?v), `js/sw.js`, docs. **FRONTEND ONLY.**
+
+The user's report: the Lines box stays empty. Root cause: `recomputeSabaqLineCount` read `profile && profile.mushaf`, but `profile` is declared `let profile = null` INSIDE the render function — a local. The reference threw ReferenceError on every call, the handler died before the assignment, and Lines/Pages silently never filled — **for every user, PJ and maktab alike, on every path** (to-ayah change, stepper, confirm tick). The calculator underneath was always sound: 3:183–186 returns 13 lines (waterval), 12 (indopak/uthmani). Fixed by hoisting the mushaf the render already fetches into module scope (`sabaqMushaf`), rather than paying for a second async profile lookup.
+
+**The test gap, named:** 1132 checks were green while this was broken, because the suites pinned markup and wiring and nothing ever RAN the handler. The new harness drives the shipped function itself — lifted verbatim from the module — asserting the box fills for a same-surah range, a cross-surah range, and that the incomplete-range guard still holds. Writing it met the V3.85.1 eval-scope trap again (a `let` inside an indirect eval is private to that eval); the same-eval setter fix is applied and commented so the next person doesn't relearn it.
+
+**Verification: 1138 passed, 0 failed across 35 harnesses.**
+
+---
+
+## V3.99.0 — Consistent screen chrome: header cards, one width cap, "Kaaba puzzle" (2026-08-31)
+
+**Files touched:** `index.html`, `js/app.js`, `js/auth.js`, `js/juzTrackerScreen.js`, `css/detail-pages.css`, `js/sw.js`, tests (+3 pins, 1 realigned), docs. **FRONTEND ONLY.**
+
+1. **Header cards** — Attendance and Maktab Calendar both carried a bare floating `<h2>`; they now wear the Kaaba puzzle's header card (icon, title, close X). The X needed no wiring: app.js binds every `.screen-close-btn` by class. Calendar's icon is the new V3.98.1 calendar glyph, Attendance's the check-calendar.
+2. **Air under the header** on both maktab screens (user), so the card no longer sits flush against the content beneath it.
+3. **One shared width cap** (`.screen-cap`, 1100px, centred) across Attendance, Calendar and the Kaaba puzzle — none of the three runs edge-to-edge on a desktop display any more, and the three now agree with each other by construction.
+4. **"Kaaba puzzle" for the maktab** (user): a teaching profile sees that name in the menu AND as the screen heading; a student keeps "Juz Tracker", which is exactly what it is for her — her own hifz. Driven by role through one helper, the same pattern V3.98.0 used for the Attendance nav item.
+
+**Verification: 1132 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.98.1 — A distinct Calendar icon (2026-08-31)
+
+**Files touched:** `js/icons.js`, `js/auth.js`, `index.html` (?v), `js/sw.js`, +1 pin. **FRONTEND ONLY.** V3.98.0 left three menu items — the student's Attendance, the maktab Attendance, and Calendar — sharing one calendar-with-a-check glyph. Calendar now carries the user's own lucide calendar-days icon (normalised to the registry's convention: viewBox only, stroke-width 1.8), leaving the check-calendar to mean attendance alone. **1128 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.98.0 — The maktab ATTENDANCE screen (2026-08-31)
+
+**Files touched:** `worker/migrations/0029_teaching_days_and_predicted_absent.sql` (NEW), `worker/src/maktabAttendance.js`, `worker/src/maktabSettings.js`, `worker/src/utils.js`, `worker/src/index.js`, `js/maktabAttendancePage.js` (NEW), `js/maktabSettings.js`, `js/auth.js`, `js/app.js`, `js/api.js`, `index.html`, `css/detail-pages.css`, `js/sw.js`, tests (+4 pins, a full week drive, six fixtures gain the new column), docs. **Deploy: MIGRATION 0029 (console) → WORKER → FRONTEND.**
+
+A week at a time, ‹ › paging, four weeks of planning ahead and the register behind.
+
+- **Columns come from a new TEACHING DAYS setting** (weekday chips on the General card, seeded Mon–Thu). This was the user's choice among three strategies, and it resolves a real conflict: a "maktab day" is DERIVED from logging activity, so no future date can ever be one — a configured weekday set is the only honest source for forward columns. The derived rule that governs the attendance PERCENTAGES is deliberately untouched.
+- **No column is ever silently dropped** (user: "so that the user doesn't skip days as they scroll"). A holiday shows under its own calendar name, a date outside every term shows "Term break", and a past teaching day the maktab plainly didn't hold shows "No maktab day" — the V3.85 threshold rule stands there, so such a day is never turned into a wall of false absences.
+- **Content follows the calendar, not the column:** before today, three lists — Present / Absent / Haa'idha, the same derived truth the per-student page computes. Today onward, predicted haa'idha and predicted absentees: today is a planning column, not a half-written register (user).
+- **Predicted absentee** (new): the teacher can mark a student expected-absent when she has informed the maktab. Migration 0029 rebuilds `attendance` to admit `predicted-absent` (SQLite can't alter a CHECK in place — the 0007 pattern). Per the user's ruling, **informing is courtesy, not excusal**: the marker is forward-looking only, never enters the derivation or the stats, and once its day passes the derivation governs as always. Only haidh excuses.
+- **The teacher's add-popup writes through the path that already existed** — `/attendance` with a student id, teacher-gated since V3.76.0 — so a teacher-entered haidh behaves exactly like a self-entered one, including in her own journal.
+- **Nav:** the label "Attendance" is unchanged for everyone; the destination follows the role — students land on their own page as before, teacher/admin on this screen. The per-student view keeps its existing door, the icon beside her name.
+
+**Verification: 1127 passed, 0 failed across 34 harnesses** — including a date-relative week drive proving the three-list register, the labelled holiday/term-break/no-maktab columns, the planning columns, and the student 403.
+
+---
+
+## V3.97.1 — The seam closed: the API base picks itself (2026-08-30)
+
+**Files touched:** `js/api.js`, `index.html` (?v), `js/sw.js`, +1 pin. **FRONTEND ONLY.** The hardcoded production API URL was the last thread tying every frontend copy to production. The base is now an auto-select: a frontend served from any "-dev" hostname (or localhost) talks to the DEV worker; everything else talks to production; `localStorage 'hh_api_base'` overrides both for ad-hoc work. One identical codebase now serves both streams, and a dev page can never quietly write into real maktab data. **1114 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.97.0 — (l) THE ARCHIVE: her journal survives losing the maktab (2026-08-30)
+
+**Files touched:** `worker/migrations/0028_archive_columns.sql` (NEW), `worker/src/logHelpers.js`, tests (three fixtures gain the 0028 shape; full lifecycle drive), docs. **Deploy: MIGRATION 0028 (console) → WORKER. No frontend change at all** — archived copies present through the merged read exactly like live maktab rows (teacher provenance, id nulled, read-only by construction), so every UI surface works unchanged.
+
+The last piece of the 2026-08-16 architecture, built to its recorded spec: *"hifz is a solo journey with the maktab helping during certain periods; even when one loses connection the journey continues, so the journal can always be used."*
+
+- **The copy:** maktab entries older than 60 days are physically copied into her own log tables (`maktab_log_id` + `maktab_teacher` snapshot, migration 0028), triggered opportunistically on her own journal read — bounded (500/pass), idempotent by construction (unique index + OR IGNORE + the NOT-IN key), no cron. The maktab tables are never moved or emptied.
+- **Exactness:** the live union now excludes any maktab row whose copy exists — every entry shows exactly once, whenever archiving runs, with no cutoff arithmetic and no window where a row doubles or vanishes.
+- **Re-sync, not frozen (the user's call):** a teacher's edit patches the archived copy (one statement keyed on maktab_log_id); a teacher's **delete removes it** — the path the spec itself warned "is the one that gets forgotten" is built and driven: her journal never asserts what the maktab no longer says.
+- **Driven end to end** in the merge harness: old row copied with provenance, recent row untouched, exactness across the union, idempotence over repeat reads, edit-sync, delete-sync, maktab tables intact, personal rows untouched by the machinery.
+
+**Verification: 1113 passed, 0 failed across 34 harnesses.** With this, every delivery of the (i)–(l) architecture is shipped.
+
+---
+
+## V3.96.1 — The position switch, by its own contract (2026-08-30)
+
+**Files touched:** `css/detail-pages.css`, `js/sw.js`, `index.html` (?v), 2 pins realigned. **FRONTEND ONLY.** Fourth attempt, first one made after actually reading the component: renderSwitch computes the thumb as PERCENTAGES of the track assuming N equal slots. Both forced-size debris rules (34px and 44px heights, 84px width) are deleted; the position options become equal flex slots so the percentage maths hold for 2-way and 4-way alike on one 140px track at the component's own height; and the row bottom-aligns — the verified cause of every failed alignment nudge was centring the bare switch against the LABELLED From column, parking it in the label gap. The earlier thumb-height claim is corrected in the record (the thumb self-derives; it was never the fault). **1105 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.96.0 — The Haidh settings tweaks, off the books (2026-08-30)
+
+**Files touched:** `index.html`, `js/settingsScreen.js`, `css/settings.css`, `js/sw.js`, tests (+2 pins), docs. **FRONTEND ONLY.** The three-part spec from 2026-08-08/17, built as one set: the Haaidha heading reads text-first with the opt-in checkbox to its RIGHT at twice the size (32px); the "Ruling" label above the Hanafi/Shafi'i switch is gone; the ruling hint sentence is gone from the screen — deleted TOGETHER with its constant and both JS writer lines, exactly as the recorded V3.51.2 trap demanded, so the cycle/period/next-expected population after the old writer runs untouched. The ruling itself remains fully alive: chosen, re-rendered, loaded, saved, and enforcing the 10/15-day cap in validation — all five keep-sites pinned. **1105 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.95.0 — The follow-up set: Hijri under the name, the bordered Calendar, the space-and-alignment pass (2026-08-30)
+
+**Files touched:** `js/maktabSettings.js`, `index.html`, `css/settings.css`, `css/detail-pages.css`, `js/sw.js`, tests (+3 pins, 1 realigned), docs. **FRONTEND ONLY.**
+
+1. **The italic Hijri sits directly UNDER THE NAME BOX** (it was hanging beneath the date column) — the name and its Hijri now share a column in the popup rows.
+2. **The Calendar card wears a border** (the user's pink outline, stated as the spec: "I don't have a border around calendar").
+3. **The Space pass:** more air above the Teacher-note block and above the history row on all three cards; a margin above Dhor's Duration row.
+4. **The dashed-line alignment:** the 1|2 position switch stands at the full row height beside the From select; the Duration, Mistakes and Tajweed boxes share one height (the tajweed trigger now fills its column, ellipsized).
+5. **The history pair SPREADS** — one button to each end on every card (the boxed mock superseded the earlier flex-end reading) — and "Notes History" is capitalised.
+
+**Verification: 1103 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.94.0 — Deletions stick, Hijri properly, the dead card revived, three polish sets (2026-08-30)
+
+**Files touched:** `worker/src/maktabCalendar.js`, `js/maktabSettings.js`, `js/maktabSetup.js`, `js/tajweed.js`, `css/settings.css`, `css/detail-pages.css`, `index.html` (?v), `js/sw.js`, tests (double-render net + enrichment drive + 4 pin blocks; 4 realigned), docs. **Deploy: WORKER → FRONTEND. No migration.**
+
+1. **Calendar deletions STICK (design fix, admitted fault):** the standard list now proposes itself only into an EMPTY year — once any rows exist, the popup stages exactly what's saved, so a deleted day stays deleted ("deleted" vs "never had" was previously indistinguishable, which is why First Fast kept returning). Deleting everything and reopening = the deliberate full reset. Same rule for holidays.
+2. **Hijri, honestly this time:** Confirm now upgrades any islamic label that matches a seed base name and lacks a Hijri part to the full "Name — Hijri" (the earlier "Confirm regenerates labels" claim was wrong and is corrected in the record). In the popup, the NAME input holds the base name and the **Hijri renders in italics on its own line beneath**; storage is unchanged (reassembled on confirm).
+3. **The dead Calendar card, revived:** the run-once wire guard met a card whose HTML rebuilds every visit — second entries got an empty year pill and dead buttons. The guard is gone; the card wires every render, and the harness now renders the settings screen TWICE and asserts survival (the net that would have caught it).
+4. **Calendar card polish:** "Calendar" is a real header, the Terms label is gone, the + is bigger, the content sits a notch lower.
+5. **Ajzaa popup polish:** an "Ajzaa completed" title, the X in the LEFT corner, pills ~20% smaller with centred text.
+6. **V3.93 follow-ups:** the suggestion-row pill now lands on the element that actually carries the border (.sabaq-dhor-row-text — the earlier radius sat on the wrapper); the inline 1|2 switch gets real dimensions (84×34) beside the juz select; the Duration/Mistakes/Tajweed labels share one line; the tag placeholder reads "Select tags"; the history pair rides the right edge per the arrows.
+
+**Verification: 1100 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.93.0 — The day-card set, the setup popup, the search unclipped for real (2026-08-30)
+
+**Files touched:** `index.html`, `js/dhorPage.js`, `js/sabaqPage.js`, `js/maktabSetup.js`, `css/detail-pages.css`, `css/settings.css`, `css/journal-table.css`, `js/sw.js`, tests (+8 pins, 1 realigned), docs. **FRONTEND ONLY.**
+
+1. **The search, third and final round:** V3.91 unclipped the header ROW; the header CELL's own `overflow:hidden` (label ellipsis) was still swallowing the dropdown a level lower — including the "No matching student." empty state, which is why typing gave no feedback at all. The search cell alone is now `overflow: visible`. Honest test note: jsdom can't see pixels, so both clippers passed green suites — the pins encode the rules; the user's eyes remain the layout test.
+2. **The Calendar card content centres** (heading+year, terms, add, the two buttons).
+3. **The day-card set** (the annotated mock): space before a BOXED timer on all three cards; ONE **Lines/Pages** box with the unit pill inside (both inputs keep their ids — the auto-calc still fills both; the pill is a view switch) and **Tajweed beside it**, the old row gone; the Sabaq Dhor suggestion rows as pills; the dhor **position switch inline with the juz select**; **"Ajzaa Completed"** replacing "Add Juz to Dhor"; **Duration/Mistakes/Tajweed on one row** with a single MINUTES box (stored as whole minutes ×60 — schema unchanged; the ss input and its helpers removed cleanly); history buttons matched (150px min, centred) for symmetry.
+4. **The Ajzaa Completed popup:** paragraph gone; **save ICON top-right**; the juz list a **3×10 grid of selectable chips** (filled evergreen when selected; dashed border marks partial juz; the hidden checkboxes keep the save path identical).
+
+**Verification: 1094 passed, 0 failed across 34 harnesses.**
+
+---
+
+## V3.92.1 — Year pill fixed + button row (2026-08-29)
+
+**Files touched:** `css/settings.css`, `js/maktabSettings.js`, `js/sw.js`, `index.html` (?v), 1 pin. **FRONTEND ONLY — first delivery shipped WITH A DELTA ZIP** (4 files) alongside the cumulative. The V3.92.0 year pill collapsed to bare arrows on iOS (a borderless select has no intrinsic width there) — now appearance:none, min-width 104px, centred text, baseline-aligned with the "Calendar" heading. The two green buttons sit SIDE BY SIDE — Public Holidays left, Islamic Calendar right — and taller. **1086 passed, 0 failed across 34 harnesses.**
+
+---
+
 ## V3.92.0 — Legend out, Hijri in; the year pill; chevron-free date pills (2026-08-29)
 
 **Files touched:** `index.html`, `js/maktabCalendarPage.js`, `js/maktabSettings.js`, `css/settings.css`, `js/sw.js`, tests (+3 pins, list drive extended), docs. **FRONTEND ONLY.**
