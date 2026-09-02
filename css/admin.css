@@ -216,9 +216,51 @@ button.secondary.danger {
 .admin-row-actions { display: none; }
 /* MOBILE: two rows per user — fields, then every icon/button — tethered
    so the pair reads as one record (no divider between them). */
+/* V4.2.2 (user): on mobile each user is a compact CARD of FOUR ROWS —
+   id (small grey) / Name · WhatsApp / Role · Group · Status / actions —
+   with a small caption above every input. The old treatment put one
+   label and one field per LINE, eight deep, so a single user filled the
+   screen; the compression comes from grouping fields ACROSS a row, not
+   from dropping their captions. */
 @media (max-width: 767px) {
   .admin-table-head { display: none; }
   .admin-table { min-width: 0; }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
+  .admin-row-fields {
+    background: var(--color-surface);
+    border: 1px solid var(--color-table-border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-sm);
+    padding: var(--space-sm) var(--space-md) 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-areas: 'id id id' 'name name wa' 'role group status';
+    gap: 0 var(--space-sm);
+  }
+  .admin-row-fields td { padding: 0 0 var(--space-sm); border: none; }
+  .admin-row-fields td::before {
+    content: attr(data-label);
+    display: block; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--color-ink-soft); margin-bottom: 2px;
+  }
+  .admin-row-fields .admin-cell-id { grid-area: id; font-size: 11px; color: var(--color-ink-soft); }
+  .admin-row-fields .admin-cell-id::before { display: none; }   /* the id needs no caption */
+  .admin-row-fields td[data-label="Name"] { grid-area: name; }
+  .admin-row-fields td[data-label="WhatsApp"] { grid-area: wa; }
+  .admin-row-fields td[data-label="Role"] { grid-area: role; }
+  .admin-row-fields td[data-label="Group"] { grid-area: group; }
+  .admin-row-fields td[data-label="Status"] { grid-area: status; }
+  .admin-row-fields .admin-actions-cell { display: none; }      /* row 4 is the actions row */
+  .admin-row-actions {
+    background: var(--color-surface);
+    border: 1px solid var(--color-table-border); border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    margin-top: calc(var(--space-sm) * -1 - 1px);
+    margin-bottom: var(--space-md);
+  }
+  .admin-row-fields { border-bottom: none; border-radius: var(--radius-md) var(--radius-md) 0 0; margin-bottom: 0; }
+  .admin-row-new { grid-template-areas: 'id id id' 'name name wa' 'role group status' 'act act act'; }
+  .admin-row-new .admin-actions-cell { display: block; grid-area: act; }
   .admin-table, .admin-table tbody, .admin-table tr, .admin-table td { display: block; width: 100%; }
   .admin-row-fields td { border-bottom: none; padding: 4px 8px; }
   .admin-row-fields td::before { content: attr(data-label); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; opacity: .6; }

@@ -482,3 +482,40 @@
    search dropdown a level below the V3.91.0 row fix. The search cell
    alone is visible; the other cells keep their ellipsis clipping. */
 .journal-header-cell.maktab-search-cell { overflow: visible; }
+
+/* ============================================================
+   V4.2.2 (user) — MOBILE: one compact CARD per student on the maktab
+   summary. Done entirely in CSS over the existing table rows, so all
+   five tap targets survive untouched: the name opens her summary page,
+   each log cell opens its own card, the row opens the day view, the +N
+   pill peeks, and the attendance icon opens her attendance.
+   The captions come from data-label (set in js/maktabSummary.js). */
+@media (max-width: 767px) {
+  .maktab-summary-headers { display: none; }   /* no columns left to label */
+  .maktab-summary-table, .maktab-summary-table tbody,
+  .maktab-summary-table tr, .maktab-summary-table td { display: block; width: 100%; }
+  .maktab-summary-table tr {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-sm);
+    border: 1px solid var(--color-table-border);
+    position: relative;
+  }
+  /* line 1: the name pill, with the attendance icon beside it */
+  .maktab-summary-table .maktab-haidh-col {
+    position: absolute; top: var(--space-sm); right: var(--space-md); width: auto; padding: 0;
+  }
+  .maktab-summary-table .maktab-student-name { padding: 0 0 6px; }
+  /* the log lines: caption above value, the admin card's idiom */
+  .maktab-summary-table .journal-cell {
+    padding: 4px 0; border: none; display: flex; align-items: baseline; gap: var(--space-sm);
+  }
+  .maktab-summary-table .journal-cell::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--color-ink-soft);
+  }
+  .maktab-summary-table tr:last-child td { border-bottom: none; }
+}

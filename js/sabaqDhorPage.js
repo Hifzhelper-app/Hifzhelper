@@ -239,6 +239,7 @@ function rebuildRowsFromPosition(){
   // two can never describe different states.
   sabaqDhorMoveOptions = computeSabaqDhorMoveOptions(sabaqDhorPosition, sabaqDhorRef, sabaqDhorBaselineSelection);
   renderSabaqDhorRows();
+  renderSabaqDhorQuarterPicker();   // V4.2.3: follows her mushaf's terminology
   updateRollupStepperVisibility();
 }
 
@@ -655,3 +656,78 @@ function openSurahPickerForSabaqDhorManual(side){
 // of its own. Its checked state and the picker's current value are
 // only ever read once, inside compositeCheckedSabaqDhorRows, at the
 // moment the card's own Save button is tapped.
+
+// ============================================================
+// V4.2.3 (user, 2026-09-01) — THE JUZ + QUARTER PICKER.
+//
+// Why it exists: the card's suggestion rows are derived from the
+// student's own history, so a student who HAS MEMORISED but has no
+// journal history yet is offered nothing. This lets the teacher pick the
+// portion directly.
+//
+// It is ADDITIVE: it fills the From/To ayah fields and nothing else. The
+// stored shape (from/to surah+ayah) is unchanged, so the save path, the
+// merge logic and every downstream reader stay exactly as they are.
+//
+// The conversion is the app's own, already proven: structuralQuarterBounds
+// (shared/data.js) is what the suggestion rows themselves use. The unit's
+// WORD follows her mushaf — Quarter for IndoPak, Ru'b for 15-line Madani
+// (quarterUnitWord, migration 0017's terminology) — so the picker reads
+// in her language rather than a hardcoded "Quarter".
+// ============================================================
+function sdqRef(){
+  return (typeof sabaqDhorRef !== 'undefined' && sabaqDhorRef)
+    || (typeof dhorCurrentRef !== 'undefined' && dhorCurrentRef)
+    || 'waterval';
+}
+
+function renderSabaqDhorQuarterPicker(){
+  const juzSel = document.getElementById('sdq_juz');
+  const qSel = document.getElementById('sdq_quarter');
+  if(!juzSel || !qSel) return;
+  const ref = sdqRef();
+  const word = typeof quarterUnitWord === 'function' ? quarterUnitWord(ref) : 'Quarter';
+  const unitLabel = document.getElementById('sdq_unit_label');
+  if(unitLabel) unitLabel.textContent = word;
+  if(!juzSel.options.length){
+    juzSel.innerHTML = Array.from({ length: 30 }, (_, i) => `<option value="${i + 1}">Juz ${i + 1}</option>`).join('');
+  }
+  // structuralQuarterBounds works in STRUCTURAL quarters (1-4) for every
+  // print — the ayah boundaries differ by mushaf, the count does not.
+  qSel.innerHTML = Array.from({ length: 4 }, (_, i) => `<option value="${i + 1}">${word} ${i + 1}</option>`).join('');
+  sdqUpdatePreview();
+}
+
+function sdqBounds(){
+  const juz = parseInt(document.getElementById('sdq_juz').value, 10);
+  const q = parseInt(document.getElementById('sdq_quarter').value, 10);
+  if(!juz || !q || typeof structuralQuarterBounds !== 'function') return null;
+  try{ return structuralQuarterBounds(juz, q, sdqRef()); } catch(e){ return null; }
+}
+
+function sdqUpdatePreview(){
+  const el = document.getElementById('sdq_preview');
+  if(!el) return;
+  const b = sdqBounds();
+  el.textContent = b ? `${b.startSurah}:${b.startAyah} \u2013 ${b.endSurah}:${b.endAyah}` : '';
+}
+
+(function wireSabaqDhorQuarterPicker(){
+  const juzSel = document.getElementById('sdq_juz');
+  const qSel = document.getElementById('sdq_quarter');
+  const apply = document.getElementById('sdq_apply');
+  if(!juzSel || !qSel || !apply) return;
+  juzSel.addEventListener('change', sdqUpdatePreview);
+  qSel.addEventListener('change', sdqUpdatePreview);
+  apply.addEventListener('click', () => {
+    const b = sdqBounds();
+    if(!b) return;
+    // fill the manual From/To fields — the same setter the rest of the
+    // card uses, so the checkbox, the save path and the dirty-tracking
+    // all behave exactly as if the teacher had typed the range
+    renderSabaqDhorManualField('from', { surah: b.startSurah, ayah: b.startAyah });
+    renderSabaqDhorManualField('to', { surah: b.endSurah, ayah: b.endAyah });
+    const cb = document.getElementById('sabaqDhorManual_cb');
+    if(cb){ cb.checked = true; cb.dispatchEvent(new Event('change')); }
+  });
+})();
