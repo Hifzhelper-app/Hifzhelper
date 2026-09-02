@@ -2111,8 +2111,10 @@
 .mkreg-btn:disabled { opacity: .5; }
 .mkreg-clear { color: var(--color-ink-soft); }
 
-/* V4.2.3: the Sabaq Dhor juz + quarter picker (below From/To) */
-.sdq-picker { margin-top: var(--space-md); }
+/* V4.2.4: the Sabaq Dhor juz + quarter picker — the rows block's EMPTY
+   STATE, so it spans that 3-column grid rather than sitting in one cell. */
+.sdq-picker { grid-column: 1 / -1; margin: var(--space-xs) 0; }
+.sdq-picker .form-hint { margin: 0 0 var(--space-sm); }
 .sdq-row { display: flex; align-items: flex-end; gap: var(--space-sm); flex-wrap: wrap; }
 .sdq-field { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; }
 .sdq-field select {
