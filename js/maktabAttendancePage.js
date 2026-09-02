@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.3 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.13 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.11.3).
 //
@@ -47,7 +47,7 @@ function mkregFirstNameKey(name){
 function mkregStudentRank(student, date){
   const status = student && student.cells ? student.cells[date] : '';
   if(status === 'present') return 0;
-  if(status === 'haidh') return 1;
+  if(status === 'haidh' || status === 'probable-haidh') return 1;
   return 2;
 }
 function mkregSortStudents(students, date){
@@ -135,10 +135,14 @@ async function mkregisterPaint(){
         mark = '<span class="mkregister-status mkregister-status-present" aria-hidden="true">✓</span>';
         label = 'Present';
       } else if(status === 'haidh'){
-        // User request: retire the yellow Haidh glyph in this grid and reuse
-        // the former thin green Present check as the distinct Haidh mark.
         mark = `<span class="mkregister-status mkregister-status-haidh" aria-hidden="true">${iconHtml('check')}</span>`;
-        label = "Haa'idha";
+        label = 'Haidh';
+      } else if(status === 'probable-haidh'){
+        mark = `<span class="mkregister-status mkregister-status-haidh mkregister-status-probable" aria-hidden="true">${iconHtml('check')}</span>`;
+        label = 'Probable Haidh';
+      } else if(status === 'predicted-haidh'){
+        mark = `<span class="mkregister-status mkregister-status-haidh mkregister-status-predicted" aria-hidden="true">${iconHtml('check')}</span>`;
+        label = 'Predicted Haidh';
       } else if(c.future){
         label = 'Not yet recorded';
       } else if(c.no_maktab_day){
@@ -148,8 +152,8 @@ async function mkregisterPaint(){
     }).join('')).join('');
     const pct = s.attendance_percent == null ? '—' : `${s.attendance_percent}%`;
     const pctTitle = s.attendance_maktab_days
-      ? `${s.attendance_present_days} of ${s.attendance_maktab_days} maktab days`
-      : 'No maktab days in this period';
+      ? `${s.attendance_active_days || 0} active · ${s.attendance_haidh_days || 0} Haidh${s.attendance_probable_haidh_days ? ` (${s.attendance_probable_haidh_days} probable)` : ''} · ${s.attendance_absent_days || 0} absent · ${s.attendance_maktab_days} resolved Maktab days`
+      : 'No resolved Maktab days in this period';
     return `<tr>
       <th class="mkregister-student-cell" scope="row"><button type="button" class="mkregister-student" data-student-id="${mkregEsc(s.id)}" title="Open ${mkregEsc(s.name)} attendance">${mkregEsc(s.name)}</button></th>
       <td class="mkregister-percent-cell" title="${mkregEsc(pctTitle)}">${pct}</td>${cells}

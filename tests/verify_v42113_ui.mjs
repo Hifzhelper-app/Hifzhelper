@@ -55,13 +55,13 @@ const ordered = sandbox.mkregSortStudents(rows, d).map(r => r.name);
 check('attendance order is log first, then Haidh, then remaining students',
   JSON.stringify(ordered) === JSON.stringify(['Aadil Noor','Bilal Khan','Fatima Noor','Zara Noor','Amina Khan']));
 check('a log outranks Haidh because register cells already resolve log as Present',
-  /if\(status === 'present'\) return 0;[\s\S]*if\(status === 'haidh'\) return 1;/.test(att));
+  /if\(status === 'present'\) return 0;[\s\S]*status === 'haidh' \|\| status === 'probable-haidh'/.test(att));
 check('status groups sort alphabetically by first name',
   /ak\.first\.localeCompare\(bk\.first\)/.test(att));
 check('register applies the order using the current Maktab date',
   /mkregSortStudents\(data\.students \|\| \[\], data\.today\)/.test(att));
-check('V4.2.11.3 behavior remains intact under the V4.2.12.1 page/cache key',
-  /js\/app\.js\?v=4\.2\.12\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.12\.1'/.test(sw));
+check('V4.2.11.3 behavior remains intact under the V4.2.13 page/cache key',
+  /js\/app\.js\?v=4\.2\.13/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

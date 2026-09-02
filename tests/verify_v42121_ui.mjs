@@ -83,9 +83,9 @@ check('render uses the sorted roster and only groups the logged band',
   && /band === 0 && prevBand === 0 && groupKey !== prevGroup/.test(js)
   && /wireMaktabSummarySearch\(sortedStudents, date\)/.test(js));
 
-check('page/cache release key is 4.2.12.1',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.12.1')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.12\.1'/.test(sw));
+check('page/cache release key is 4.2.13',
+  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.13')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.13'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -53,8 +53,8 @@ check('admin primary menu order is Home, Maktab, Attendance, Student Management,
 check('Attendance and Calendar are not duplicated in the later personal-tools group',
   /!\['home', 'sih', 'juzTracker', 'attendancePage'\]\.includes\(x\.id\)/.test(auth)
   && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
-check('V4.2.11.2 page/cache contract remains valid after V4.2.12.1',
-  /js\/app\.js\?v=4\.2\.12\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.12\.1'/.test(sw));
+check('V4.2.11.2 page/cache contract remains valid after V4.2.13',
+  /js\/app\.js\?v=4\.2\.13/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

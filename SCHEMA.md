@@ -136,7 +136,7 @@ Each mirrors its PJ counterpart's full current column set (the rule: ALL PJ colu
 | `teacher_name` | TEXT NOT NULL | Snapshot at save time, deliberately denormalized — provenance reads as it was when confirmed, even if the teacher's row is later renamed or deactivated. |
 | `teacher_feedback_visibility` | TEXT | Same enum and semantics as the PJ, but DEFAULT **`'teachers_only'`** here (PJ default is `'all'`) — the one agreed divergence. |
 
-Maktab attendance is NOT a table — it's derived at read time (delivery (f)): present assumed, Haidh from the shared `attendance` rows, absent when no Maktab log exists on a qualifying Maktab day (≥N distinct students logged; N comes from Maktab settings). A teacher's log save wins over a Haidh mark, same as the PJ. **V4.2.11 adds no table:** the term-wide Attendance register is another derived read shape over these same sources.
+Maktab attendance is NOT a table — it is derived at read time (delivery (f)). **Active** means at least one Maktab Sabaq / Sabaq Dhor / Dhor log on a qualifying Maktab day (≥N distinct students logged; N comes from Maktab settings). Confirmed Haidh comes from shared `attendance.status='haidh'`; **Probable Haidh** is a V4.2.13 read-only calendar-day derivation from confirmed Haidh and is never stored. A later Maktab log or explicit teacher `absent` row terminates that probable run and it cannot resume from the old episode; a later confirmed Haidh mark may start a new one. Explicit predictions keep exact-date semantics but do not seed probable propagation. A completed qualifying day with none of those states is Absent. **V4.2.11 adds no table:** the term-wide Attendance register is another derived read shape over these same sources.
 
 ## Tables: `tajweed_tags`, `maktab_groups` (migration 0022 — V3.78.0, delivery 3)
 
@@ -155,7 +155,7 @@ Two instances of one shape: an admin-managed list of named rows referenced by ID
 
 `maktab_position` — mirrors `position` exactly (`student_id` PK, `position_json`, `last_dhor_json`, `updated_at`), so the PJ's own Sabaq Dhor computation reads it unchanged. The maktab Dhor **pool** lives in `position_json.baselineSelection` here, NOT in `students.baseline_selection` — it is maktab-owned, set by the student setup screen, and never read from the student's personal journal.
 
-Maktab attendance remains **derived**, with no table of its own: present/absent/haidh are computed at read time from the three maktab log tables plus the haidh rows in `attendance` (see `worker/src/maktabAttendance.js`).
+Maktab attendance remains **derived**, with no table of its own: Active / confirmed Haidh / probable Haidh / Absent are computed at read time from the three Maktab log tables plus stored attendance marks (see `worker/src/maktabAttendance.js`). V4.2.13 requires full historical log stop-evidence before period filtering so an older Haidh run cannot leak across a later return log into a register term.
 
 ## Table: `plans`
 
@@ -212,7 +212,7 @@ Composite primary key `(student_id, date)`.
 |---|---|---|
 | `student_id` | TEXT (FK) | → `students.id`. |
 | `date` | TEXT | `YYYY-MM-DD`. |
-| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh` (and `predicted-absent` since 0029). Auto-set to `present` whenever any entry is logged that day — a log always wins, overriding even a prior `haidh`. V3.39: setting `haidh`/`predicted-haidh` (`handleSetAttendance`, `worker/src/attendance.js`) is capped by the student's ruling duration and the 15-official/14-code-day gap via `shared/haidhRules.js`. Never deletes log rows. **V4.2.11:** a teacher/admin write whose final status is confirmed `haidh` also promotes that student's existing profile to `gender='F', track_haidh=1`; `predicted-haidh` does not. |
+| `status` | TEXT | `present` / `absent` / `haidh` / `predicted-haidh` (and `predicted-absent` since 0029). Auto-set to `present` by the personal-log attendance sync; a Maktab log also wins over an exact Haidh mark and Maktab attendance itself is derived from the actual Maktab log tables. V3.39: setting `haidh`/`predicted-haidh` (`handleSetAttendance`, `worker/src/attendance.js`) is capped by the student's ruling duration and the 15-official/14-code-day gap via `shared/haidhRules.js`. **`probable-haidh` is deliberately NOT a stored status**: V4.2.13 derives it at read time from confirmed Haidh, stopping permanently at the first later Maktab log or explicit teacher Absent until a new confirmed Haidh episode begins. Never deletes log rows. **V4.2.11:** a teacher/admin write whose final status is confirmed `haidh` also promotes that student's existing profile to `gender='F', track_haidh=1`; `predicted-haidh` does not. |
 
 ## Table: `position`
 

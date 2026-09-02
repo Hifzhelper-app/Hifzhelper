@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.13** — Attendance/Haidh derivation audit: stop evidence, probable calendar state, and Active-vs-Haidh reporting
 - **V4.2.12.1** — Quick Log compact-card/mobile-combined refinement + displayed-day Summary ordering
 - **V4.2.12** — Trial Quick Log from Maktab Summary cells: minimal Sabaq / Sabaq Dhor / Dhor entry without leaving the table
 - **V4.2.11** — Term-wide Maktab Attendance register grid; Female/Haaidha registration; confirmed teacher Haidh auto-promotes profile
@@ -126,6 +127,26 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.13 — Attendance / Haidh derivation audit
+
+**Why this release exists.** Ammarah exposed a model bug rather than a display bug: an earlier confirmed Haidh run could silently excuse a later blank Maktab day even after she had already returned and logged. The audit therefore traced every source that can influence derived Maktab attendance instead of adding a one-date exception.
+
+**Evidence model.** Maktab attendance remains derived at read time. A Maktab log is the strongest attendance evidence. A stored `haidh` row is confirmed fact. **Probable Haidh** is never stored: it is derived forward from confirmed Haidh across calendar days, bounded by the student's ruling maximum. A later Maktab log or an explicit teacher `absent` row terminates that run and the old run may not resume after the stop. A later confirmed Haidh mark can start a new episode. Explicit `predicted-haidh` keeps its established exact-date behavior but is a plan and never seeds probable propagation.
+
+**Why calendar days, not Maktab days.** Haidh duration is biological, so weekends, holidays and non-teaching days consume the maximum-duration allowance. The Attendance endpoint therefore returns the whole read-only probable calendar range for the Haidh calendar. The term register may paint that probable state on its configured teaching-day columns even when a date is below threshold/future, while the percentage calculation filters to resolved qualifying Maktab days only.
+
+**Cross-surface parity.** The individual Attendance page and the term register must derive from the same history. Both now load full Maktab log history before period filtering. This closes a second leakage where a pre-term return log could stop Haidh on the student page but be invisible to the register.
+
+**Reporting semantics.** `Active` means at least one Maktab Sabaq / Sabaq Dhor / Dhor log. `Haidh` in the headline count includes confirmed + probable excused Maktab days; the UI separately exposes how many are probable. `Absent` is a completed qualifying Maktab day with neither Active nor Haidh. Attendance % is `(Active + Haidh) / resolved Maktab days`. An unresolved current day is excluded until there is actual evidence or the day completes.
+
+**Attention streak.** The long no-log flag remains specifically a no-Maktab-log streak, not an absence streak. An in-progress unlogged today does not prematurely extend it; a real log today still resets it. Haidh does not reset the no-log streak because the flag intentionally measures time since activity, not blameworthiness.
+
+**Calendar evidence.** Probable dates are displayed as probable and are confirmable, but they are not treated as stored Haidh evidence. Likewise, a future prediction is not evidence for changing a selected range to “Confirm as Haidh”. This keeps frontend wording aligned with `worker/src/attendance.js` validation.
+
+**No schema change.** Confirmed/predicted marks remain in `attendance`; probable is a read-only derived status and is not persisted.
 
 ---
 

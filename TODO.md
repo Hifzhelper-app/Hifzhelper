@@ -28,11 +28,24 @@ numbers; headings are unique, search the text.
 | ~~8~~ | ~~**Is `sih` a PJ icon?**~~ | **CLOSED 2026-08-17** | **No — "Surahs in my Heart is unconnected, a feature for everyone."** Already the behaviour, so no code changed; `verify_nav.mjs` now asserts all three roles see it, so the decision is enforced rather than remembered. **The nav work has no open questions left.** |
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
-| **79** | **Deploy + device-verify V4.2.12.1 Quick Log refinement** | **READY — build complete** | Frontend-only overlay on V4.2.12. **No Worker and no migration.** Verify compact cards, mobile combined type selector, and Summary log → confirmed Haidh → remainder ordering. |
+| ~~79~~ | ~~**Deploy + device-verify V4.2.12.1 Quick Log refinement**~~ | **SUPERSEDED by V4.2.13** | V4.2.13 carries the V4.2.12.1 frontend forward and adds the audited Attendance/Haidh correction. |
+| **80** | **Deploy + device-verify V4.2.13 Attendance/Haidh audit** | **READY — build complete** | **Worker first, then frontend; no migration.** Verify return-log/Absent stop evidence, probable calendar range, Active-vs-Haidh reporting and register/page parity. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.12.1 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.13 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **No migration. Deploy the Worker first:** `worker/src/maktabAttendance.js`. Then overlay the changed Pages/frontend files and hard-refresh until the page/cache key reads **v4.2.13**.
+2. Reproduce the original leakage pattern: confirmed Haidh → later Maktab log → later completed blank Maktab day. The later blank must be **Absent**, not probable Haidh. Confirm additional later blanks do not resume the old Haidh run.
+3. Repeat with an explicit teacher **Absent** mark instead of a log as the stopping event. The old probable run must remain stopped. Then place a later new confirmed Haidh mark and verify it can start a fresh run.
+4. Open the student's Haidh calendar. Probable days after confirmed Haidh must appear across **calendar days**, including weekends/non-teaching days, until the ruling maximum or stopping evidence. They remain read-only derivation until confirmed. A probable configured teaching-day cell may display in the register even when that date is below threshold/future; it must not enter Attendance % until the day is a resolved qualifying Maktab day.
+5. Compare individual Attendance and the term register for the same student. Both must agree even when the stopping Maktab log falls **before the displayed term**.
+6. Confirm reporting is explicit: **Active**, **Haidh** (with probable count where relevant), **Absent**, and Attendance %. Do not accept wording that calls Haidh days “Present”.
+7. On an in-progress current Maktab day with no student evidence, confirm today does not inflate Attendance % and does not extend the no-log warning streak. A real log today must immediately count Active and reset the streak.
+8. Confirm future predictions remain planned exact-date marks but do not seed probable propagation. Probable dates must not be treated as stored evidence by the calendar's Confirm/Predict decision.
+9. Run `node tests/verify_v4213_attendance_model.mjs`, `node tests/verify_attendance_derived.mjs`, cumulative V4.2.11.x/V4.2.12.x harnesses, `verify_build_stamp.mjs`, `verify_syntax.mjs`, and `run-all.mjs`.
+
+## V4.2.12.1 — SUPERSEDED BY V4.2.13
 
 1. **No migration and no Worker deployment.** Overlay on V4.2.12 and hard-refresh until the page/cache key reads **v4.2.12.1**.
 2. Desktop/tablet: open each Quick Log type. Confirm row 1 is `Type : Student Name`, row 2 is the compact date, and **Save** is narrower with **Detail** beside it.
