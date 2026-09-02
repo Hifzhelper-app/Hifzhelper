@@ -28,15 +28,15 @@ check('Attendance screen uses register host rather than the old day-card host cl
 check('register API route is wired front to back',
   /apiGetMaktabRegister/.test(api) && /\/maktab\/attendance-register/.test(api)
   && /handleMaktabRegister/.test(workerIndex) && /export async function handleMaktabRegister/.test(workerAtt));
-check('register groups teaching-day columns beneath merged Maktab-week headings',
+check('register groups teaching-day columns beneath merged Maktab-week/date-range headings',
   /rowspan="2">Student/.test(page) && /colspan="\$\{count\}"/.test(page)
-  && /mkregisterWeekLabel|mkregWeekLabel/.test(page) && /`Week \$\{mkregShortDate\(a\)\}/.test(page) && /Mon/.test(page) && /Tue/.test(page));
+  && /mkregisterWeekLabel|mkregWeekLabel/.test(page) && /mkregShortDate\(a\)/.test(page) && /Mon/.test(page) && /Tue/.test(page));
 check('register presents one student roster and clicking a name opens individual attendance',
   /class="mkregister-student"/.test(page) && /openMaktabAttendancePage\(student, data\.today\)/.test(page));
-check('present is a green tick, haidh is the shared haidh icon, and blank remains the absence visual',
-  /iconHtml\('check'\)/.test(page) && /iconHtml\('haidh'\)/.test(page)
-  && /mkregister-status-present/.test(css) && /color: var\(--color-success\)/.test(css)
-  && /mkregister-status-haidh[\s\S]*#FFD400/.test(css));
+check('present and haidh remain compact green checks while blank remains the absence visual',
+  /mkregister-status-present" aria-hidden="true">✓/.test(page) && /iconHtml\('check'\)/.test(page)
+  && /mkregister-status-present/.test(css) && /#78BE3F/.test(css)
+  && /mkregister-status-haidh/.test(css) && !/iconHtml\('haidh'\)/.test(page));
 check('student column and two header rows are sticky and weekly groups are separated',
   /mkregister-student-cell[\s\S]*position: sticky; left: 0/.test(css)
   && /mkregister-week-head[\s\S]*position: sticky; top: 0/.test(css)
@@ -65,16 +65,17 @@ check('predicted haidh does not itself trigger the promotion helper',
 check('teacher Maktab attendance can show the Haidh calendar before first promotion, while PJ remains gated',
   /const teacherMaktabEdit = typeof logCtxIsMaktab/.test(haidhPage)
   && /!\(d\.track_haidh \|\| teacherMaktabEdit\)/.test(haidhPage));
-check('V4.2.11 page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.11/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.11'/.test(sw));
+check('V4.2.11-or-later page/cache keys agree',
+  /js\/app\.js\?v=4\.2\.11(?:\.\d+)?/.test(html)
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.11(?:\.\d+)?'/.test(sw));
 check('only served files edited in this release carry V4.2.11 headers among the pinned set',
-  /^\/\* Hifzhelper build 4\.2\.11 \| css\/admin\.css \*\//.test(adminCss)
-  && /^\/\* Hifzhelper build 4\.2\.11 \| css\/detail-pages\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.11 \| js\/adminPage\.js \*\//.test(admin)
+  /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/admin\.css \*\//.test(adminCss)
+  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/detail-pages\.css \*\//.test(css)
+  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.11 \| js\/api\.js \*\//.test(api)
-  && /^\/\* Hifzhelper build 4\.2\.11 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
-  && /^\/\* Hifzhelper build 4\.2\.11 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.11 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
+  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/maktabAttendancePage\.js \*\//.test(page)
+  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/sw\.js \*\//.test(sw));
 check('no new migration was introduced for gender/track_haidh',
   fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
 

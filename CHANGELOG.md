@@ -26,6 +26,44 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.11.2 — Attendance register + student Attendance header refinement (2026-09-02)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/auth.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `worker/src/maktabAttendance.js`, `tests/verify_v42112_ui.mjs` (new), `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_nav.mjs`, `tests/verify_v3742_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**
+
+1. **The Attendance register is visually simplified.** The retired term/date navigation strip and its left/right arrows are removed. The current/nearest term still supplies the register data, and when today is inside it the current Maktab week is automatically positioned beside the sticky identity columns. Weekly merged headers now read only the date range (for example **31 Aug – 3 Sep**) — the word **Week** is removed. A strong horizontal rule beneath the weekday row separates the two-row header from student data.
+2. **Status marks are lighter and easier to scan.** Present is now a **bold lime-green text tick** (`✓`), not an SVG. Haidh no longer uses the yellow Haidh disk; it reuses the previous thin green Present check. Blank completed qualifying Maktab-day cells remain absent, and future/non-Maktab-day cells remain muted.
+3. **Attendance % sits immediately after Student.** The register adds a sticky **Attendance %** column after the sticky student-name column. The Worker does not invent a new percentage: `summarizeAttendancePeriod()` is shared by both the individual Attendance endpoint and the register response, so Haidh/present/absence and period-day treatment cannot drift between the two screens.
+4. **Individual Attendance header is consolidated.** The separate page-title text is removed. The white header card now reads **Attendance — Student Name** in Maktab teacher/admin context (plain **Attendance** for the student's own page), and on tablet/desktop that header is capped to the same 50% width as the Attendance and Haidh cards below. The V4.2.11.1 Monday-first/full-width/stale-state Haidh calendar work is preserved unchanged.
+5. **Hamburger menu order is updated without reordering Home tiles.** Admin primary order is **Home → Maktab → Attendance → Student Management → Maktab Settings → Calendar**. Role-ineligible items are omitted naturally; all other menu items keep their existing relative order. The Home tile grid deliberately retains its previous ordering because the request was for menu order, not a Home redesign.
+6. **Version discipline preserved.** Only served files actually edited in this patch receive a `4.2.11.2` top build header: `css/detail-pages.css`, `js/auth.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, and `js/sw.js`. `index.html` and the service-worker precache use the shared 4.2.11.2 page/cache key; untouched served-file headers remain at their prior last-edit versions.
+
+**Deployment:** deploy the changed Worker file first, then the Pages/frontend files, then hard-refresh. **No D1 migration.**
+
+**Regression coverage:** `verify_v42112_ui.mjs` pins all V4.2.11.2 visual/structural requirements; `verify_v42111_register_data.mjs` dynamically proves the register's percentage matches the individual Attendance endpoint for the same student/period while preserving real Present/Haidh cell data. Historical V4.2.11/V4.2.11.1 and nav harnesses are release-forwarded only where this release intentionally supersedes their old header/icon/menu expectations.
+
+**Verification in this build container:** final counts are recorded in `TESTING.md`.
+
+---
+
+## V4.2.11.1 — Student Management + Haidh calendar polish (2026-09-02)
+
+**Files touched:** `css/admin.css`, `css/detail-pages.css`, `js/adminPage.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `index.html`, `js/sw.js`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42111_ui.mjs` (new), `tests/verify_v42111_register_data.mjs` (new), `tests/verify_v4292_ui.mjs`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no worker, schema or migration change.**
+
+1. **Register is forest green everywhere in Student Management.** The desktop inline registration row and mobile Register-a-student card now use the existing `--palette-evergreen` (`#344C3D`) token. The app-wide `--color-success` token is deliberately unchanged so attendance ticks, success messages and other semantic-success UI keep their existing colour.
+2. **Blank Group now reads `None`.** Every Student Management group selector now displays **None** when its stored group value is blank. The underlying value remains the same empty string, so there is no data-model/API/schema change.
+3. **The Haidh calendar is larger and Monday-first.** The Attendance card now owns the calendar width directly instead of applying the shared `.screen-content` 30/50% cap a second time. Calendar navigation, weekday headings, date grid and the `N days selected` pill all use the full available calendar width. Weekday headings run **Mon → Sun**, with the month offset calculated from Monday so dates sit under the correct weekday column.
+4. **No previous-student Haidh flash.** Opening another student's Attendance page clears and hides the shared calendar synchronously before any async read. The calendar is revealed only after that student's own Haidh rows have loaded, and a render-generation guard discards any older in-flight student response.
+5. **Current-term Attendance opens at the current Maktab week.** The term register was correctly rendering the whole term but initially parked at the oldest week, which made current attendance appear missing when the current week was several horizontal screens to the right. When today's date falls inside the selected term, the register now automatically scrolls the current Maktab week's first teaching day beside the sticky Student column. Older weeks remain available by scrolling left; previous/future terms retain their natural start position. The attendance source/model is unchanged.
+6. **Version discipline preserved.** Only served files actually edited by this patch receive a `4.2.11.1` top build header: `css/admin.css`, `css/detail-pages.css`, `js/adminPage.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, and `js/sw.js`. `index.html` and the service-worker precache use the 4.2.11.1 page/cache key; untouched served-file headers remain at their previous last-edit versions.
+
+**Deployment:** apply **after V4.2.11**. No Worker deployment or D1 migration is required for this follow-up. If V4.2.11 itself has not yet been deployed, deploy its Worker/frontend changes first, then overlay this V4.2.11.1 package and hard-refresh.
+
+**Regression coverage:** dependency-free `verify_v42111_ui.mjs` pins the forest-green Register styling, `None` display text with unchanged blank group value, full-width Haidh calendar/selection band, Monday-first weekday alignment, stale-calendar reset/generation guard, current-week register positioning, and 4.2.11.1 page/cache/header discipline. `verify_v42111_register_data.mjs` dynamically proves the register endpoint still emits log-derived Present and confirmed Haidh cell states for the current week. The V4.2.11 and V4.2.9.2 harnesses are release-forwarded for this follow-up without weakening their functional assertions.
+
+**Verification in this build container:** final counts are recorded in `TESTING.md`.
+
+---
+
 ## V4.2.11 — Attendance register grid + Female/Haaidha registration (2026-09-02)
 
 **Files touched:** `index.html`, `css/admin.css`, `css/detail-pages.css`, `js/adminPage.js`, `js/api.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `worker/src/admin.js`, `worker/src/attendance.js`, `worker/src/index.js`, `worker/src/maktabAttendance.js`, `tests/verify_v3761_haidh_predictions.mjs`, `tests/verify_v4210_ui.mjs`, `tests/verify_v4211_ui.mjs` (new), `tests/verify_v4292_ui.mjs`, `SCHEMA.md`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**

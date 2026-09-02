@@ -27,7 +27,7 @@ check('mobile card contains Role, Group and Status controls',
   /class="admin-mobile-register-options"[\s\S]*id="admin_new_role"[\s\S]*id="admin_new_group"[\s\S]*id="admin_new_active" checked/.test(js));
 check('mobile Register button is a dedicated final action',
   /class="admin-mobile-register-actions"[\s\S]*id="adminRegisterBtn">Register<\/button>/.test(js)
-  && /\.admin-mobile-register-actions \.admin-register-btn \{[\s\S]*background: var\(--color-success\);/.test(css));
+  && /\.admin-mobile-register-actions \.admin-register-btn \{[\s\S]*background: var\(--palette-evergreen\);/.test(css));
 check('mobile card CSS is contained inside the phone breakpoint',
   /@media \(max-width: 767px\)[\s\S]*\.admin-mobile-register-card \{[\s\S]*background: var\(--color-surface\);/.test(css));
 check('desktop registration row is retained',

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.11.2 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -57,6 +57,11 @@ let haidhCalViewMonth = null; // 0-indexed, matches JS Date
 let haidhCalAttendance = {};  // date (YYYY-MM-DD) -> 'haidh' | 'predicted-haidh'
 let haidhRangeStart = null;   // pending range being built, not yet saved
 let haidhRangeEnd = null;
+// V4.2.11.1: each full calendar render owns a generation. If a teacher
+// switches students while an older attendance request is still in flight,
+// that older result is discarded instead of repainting the new student's
+// calendar with stale dates for a frame.
+let haidhCalRenderGeneration = 0;
 
 function haidhTodayISO(){
   // V3.78.0: the maktab's day when the timezone is set (everyone sees
@@ -151,7 +156,7 @@ function haidhFormatMonthLabel(year, month){
   return new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
-async function loadHaidhCalAttendance(){
+async function loadHaidhCalAttendance(expectedGeneration){
   // V3.40.3 bug fix: apiGetAttendance() already resolves directly to the
   // array -- worker/src/index.js's respond() always sends result.data as
   // the top-level response body, so there's no extra .data wrapper to
@@ -160,10 +165,36 @@ async function loadHaidhCalAttendance(){
   // nothing ever showed on the calendar (confirmed live in console:
   // apiGetAttendance() itself returns the real rows correctly).
   const data = await haidhCalClient().get();   // V3.76.0: routed by context
-  haidhCalAttendance = {};
+  const nextAttendance = {};
   (data || []).forEach(row => {
-    if(row.status === 'haidh' || row.status === 'predicted-haidh') haidhCalAttendance[row.date] = row.status;
+    if(row.status === 'haidh' || row.status === 'predicted-haidh') nextAttendance[row.date] = row.status;
   });
+  if(expectedGeneration != null && expectedGeneration !== haidhCalRenderGeneration) return false;
+  haidhCalAttendance = nextAttendance;
+  return true;
+}
+
+// V4.2.11.1: showScreen() reveals Attendance before its async reads finish.
+// Clear the previous student's calendar synchronously on entry so the old
+// month/marks can never flash while the current student's data is loading.
+function resetHaidhCalendarVisualState(){
+  haidhCalRenderGeneration++;
+  haidhCalAttendance = {};
+  haidhRangeStart = null;
+  haidhRangeEnd = null;
+  const block = document.getElementById('attHaidhBlock');
+  if(block) block.classList.add('hidden');
+  const grid = document.getElementById('haidhCalGrid');
+  if(grid) grid.innerHTML = '';
+  const weekdays = document.getElementById('haidhCalWeekdays');
+  if(weekdays) weekdays.innerHTML = '';
+  const month = document.getElementById('haidhCalMonthLabel');
+  if(month) month.textContent = '';
+  const range = document.getElementById('haidhRangeBar');
+  if(range) range.classList.add('hidden');
+  const actions = document.getElementById('haidhRangeActions');
+  if(actions) actions.classList.add('hidden');
+  haidhHideDecision();
 }
 
 function haidhPendingRangeBounds(){
@@ -340,7 +371,7 @@ function renderHaidhCalGrid(){
 
   const weekdaysEl = document.getElementById('haidhCalWeekdays');
   if(!weekdaysEl.childElementCount){
-    ['S','M','T','W','T','F','S'].forEach(d => {
+    ['M','T','W','T','F','S','S'].forEach(d => {
       const span = document.createElement('span');
       span.textContent = d;
       weekdaysEl.appendChild(span);
@@ -351,7 +382,7 @@ function renderHaidhCalGrid(){
   gridEl.innerHTML = '';
 
   const firstOfMonth = new Date(haidhCalViewYear, haidhCalViewMonth, 1);
-  const startOffset = firstOfMonth.getDay(); // 0 = Sunday
+  const startOffset = (firstOfMonth.getDay() + 6) % 7; // Monday-first Maktab week
   const daysInMonth = new Date(haidhCalViewYear, haidhCalViewMonth + 1, 0).getDate();
   const daysInPrevMonth = new Date(haidhCalViewYear, haidhCalViewMonth, 0).getDate();
 
@@ -453,16 +484,22 @@ function attPageClient(){
 let attCustomPeriod = null;   // { from, to } while the custom option is applied
 
 async function renderAttendancePage(param){
+  // V4.2.11.1: clear/hide the shared Haidh calendar before the first await.
+  // Otherwise showScreen() can expose the student viewed previously until
+  // the new student's attendance request returns.
+  resetHaidhCalendarVisualState();
   if(typeof ensureMaktabCalYear === 'function'){
     const y = parseInt(maktabTodayISO().slice(0, 4));
     await Promise.all([ensureMaktabCalYear(String(y)), ensureMaktabCalYear(String(y - 1))]);
   }
   const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
   document.getElementById('attendanceHeaderIcon').innerHTML = iconHtml('attendance');
-  // V4.2.2 (user): "Attendance" is the page title above the card now, so
-  // the card carries only WHOSE attendance this is — her name alone, on
-  // one line. In the PJ there is no name to show, so it stays "Mine".
-  document.getElementById('attendanceTitle').textContent = inMaktab ? logCtxStudentName() : 'Mine';
+  // V4.2.11.2: keep the page identity in the same white header row as the
+  // student name. Teacher/admin maktab views name the student; a student's
+  // own attendance page simply reads Attendance.
+  document.getElementById('attendanceTitle').textContent = inMaktab
+    ? `Attendance — ${logCtxStudentName()}`
+    : 'Attendance';
   // V3.88.0 (user schematic): the haidh card heading carries the name
   const hTitle = document.getElementById('haidhDetailTitle');
   if(hTitle) hTitle.textContent = 'Haidh: ' + (inMaktab ? logCtxStudentName() : (typeof currentUser !== 'undefined' && currentUser && currentUser.name) || '');
@@ -470,18 +507,19 @@ async function renderAttendancePage(param){
   attCustomPeriod = null;   // a fresh visit always starts on the default period
   // (V3.86.0: the inline absent list is gone — nothing to reset here)
   wireAttendancePage();
-  await loadAttendancePeriod();
+  const showHaidhCalendar = await loadAttendancePeriod({ deferHaidhReveal: true });
 
-  // the calendar below, for haa'idah only — attHaidhBlock is toggled by
-  // loadAttendancePeriod from the worker's track_haidh, and the calendar
-  // itself renders exactly as it always has.
-  if(!document.getElementById('attHaidhBlock').classList.contains('hidden')){
+  // V4.2.11.1: on a fresh student visit keep the calendar hidden until
+  // this student's own attendance marks have loaded. That removes the
+  // stale-student flash completely rather than replacing it with a blank
+  // half-render while the calendar request is still in flight.
+  if(showHaidhCalendar){
     await renderHaidhDetailScreen(param);
     await renderAttHaidhRanges();
   }
 }
 
-async function loadAttendancePeriod(){
+async function loadAttendancePeriod(opts){
   const errEl = document.getElementById('attError');
   errEl.textContent = '';
   let d;
@@ -489,7 +527,7 @@ async function loadAttendancePeriod(){
     d = await attPageClient()(attCustomPeriod && attCustomPeriod.from, attCustomPeriod && attCustomPeriod.to);
   } catch(e){
     errEl.textContent = e.message;
-    return;
+    return false;
   }
   attPageData = d;
   // V3.88.0 (user schematic): the heading names the period kind and the
@@ -515,7 +553,14 @@ async function loadAttendancePeriod(){
   // on that confirmed mark; the student's own page still hides this
   // calendar until track_haidh is actually true.
   const teacherMaktabEdit = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
-  document.getElementById('attHaidhBlock').classList.toggle('hidden', !(d.track_haidh || teacherMaktabEdit));
+  const showHaidhCalendar = !!(d.track_haidh || teacherMaktabEdit);
+  const haidhBlock = document.getElementById('attHaidhBlock');
+  if(opts && opts.deferHaidhReveal){
+    haidhBlock.classList.add('hidden');
+  } else {
+    haidhBlock.classList.toggle('hidden', !showHaidhCalendar);
+  }
+  return showHaidhCalendar;
 }
 let attPageData = null;
 
@@ -572,6 +617,7 @@ function wireAttendancePage(){
 }
 
 async function renderHaidhDetailScreen(param){
+  const renderGeneration = ++haidhCalRenderGeneration;
   document.getElementById('haidhDetailHeaderIcon').innerHTML = iconHtml('haidh');
   document.getElementById('haidhCalError').textContent = '';
   // V3.40.2: a pending, unsaved selection from a previous visit to this
@@ -591,9 +637,13 @@ async function renderHaidhDetailScreen(param){
   haidhCalViewYear = y;
   haidhCalViewMonth = m - 1;
   try{
-    await loadHaidhCalAttendance();
+    const current = await loadHaidhCalAttendance(renderGeneration);
+    if(!current || renderGeneration !== haidhCalRenderGeneration) return;
     renderHaidhCalGrid();
+    // reveal only after THIS student's marks are ready; this prevents the
+    // last-viewed student's state (or even an empty half-render) flashing.
+    document.getElementById('attHaidhBlock').classList.remove('hidden');
   } catch(e){
-    showBanner("Couldn't load the Haidh calendar: " + e.message);
+    if(renderGeneration === haidhCalRenderGeneration) showBanner("Couldn't load the Haidh calendar: " + e.message);
   }
 }

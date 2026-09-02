@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.9 | js/auth.js */
+/* Hifzhelper build 4.2.11.2 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -105,57 +105,57 @@ function isTeachingProfile(){
   return currentUser.role === 'teacher' || currentUser.role === 'admin';
 }
 
-// V3.74.2: the menu is ordered in THREE GROUPS, confirmed 2026-08-26:
-//   1  Home, Maktab, Maktab Settings, Admin   — where you work
-//   2  Surahs in my Heart, Juz Tracker, Timer — personal tools
-//   3  Refresh, Log out                        — session actions (added by
-//                                                the caller, not here)
-//
-// Built as groups rather than one flat ordered list because most items are
-// role-gated: a student sees group 1 as Home alone. Emitting a divider per
-// gap would leave her a stray line under a single item, so empty groups
-// are dropped and dividers only appear BETWEEN surviving ones.
+// V4.2.11.2: primary menu order is now explicit and role-aware:
+// Home → Maktab → Attendance → Student Management → Maktab Settings →
+// Calendar. Items a role cannot use are simply omitted; every other item
+// keeps its existing relative order in the personal-tools/session groups.
 function visibleNavGroups(){
   const hidePJ = isTeachingProfile();
   const byId = (id) => NAV_ITEMS.find(x => x.id === id);
   const keep = (item) => item && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(item.id));
 
-  // Home, Timer, Refresh and Log out are not in NAV_ITEMS — they are not
-  // screens (Home is a tile grid, Timer a floating panel, the other two
-  // actions), so they are marked here and rendered from their own ids.
   const g1 = [{ id: 'home', label: 'Home', icon: 'home', raw: 'homeDropdownBtn' }];
   if(isTeachingProfile()) g1.push(MAKTAB_SUMMARY_NAV_ITEM);
-  if(currentUser.role === 'admin') g1.push(MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM);
+  if(isTeachingProfile()) g1.push(MAKTAB_ATTENDANCE_NAV_ITEM);
+  else g1.push(ATTENDANCE_NAV_ITEM);
+  if(currentUser.role === 'admin') g1.push(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM);
+  g1.push(MAKTAB_CALENDAR_NAV_ITEM);
 
-  // V3.99.0: the label follows the role — "Kaaba puzzle" in the maktab
   const g2 = [byId('sih'), byId('juzTracker')].filter(keep)
     .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
   g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
 
-  // The student's own Maktab Journal and the PJ screens keep their place
-  // among the personal tools — they are hers, not maktab machinery.
-  const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id));
+  // Personal journal destinations keep their established order. Attendance
+  // and Calendar moved to the primary group above and must not be duplicated.
+  const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker', 'attendancePage'].includes(x.id));
   if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
-  // V3.98.0: teachers/admins get the MAKTAB attendance screen under the
-  // same label; students keep their own page exactly as before.
-  if(isTeachingProfile()) g3.push(MAKTAB_ATTENDANCE_NAV_ITEM);
-  else if(!(hidePJ && HIDDEN_PJ_NAV_IDS.has(ATTENDANCE_NAV_ITEM.id))) g3.push(ATTENDANCE_NAV_ITEM);   // V3.80.0: every student, not just haa'idah
-  g3.push(MAKTAB_CALENDAR_NAV_ITEM);   // V3.87.0: the maktab calendar, read-only for students
 
   const g4 = [
     { id: 'refresh', label: 'Refresh', icon: 'refresh', raw: 'refreshBtn' },
-    { id: 'switchAccount', label: 'Switch account', icon: 'switchAccount', raw: 'switchAccountBtn' },   // V3.77.0 (j)
+    { id: 'switchAccount', label: 'Switch account', icon: 'switchAccount', raw: 'switchAccountBtn' },
     { id: 'logout', label: 'Log out', icon: 'logout', raw: 'logoutBtn' },
   ];
-  // g3 (the PJ screens) folds into the personal-tools group; a student
-  // otherwise gets two adjacent groups of her own things.
   return [g1.filter(Boolean), g2.concat(g3), g4].filter(g => g.length);
 }
 
-// Flat list, order preserved — kept for callers that just want the items
-// (the Home tile grid, and every existing test).
+// Flat screen list for the Home tile grid. V4.2.11.2 changes the HAMBURGER
+// menu order only; the user's "others remain as is" means the Home tiles keep
+// their established order instead of inheriting the menu reshuffle.
 function visibleNavItems(){
-  return visibleNavGroups().flat();
+  const hidePJ = isTeachingProfile();
+  const byId = (id) => NAV_ITEMS.find(x => x.id === id);
+  const keep = (item) => item && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(item.id));
+  const out = [];
+  if(isTeachingProfile()) out.push(MAKTAB_SUMMARY_NAV_ITEM);
+  if(currentUser.role === 'admin') out.push(MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM);
+  out.push(...[byId('sih'), byId('juzTracker')].filter(keep)
+    .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x));
+  out.push(...NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker'].includes(x.id)));
+  if(!hidePJ) out.push(MAKTAB_JOURNAL_NAV_ITEM);
+  if(isTeachingProfile()) out.push(MAKTAB_ATTENDANCE_NAV_ITEM);
+  else out.push(ATTENDANCE_NAV_ITEM);
+  out.push(MAKTAB_CALENDAR_NAV_ITEM);
+  return out;
 }
 
 function renderNavItemsInto(containerId, extraItemsHtml){

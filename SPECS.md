@@ -127,6 +127,22 @@ Newest first.
 
 ---
 
+## V4.2.11.2 — Attendance register scanability + shared percentage
+
+**Register header.** The overview has no separate term-navigation strip. The current/nearest term is the register period and, when today lies inside it, the current Maktab week is brought into view automatically. Each weekly merged heading is date range only (`31 Aug – 3 Sep`), followed by narrow weekday headings. A strong horizontal rule under the weekday row closes the header block.
+
+**Identity columns.** `Student` remains the first sticky column. `Attendance %` is the second sticky column. It is not a frontend calculation and not a second attendance rule: the Worker exposes one `summarizeAttendancePeriod()` helper and both the individual Attendance endpoint and register response use it. Therefore the percentage has exactly the same meaning on both surfaces.
+
+**Status glyphs.** Present is a bold lime-green **text** `✓`. Haidh is the former thin green Present check; the yellow Haidh icon is retired from the register grid only. Blank completed qualifying Maktab-day cells still mean absent; future/non-Maktab-day cells remain muted/unresolved as before.
+
+**Individual Attendance header.** The standalone `Attendance` page title above the cards is removed. The normal white header row carries both page and identity (`Attendance — Name` in teacher/admin Maktab context), and at the desktop breakpoint it shares the same 50% width as the cards below. The V4.2.11.1 Haidh calendar contract — full available card width, Monday-first alignment, full-width selected-days pill, and no stale previous-student paint — remains authoritative.
+
+**Menu.** The hamburger's primary role-aware sequence is **Home, Maktab, Attendance, Student Management, Maktab Settings, Calendar**. Unavailable role items are omitted; all later items keep their existing relative order. Home tiles are not reordered by this menu-only request.
+
+**Deployment boundary.** Worker + frontend change, no D1 migration. The Worker changes only the register response/read calculation; no stored attendance or student schema changes.
+
+---
+
 ## V4.2.11 — Attendance register grid + Haaidha profile promotion
 
 **Goal.** Replace the Attendance overview's repeated per-day name lists with a register that can be scanned across weeks, while keeping attendance derivation and the individual editing page as the source of truth. At the same time, make Haaidha eligibility manageable at registration and self-correcting when a teacher records the first real Haidh.

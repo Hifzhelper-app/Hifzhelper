@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11 | css/admin.css */
+/* Hifzhelper build 4.2.11.1 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -182,6 +182,15 @@ button.secondary.danger {
 /* the register row + its match hint, and the just-created highlight */
 .admin-row-new td { background: var(--color-accent-soft, #D0DBE7); }
 .admin-row-new .admin-register-btn { width: auto; padding: 6px 14px; font-size: 13px; }
+/* V4.2.11.1: Register is an action, not a success-state indicator.
+   Keep it forest green on both the desktop inline row and the mobile card
+   without changing --color-success used by attendance/ticks elsewhere. */
+button.secondary.admin-register-btn {
+  background: var(--palette-evergreen);
+  border-color: var(--palette-evergreen);
+  color: #fff;
+  font-weight: 600;
+}
 .admin-row-match td, .admin-row-newerr td { border-bottom: none; padding-top: 0; }
 .admin-match-actions { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-sm); }
 .admin-match-actions .secondary { width: auto; padding: 6px 12px; font-size: 13px; }
@@ -400,8 +409,8 @@ button.secondary.danger {
   .admin-mobile-register-actions .admin-register-btn {
     width: auto;
     min-width: 110px;
-    background: var(--color-success);
-    border-color: var(--color-success);
+    background: var(--palette-evergreen);
+    border-color: var(--palette-evergreen);
     color: #fff;
     font-weight: 600;
     padding: 7px 16px;

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11 | js/adminPage.js */
+/* Hifzhelper build 4.2.11.1 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -129,7 +129,7 @@ function renderAdminUsersList(){
         <label><span>Role</span><select class="admin-inline" id="admin_new_role">
           <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
         </select></label>
-        <label><span>Group</span><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></label>
+        <label><span>Group</span><select class="admin-inline" id="admin_new_group" disabled><option value="">None</option></select></label>
         <label><span>Status</span><span class="admin-status admin-mobile-new-status"><input type="checkbox" class="admin-inline" id="admin_new_active" checked><span>Active</span></span></label>
       </div>
       <div class="admin-mobile-register-profile">
@@ -168,7 +168,7 @@ function renderAdminUsersList(){
         <td data-label="Role"><select class="admin-inline" id="admin_new_role">
           <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
         </select></td>
-        <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">No group</option></select></td>
+        <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">None</option></select></td>
         <td data-label="Status"><span class="admin-new-profile-inline">
           <label class="admin-register-check"><input type="checkbox" id="admin_new_female"><span>Female</span></label>
           <label class="admin-register-check hidden" id="admin_new_haidh_wrap"><input type="checkbox" id="admin_new_haidh"><span>Haaidha</span></label>
@@ -200,7 +200,7 @@ function renderAdminUsersList(){
     const gsel = document.getElementById('admin_new_group');
     const fillNew = (groups) => {
       if(!gsel) return;
-      gsel.innerHTML = '<option value="">No group</option>' + groups.filter(g => !g.retired).map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
+      gsel.innerHTML = '<option value="">None</option>' + groups.filter(g => !g.retired).map(g => `<option value="${g.id}">${esc(g.name)}</option>`).join('');
       gsel.disabled = false;
     };
     if(adminGroupsCache) fillNew(adminGroupsCache);
@@ -315,7 +315,7 @@ function renderAdminUsersList(){
       const fill = (groups) => {
         if(!sel) return;
         sel.innerHTML = '';
-        [{ id: '', name: 'No group' }].concat(groups.filter(g => !g.retired || g.id === u.group_id)).forEach(g => {
+        [{ id: '', name: 'None' }].concat(groups.filter(g => !g.retired || g.id === u.group_id)).forEach(g => {
           const o = document.createElement('option');
           o.value = String(g.id);
           o.textContent = g.name + (g.retired ? ' (retired)' : '');

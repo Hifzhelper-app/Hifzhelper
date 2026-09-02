@@ -58,8 +58,8 @@ check('admin counts as a teaching profile (isTeacherOrAbove parity)',
   /function isTeachingProfile\(\)\{[\s\S]{0,160}role === 'teacher'[\s\S]{0,60}role === 'admin'/.test(auth));
 // V3.80.0: the item became Attendance, for EVERY student — the
 // trackHaidh nav gate went with the rename; the hidePJ gate remains.
-check('the attendance item is gated on hidePJ only (every student gets it)',
-  /if\(!\(hidePJ && HIDDEN_PJ_NAV_IDS\.has\(ATTENDANCE_NAV_ITEM\.id\)\)\) g3\.push\(ATTENDANCE_NAV_ITEM\)/.test(auth)
+check('the attendance item is primary-nav for every student and role-gated by destination only',
+  /if\(isTeachingProfile\(\)\) g1\.push\(MAKTAB_ATTENDANCE_NAV_ITEM\);[\s\S]*else g1\.push\(ATTENDANCE_NAV_ITEM\)/.test(auth)
   && !/currentUser\.trackHaidh &&/.test(auth));
 check('Maktab Journal goes to students, not teaching profiles',
   /if\(!hidePJ\) g3\.push\(MAKTAB_JOURNAL_NAV_ITEM\)/.test(auth));
@@ -70,8 +70,8 @@ check('the student Maktab Journal sends no student_id — it cannot ask for anyo
 check('and the worker refuses a non-teacher who names someone else',
   /if \(!isTeacherOrAbove\(auth\) && studentId !== auth\.id\) return \{ error: 'Not authorized', status: 403 \}/.test(read('worker/src/maktabLog.js')));
 check('teacher/admin still get the Maktab item', /MAKTAB_SUMMARY_NAV_ITEM/.test(auth));
-check('admin still gets Maktab Settings and Admin',
-  /MAKTAB_SETTINGS_NAV_ITEM, ADMIN_NAV_ITEM/.test(auth));
+check('admin still gets Student Management and Maktab Settings in the requested order',
+  /g1\.push\(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM\)/.test(auth));
 
 // Drive the REAL visibleNavItems per role rather than trusting the regexes.
 {

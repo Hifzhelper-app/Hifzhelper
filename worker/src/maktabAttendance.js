@@ -131,6 +131,18 @@ export function deriveStudentAttendance(maktabDays, loggedDates, haidhDates, rul
   return { statuses, noLogStreak: streak, flagged: absenceFlagDays > 0 && streak >= absenceFlagDays };
 }
 
+// V4.2.11.2: one shared period summary for BOTH the individual Attendance
+// page and the register's Attendance % column. Keeping the percentage in
+// this helper prevents the two surfaces from quietly developing different
+// meanings later.
+export function summarizeAttendancePeriod(maktabDays, statuses, from, to) {
+  const periodDays = maktabDays.filter(d => d >= from && d <= to);
+  const absent_dates = periodDays.filter(d => statuses[d] === 'absent');
+  const present_days = periodDays.length - absent_dates.length;
+  const percent = periodDays.length ? Math.round((present_days / periodDays.length) * 100) : null;
+  return { periodDays, absent_dates, present_days, percent };
+}
+
 // GET /maktab/attendance?date=YYYY-MM-DD  (teacher+)
 // One date's derived status for every active student, for the summary,
 // plus the attention flag. The summary already knows who logged what
@@ -262,10 +274,8 @@ export async function handleAttendancePage(request, env, auth) {
     today, absentRows.map(r => r.date)
   );
 
-  const periodDays = allMaktabDays.filter(d => d >= from && d <= to);
-  const absent_dates = periodDays.filter(d => derived.statuses[d] === 'absent');
-  const present_days = periodDays.length - absent_dates.length;   // present OR haidh, per the spec
-  const percent = periodDays.length ? Math.round((present_days / periodDays.length) * 100) : null;
+  const periodSummary = summarizeAttendancePeriod(allMaktabDays, derived.statuses, from, to);
+  const { periodDays, absent_dates, present_days, percent } = periodSummary;   // present OR haidh, per the spec
 
   // The last 3 CONFIRMED runs, newest first: consecutive calendar dates
   // of 'haidh' rows only (a prediction is a plan, not history — V3.76.1).
@@ -455,8 +465,12 @@ export async function handleMaktabRegister(request, env, auth) {
   }
 
   const [students, marks, maktabDays, logged] = await Promise.all([
-    env.DB.prepare("SELECT id, name, track_haidh FROM students WHERE role = 'student' AND active = 1 ORDER BY name").all(),
-    env.DB.prepare('SELECT student_id, date, status FROM attendance WHERE date >= ? AND date <= ?').bind(from, to).all(),
+    env.DB.prepare("SELECT id, name, track_haidh, haidh_ruling FROM students WHERE role = 'student' AND active = 1 ORDER BY name").all(),
+    // V4.2.11.2: the grid now surfaces the SAME Attendance % as the
+    // individual Attendance page. A Haidh run can begin before the current
+    // term and propagate into it, so load attendance marks across history
+    // rather than clipping them to the displayed term.
+    env.DB.prepare('SELECT student_id, date, status FROM attendance').all(),
     loadMaktabDays(env, settings.maktab_day_min),
     env.DB.prepare(
       `SELECT DISTINCT student_id, date FROM (
@@ -470,6 +484,15 @@ export async function handleMaktabRegister(request, env, auth) {
   const maktabDaySet = new Set(maktabDays);
   const loggedOn = new Set(logged.results.map(r => `${r.student_id}|${r.date}`));
   const markAt = new Map(marks.results.map(r => [`${r.student_id}|${r.date}`, r.status]));
+  const loggedByStudent = {};
+  for (const r of logged.results) (loggedByStudent[r.student_id] = loggedByStudent[r.student_id] || new Set()).add(r.date);
+  const haidhByStudent = {}, absentByStudent = {};
+  for (const r of marks.results) {
+    if (r.status === 'haidh' || r.status === 'predicted-haidh')
+      (haidhByStudent[r.student_id] = haidhByStudent[r.student_id] || []).push(r.date);
+    else if (r.status === 'absent')
+      (absentByStudent[r.student_id] = absentByStudent[r.student_id] || []).push(r.date);
+  }
 
   const weeks = [];
   for (let mon = registerMondayOf(from); mon <= to; mon = registerAddDays(mon, 7)) {
@@ -500,7 +523,23 @@ export async function handleMaktabRegister(request, env, auth) {
       }
       cells[c.date] = status;
     }
-    return { id: s.id, name: s.name, track_haidh: !!s.track_haidh, cells };
+
+    // EXACTLY the individual Attendance-page calculation: derive over the
+    // shared maktab-day truth, then count period maktab days whose derived
+    // status is not absent. Haidh therefore counts as present/excused in the
+    // same way on both screens; no second percentage formula is introduced.
+    const derived = deriveStudentAttendance(
+      maktabDays, loggedByStudent[s.id] || new Set(), haidhByStudent[s.id] || [],
+      s.haidh_ruling || 'hanafi', settings.absence_flag_days, today, absentByStudent[s.id] || []
+    );
+    const summary = summarizeAttendancePeriod(maktabDays, derived.statuses, from, to);
+
+    return {
+      id: s.id, name: s.name, track_haidh: !!s.track_haidh, cells,
+      attendance_percent: summary.percent,
+      attendance_present_days: summary.present_days,
+      attendance_maktab_days: summary.periodDays.length,
+    };
   });
 
   return { data: {
