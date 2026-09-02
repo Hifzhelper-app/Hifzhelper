@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — the maktab ATTENDANCE screen (V3.98.0, user 2026-08-31).
 //

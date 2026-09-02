@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/commentPrivacy.js */
 // ============================================================
 // Hifzhelper -- shared student-comment + privacy block
 // student_comment is the student's own performance self-assessment

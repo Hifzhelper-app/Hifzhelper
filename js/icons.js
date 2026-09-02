@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/icons.js */
 // ============================================================
 // Hifzhelper — shared icon set
 // Simple inline SVGs (line-style, currentColor) so nav items stay

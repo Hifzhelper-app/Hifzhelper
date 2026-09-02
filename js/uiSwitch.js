@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/uiSwitch.js */
 // ============================================================
 // Hifzhelper — generic switch/segmented-control component (V3.10.0)
 // Originally local to settingsScreen.js; extracted here (V3.12.0) so

@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.5 | js/maktabCalendarPage.js */
 // ============================================================
 // maktabCalendarPage.js — V3.87.0: the MAKTAB CALENDAR page (user spec,
 // 2026-08-28). INFORMATION ONLY — nothing here feeds attendance (terms
