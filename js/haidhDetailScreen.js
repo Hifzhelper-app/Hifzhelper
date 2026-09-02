@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.8 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.

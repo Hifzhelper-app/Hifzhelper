@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/pwaManifest.js */
+/* Hifzhelper build 4.2.8 | js/pwaManifest.js */
 // ============================================================
 // Hifzhelper — platform-specific Web App Manifest link
 // ============================================================

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/sabaqDhorPage.js */
+/* Hifzhelper build 4.2.8 | js/sabaqDhorPage.js */
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
 // Current as of V3.45.13
@@ -85,6 +85,12 @@ function renderSabaqDhorRows(){
   const preservedManualFrom = existingManualCb ? readSabaqDhorManualField('from') : null;
   const preservedManualTo = existingManualCb ? readSabaqDhorManualField('to') : null;
   const preservedManualChecked = existingManualCb ? existingManualCb.checked : false;
+  // V4.2.8: the empty-state picker is itself a checkable source now.
+  // Preserve its live choice if this shared grid is rebuilt.
+  const existingSdqConfirm = document.getElementById('sdq_confirm');
+  const preservedSdqJuz = document.getElementById('sdq_juz')?.value || null;
+  const preservedSdqQuarter = document.getElementById('sdq_quarter')?.value || null;
+  const preservedSdqChecked = existingSdqConfirm ? existingSdqConfirm.checked : false;
 
   // V3.21.2: sabaqDhor_sections is now ITSELF the grid (css/detail-pages.css),
   // not a plain container holding N independent per-row grids -- each row's
@@ -187,7 +193,13 @@ function renderSabaqDhorRows(){
   // Reapply preserved manual-field state to the freshly-created nodes,
   // then re-wire this row's own listeners fresh -- the previous nodes
   // (and whatever was attached to them) are gone now.
-  wireSabaqDhorQuarterPicker();   // V4.2.4: no-op unless the picker is on screen
+  const sdqJuz = document.getElementById('sdq_juz');
+  const sdqQuarter = document.getElementById('sdq_quarter');
+  const sdqConfirm = document.getElementById('sdq_confirm');
+  if(sdqJuz && preservedSdqJuz) sdqJuz.value = preservedSdqJuz;
+  if(sdqQuarter && preservedSdqQuarter) sdqQuarter.value = preservedSdqQuarter;
+  if(sdqConfirm) sdqConfirm.checked = preservedSdqChecked;
+  wireSabaqDhorQuarterPicker();   // V4.2.8: no-op unless the picker is on screen
   renderSabaqDhorManualField('from', preservedManualFrom);
   renderSabaqDhorManualField('to', preservedManualTo);
   document.getElementById('sabaqDhorManual_cb').checked = preservedManualChecked;
@@ -393,6 +405,19 @@ function compositeCheckedSabaqDhorRows(){
   if(manualFrom && manualTo){
     checked.push({ fromSurah: manualFrom.surah, fromAyah: manualFrom.ayah, toSurah: manualTo.surah, toAyah: manualTo.ayah });
   }
+  // V4.2.8 / item 72: the picker checkbox replaces the old Use button.
+  // It contributes the chosen quarter directly to the SAME composite as
+  // the derived rows and manual From/To; storage and the save path stay
+  // unchanged. Changing Juz/position while it is ticked changes the live
+  // selection, exactly like the Dhor card's confirmed picker.
+  const sdqConfirm = document.getElementById('sdq_confirm');
+  const picked = sdqConfirm && sdqConfirm.checked ? sdqBounds() : null;
+  if(picked){
+    checked.push({
+      fromSurah: picked.startSurah, fromAyah: picked.startAyah,
+      toSurah: picked.endSurah, toAyah: picked.endAyah
+    });
+  }
   if(checked.length === 0) return null;
   let from = checked[0], to = checked[0];
   for(const r of checked){
@@ -574,6 +599,13 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
     renderSabaqDhorManualField('from', null);
     renderSabaqDhorManualField('to', null);
     document.getElementById('sabaqDhorManual_cb').checked = false;
+    // V4.2.8: same duplicate-save guard for the new empty-state source.
+    // renderSabaqDhorRows deliberately preserves live picker state across
+    // incidental rebuilds, so a SUCCESSFUL save must clear its checkbox
+    // explicitly before that preservation runs. Keep Juz/position in place
+    // for convenience; only the confirmed selection resets.
+    const sdqConfirm = document.getElementById('sdq_confirm');
+    if(sdqConfirm) sdqConfirm.checked = false;
     await renderSabaqDhorScreen();
   } catch(e){
     errEl.textContent = "Couldn't save: " + e.message;
@@ -676,9 +708,10 @@ function openSurahPickerForSabaqDhorManual(side){
 // the wrong container), the picker fills the space those rows would have
 // occupied: visible exactly when it is needed, invisible when it is not.
 //
-// It is ADDITIVE to the data: it fills the From/To ayah fields through the
-// card's own setter, so the stored shape (from/to surah+ayah), the save
-// path and every downstream reader are untouched.
+// V4.2.8 keeps it ADDITIVE to the same save composite: its right-hand
+// checkbox contributes the selected structural quarter beside the derived
+// rows and the manual From/To range. Stored shape (from/to surah+ayah), the
+// save path and every downstream reader stay untouched.
 //
 // The conversion is the app's own proven helper, structuralQuarterBounds
 // (shared/data.js) — the same one the suggestion rows use. The unit's WORD
@@ -694,19 +727,26 @@ function sdqRef(){
 function sabaqDhorQuarterPickerHtml(){
   const word = typeof quarterUnitWord === 'function' ? quarterUnitWord(sdqRef()) : 'Quarter';
   const juzOpts = Array.from({ length: 30 }, (_, i) => `<option value="${i + 1}">Juz ${i + 1}</option>`).join('');
-  // structural quarters are 1-4 for every print — the ayah boundaries
-  // differ by mushaf, the count does not
-  const qOpts = Array.from({ length: 4 }, (_, i) => `<option value="${i + 1}">${word} ${i + 1}</option>`).join('');
-  return `<div class="sdq-picker" id="sabaqDhorQuarterPicker">
-      <p class="form-hint">No history yet — choose the portion she is revising.</p>
-      <div class="sdq-row">
-        <span class="sdq-field"><label class="dhor-sel-label">Juz</label><select id="sdq_juz">${juzOpts}</select></span>
-        <span class="sdq-field"><label class="dhor-sel-label">${word}</label><select id="sdq_quarter">${qOpts}</select></span>
-        <button type="button" class="secondary sdq-apply" id="sdq_apply">Use</button>
+  // V4.2.8 / item 72: the quarter dropdown takes the Dhor card's own
+  // segmented-control shape. The word remains as the field label; the
+  // control itself is position 1|2|3|4 for every mushaf.
+  const qButtons = Array.from({ length: 4 }, (_, i) =>
+    `<button type="button" class="switch-option" data-value="${i + 1}">${i + 1}</button>`).join('');
+  return `<p class="form-hint sdq-hint">No history yet — choose the portion she is revising.</p>
+      <span></span><span></span>
+      <div class="sdq-picker" id="sabaqDhorQuarterPicker">
+        <div class="sdq-row">
+          <span class="sdq-field"><label class="dhor-sel-label">Juz</label><select id="sdq_juz">${juzOpts}</select></span>
+          <span class="sdq-field sdq-position-field"><label class="dhor-sel-label">${word}</label>
+            <input type="hidden" id="sdq_quarter" value="1">
+            <div class="switch-track" id="sdq_quarter_switch"><div class="switch-thumb"></div>${qButtons}</div>
+          </span>
+        </div>
       </div>
+      <span></span>
+      <span class="checkbox-box"><input type="checkbox" id="sdq_confirm" aria-label="Confirm selected Sabaq Dhor portion"></span>
       <div class="sdq-preview" id="sdq_preview"></div>
-    </div>
-    <span></span><span></span>`;   // the block is a 3-column grid: keep the row shape
+      <span></span><span></span>`;
 }
 
 function sdqBounds(){
@@ -731,20 +771,16 @@ function sdqUpdatePreview(){
 // row re-wires itself in renderSabaqDhorRows).
 function wireSabaqDhorQuarterPicker(){
   const juzSel = document.getElementById('sdq_juz');
-  const qSel = document.getElementById('sdq_quarter');
-  const apply = document.getElementById('sdq_apply');
-  if(!juzSel || !qSel || !apply) return;   // rows exist: no picker on screen
+  const qInput = document.getElementById('sdq_quarter');
+  const confirm = document.getElementById('sdq_confirm');
+  const track = document.getElementById('sdq_quarter_switch');
+  if(!juzSel || !qInput || !confirm || !track) return;   // rows exist: no picker on screen
   juzSel.addEventListener('change', sdqUpdatePreview);
-  qSel.addEventListener('change', sdqUpdatePreview);
-  apply.addEventListener('click', () => {
-    const b = sdqBounds();
-    if(!b) return;
-    // the card's own setter, so the checkbox, the save path and the
-    // dirty-tracking behave exactly as if the range had been typed
-    renderSabaqDhorManualField('from', { surah: b.startSurah, ayah: b.startAyah });
-    renderSabaqDhorManualField('to', { surah: b.endSurah, ayah: b.endAyah });
-    const cb = document.getElementById('sabaqDhorManual_cb');
-    if(cb){ cb.checked = true; cb.dispatchEvent(new Event('change')); }
+  wireSwitch('sdq_quarter_switch', (value) => {
+    qInput.value = value;
+    renderSwitch('sdq_quarter_switch', value);
+    sdqUpdatePreview();
   });
+  renderSwitch('sdq_quarter_switch', qInput.value);
   sdqUpdatePreview();
 }

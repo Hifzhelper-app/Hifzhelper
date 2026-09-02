@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | css/journal-table.css */
+/* Hifzhelper build 4.2.8 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -258,7 +258,13 @@
    the NAME only; the cell also carries the attendance icon. */
 .maktab-student-name { font-weight: 600; }
 .maktab-student-name .maktab-name-pill {
-  display: inline-block;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   background: var(--color-accent-soft, #D0DBE7);
   border-radius: 999px;
   padding: 4px 14px;
@@ -507,16 +513,29 @@
   .maktab-summary-table .maktab-haidh-col {
     position: absolute; top: var(--space-sm); right: var(--space-md); width: auto; padding: 0;
   }
-  .maktab-summary-table .maktab-student-name { padding: 0 0 6px; }
-  /* the log lines: caption above value, the admin card's idiom */
+  .maktab-summary-table .maktab-student-name {
+    padding: 0 52px 6px 0;   /* reserve the attendance icon's corner */
+    min-width: 0;
+  }
+  /* V4.2.8 / item 68: a REAL two-column line. The flex version left the
+     value inside a table cell at its min-content width, so "Juz 28 H1"
+     could collapse to one word per line. Grid gives the value the whole
+     remaining track and keeps every caption/value pair aligned. */
   .maktab-summary-table .journal-cell {
-    padding: 4px 0; border: none; display: flex; align-items: baseline; gap: var(--space-sm);
+    padding: 4px 0;
+    border: none;
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    align-items: baseline;
+    column-gap: var(--space-sm);
+    min-width: 0;
+    white-space: normal;
   }
   .maktab-summary-table .journal-cell::before {
     content: attr(data-label);
-    flex: 0 0 92px;
     font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
     color: var(--color-ink-soft);
   }
+  .maktab-summary-table .journal-cell > * { min-width: 0; }
   .maktab-summary-table tr:last-child td { border-bottom: none; }
 }

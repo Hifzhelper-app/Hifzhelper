@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/app.js */
+/* Hifzhelper build 4.2.8 | js/app.js */
 // ============================================================
 // Hifzhelper — app bootstrap and screen routing
 // ============================================================

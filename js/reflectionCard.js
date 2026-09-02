@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.6 | js/reflectionCard.js */
+/* Hifzhelper build 4.2.8 | js/reflectionCard.js */
 // ============================================================
 // Hifzhelper -- Tadabbur/reflection card (4th card in the unified day-log
 // view, V3.6.1). The `reflections` table and apiReflections client

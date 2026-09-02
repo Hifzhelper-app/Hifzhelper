@@ -2309,3 +2309,17 @@ there is then harmless but unexercised, which is worth knowing.
 
 **Not checkable here, by design:** nothing in this delivery touches the
 schema, so there is no migration to run and no data shape to verify.
+
+
+---
+
+## V4.2.8 — device checks (items 68 + 72)
+
+After deploying the frontend, hard-refresh and confirm the login-card version reads **v4.2.8**. No worker deploy or migration is required.
+
+1. **Maktab Summary, phone width:** every student name pill is the same width. A short name such as `Ali` leaves unused space inside the same pill width; a deliberately long name stays on one line and ends with an ellipsis rather than widening the pill or wrapping. The attendance icon remains visible at the top-right and does not overlap the pill.
+2. **Summary log lines:** check values that previously broke badly — e.g. `Juz 28 H1`, `Juz 4 Q2`, `2:24–2:29`. Each stays in the right-hand value column; captions line up on the left. A genuinely long value may wrap normally, but not one word per line.
+3. **Summary `+N`:** use a day/type with multiple entries. The `+N` badge stays beside that cell's value and still opens the read-only entry peek without opening the day view.
+4. **Sabaq Dhor, student with no derived revision rows:** the empty state shows **Juz** plus a **1 | 2 | 3 | 4** segmented control and a checkbox at the right. There is no quarter dropdown and no **Use** button.
+5. **Picker semantics:** choose Juz + position, tick the right-hand checkbox, Save. The saved Sabaq Dhor range must match that structural quarter. Repeat once on a 15-line Madani student to confirm the field label follows the mushaf terminology while the control remains 1|2|3|4.
+6. **Rail regression:** on mobile and desktop/tablet, the Sabaq Dhor card must remain the same rail width as its neighbours and Dhor must not wrap below because of the picker.

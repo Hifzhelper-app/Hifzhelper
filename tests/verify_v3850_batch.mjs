@@ -380,9 +380,10 @@ check('v411: closing lands a teaching profile on the maktab summary, a student o
 check('v411: the menu\'s HOME button still goes HOME — the V3.74.1 lesson kept',
   /showScreen\('home'\);/.test(read('js/auth.js')));
 
-check('v420: the maktab summary\'s student names are light-blue pills wrapping the NAME, not the cell (the cell also holds the attendance icon)',
+check('v420/v428: the maktab summary\'s student names are light-blue pills; V4.2.8 makes every pill the same cell width and ellipsises long names',
   /nameSpan\.className = 'maktab-name-pill';/.test(read('js/maktabSummary.js'))
-  && /\.maktab-student-name \.maktab-name-pill \{\n  display: inline-block;\n  background: var\(--color-accent-soft/.test(read('css/journal-table.css')));
+  && /nameSpan\.title = stu\.name;/.test(read('js/maktabSummary.js'))
+  && /\.maktab-student-name \.maktab-name-pill \{\n  display: block;\n  width: 100%;[\s\S]*text-overflow: ellipsis;[\s\S]*background: var\(--color-accent-soft/.test(read('css/journal-table.css')));
 check('v420/v421: the admin table has the summary\'s two-part shape — a header table over a white scrolling body table',
   /<table class="admin-table admin-table-head">/.test(read('js/adminPage.js'))
   && /<div class="admin-wrap"><table class="admin-table admin-table-body">/.test(read('js/adminPage.js'))
@@ -422,19 +423,21 @@ vm.runInContext(read('shared/data.js'), dataCtx);
     /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
     && !/sabaqDhorQuarterPicker/.test(read('index.html'))
     && /id="sabaqDhorManual_from_ayah"/.test(sdSrc)
-    && /\.sdq-picker \{ grid-column: 1 \/ -1;/.test(read('css/detail-pages.css')));
-  check('v423: it FILLS the manual From/To through the card\'s own setter — the stored shape is untouched',
-    /renderSabaqDhorManualField\('from', \{ surah: b\.startSurah, ayah: b\.startAyah \}\)/.test(sdSrc)
-    && /renderSabaqDhorManualField\('to', \{ surah: b\.endSurah, ayah: b\.endAyah \}\)/.test(sdSrc));
+    && /\.sdq-picker \{ grid-column: 1; min-width: 0;/.test(read('css/detail-pages.css')));
+  check('v428: the picker is a real composite source — its checkbox contributes the selected structural quarter without changing storage shape',
+    /const sdqConfirm = document\.getElementById\('sdq_confirm'\);/.test(sdSrc)
+    && /const picked = sdqConfirm && sdqConfirm\.checked \? sdqBounds\(\) : null;/.test(sdSrc)
+    && /fromSurah: picked\.startSurah/.test(sdSrc));
   check('v423: the conversion reuses the app\'s own proven helper, not a second copy',
     /structuralQuarterBounds\(juz, q, sdqRef\(\)\)/.test(sdSrc)
     // scoped to the picker's own code: the file mentions RUB_BOUNDARIES in
     // a pre-existing COMMENT, which a blanket negative wrongly caught
     && !/RUB_BOUNDARIES\s*\[|QUARTER_BOUNDARIES\w*\s*\[/.test(sdSrc));
-  check('v423/v424: the unit WORD follows her mushaf (Quarter / Ru\'b), never hardcoded',
+  check('v423/v428: the unit WORD follows her mushaf as the field label; the position itself is the Dhor-style 1|2|3|4 switch',
     /quarterUnitWord\(sdqRef\(\)\)/.test(sdSrc)
     && /<label class="dhor-sel-label">\$\{word\}<\/label>/.test(sdSrc)
-    && /\$\{word\} \$\{i \+ 1\}/.test(sdSrc));
+    && /id="sdq_quarter_switch"/.test(sdSrc)
+    && /Array\.from\(\{ length: 4 \}/.test(sdSrc));
   // the numbers themselves, both prints
   const wq11 = dataCtx.structuralQuarterBounds(1, 1, 'waterval');
   const uq11 = dataCtx.structuralQuarterBounds(1, 1, 'uthmani');
@@ -449,9 +452,11 @@ check('v424: with NO rows the picker appears in their place; with rows it does n
   /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
   && /No history yet — choose the portion she is revising\./.test(read('js/sabaqDhorPage.js'))
   && !/Nothing to revise yet/.test(read('js/sabaqDhorPage.js')));
-check('v424: the picker is wired per render (the block is rebuilt, so listeners must be too) and no-ops when absent',
-  /wireSabaqDhorQuarterPicker\(\);   \/\/ V4\.2\.4: no-op unless the picker is on screen/.test(read('js/sabaqDhorPage.js'))
-  && /if\(!juzSel \|\| !qSel \|\| !apply\) return;   \/\/ rows exist: no picker on screen/.test(read('js/sabaqDhorPage.js')));
+check('v428: the picker is wired per render and uses the shared switch helper; the old Use button is gone',
+  /wireSabaqDhorQuarterPicker\(\);   \/\/ V4\.2\.8: no-op unless the picker is on screen/.test(read('js/sabaqDhorPage.js'))
+  && /wireSwitch\('sdq_quarter_switch'/.test(read('js/sabaqDhorPage.js'))
+  && /id="sdq_confirm"/.test(read('js/sabaqDhorPage.js'))
+  && !/id="sdq_apply"|>Use<|class="secondary sdq-apply"/.test(read('js/sabaqDhorPage.js')));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
