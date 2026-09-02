@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/dhorPage.js */
+/* Hifzhelper build 4.2.11.3 | js/dhorPage.js */
 // ============================================================
 // Hifzhelper — Dhor card (one of 4 in the unified day-log view, V3.6.1)
 // Current as of V3.38
@@ -411,7 +411,7 @@ async function renderDhorScreen(){
   document.getElementById('dhor_confirm').checked = false;
   setDhorDurationFields(null);
   dhorActivePlanId = null;
-  document.getElementById('dhor_date').value = todayISO();
+  document.getElementById('dhor_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
   document.getElementById('dhor_juz').innerHTML = Array.from({length:30}, (_,i) => `<option value="${i+1}">Juz ${i+1}</option>`).join('');
   wireDhorJuzRange();
 
@@ -1292,7 +1292,7 @@ function cancelDhorEdit(){
   dhorEditingId = null;
   teardownEditFlow('dhor');
   restoreDateFromEditSlot('dhor', 'card-dhor');
-  document.getElementById('dhor_date').value = todayISO();
+  document.getElementById('dhor_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
   document.getElementById('dhorEditTopbar').classList.add('hidden');
   document.getElementById('dhorEditBottombar').classList.add('hidden');
   document.getElementById('dhorEditPortionRO').classList.add('hidden');

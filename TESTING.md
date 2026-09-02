@@ -14,6 +14,17 @@ Base URLs:
 
 ---
 
+## V4.2.11.3 — shared log date + register ordering
+
+1. Open the unified log-detail screen. There must be one shared date above the cards. In teacher/admin Maktab context it sits to the **left of Student Search**; the Sabaq, Sabaq Dhor and Dhor cards must not show their own normal date rows.
+2. Pick a non-today date. Swipe/tap through all three cards and confirm the same date is used for each new save. Search for another student and confirm both the date and currently active card are preserved.
+3. Open a historical row for edit in each card. The historical entry's own date must still move into the edit header and be editable. Cancel/save and confirm the hidden source control returns to the shared date rather than silently resetting to today.
+4. Confirm Dhor **Plan** remains available even though its former date+Plan row was split.
+5. On a current Maktab teaching day, open Attendance with examples from each state. Row order must be **students with a log → Haidh → remaining students**. Within each group sort alphabetically by **first name**. If a student has both a log and Haidh state on the date, the log/Present state takes precedence.
+6. Run `node tests/verify_v42113_ui.mjs`, `node tests/verify_v42112_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+**Automated coverage in the build container:** V4.2.11.3 **11/11**; V4.2.11.2 **13/13**; V4.2.11.1 **12/12**; V4.2.11 **16/16**; V4.2.10 **11/11**; build/version **6/6**; served-JS syntax **36/36**. `run-all.mjs` reports **361 passed, 0 failed among reporting harnesses**. 27 older harnesses still cannot report in this checkout because `jsdom` is absent and/or their pre-existing legacy SQLite fixtures have schema drift.
+
 ## 0. One-time setup per environment
 
 Insert a test student directly via that database's D1 Console:

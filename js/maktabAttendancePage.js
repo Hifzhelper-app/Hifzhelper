@@ -1,6 +1,6 @@
-/* Hifzhelper build 4.2.11.2 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.11.3 | js/maktabAttendancePage.js */
 // ============================================================
-// Hifzhelper — Maktab Attendance register (V4.2.11.2).
+// Hifzhelper — Maktab Attendance register (V4.2.11.3).
 //
 // One roster, one existing Attendance % value, then narrow teaching-day
 // columns grouped beneath merged date-range headings. The current Maktab
@@ -35,6 +35,28 @@ function mkregMondayOf(iso){
   const d = new Date(iso + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   return d.toISOString().slice(0, 10);
+}
+
+// V4.2.11.3: current-day register order. A real log is strongest evidence
+// and therefore outranks Haidh; everyone else follows. Within each status
+// band sort by FIRST name, then full name for stable ties.
+function mkregFirstNameKey(name){
+  const full = String(name || '').trim().replace(/\s+/g, ' ');
+  return { first: (full.split(' ')[0] || '').toLocaleLowerCase(), full: full.toLocaleLowerCase() };
+}
+function mkregStudentRank(student, date){
+  const status = student && student.cells ? student.cells[date] : '';
+  if(status === 'present') return 0;
+  if(status === 'haidh') return 1;
+  return 2;
+}
+function mkregSortStudents(students, date){
+  return (students || []).slice().sort((a, b) => {
+    const rank = mkregStudentRank(a, date) - mkregStudentRank(b, date);
+    if(rank) return rank;
+    const ak = mkregFirstNameKey(a.name), bk = mkregFirstNameKey(b.name);
+    return ak.first.localeCompare(bk.first) || ak.full.localeCompare(bk.full) || String(a.id || '').localeCompare(String(b.id || ''));
+  });
 }
 
 // V4.2.11.1+: a term register can span many weeks. Put the current Maktab
@@ -80,7 +102,7 @@ async function mkregisterPaint(){
   mkregisterData = data;
 
   const weeks = data.weeks || [];
-  const students = data.students || [];
+  const students = mkregSortStudents(data.students || [], data.today);
   const colCount = weeks.reduce((n, w) => n + (w.columns || []).length, 0);
   if(!colCount){
     host.innerHTML = '<p class="form-hint">No teaching days are configured for this period.</p>';

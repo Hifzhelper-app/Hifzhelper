@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/sabaqPage.js */
+/* Hifzhelper build 4.2.11.3 | js/sabaqPage.js */
 // ============================================================
 // Hifzhelper — Sabaq card (one of 4 in the unified day-log view, V3.6.1)
 // Current as of V3.38
@@ -179,7 +179,7 @@ async function renderSabaqScreen(){
   document.getElementById('sabaqEditBottombar').classList.add('hidden');
   exitEditScreenMode('card-sabaq');
   sabaqSelectedTags = [];
-  document.getElementById('sabaq_date').value = todayISO();
+  document.getElementById('sabaq_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
   document.getElementById('sabaq_line_count').value = '';
   document.getElementById('sabaq_page_count').value = '';
   if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0
@@ -298,7 +298,7 @@ async function resetSabaqFormAfterEdit(){
   sabaqValue = { from: next.from, to: next.to };
   renderVerseRefField('from');
   renderVerseRefField('to');
-  document.getElementById('sabaq_date').value = todayISO();
+  document.getElementById('sabaq_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
   document.getElementById('sabaq_line_count').value = '';
   document.getElementById('sabaq_page_count').value = '';
   if(typeof sabaqSyncUnitPill === 'function') sabaqSyncUnitPill();   // V3.93.0

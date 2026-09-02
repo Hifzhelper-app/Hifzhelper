@@ -26,6 +26,21 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.11.3 — Shared log date + attendance row ordering (2026-09-02)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/logContext.js`, `js/logDetailScreen.js`, `js/sabaqPage.js`, `js/sabaqDhorPage.js`, `js/dhorPage.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `tests/verify_v42113_ui.mjs` (new), `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42111_register_data.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**
+
+1. **One date now controls all three log-detail cards.** A single date pill sits to the left of the existing student search above the Sabaq / Sabaq Dhor / Dhor rail. Changing it updates the save date for all three cards. The old per-card date pills are hidden in normal mode but their real inputs remain mounted so History edit mode can still move an entry's own editable date into the edit header. Dhor's Plan action remains visible in its own compact row.
+2. **The shared date survives context changes.** In Maktab mode the shared date updates `LOG_CTX.date`, so changing students through Search preserves the selected day and active detail card. All three card reset/new-entry paths now read the shared date instead of silently jumping one hidden source input back to today after an edit. Personal Journal behaviour still defaults the shared date to today on each fresh open.
+3. **Attendance roster ordering reflects today's register state.** Students with **a log** for the current Maktab date come first, then students on Haidh, then everyone else. A log wins if both states exist because the register already resolves that cell as Present. Within each status band students are sorted alphabetically by **first name**, with full name/id only as stable tie-breakers. Attendance data and percentages are unchanged.
+4. **Version discipline preserved.** Only served files actually edited in this patch receive a `4.2.11.3` top build header. `index.html` and the service-worker cache/precache use the shared 4.2.11.3 page key; untouched served-file headers keep their prior last-edit versions.
+
+**Deployment:** overlay on V4.2.11.2, deploy Pages/frontend only, then hard-refresh. **No Worker deployment and no D1 migration.**
+
+**Regression coverage:** `tests/verify_v42113_ui.mjs` pins the single shared date, hidden edit-compatible source dates, date preservation across student switching, Dhor Plan retention, and dynamically proves log → Haidh → remainder ordering with first-name sorting. The V4.2.11.2/V4.2.11.1 register harnesses are release-forwarded only for the source/page version changes; their functional assertions remain intact.
+
+---
+
 ## V4.2.11.2 — Attendance register + student Attendance header refinement (2026-09-02)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/auth.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `worker/src/maktabAttendance.js`, `tests/verify_v42112_ui.mjs` (new), `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_nav.mjs`, `tests/verify_v3742_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**

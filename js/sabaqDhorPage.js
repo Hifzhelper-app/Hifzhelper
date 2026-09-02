@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.10 | js/sabaqDhorPage.js */
+/* Hifzhelper build 4.2.11.3 | js/sabaqDhorPage.js */
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
 // Current as of V3.45.13
@@ -328,7 +328,7 @@ async function renderSabaqDhorScreen(){
   document.getElementById('sabaqDhor_sections').classList.remove('hidden');
   exitEditScreenMode('card-sabaqDhor');
   sabaqDhorSelectedTags = [];
-  document.getElementById('sabaqDhor_date').value = todayISO();
+  document.getElementById('sabaqDhor_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
   document.getElementById('sabaqDhor_mistakes').value = '0';
 
   let profile = null;
@@ -476,7 +476,7 @@ function cancelSabaqDhorEdit(){
   exitEditScreenMode('card-sabaqDhor');
 }
 function resetSabaqDhorFormAfterEdit(){
-  document.getElementById('sabaqDhor_date').value = todayISO();
+  document.getElementById('sabaqDhor_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
   document.getElementById('sabaqDhor_mistakes').value = 0;
   sabaqDhorSelectedTags = [];
   renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
@@ -529,7 +529,7 @@ document.getElementById('sabaqDhorSaveBtn').addEventListener('click', async () =
       document.getElementById('sabaqDhorSaveStatus').classList.add('show');
       setTimeout(() => document.getElementById('sabaqDhorSaveStatus').classList.remove('show'), 1800);
       cancelSabaqDhorEdit();
-      document.getElementById('sabaqDhor_date').value = todayISO();
+      document.getElementById('sabaqDhor_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
       document.getElementById('sabaqDhor_mistakes').value = 0;
       sabaqDhorSelectedTags = [];
       renderTajweedPicker('sabaqDhorTajweedPicker', sabaqDhorSelectedTags);
