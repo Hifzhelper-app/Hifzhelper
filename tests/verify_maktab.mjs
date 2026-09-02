@@ -30,6 +30,17 @@ for (const st of noComments.split(';').map(s => s.trim()).filter(Boolean)) db.ex
 // V3.78.0 fixture upgrade: the columns/tables migration 0022 adds and the
 // worker now reads (0022 itself is proven whole in verify_v3780).
 db.exec("ALTER TABLE maktab_sabaq_log ADD COLUMN tajweed_tag_ids TEXT");
+// V3.97.0: the PJ log tables exist in every real database; the archive
+// re-sync statements (fired by maktab edits/deletes) touch them, so the
+// fixture carries them too — with the 0028 archive columns.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_sabaq_log_mkid ON sabaq_log (maktab_log_id);
+  CREATE TABLE IF NOT EXISTS sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, tajweed_tag_ids TEXT, mistakes INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_sabaq_dhor_log_mkid ON sabaq_dhor_log (maktab_log_id);
+  CREATE TABLE IF NOT EXISTS dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_dhor_log_mkid ON dhor_log (maktab_log_id);
+`);
 db.exec("ALTER TABLE maktab_sabaq_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
 db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");

@@ -222,8 +222,11 @@ function makeDom() {
     const authSrc = fs.readFileSync(ROOT + 'js/auth.js', 'utf8');
     check('G1: journal label is Summary', /id:\s*'journal',\s*label:\s*'Summary'/.test(authSrc));
     check('G2: journal id/icon untouched', /id:\s*'journal'[\s\S]{0,40}icon:\s*'journal'/.test(authSrc));
-    const rootAuthSrc = fs.readFileSync(ROOT + 'auth.js', 'utf8');
-    check('G3: stale root auth.js deliberately left as Journal (untouched)', /label:\s*'Journal'/.test(rootAuthSrc));
+    // G3 (stale root auth.js left untouched) DROPPED V4.2.7: the stale
+    // duplicate has been deleted from the repo, so the assertion's premise
+    // is gone — reading the file threw ENOENT and took the whole harness
+    // down with it (1172 vs 1201 checks). Deleting the stale file was the
+    // right call (process rule 3); the harness now matches reality.
   }
 
   console.log(`\n${pass} passed, ${fail} failed`);

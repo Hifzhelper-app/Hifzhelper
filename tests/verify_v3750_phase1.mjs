@@ -71,8 +71,11 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
   // V3.80.0: the haidh screen became the attendance page and its header
   // moved inside #attHaidhBlock as an h3 — no longer a .card-header-row
   // in the collateral set.
-  check('1: the three-child headers on card screens are exactly Admin and Tadabbur (haidh screen absorbed V3.80.0)',
-    threeChild.sort().join(',') === 'screen-admin,screen-reflections', threeChild.join(','));
+  // V4.2.0: admin's header still has three children, but the screen no
+  // longer uses .screen-content (its table took the summary's shape), so
+  // it is no longer a "card screen" — Tadabbur is the last one.
+  check('1: the three-child header on the remaining card screen is Tadabbur (admin left the card pattern in V4.2.0)',
+    threeChild.sort().join(',') === 'screen-reflections', threeChild.join(','));
 }
 
 // ---------- 2: Move to Dhor hidden until eligible ----------
@@ -105,6 +108,8 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
     function iconHtml(){ return ''; }
     function renderRecentEntries(){ }
     function wireSabaqDhorRows(){ }
+    function sabaqDhorQuarterPickerHtml(){ return ''; }   // V4.2.4 collaborators
+    function wireSabaqDhorQuarterPicker(){ }
     function moveJuzToDhor(){ }
     function logCtxIsMaktab(){ return true; }
   `);

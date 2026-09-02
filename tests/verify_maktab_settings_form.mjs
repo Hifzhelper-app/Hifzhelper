@@ -96,8 +96,12 @@ check('the settings screen is the rail: THREE cards + dots (V3.89.0 — Groups f
       return html2.slice(i, j > 0 ? j : undefined).includes('class="screen-content"');
     });
   // V3.79.0: maktabSettings left the .screen-content pattern for the rail
-  check('three screens carry the card pattern and all are covered by the one rule (settings moved to the rail V3.79.0)',
-    carded.length === 3 && !carded.includes('maktabSettings'), carded.join(','));
+  // V4.2.0: ADMIN left the set deliberately — its table adopted the maktab
+  // summary's shape (header row + white rows region), which means dropping
+  // .screen-content and with it the shared 30% desktop cap. base.css
+  // anticipated exactly this ("delete one and it leaves the set").
+  check('the card-pattern screens are covered by the one rule; admin left the set in V4.2.0, settings in V3.79.0',
+    carded.length === 2 && !carded.includes('maktabSettings') && !carded.includes('admin'), carded.join(','));
 }
 // V3.75.0: the base.css grid line was REMOVED — at three classes it forced a
 // two-column grid onto every three-child header (Admin, Tadabbur, Haidh) and

@@ -69,7 +69,13 @@ check('5: the dead .card-header-row-left class is gone from the markup and the C
   !/class="[^"]*card-header-row-left/.test(html) && !/^\.card-header-row-left/m.test(dp));
 check('5: the close label no longer claims to exit Home',
   !/id="adminCloseBtn" aria-label="Exit to Home"/.test(html));
-check('6: the id is hidden in the list', /class="mono admin-list-id" hidden/.test(admin));
+// V4.1.0: the list became an editable TABLE — the id now has its own
+// column (the user's mock names it), so the V3.74.2 "hidden but present"
+// treatment is retired. What that check protected still holds: copy and
+// search both still have the id.
+check('6: the id has its own column in the table (V4.1.0 supersedes the hidden span)',
+  /<th class="admin-th-id">Unique ID<\/th>/.test(admin)
+  && /class="mono admin-cell-id" data-label="Unique ID">\$\{u\.id\}</.test(admin));
 check('6: but the id is still RENDERED, so copy and search still have it',
   /\$\{u\.id\}/.test(admin));
 

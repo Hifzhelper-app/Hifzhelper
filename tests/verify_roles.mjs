@@ -34,21 +34,24 @@ db.exec(`
     student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT,
     teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT,
     student_comment_private INTEGER, teacher_feedback_visibility TEXT,
-    is_duplicate INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+    is_duplicate INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX idx_sabaq_log_mkid ON sabaq_log (maktab_log_id);
   CREATE TABLE sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, date TEXT NOT NULL,
     entered_by TEXT NOT NULL, zone TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, mistakes INTEGER,
     from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER,
     student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT,
     teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT,
     student_comment_private INTEGER, teacher_feedback_visibility TEXT,
-    is_duplicate INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+    is_duplicate INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX idx_sabaq_dhor_log_mkid ON sabaq_dhor_log (maktab_log_id);
   CREATE TABLE dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, date TEXT NOT NULL,
     entered_by TEXT NOT NULL, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT,
     mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT,
     student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT,
     teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT,
     student_comment_private INTEGER, teacher_feedback_visibility TEXT,
-    is_duplicate INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
+    is_duplicate INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX idx_dhor_log_mkid ON dhor_log (maktab_log_id);
   CREATE TABLE reflections (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, date TEXT NOT NULL,
     entered_by TEXT NOT NULL, reflection TEXT, is_private INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL);
   CREATE TABLE plans (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, entered_by TEXT NOT NULL,

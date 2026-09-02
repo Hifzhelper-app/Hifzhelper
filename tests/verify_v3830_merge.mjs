@@ -33,11 +33,14 @@ const check = (l, c, x = '') => { if (c) pass++; else { fail++; console.log('FAI
 const db = new DatabaseSync(':memory:');
 db.exec(`
   CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT, role TEXT, mushaf TEXT, baseline_selection TEXT, created_at TEXT);
-  CREATE TABLE sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+  CREATE TABLE sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX idx_sabaq_log_mkid ON sabaq_log (maktab_log_id);
   CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'teachers_only', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-  CREATE TABLE sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, tajweed_tag_ids TEXT, mistakes INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+  CREATE TABLE sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, tajweed_tag_ids TEXT, mistakes INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX idx_sabaq_dhor_log_mkid ON sabaq_dhor_log (maktab_log_id);
   CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, tajweed_tag_ids TEXT, mistakes INTEGER, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'teachers_only', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-  CREATE TABLE dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
+  CREATE TABLE dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'all', is_duplicate INTEGER DEFAULT 0, created_at TEXT, maktab_log_id INTEGER, maktab_teacher TEXT);
+  CREATE UNIQUE INDEX idx_dhor_log_mkid ON dhor_log (maktab_log_id);
   CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, student_comment TEXT, student_comment_by TEXT, student_comment_at TEXT, student_comment_private INTEGER DEFAULT 0, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT DEFAULT 'teachers_only', is_duplicate INTEGER DEFAULT 0, created_at TEXT);
   CREATE TABLE plans (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, plan_type TEXT, status TEXT, target_date TEXT, created_at TEXT);
   INSERT INTO students VALUES ('S1','Umme','student','13line','[]','2026-01-01'), ('T1','Teacher','teacher',NULL,NULL,'2026-01-01');
@@ -165,6 +168,56 @@ check('rail: personal rows carry the marker class',
     /\.pj-personal \{\n  background: var\(--palette-lavender, #E3DADE\);/.test(css)
     && !/border-left: 3px solid var\(--accent/.test(css)
     && !/OPTION B — uncomment/.test(css) && /journal-popup-teacher/.test(css));
+}
+
+// ============================================================
+// V3.97.0 (l) THE ARCHIVE — the full lifecycle, driven end to end
+// ============================================================
+{
+  // uses the harness's shared env/db (fresh ids well clear of the fixture's)
+  const { getMergedLogs, updateLog, deleteLog } = await import('../worker/src/logHelpers.js');
+  const iso = (daysAgo) => { const d = new Date(Date.now() - daysAgo * 864e5); return d.toISOString().slice(0, 10); };
+  // the shared fixture already holds S1 rows from the merge drives —
+  // measure everything RELATIVE to this baseline
+  const baseRows = (await getMergedLogs(env, 'sabaq_log', 'maktab_sabaq_log', 'S1', null, 'S1', true)).data.length;
+  const baseMk = db.prepare('SELECT COUNT(*) AS c FROM maktab_sabaq_log').get().c;
+  // one OLD maktab row (70d), one RECENT (10d), one OLD personal row
+  db.prepare("INSERT INTO maktab_sabaq_log (id, student_id, date, entered_by, teacher_name, sabaq_from, sabaq_to, created_at) VALUES (501, 'S1', ?, 'T1', 'Apa Zainab', '2:1', '2:5', '2026-01-01T00:00:00Z')").run(iso(70));
+  db.prepare("INSERT INTO maktab_sabaq_log (id, student_id, date, entered_by, teacher_name, sabaq_from, sabaq_to, created_at) VALUES (502, 'S1', ?, 'T1', 'Apa Zainab', '2:6', '2:9', '2026-01-02T00:00:00Z')").run(iso(10));
+  db.prepare("INSERT INTO sabaq_log (student_id, date, entered_by, sabaq_from, sabaq_to, created_at) VALUES ('S1', ?, 'S1', '99:1', '99:2', '2026-01-03T00:00:00Z')").run(iso(70));
+
+  const read = async () => (await getMergedLogs(env, 'sabaq_log', 'maktab_sabaq_log', 'S1', null, 'S1', true)).data;
+  let rows = await read();
+  const copies = () => db.prepare('SELECT * FROM sabaq_log WHERE maktab_log_id IS NOT NULL').all();
+  check('archive: the OLD maktab row is COPIED on her read (opportunistic trigger); the RECENT one is not',
+    copies().length === 1 && copies()[0].maktab_log_id === 501 && copies()[0].maktab_teacher === 'Apa Zainab');
+  check('archive: EXACTNESS — every row shows exactly once (copy replaces the live old row; recent row live; personal row personal)',
+    rows.length === baseRows + 3
+    && rows.filter(r => r.maktab_log_id === 501).length === 1
+    && rows.filter(r => r.maktab_log_id === 502).length === 1
+    && rows.filter(r => r.source === 'personal' && r.sabaq_from === '99:1').length === 1);   // a marker the fixture cannot collide with
+  check('archive: the copy presents EXACTLY like a live maktab row — id nulled, teacher provenance carried',
+    rows.find(r => r.maktab_log_id === 501).id === null
+    && rows.find(r => r.maktab_log_id === 501).teacher_name === 'Apa Zainab');
+  const before = copies().length;
+  await read(); await read();
+  check('archive: IDEMPOTENT — repeat reads copy nothing again', copies().length === before);
+
+  // RE-SYNC on EDIT: the teacher amends the archived original
+  await updateLog(env, 'maktab_sabaq_log', 501, 'S1', { sabaq_to: '2:7' }, 'T1', ['sabaq_to']);
+  check('archive: a maktab EDIT patches the archived copy to match (re-sync, not frozen)',
+    db.prepare('SELECT sabaq_to FROM sabaq_log WHERE maktab_log_id = 501').get().sabaq_to === '2:7');
+  // RE-SYNC on DELETE — the path the spec flags as the one that gets forgotten
+  await deleteLog(env, 'maktab_sabaq_log', 501, 'S1');
+  check('archive: a maktab DELETE removes the copy — her journal never asserts what the maktab no longer says',
+    copies().length === 0
+    && (await read()).filter(r => r.maktab_log_id === 501).length === 0);
+  check('archive: the maktab tables are never emptied by archiving itself (only the explicit delete removed 501; 502 stands)',
+    db.prepare('SELECT COUNT(*) AS c FROM maktab_sabaq_log').get().c === baseMk + 1
+    && db.prepare('SELECT id FROM maktab_sabaq_log WHERE id = 502').get() != null);
+  // a personal edit stays personal: no unique-index interference
+  check('archive: personal rows are untouched by the machinery (maktab_log_id NULL, still source personal)',
+    (await read()).find(r => r.source === 'personal').maktab_log_id == null);
 }
 
 console.log(`${pass} passed, ${fail} failed`);

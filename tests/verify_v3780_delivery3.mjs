@@ -35,7 +35,7 @@ function baseDb() {
   const db = new DatabaseSync(':memory:');
   db.exec(`
     CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL, pin_hash TEXT, created_date TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, mushaf TEXT DEFAULT '13line', track_haidh INTEGER DEFAULT 0, whatsapp_number TEXT, gender TEXT, setup_complete INTEGER DEFAULT 0);
-    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT);
+    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, teaching_days TEXT);
     INSERT INTO maktab_settings (id) VALUES (1);
     CREATE TABLE sabaq_log (id INTEGER PRIMARY KEY, tajweed_tags TEXT);
     CREATE TABLE sabaq_dhor_log (id INTEGER PRIMARY KEY, tajweed_tags TEXT);
@@ -289,7 +289,8 @@ check('boot: the vocabulary and the timezone load at login for every role',
   /MAKTAB_TIMEZONE = profile\.maktab_timezone \|\| null;/.test(read('js/app.js')) && /await loadTajweedVocabulary\(\);/.test(read('js/app.js')));
 check('settings screen: timezone select + both list managers exist',
   /mset_timezone/.test(read('js/maktabSettings.js')) && /msetGroupsList/.test(read('js/maktabSettings.js')) && /msetTagsList/.test(read('js/maktabSettings.js')));
-check('admin card: the group select saves through update-user', /fields\.group_id = groupSel\.value === '' \? null : Number\(groupSel\.value\);/.test(read('js/adminPage.js')));
+// V4.2.1: the card is gone; the group select now autosaves in the table row
+check('admin table: the group select saves through update-user (V4.2.1 — inline autosave)', /adminSaveField\(u, \{ group_id: v \}, 'Group'\)/.test(read('js/adminPage.js')));
 check('migration 0023 exists, separate, and touches ONLY the word columns',
   read('worker/migrations/0023_clear_tajweed_words.sql').match(/UPDATE \w+\s+SET tajweed_tags = NULL/g).length === 6
   && !/tajweed_tag_ids\s*=/.test(read('worker/migrations/0023_clear_tajweed_words.sql')));

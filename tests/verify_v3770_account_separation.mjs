@@ -35,7 +35,7 @@ function makeDb() {
       pin_hash TEXT, created_date TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, whatsapp_number TEXT, gender TEXT,
       setup_complete INTEGER DEFAULT 0, mushaf TEXT DEFAULT '13line', track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi', group_id INTEGER);
     CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
-    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT, term_from TEXT, term_to TEXT);
+    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT, term_from TEXT, term_to TEXT, teaching_days TEXT);
     INSERT INTO maktab_settings (id) VALUES (1);
     CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
     CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, zone TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
@@ -147,28 +147,26 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   const w = adminDom(users);
   await w.eval('loadAdminUsers()');
   await tick();
-  const rows = [...w.document.querySelectorAll('.admin-list-row')];
-  check('admin list: a role chip on teacher and admin rows, none on students',
-    rows.length === 4 && rows[0].querySelector('.admin-role-chip') === null && rows[2].querySelector('.admin-role-chip').textContent === 'teacher' && rows[3].querySelector('.admin-role-chip').textContent === 'admin');
-  // Umme: student, no teaching profile → the action is offered
-  w.eval("openUserCard('K7M2QX')");
-  check('admin card: an active student WITHOUT a teaching profile gets "Create teaching profile"', !!w.document.getElementById('uc_create_teaching'));
-  w.document.getElementById('uc_create_teaching').click();
-  await tick(); await tick(); await tick();
-  check('admin card: tapping it calls the endpoint with her id and reloads the list', JSON.stringify(w.eval('created')) === '["K7M2QX"]' && /K7M2QXTEACHER/.test(w.eval('banners')[0]));
-  w.document.querySelectorAll('.modal-overlay').forEach(o => o.remove());
-  // Zaynab: has one → no action, a note instead
-  w.eval("openUserCard('ABCDEF')");
-  check('admin card: a student WITH a teaching profile gets the note, not the action',
-    !w.document.getElementById('uc_create_teaching') && /ABCDEFTEACHER/.test(w.document.getElementById('uc_teaching_note').textContent));
-  w.document.querySelectorAll('.modal-overlay').forEach(o => o.remove());
-  // the teaching row: no action, derived-from note
-  w.eval("openUserCard('ABCDEFTEACHER')");
-  check('admin card: a teaching row never offers the action and names whose it is',
-    !w.document.getElementById('uc_create_teaching') && /Zaynab/.test(w.document.getElementById('uc_derived_note').textContent) && /ABCDEF/.test(w.document.getElementById('uc_derived_note').textContent));
-  w.document.querySelectorAll('.modal-overlay').forEach(o => o.remove());
-  w.eval("openUserCard('ABCDEFG')");
-  check('admin card: the admin row never offers the action', !w.document.getElementById('uc_create_teaching'));
+  // V4.1.0: the list is an editable TABLE — the role CHIP is superseded
+  // by a role SELECT in its own column, which carries the same fact and
+  // can now change it. One field row per user (plus its mobile actions row).
+  const rows = [...w.document.querySelectorAll('.admin-row-fields')];
+  check('admin table: each row\'s role select carries that user\'s role (V4.1.0 supersedes the chip)',
+    rows.length === 4
+    && rows[0].querySelector('[data-f="role"]').value === 'student'
+    && rows[2].querySelector('[data-f="role"]').value === 'teacher'
+    && rows[3].querySelector('[data-f="role"]').value === 'admin');
+  // V4.2.1: teaching-profile creation is RETIRED from the UI (user: the
+  // Role select already promotes a student to teacher or admin directly,
+  // without a second account). The detail card that last offered it is
+  // gone. The endpoint stays in the worker, unused. Existing …TEACHER
+  // accounts remain ordinary rows.
+  check('admin table: NO teaching-profile creation control anywhere, and the detail card is gone',
+    !w.document.querySelector('[data-create-teaching]')
+    && !/function openUserCard/.test(read('js/adminPage.js'))
+    && !/apiAdminCreateTeachingProfile\(/.test(read('js/adminPage.js')));
+  check('admin table: an existing …TEACHER account still lists as an ordinary row with its role',
+    rows.some(r => r.querySelector('.admin-cell-id').textContent === 'ABCDEFTEACHER' && r.querySelector('[data-f="role"]').value === 'teacher'));
 }
 
 // ---------- the switcher ----------
@@ -244,6 +242,68 @@ check('html: the switch screen and its list exist', /id="loginScreenSwitch"/.tes
 check('icons: switchAccount icon exists', /switchAccount: '<svg/.test(read('js/icons.js')));
 check('worker: the summary roster query filters on role (V3.78.0: with the group join)', /WHERE s\.active = 1 AND s\.role = 'student'/.test(read('worker/src/maktabLog.js')));
 check('worker: handleSave\'s self-log guard is KEPT (defence in depth, deliberately)', /body\.student_id === auth\.id/.test(read('worker/src/maktabLog.js')));
+
+// ============================================================
+// V4.2.1 — the REGISTER ROW, driven. It is the table's first row, it
+// runs the duplicate-name guard, Continue forces past a match, and the
+// new user is pinned to the top afterwards for role/copy/share.
+// ============================================================
+{
+  const users = [
+    { id: 'K7M2QX', name: 'Umme', role: 'student', active: 1 },
+    { id: 'ABCDEFG', name: 'ADMIN-01', role: 'admin', active: 1 },
+  ];
+  const w = adminDom(users);
+  w.eval(`
+    var registerCalls = []; var roleCalls = [];
+    apiAdminRegisterStudent = function(name, wa, force){
+      registerCalls.push({ name, wa, force });
+      if(name === 'Umme' && !force) return Promise.resolve({ matched: true, matchedId: 'K7M2QX', matchedActive: true });
+      const u = { id: 'NEW001', name, role: 'student', active: 1, whatsapp_number: wa };
+      USERS.push(u);
+      return Promise.resolve(u);
+    };
+    apiAdminChangeRole = function(id, role){ roleCalls.push({ id, role }); return Promise.resolve({}); };
+    apiGetMaktabGroups = function(){ return Promise.resolve([]); };
+  `);
+  await w.eval('loadAdminUsers()'); await tick(); await tick();
+  check('v421: the register row is CLOSED by default', !w.document.querySelector('.admin-row-new'));
+
+  w.eval('adminShowAddRow(true)'); await tick();
+  const newRow = w.document.querySelector('.admin-row-new');
+  check('v421: "Register a user" opens the new user as the FIRST row of the table, with Name/WhatsApp/Role/Group and a Register button',
+    !!newRow && w.document.querySelector('tbody tr') === newRow
+    && !!newRow.querySelector('#admin_new_name') && !!newRow.querySelector('#admin_new_whatsapp')
+    && !!newRow.querySelector('#admin_new_role') && !!newRow.querySelector('#admin_new_group')
+    && !!newRow.querySelector('#adminRegisterBtn'));
+  check('v421: the Role choices on the new row are Student / Teacher / Admin (user: kept all three)',
+    [...newRow.querySelectorAll('#admin_new_role option')].map(o => o.value).join(',') === 'student,teacher,admin');
+
+  // duplicate name → the guard shows beneath the row, nothing created
+  w.document.getElementById('admin_new_name').value = 'Umme';
+  w.document.getElementById('adminRegisterBtn').click();
+  await tick(); await tick();
+  check('v421: a duplicate name surfaces the match hint BENEATH the row and creates nothing',
+    !w.document.getElementById('adminRegisterMatchRow').classList.contains('hidden')
+    && /K7M2QX|Umme/.test(w.document.getElementById('adminRegisterMatchHint').textContent)
+    && w.eval('USERS.length') === 2);
+
+  // Continue forces past it with whatever the row holds NOW (V3.4.2 semantics)
+  w.document.getElementById('admin_new_name').value = 'Umme Two';
+  w.document.getElementById('admin_new_role').value = 'teacher';
+  w.document.getElementById('adminRegisterContinueBtn').click();
+  await tick(); await tick(); await tick(); await tick();
+  const calls = w.eval('registerCalls');
+  check('v421: Continue re-submits the CURRENT row values with force:true',
+    calls.length === 2 && calls[1].name === 'Umme Two' && calls[1].force === true);
+  check('v421: the row\'s ROLE is applied after creation (register makes a student; role is the follow-up)',
+    JSON.stringify(w.eval('roleCalls')) === JSON.stringify([{ id: 'NEW001', role: 'teacher' }]));
+  const first = w.document.querySelector('tbody tr.admin-row-fields');
+  check('v421: the new user is PINNED to the top row and highlighted, register row closed',
+    !w.document.querySelector('.admin-row-new')
+    && first && first.querySelector('.admin-cell-id').textContent === 'NEW001'
+    && first.classList.contains('admin-row-just-created'));
+}
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
