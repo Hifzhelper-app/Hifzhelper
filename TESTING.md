@@ -14,6 +14,20 @@ Base URLs:
 
 ---
 
+## V4.2.13.1 — Mobile Attendance width checks
+
+1. On a phone, open Maktab Attendance. The register should sit closer to the left/right edge of its green track; other screens must retain their existing screen inset.
+2. The sticky Student column must be visibly narrower than V4.2.13. Long names stay on one line and ellipsise rather than widening the register.
+3. Attendance % must be **rolled up by default**. Confirm the small `%` control appears in the Student heading and that the percentage column consumes no width until requested.
+4. Tap `%`. Attendance % must appear as the second sticky column with the same values as before; tap again to collapse it. The control's expanded state must remain accessible to screen readers.
+5. With Attendance % collapsed, confirm approximately **4–5 teaching-day columns** can be seen at once on the target phone width without reducing the Present/Haidh mark size.
+6. Confirm current-week auto-positioning, Student-name navigation, week headers, status marks and Attendance % values themselves are unchanged.
+7. Run `node tests/verify_v42131_mobile_attendance.mjs`, `node tests/verify_v4213_attendance_model.mjs`, cumulative V4.2.12/V4.2.11 register harnesses, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`.
+
+**Automated coverage in the build container:** V4.2.13.1 mobile-width harness **10/10**; V4.2.13 attendance model **18/18**; V4.2.12.1 **12/12**; V4.2.12 **15/15**; V4.2.11.4 **10/10**; V4.2.11.3 **11/11**; V4.2.11.2 **13/13**; build/version **6/6**; served-JS syntax **36/36**. `run-all.mjs` reports **426 passed, 0 failed among reporting harnesses**. The same older harnesses that require missing `jsdom` or carry legacy fixture drift remain non-reporting and are not counted as passes.
+
+---
+
 ## V4.2.13 — Attendance / Haidh derivation audit checks
 
 1. **Return-log stop (Ammarah regression):** create/identify a student with confirmed Haidh, then a later Maktab log, then a later completed qualifying Maktab day with no log. The blank day must be **Absent**, never probable Haidh from the old run.

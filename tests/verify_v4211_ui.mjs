@@ -29,7 +29,7 @@ check('register API route is wired front to back',
   /apiGetMaktabRegister/.test(api) && /\/maktab\/attendance-register/.test(api)
   && /handleMaktabRegister/.test(workerIndex) && /export async function handleMaktabRegister/.test(workerAtt));
 check('register groups teaching-day columns beneath merged Maktab-week/date-range headings',
-  /rowspan="2">Student/.test(page) && /colspan="\$\{count\}"/.test(page)
+  /mkregister-student-head" rowspan="2">[\s\S]*Student/.test(page) && /colspan="\$\{count\}"/.test(page)
   && /mkregisterWeekLabel|mkregWeekLabel/.test(page) && /mkregShortDate\(a\)/.test(page) && /Mon/.test(page) && /Tue/.test(page));
 check('register presents one student roster and clicking a name opens individual attendance',
   /class="mkregister-student"/.test(page) && /openMaktabAttendancePage\(student, data\.today\)/.test(page));
@@ -66,16 +66,16 @@ check('teacher Maktab attendance can show the Haidh calendar before first promot
   /const teacherMaktabEdit = typeof logCtxIsMaktab/.test(haidhPage)
   && /!\(d\.track_haidh \|\| teacherMaktabEdit\)/.test(haidhPage));
 check('V4.2.11-or-later page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.13/.test(html)
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.13'/.test(sw));
+  /js\/app\.js\?v=4\.2\.13\.1/.test(html)
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.13\.1'/.test(sw));
 check('only served files edited in this release carry V4.2.11 headers among the pinned set',
   /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/admin\.css \*\//.test(adminCss)
-  && /^\/\* Hifzhelper build 4\.2\.13 \| css\/detail-pages\.css \*\//.test(css)
+  && /^\/\* Hifzhelper build 4\.2\.13\.1 \| css\/detail-pages\.css \*\//.test(css)
   && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.11 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.13 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
-  && /^\/\* Hifzhelper build 4\.2\.13 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.13 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.13\.1 \| js\/maktabAttendancePage\.js \*\//.test(page)
+  && /^\/\* Hifzhelper build 4\.2\.13\.1 \| js\/sw\.js \*\//.test(sw));
 check('no new migration was introduced for gender/track_haidh',
   fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
 

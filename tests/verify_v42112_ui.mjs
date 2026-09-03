@@ -34,7 +34,7 @@ check('Haidh reuses the old thin green check and no yellow Haidh disk remains',
   && !/iconHtml\('haidh'\)/.test(page)
   && !/background: #FFD400/.test(css));
 check('Attendance % is the second column and is returned per student',
-  /mkregister-student-head" rowspan="2">Student<\/th><th class="mkregister-percent-head" rowspan="2">Attendance %<\/th>/.test(page)
+  /mkregister-student-head" rowspan="2">[\s\S]*Student[\s\S]*<\/th><th class="mkregister-percent-head" rowspan="2">Attendance %<\/th>/.test(page)
   && /attendance_percent: summary\.percent/.test(worker));
 check('Attendance % and the individual page share one attendance-period summary helper',
   /export function summarizeAttendancePeriod\(/.test(worker)
@@ -53,8 +53,8 @@ check('admin primary menu order is Home, Maktab, Attendance, Student Management,
 check('Attendance and Calendar are not duplicated in the later personal-tools group',
   /!\['home', 'sih', 'juzTracker', 'attendancePage'\]\.includes\(x\.id\)/.test(auth)
   && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
-check('V4.2.11.2 page/cache contract remains valid after V4.2.13',
-  /js\/app\.js\?v=4\.2\.13/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13'/.test(sw));
+check('V4.2.11.2 page/cache contract remains valid after V4.2.13.1',
+  /js\/app\.js\?v=4\.2\.13\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13\.1'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

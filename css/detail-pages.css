@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.13 | css/detail-pages.css */
+/* Hifzhelper build 4.2.13.1 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2321,10 +2321,53 @@
 /* V4.2.13: probable/predicted Haidh are assumptions, not confirmed facts. */
 .mkregister-status-probable { opacity: .5; }
 .mkregister-status-predicted { opacity: .35; }
+/* V4.2.13.1 — mobile register width trial. Attendance % is rolled up by
+   default behind a compact reveal control so the register spends the phone's
+   width on teaching days. The Student column is deliberately narrower and
+   ellipsises long names; desktop/tablet keep the permanent percentage column. */
+.mkregister-percent-toggle { display: none; }
 @media (max-width: 767px) {
-  .mkregister-scroll { max-height: calc(100vh - var(--auth-band-height, 60px) - 115px); }
-  .mkregister-student-head, .mkregister-student-cell { width: 150px; min-width: 150px; max-width: 150px; }
-  .mkregister-percent-head, .mkregister-percent-cell { left: 150px; width: 76px; min-width: 76px; max-width: 76px; }
-  .mkregister-student { padding-left: 10px; padding-right: 10px; }
-  .mkregister-day-head, .mkregister-cell { width: 42px; min-width: 42px; max-width: 42px; }
+  /* Reduce only this screen's green track inset; the shared app/page padding
+     remains untouched. This recovers a few useful pixels without changing the
+     other screens' framing. */
+  #screen-maktabAttendance { padding-left: 4px; padding-right: 4px; }
+  #screen-maktabAttendance .juz-tracker-header-row { margin-left: 0; margin-right: 0; }
+  .mkregister-scroll {
+    max-height: calc(100vh - var(--auth-band-height, 60px) - 115px);
+    border-left-width: 1px; border-right-width: 1px;
+  }
+  .mkregister-student-head, .mkregister-student-cell {
+    width: 128px; min-width: 128px; max-width: 128px;
+  }
+  .mkregister-student-head {
+    padding: 6px 7px;
+  }
+  .mkregister-student-head-inner {
+    display: flex; align-items: center; justify-content: space-between; gap: 4px;
+    min-width: 0;
+  }
+  .mkregister-student-head-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .mkregister-percent-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    flex: 0 0 28px; width: 28px; height: 28px; padding: 0;
+    border: 1px solid rgba(255,255,255,.65); border-radius: 999px;
+    background: rgba(255,255,255,.18); color: inherit; font: inherit;
+    font-weight: 800; line-height: 1; cursor: pointer;
+  }
+  .mkregister-percent-toggle[aria-expanded="true"] { background: var(--color-surface, #fff); }
+  /* Rolled up by default. The header/cells still exist semantically and are
+     restored on demand, but consume zero layout width while collapsed. */
+  .mkregister-percent-head, .mkregister-percent-cell { display: none; }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-head,
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-cell { display: table-cell; }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-head,
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-cell {
+    left: 128px; width: 68px; min-width: 68px; max-width: 68px;
+  }
+  .mkregister-student { padding-left: 8px; padding-right: 8px; }
+  .mkregister-day-head, .mkregister-cell {
+    width: 40px; min-width: 40px; max-width: 40px;
+  }
+  .mkregister-day-head { padding-left: 1px; padding-right: 1px; letter-spacing: 0; }
+  .mkregister-cell { padding-left: 2px; padding-right: 2px; }
 }

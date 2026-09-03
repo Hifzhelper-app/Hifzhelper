@@ -60,8 +60,8 @@ check('status groups sort alphabetically by first name',
   /ak\.first\.localeCompare\(bk\.first\)/.test(att));
 check('register applies the order using the current Maktab date',
   /mkregSortStudents\(data\.students \|\| \[\], data\.today\)/.test(att));
-check('V4.2.11.3 behavior remains intact under the V4.2.13 page/cache key',
-  /js\/app\.js\?v=4\.2\.13/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13'/.test(sw));
+check('V4.2.11.3 behavior remains intact under the V4.2.13.1 page/cache key',
+  /js\/app\.js\?v=4\.2\.13\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13\.1'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

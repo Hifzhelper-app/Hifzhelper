@@ -26,6 +26,20 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.13.1 — Mobile Attendance width + rolled-up percentage (2026-09-02)
+
+**Files touched:** `index.html`, `css/detail-pages.css`, `js/maktabAttendancePage.js`, `js/sw.js`, `tests/verify_v42131_mobile_attendance.mjs` (new), `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v4212_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**
+
+1. **Phone register gives width back to attendance days.** Only `#screen-maktabAttendance` reduces its green-track horizontal inset from the shared 10px to 4px per side; other screens keep the app-wide framing.
+2. **Student stays sticky but is narrower.** On phones the Student column is 128px, remains single-line and ellipsises genuinely long names. Desktop/tablet keep the existing 180px identity column.
+3. **Attendance % is rolled up by default on phones.** A compact `%` control lives in the Student heading. The existing percentage column is hidden initially and can be revealed/hidden on demand; the underlying percentage values and individual-Attendance calculation are unchanged. Desktop/tablet keep Attendance % permanently visible.
+4. **Day columns are tightened, not the status marks.** Phone day cells move from 42px to 40px, with smaller horizontal padding, so a normal phone can show roughly five teaching-day columns beside the collapsed sticky Student column. Present/Haidh/probable styling is unchanged.
+5. **Version discipline preserved.** Only edited served files receive a `4.2.13.1` top build header: `css/detail-pages.css`, `js/maktabAttendancePage.js`, and `js/sw.js`. The page/cache key moves to 4.2.13.1; untouched served-file headers retain their last-edit versions.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.13 and hard-refresh. **No Worker deployment and no D1 migration.**
+
+---
+
 ## V4.2.13 — Attendance / Haidh derivation audit and leakage fixes (2026-09-02)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/sw.js`, `worker/src/maktabAttendance.js`, `tests/verify_v4213_attendance_model.mjs` (new), `tests/verify_attendance_derived.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v4212_ui.mjs`, `CONVENTIONS.md`, `SCHEMA.md`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**
