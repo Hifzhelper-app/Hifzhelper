@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/tokens.css */
+/* Hifzhelper build 4.2.14 | css/tokens.css */
 /* ============================================================
    Hifzhelper — design tokens
    Every color used anywhere in the app should reference one of these
@@ -50,6 +50,8 @@
      rest of the palette. */
   --color-haidh: var(--palette-mauve);
   --color-haidh-soft: #F1E4E6; /* predicted/planned calendar days — lighter shade, confirmed in chat */
+  --color-activity: var(--palette-sage);
+  --color-activity-soft: #E7EDE3; /* V4.2.14: logged Maktab activity on Haidh calendar */
 
   /* Status colors — deliberately separate from the palette above; these
      carry fixed meaning (error, success) and shouldn't shift if the

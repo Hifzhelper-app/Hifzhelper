@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.14** — Authoritative single Haidh model: confirmed/predicted/activity, Day-1 prediction reset, global 10/15 limits
 - **V4.2.13.1** — Mobile Attendance register width: narrower Student column and on-demand Attendance %
 - **V4.2.13** — Attendance/Haidh derivation audit: stop evidence, probable calendar state, and Active-vs-Haidh reporting
 - **V4.2.12.1** — Quick Log compact-card/mobile-combined refinement + displayed-day Summary ordering
@@ -128,6 +129,24 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.14 — Authoritative single Haidh model
+
+**Decision:** the application has one Haidh truth model. Stored confirmed `haidh` is factual. Stored `predicted-haidh` is a plan and remains a prediction until explicitly confirmed; date passage never promotes it. There is no third/probable Haidh state.
+
+**Episode rule:** confirming Haidh establishes Day 1 of the real episode, replaces the existing prediction set, and regenerates future predictions from that first confirmed date. If a new confirmation extends an already-confirmed contiguous run, that run's first confirmed date remains the anchor.
+
+**Return-to-activity rule:** any Maktab activity is stronger than confirmed or predicted Haidh. On that date the calendar shows activity, not Haidh; the episode ends there and stale stored marks inside the old episode/purity window cannot make it resume afterward. Explicit teacher Absent and stored Present can terminate an episode as non-green stop evidence, while only actual Maktab logs paint the calendar light green.
+
+**Global limits:** maximum continuous Haidh is 10 official days for every supported profile/ruling. The existing validation allowance of 11 touched calendar dates remains only for the partial-first/last-day edge. A new real episode requires 15 official purity days / 14 intervening calendar dates. No teacher/admin caller may bypass that gap; explicit Absent remains a separate attendance action.
+
+**Surface contract:** Student calendar = dark pink confirmed, light pink predicted, light green Maktab activity. Register = bold green `✓` for logged/present, dark-pink uppercase `H` for confirmed, lighter-pink lowercase `h` for predicted, blank for absent. Maktab Summary does not carry a pink Haidh note or read raw Haidh rows directly; normalized Attendance owns that interpretation.
+
+**Architecture:** `worker/src/haidhTimeline.js` is the shared normalization layer consumed by Attendance writes/reads and derived Maktab Attendance. The normalizer receives raw confirmed/predicted rows plus activity/stop evidence and returns only permitted confirmed/predicted/activity states. This closes the former cross-surface drift where Summary, register and calendar could each infer a different state.
+
+**No migration:** existing `attendance` rows and Haidh profile columns are reused. The ruling field remains stored for compatibility, but V4.2.14's maximum is globally 10 days.
 
 ---
 

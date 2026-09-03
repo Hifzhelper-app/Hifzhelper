@@ -62,30 +62,30 @@ const students = [
   {id:'L1', name:'Bella Logged', group_name:'Group A'},
   {id:'H1', name:'Bea Haidh', group_name:'Group Z'},
   {id:'L2', name:'Adam Logged', group_name:'Group A'},
-  {id:'P1', name:'Dina Probable', group_name:'Group A'},
+  {id:'P1', name:'Dina Predicted', group_name:'Group A'},
   {id:'N2', name:'Dave Plain', group_name:'Group A'},
   {id:'LU', name:'Uma Ungrouped', group_name:''},
 ];
 const byStudent = { sabaq:{L3:[{}], L1:[{}], L2:[{}], LU:[{}]}, sabaqDhor:{}, dhor:{} };
-const haidh = { H1:'haidh', H2:'haidh', L2:'haidh', P1:'probable-haidh' };
+const haidh = { H1:'haidh', H2:'haidh', L2:'haidh', P1:'predicted-haidh' };
 const ordered = ctx.maktabSummarySortedStudents(students, byStudent, haidh).map(s => s.name);
 check('Summary order is logs by Group then first name, confirmed Haidh alphabetically, then remainder alphabetically',
   JSON.stringify(ordered) === JSON.stringify([
     'Adam Logged','Bella Logged','Zara Logged','Uma Ungrouped',
     'Bea Haidh','Clara Haidh',
-    'Aaron Plain','Dave Plain','Dina Probable'
+    'Aaron Plain','Dave Plain','Dina Predicted'
   ]), ordered.join(' | '));
-check('a log outranks confirmed Haidh and probable Haidh is not promoted to the confirmed band',
+check('a log outranks confirmed Haidh and predicted Haidh is not promoted to the confirmed band',
   ordered.indexOf('Adam Logged') < ordered.indexOf('Bea Haidh')
-  && ordered.indexOf('Dina Probable') > ordered.indexOf('Clara Haidh'));
+  && ordered.indexOf('Dina Predicted') > ordered.indexOf('Clara Haidh'));
 check('render uses the sorted roster and only groups the logged band',
   /const sortedStudents = maktabSummarySortedStudents/.test(js)
   && /band === 0 && prevBand === 0 && groupKey !== prevGroup/.test(js)
   && /wireMaktabSummarySearch\(sortedStudents, date\)/.test(js));
 
-check('page/cache release key is 4.2.13',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.13.1')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.13\.1'/.test(sw));
+check('page/cache release key is 4.2.14',
+  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.14')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.14'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

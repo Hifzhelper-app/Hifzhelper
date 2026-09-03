@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.13.1 | css/detail-pages.css */
+/* Hifzhelper build 4.2.14 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2315,12 +2315,9 @@
 }
 /* Present: deliberately a TEXT glyph, not an SVG/icon. */
 .mkregister-status-present { color: #78BE3F; font-size: 22px; font-weight: 900; line-height: 1; }
-/* Haidh: the old thin green Present check, with no yellow disk/icon. */
-.mkregister-status-haidh { width: 24px; height: 24px; color: var(--color-success); }
-.mkregister-status-haidh svg { width: 16px; height: 16px; }
-/* V4.2.13: probable/predicted Haidh are assumptions, not confirmed facts. */
-.mkregister-status-probable { opacity: .5; }
-.mkregister-status-predicted { opacity: .35; }
+/* V4.2.14: plain Haidh text only — no pill/background/border/check icon. */
+.mkregister-status-haidh-confirmed { color: var(--color-haidh); font-size: 18px; font-weight: 800; }
+.mkregister-status-haidh-predicted { color: var(--color-haidh); font-size: 18px; font-weight: 400; opacity: .55; }
 /* V4.2.13.1 — mobile register width trial. Attendance % is rolled up by
    default behind a compact reveal control so the register spends the phone's
    width on teaching days. The Student column is deliberately narrower and

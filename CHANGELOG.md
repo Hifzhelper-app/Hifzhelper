@@ -26,6 +26,26 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.14 — Authoritative single Haidh model (2026-09-03)
+
+**Files touched:** `index.html`; `css/detail-pages.css`, `css/haidh.css`, `css/tokens.css`; `js/api.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/maktabSummary.js`, `js/sw.js`; `shared/haidhRules.js`; `worker/src/attendance.js`, `worker/src/haidhTimeline.js` (new), `worker/src/maktabAttendance.js`, `worker/src/maktabLog.js`; `tests/verify_attendance_derived.mjs`, `tests/verify_v3761_haidh_predictions.mjs`, `tests/verify_v3762_haidh_decision.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v4212_ui.mjs`, `tests/verify_v4213_attendance_model.mjs`, `tests/verify_v4214_haidh_engine.mjs` (new); `SCHEMA.md`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**
+
+1. **One normalized timeline replaces probable propagation.** There are only confirmed `haidh` and explicit `predicted-haidh` Haidh states. Time passing never promotes a prediction. A shared Worker normalizer applies the same truth to `/attendance`, individual Maktab Attendance, the term register, and Summary-facing attendance.
+2. **Activity is strongest and terminates the episode.** Any Maktab log wins visually and semantically on its date, truncates the old confirmed/predicted run, and suppresses stale stored Haidh rows that would otherwise make that old period resume afterward. Stored Present / explicit teacher Absent are also stop evidence without being painted as Maktab activity.
+3. **Confirmation resets predictions from Day 1.** A confirmed mark/range clears the previous prediction set and regenerates four future cycles from the first confirmed day of the real run. Predictions remain plans only and never count as historical evidence.
+4. **Limits are global.** Continuous Haidh is capped at 10 official days, with the existing 11-touched-calendar-date partial-day edge. Purity remains 15 official / 14 intervening calendar days. The former teacher purity-gap bypass is retired; teachers may still mark explicit Absent.
+5. **Student calendar states are explicit.** Confirmed = dark pink, predicted = light pink, Maktab activity = light green. Activity wins over either Haidh state. A past prediction remains light pink until explicitly confirmed.
+6. **Register uses text states, not a Haidh tick.** Present/logged keeps the bold green `✓`; confirmed Haidh is dark-pink uppercase `H`; predicted Haidh is lighter-pink lowercase `h`; absent remains blank. The old thin green Haidh check is removed.
+7. **Maktab Summary no longer interprets raw Haidh.** Its pink “Haidh” note is removed. Summary asks the normalized Maktab Attendance endpoint for state; if that read fails, it omits Haidh state rather than falling back to raw attendance rows.
+8. **Write paths follow the same truth.** Haidh writes are rejected on dates with Maktab activity. A Maktab save that lands on a stored Haidh/prediction converts that date to activity/present evidence and clears the bounded stale remainder of that old episode.
+9. **Version discipline preserved.** Only served/Worker/shared files actually edited for V4.2.14 receive a V4.2.14 build header. The page/cache query key moves to 4.2.14; untouched served files keep their existing headers.
+
+**Regression coverage:** dedicated V4.2.14 engine harness proves **22/22** authoritative rules; core derived Attendance **34/34**; prediction/reset **23/23**; retired decision/override **9/9**; compatibility model **16/16**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **461 passed, 0 failed among reporting harnesses**; 26 older harnesses remain non-reporting because this checkout lacks `jsdom` and/or their legacy SQLite fixture is behind the current schema.
+
+**Deployment:** deploy the changed Worker/model files first (including new `worker/src/haidhTimeline.js`), then the changed Pages/frontend files, and hard-refresh. **No D1 migration.**
+
+---
+
 ## V4.2.13.1 — Mobile Attendance width + rolled-up percentage (2026-09-02)
 
 **Files touched:** `index.html`, `css/detail-pages.css`, `js/maktabAttendancePage.js`, `js/sw.js`, `tests/verify_v42131_mobile_attendance.mjs` (new), `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v4212_ui.mjs`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker, schema or migration change.**

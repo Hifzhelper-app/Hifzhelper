@@ -1,23 +1,79 @@
+/* Hifzhelper build 4.2.14 | worker/src/attendance.js */
 import { validateAttendanceBody, isValidDate, isTeacherOrAbove } from './utils.js';
 import { haidhOfficialMaxDuration, haidhCodeMaxRunDays, HAIDH_GAP_OFFICIAL, HAIDH_GAP_CODE, evaluateHaidhMark, evaluateHaidhRange, haidhAddDaysISO } from '../../shared/haidhRules.js';
 import { maktabTodayISO } from './utils.js';   // V3.78.0: today by the maktab's clock
+import { normalizeHaidhTimeline, latestHaidhTerminationBefore } from './haidhTimeline.js';
 
-// V3.76.1 — what counts as EVIDENCE for the run and gap checks.
-// Bug found on device 2026-08-27: a real range 27–31 Aug was refused with
-// "15 days have not passed since the last haidh" although the last real
-// haidh was over three weeks back. The blocker was a PREDICTED day on 5 Sep
-// — four days AHEAD of the range. Both handlers fed every haidh AND
-// predicted-haidh row to the rule, which measures the gap to the nearest
-// mark on either side, so a plan sitting in the future vetoed a fact.
-//
-// A prediction is a plan, not a fact. Rule now: a predicted-haidh row dated
-// AFTER today is never evidence. A predicted day at or before today still
-// is — the app already treats a passed prediction as real (V3.39's lazy
-// auto-confirm; js/haidhDetailScreen.js paints it full shade). Confirmed
-// rows always count. The gap rule is unchanged in the other direction: a
-// prediction placed too soon after a REAL haidh is still refused.
+// V4.2.14 — predictions are plans, never evidence for a confirmed run.
+// The old lazy auto-confirm rule has been retired: a predicted day remains
+// predicted until an explicit confirmation is stored.
 export function haidhEvidenceDates(rows, todayISO) {
-  return rows.filter((r) => r.status === 'haidh' || r.date <= todayISO).map((r) => r.date);
+  return rows.filter((r) => r.status === 'haidh').map((r) => r.date);
+}
+
+async function loadMaktabActivityDates(env, studentId) {
+  const { results } = await env.DB.prepare(
+    `SELECT DISTINCT date FROM (
+       SELECT date FROM maktab_sabaq_log WHERE student_id = ?
+       UNION ALL SELECT date FROM maktab_sabaq_dhor_log WHERE student_id = ?
+       UNION ALL SELECT date FROM maktab_dhor_log WHERE student_id = ?
+     ) ORDER BY date`
+  ).bind(studentId, studentId, studentId).all();
+  return results.map(r => r.date);
+}
+
+async function hasMaktabActivityInRange(env, studentId, startDate, endDate) {
+  const row = await env.DB.prepare(
+    `SELECT date FROM (
+       SELECT date FROM maktab_sabaq_log WHERE student_id = ?
+       UNION ALL SELECT date FROM maktab_sabaq_dhor_log WHERE student_id = ?
+       UNION ALL SELECT date FROM maktab_dhor_log WHERE student_id = ?
+     ) WHERE date >= ? AND date <= ? LIMIT 1`
+  ).bind(studentId, studentId, studentId, startDate, endDate).first();
+  return row && row.date ? row.date : null;
+}
+
+async function resetPredictionsFromConfirmedStart(env, studentId, firstConfirmedDate) {
+  await env.DB.prepare(
+    `DELETE FROM attendance WHERE student_id = ? AND status = 'predicted-haidh'`
+  ).bind(studentId).run();
+
+  const student = await env.DB.prepare(
+    `SELECT haidh_cycle_length, haidh_period_length, haidh_ruling FROM students WHERE id = ?`
+  ).bind(studentId).first();
+  const cycleLength = Number(student && student.haidh_cycle_length);
+  const requestedPeriod = Number(student && student.haidh_period_length);
+  const ruling = (student && student.haidh_ruling) || 'hanafi';
+  if (!Number.isInteger(cycleLength) || cycleLength < 1 || !Number.isInteger(requestedPeriod) || requestedPeriod < 1) {
+    return [];
+  }
+
+  const periodLength = Math.min(requestedPeriod, haidhOfficialMaxDuration(ruling));
+  const dates = [];
+  for (let cycle = 0; cycle < 4; cycle++) {
+    for (let d = 0; d < periodLength; d++) {
+      dates.push(haidhAddDaysISO(firstConfirmedDate, cycle * cycleLength + d));
+    }
+  }
+  if (dates.length) {
+    await env.DB.batch(dates.map(date => env.DB.prepare(
+      `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'predicted-haidh')
+       ON CONFLICT(student_id, date) DO NOTHING`
+    ).bind(studentId, date)));
+  }
+  await env.DB.prepare(
+    `UPDATE students SET haidh_next_expected = ? WHERE id = ?`
+  ).bind(haidhAddDaysISO(firstConfirmedDate, cycleLength), studentId).run();
+  return dates;
+}
+
+async function normalizedExistingTimeline(env, studentId) {
+  const [{ results: rows }, activityDates] = await Promise.all([
+    env.DB.prepare(`SELECT date, status FROM attendance WHERE student_id = ? ORDER BY date`).bind(studentId).all(),
+    loadMaktabActivityDates(env, studentId),
+  ]);
+  const explicitStops = rows.filter(r => r.status === 'absent' || r.status === 'present').map(r => r.date);
+  return normalizeHaidhTimeline(rows, activityDates, explicitStops);
 }
 
 // V4.2.11: a teacher/admin confirming a real haidh day is itself enough
@@ -31,27 +87,6 @@ async function promoteHaaidhaFromTeacherMark(env, auth, studentId) {
   ).bind(studentId).run();
 }
 
-// V3.76.1 — after a CONFIRMED mark is written, predictions that can no
-// longer be true go. User's call 2026-08-27: "delete predicted rows that
-// fall inside the 14-day window after the newly confirmed range, since they
-// can no longer be true." Window = the day after the run ends through
-// runEnd + HAIDH_GAP_CODE; only 'predicted-haidh' rows, only after today
-// (a passed prediction is history, not a plan). Never touches 'haidh'.
-async function clearSupersededPredictions(env, studentId, runEndISO, todayISO) {
-  const from = haidhAddDaysISO(runEndISO, 1);
-  const to = haidhAddDaysISO(runEndISO, HAIDH_GAP_CODE);
-  const { results } = await env.DB.prepare(
-    `SELECT date FROM attendance WHERE student_id = ? AND status = 'predicted-haidh' AND date >= ? AND date <= ? AND date > ?`
-  ).bind(studentId, from, to, todayISO).all();
-  const dates = results.map((r) => r.date);
-  if (dates.length) {
-    await env.DB.batch(dates.map((d) =>
-      env.DB.prepare(`DELETE FROM attendance WHERE student_id = ? AND date = ? AND status = 'predicted-haidh'`).bind(studentId, d)
-    ));
-  }
-  return dates;
-}
-
 // GET /attendance?month=YYYY-MM (or student_id for a teacher)
 export async function handleGetAttendance(request, env, auth) {
   const url = new URL(request.url);
@@ -62,15 +97,31 @@ export async function handleGetAttendance(request, env, auth) {
     return { error: 'Not authorized to view this student', status: 403 };
   }
 
-  let query = 'SELECT date, status FROM attendance WHERE student_id = ?';
-  const params = [studentId];
-  if (month && /^\d{4}-\d{2}$/.test(month)) {
-    query += ' AND date LIKE ?';
-    params.push(`${month}-%`);
-  }
-  query += ' ORDER BY date';
+  // V4.2.14: normalize against Maktab activity BEFORE month filtering. A
+  // stop before the viewed month can invalidate stale marks inside it.
+  const [{ results: rawRows }, activityDates] = await Promise.all([
+    env.DB.prepare('SELECT date, status FROM attendance WHERE student_id = ? ORDER BY date').bind(studentId).all(),
+    loadMaktabActivityDates(env, studentId),
+  ]);
+  // Stored Present can come from a personal/PJ log path; it is stop evidence
+  // too, even though only teacher-confirmed Maktab log dates paint green here.
+  const explicitStops = rawRows.filter(r => r.status === 'absent' || r.status === 'present').map(r => r.date);
+  const timeline = normalizeHaidhTimeline(rawRows, activityDates, explicitStops);
+  const normalizedHaidh = new Map(timeline.rows.filter(r => r.status !== 'activity').map(r => [r.date, r.status]));
+  const activitySet = new Set(activityDates);
+  const byDate = new Map();
 
-  const { results } = await env.DB.prepare(query).bind(...params).all();
+  // Preserve non-Haidh attendance states for older callers, then replace raw
+  // Haidh with the normalized truth and finally let activity win.
+  for (const row of rawRows) {
+    if (row.status === 'haidh' || row.status === 'predicted-haidh') continue;
+    byDate.set(row.date, row.status);
+  }
+  for (const [date, status] of normalizedHaidh) byDate.set(date, status);
+  for (const date of activitySet) byDate.set(date, 'activity');
+
+  let results = [...byDate.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([date,status]) => ({ date, status }));
+  if (month && /^\d{4}-\d{2}$/.test(month)) results = results.filter(r => r.date.startsWith(month + '-'));
   return { data: results };
 }
 
@@ -86,6 +137,13 @@ export async function handleSetAttendance(request, env, auth) {
 
   const studentId = isTeacherOrAbove(auth) && body.student_id ? body.student_id : auth.id;
 
+  if (body.status === 'haidh' || body.status === 'predicted-haidh') {
+    const activityDate = await hasMaktabActivityInRange(env, studentId, body.date, body.date);
+    if (activityDate) return { error: 'Maktab activity is already logged on this date and takes precedence over Haidh.', status: 400, code: 'haidh_activity' };
+  }
+
+  let confirmedRunStart = body.date;
+
   // V3.39: marking a day haidh/predicted-haidh is capped two ways — a
   // continuous run can't exceed the student's ruling's max duration, and
   // a new run can't start until the gap since the last one has passed.
@@ -94,13 +152,19 @@ export async function handleSetAttendance(request, env, auth) {
     const student = await env.DB.prepare('SELECT haidh_ruling FROM students WHERE id = ?').bind(studentId).first();
     const ruling = (student && student.haidh_ruling) || 'hanafi';
 
-    const { results } = await env.DB.prepare(
-      `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND date != ?`
-    ).bind(studentId, body.date).all();
-    const todayISO = await maktabTodayISO(env);   // V3.78.0: the maktab's day, not the server's
-    const existingDates = haidhEvidenceDates(results, todayISO);   // V3.76.1: future predictions are not evidence
-
-    const { runLength, gapDays } = evaluateHaidhMark(existingDates, body.date);
+    // V4.2.14: validate against the NORMALIZED confirmed history, not raw
+    // rows. A stale stored mark after a Maktab return must not resurrect an
+    // ended episode or falsely block a later valid period.
+    const timeline = await normalizedExistingTimeline(env, studentId);
+    const existingDates = timeline.confirmedDates.filter(date => date !== body.date);
+    const { runStart, runLength, gapDays } = evaluateHaidhMark(existingDates, body.date);
+    confirmedRunStart = runStart;
+    if (body.status === 'haidh') {
+      const stop = latestHaidhTerminationBefore(timeline, body.date);
+      if (stop && haidhDaysBetweenLocal(stop, body.date) - 1 < HAIDH_GAP_CODE) {
+        return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last Haidh period ended. Please revise your history.`, status: 400, code: 'haidh_gap' };
+      }
+    }
     if (runLength > haidhCodeMaxRunDays(ruling)) {
       return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400 };
     }
@@ -114,14 +178,15 @@ export async function handleSetAttendance(request, env, auth) {
      ON CONFLICT(student_id, date) DO UPDATE SET status = excluded.status`
   ).bind(studentId, body.date, body.status).run();
 
-  // V3.76.1: a CONFIRMED day supersedes predictions in the window after it.
-  let cleared = [];
+  // V4.2.14: a confirmed mark is Day 1 for predictions. Replace the old
+  // prediction set completely and regenerate it from this confirmed anchor.
+  let regenerated = [];
   if (body.status === 'haidh') {
-    cleared = await clearSupersededPredictions(env, studentId, body.date, await maktabTodayISO(env));
+    regenerated = await resetPredictionsFromConfirmedStart(env, studentId, confirmedRunStart);
     await promoteHaaidhaFromTeacherMark(env, auth, studentId);
   }
 
-  return { data: { saved: true, clearedPredictions: cleared } };
+  return { data: { saved: true, regeneratedPredictions: regenerated.length } };
 }
 
 // POST /attendance/mark-range — marks every date from startDate to
@@ -166,16 +231,16 @@ export async function handleMarkHaidhRange(request, env, auth) {
   const bodyStudentId = body && body.student_id;
   const studentId = isTeacherOrAbove(auth) && bodyStudentId ? String(bodyStudentId) : auth.id;
 
-  // V3.76.2: the teacher's decision on a gap refusal, from the maktab
-  // calendar's three-way bar ("Mark as haidh anyway" / "Mark absent" /
-  // "Adjust dates"). Both flags are teacher-gated exactly like student_id —
-  // a student sending them is ignored, so her own calendar keeps the plain
-  // rules. Neither is a general override: override_gap skips the GAP rule
-  // only (the run cap still refuses, as it always did under the old
-  // confirm), and status:'absent' writes absent rows with no rules at all,
-  // which is what the old single-day flow's Cancel did.
+  const activityDate = await hasMaktabActivityInRange(env, studentId, startDate, endDate);
+  if (activityDate) {
+    return { error: `Maktab activity is already logged on ${activityDate} and takes precedence over Haidh.`, status: 400, code: 'haidh_activity' };
+  }
+
+  // V4.2.14: purity and run limits are global. The old teacher
+  // former teacher gap-bypass escape hatch is intentionally retired. Teachers can still
+  // explicitly mark the selected range Absent, but no caller may bypass the
+  // 15-day purity rule when writing Haidh.
   const teacherOpts = isTeacherOrAbove(auth);
-  const overrideGap = teacherOpts && body.override_gap === true;
   const markAbsent = teacherOpts && body.status === 'absent';
   if (markAbsent) {
     const dates = [];
@@ -192,23 +257,20 @@ export async function handleMarkHaidhRange(request, env, auth) {
   const student = await env.DB.prepare('SELECT haidh_ruling FROM students WHERE id = ?').bind(studentId).first();
   const ruling = (student && student.haidh_ruling) || 'hanafi';
 
-  // Existing dates OUTSIDE the proposed range only — dates inside it are
-  // being freshly set by this call, not "existing" for this check (same
-  // exclusion handleSetAttendance does with `date != ?`, generalized to a
-  // span).
-  const { results } = await env.DB.prepare(
-    `SELECT date, status FROM attendance WHERE student_id = ? AND status IN ('haidh','predicted-haidh') AND (date < ? OR date > ?)`
-  ).bind(studentId, startDate, endDate).all();
-  const todayISO = await maktabTodayISO(env);   // V3.78.0: the maktab's day, not the server's
-  const existingDates = haidhEvidenceDates(results, todayISO);   // V3.76.1: future predictions are not evidence
-
+  // V4.2.14: use normalized confirmed history outside the proposed range.
+  // Raw marks invalidated by a prior Maktab return are not evidence.
+  const todayISO = await maktabTodayISO(env);   // maktab-local clock
+  const existingTimeline = await normalizedExistingTimeline(env, studentId);
+  const existingDates = existingTimeline.confirmedDates.filter(date => date < startDate || date > endDate);
   const { dates, runStart, runEnd, runLength, gapDays } = evaluateHaidhRange(existingDates, startDate, endDate);
+  const stop = latestHaidhTerminationBefore(existingTimeline, startDate);
+  if (stop && haidhDaysBetweenLocal(stop, startDate) - 1 < HAIDH_GAP_CODE) {
+    return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last Haidh period ended. Please revise your history.`, status: 400, code: 'haidh_gap' };
+  }
   if (runLength > haidhCodeMaxRunDays(ruling)) {
     return { error: `haidh days cannot exceed ${haidhOfficialMaxDuration(ruling)}. Please revise your history.`, status: 400, code: 'haidh_run' };
   }
-  if (!overrideGap && gapDays !== null && gapDays < HAIDH_GAP_CODE) {
-    // code: the calendar branches on it (V3.76.2) — a gap refusal offers the
-    // teacher her decision; any other refusal is shown as before.
+  if (gapDays !== null && gapDays < HAIDH_GAP_CODE) {
     return { error: `${HAIDH_GAP_OFFICIAL} days have not passed since the last haidh. Please revise your history.`, status: 400, code: 'haidh_gap' };
   }
 
@@ -221,14 +283,13 @@ export async function handleMarkHaidhRange(request, env, auth) {
   );
   await env.DB.batch(statements);
 
-  // V3.76.1: a CONFIRMED range supersedes predictions in the window after it.
-  let cleared = [];
+  let regenerated = [];
   if (status === 'haidh') {
-    cleared = await clearSupersededPredictions(env, studentId, runEnd, todayISO);
+    regenerated = await resetPredictionsFromConfirmedStart(env, studentId, runStart);
     await promoteHaaidhaFromTeacherMark(env, auth, studentId);
   }
 
-  return { data: { saved: true, count: dates.length, status, clearedPredictions: cleared } };
+  return { data: { saved: true, count: dates.length, status, regeneratedPredictions: regenerated.length } };
 }
 
 // DELETE /attendance?date=YYYY-MM-DD[&student_id=X] — clears a day back
@@ -250,14 +311,11 @@ export async function handleDeleteAttendance(request, env, auth) {
   return { data: { deleted: true } };
 }
 
-// POST /attendance/predict — bulk-insert "predicted-haidh" rows, never overwriting
-// anything already set (a real recorded day always wins over a prediction).
-// V3.39: no separate cap-checking needed here — cycleLength/periodLength
-// are already validated against the student's ruling and the dynamic
-// minCycleFrequency floor at Setup-save time (worker/src/profile.js), and
-// cycle length stays the clinically-standard start-to-start definition
-// (confirmed in chat), so this loop's existing math is unchanged and the
-// caps hold by construction.
+// POST /attendance/predict — replace the student's prediction set from Setup.
+// Existing factual rows still win because each regenerated prediction uses DO NOTHING.
+// V4.2.14: legacy profiles may still carry a pre-release duration above the
+// new global 10-day maximum, so prediction generation clamps defensively even
+// though new Setup saves are also validated against shared/haidhRules.js.
 export async function handlePredictHaidh(request, env, auth) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
@@ -267,10 +325,12 @@ export async function handlePredictHaidh(request, env, auth) {
   }
 
   const studentId = auth.id;
+  const effectivePeriodLength = Math.min(Number(periodLength), haidhOfficialMaxDuration('hanafi'));
+  await env.DB.prepare(`DELETE FROM attendance WHERE student_id = ? AND status = 'predicted-haidh'`).bind(studentId).run();
   const start = new Date(lastStart + 'T00:00:00');
   const inserts = [];
   for (let cycle = 0; cycle < 4; cycle++) {
-    for (let d = 0; d < periodLength; d++) {
+    for (let d = 0; d < effectivePeriodLength; d++) {
       const dt = new Date(start);
       dt.setDate(dt.getDate() + cycle * cycleLength + d);
       inserts.push(dt.toISOString().slice(0, 10));
@@ -285,6 +345,10 @@ export async function handlePredictHaidh(request, env, auth) {
   }
 
   return { data: { predicted: inserts.length } };
+}
+
+function haidhDaysBetweenLocal(a, b) {
+  return Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
 }
 
 function isInt(n) { return Number.isInteger(Number(n)) && Number(n) > 0; }

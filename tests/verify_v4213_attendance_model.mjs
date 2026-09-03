@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-// V4.2.13 — attendance/Haidh derivation audit regression.
+// V4.2.14 compatibility audit — V4.2.13 probable propagation is intentionally
+// retired in favour of one confirmed/predicted/activity timeline.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { DatabaseSync } from 'node:sqlite';
 import {
   deriveStudentAttendance,
-  deriveProbableHaidhDates,
   summarizeAttendancePeriod,
   handleAttendancePage,
   handleMaktabRegister,
@@ -18,67 +18,62 @@ let pass=0, fail=0;
 const check=(label,cond)=>{ if(cond) pass++; else { fail++; console.log('FAIL:',label); } };
 
 // ---- pure state-model proofs ----
-const ammarahDays=['2026-08-25','2026-08-26','2026-08-27','2026-08-31','2026-09-01','2026-09-02'];
-const ammarah=deriveStudentAttendance(
-  ammarahDays,
+const days=['2026-08-25','2026-08-26','2026-08-27','2026-08-31','2026-09-01','2026-09-02'];
+const stopped=deriveStudentAttendance(
+  days,
   new Set(['2026-08-31','2026-09-02']),
   ['2026-08-25','2026-08-26','2026-08-27'],
   'hanafi',30,'2026-09-03',[],[]
 );
-check('Ammarah pattern: later log terminates earlier Haidh assumption',
-  ammarah.statuses['2026-08-31']==='present' && ammarah.statuses['2026-09-01']==='absent' && ammarah.statuses['2026-09-02']==='present');
-check('probable calendar run stops before the return log and never resumes afterward',
-  ammarah.probableHaidhDates.includes('2026-08-30') && !ammarah.probableHaidhDates.includes('2026-09-01'));
+check('later Maktab activity terminates the earlier Haidh episode and wins that day',
+  stopped.statuses['2026-08-31']==='present' && stopped.statuses['2026-09-01']==='absent' && stopped.statuses['2026-09-02']==='present');
+check('V4.2.14 exposes no third/probable Haidh state', !('probableHaidhDates' in stopped));
 
-const absentStop=deriveProbableHaidhDates(['2026-08-25'], new Set(), ['2026-08-28'], 'hanafi');
-check('explicit teacher Absent terminates probable Haidh instead of only overriding one date',
-  absentStop.includes('2026-08-27') && !absentStop.includes('2026-08-29'));
-
-const newRun=deriveStudentAttendance(
-  ['2026-08-25','2026-08-31','2026-09-01','2026-09-02'],
-  new Set(['2026-08-31']), ['2026-08-25','2026-09-01'], 'hanafi',30,'2026-09-03',[],[]
+const absentStop=deriveStudentAttendance(
+  ['2026-08-25','2026-08-26','2026-08-27','2026-08-28','2026-08-29'],
+  new Set(), ['2026-08-25','2026-08-26','2026-08-27','2026-08-28','2026-08-29'],
+  'hanafi',30,'2026-09-03',['2026-08-28'],[]
 );
-check('a confirmed mark after a stopping log can start a fresh Haidh run',
-  newRun.statuses['2026-08-31']==='present' && newRun.statuses['2026-09-01']==='haidh' && newRun.statuses['2026-09-02']==='probable-haidh');
-
-const calendarProbable=deriveProbableHaidhDates(['2026-08-27'], new Set(), [], 'hanafi');
-check('probable Haidh is calendar-day state and includes non-Maktab/weekend dates',
-  calendarProbable.includes('2026-08-28') && calendarProbable.includes('2026-08-29') && calendarProbable.includes('2026-08-30'));
+check('explicit teacher Absent stops the episode and stale confirmed rows cannot resume it',
+  absentStop.statuses['2026-08-27']==='haidh' && absentStop.statuses['2026-08-28']==='absent' && absentStop.statuses['2026-08-29']==='absent');
 
 const prediction=deriveStudentAttendance(
   ['2026-09-01','2026-09-02'], new Set(), [], 'hanafi',30,'2026-09-03',[],['2026-09-01']
 );
-check('a prediction keeps its exact-date legacy state but cannot seed extra probable Haidh',
-  prediction.statuses['2026-09-01']==='haidh' && prediction.statuses['2026-09-02']==='absent' && !prediction.probableHaidhDates.length);
+check('a past prediction remains predicted until explicitly confirmed',
+  prediction.statuses['2026-09-01']==='predicted-haidh' && prediction.statuses['2026-09-02']==='absent');
 
 const counts=summarizeAttendancePeriod(
   ['2026-09-01','2026-09-02','2026-09-03','2026-09-04'],
-  {'2026-09-01':'present','2026-09-02':'haidh','2026-09-03':'probable-haidh','2026-09-04':'absent'},
+  {'2026-09-01':'present','2026-09-02':'haidh','2026-09-03':'predicted-haidh','2026-09-04':'absent'},
   '2026-09-01','2026-09-04'
 );
-check('reporting separates active, Haidh/probable and absent while keeping attendance percentage',
-  counts.active_days===1 && counts.haidh_days===2 && counts.probable_haidh_days===1 && counts.absent_dates.length===1 && counts.percent===75);
+check('reporting separates active, confirmed/predicted Haidh and absent',
+  counts.active_days===1 && counts.confirmed_haidh_days===1 && counts.predicted_haidh_days===1
+  && counts.haidh_days===2 && counts.absent_dates.length===1 && counts.percent===75);
 
 const unresolved=summarizeAttendancePeriod(
   ['2026-09-01','2026-09-02'], {'2026-09-01':'present'}, '2026-09-01','2026-09-02'
 );
-check('unresolved current day is excluded from the denominator rather than counted as Present',
-  unresolved.periodDays.length===1 && unresolved.active_days===1 && unresolved.percent===100);
+check('unresolved current/future state stays out of the denominator', unresolved.periodDays.length===1 && unresolved.percent===100);
 
 const streakUnresolved=deriveStudentAttendance(['2026-09-01','2026-09-02'],new Set(),[],'hanafi',2,'2026-09-02',[],[]);
 const streakLoggedToday=deriveStudentAttendance(['2026-09-01','2026-09-02'],new Set(['2026-09-02']),[],'hanafi',2,'2026-09-02',[],[]);
-check('unlogged today does not prematurely extend the no-log warning streak', streakUnresolved.noLogStreak===1 && !streakUnresolved.flagged);
-check('a real log today still resets the no-log warning streak immediately', streakLoggedToday.noLogStreak===0);
+check('unlogged today does not prematurely extend no-log warning streak', streakUnresolved.noLogStreak===1 && !streakUnresolved.flagged);
+check('a real log today resets no-log warning streak', streakLoggedToday.noLogStreak===0);
 
 // ---- active UI contract ----
 const attJs=read('js/haidhDetailScreen.js');
 const regJs=read('js/maktabAttendancePage.js');
-check('individual Attendance UI reports active and Haidh separately',
-  /activeDays/.test(attJs) && /Haidh/.test(attJs) && /% attendance/.test(attJs) && !/Present on \$\{d\.present_days\}/.test(attJs));
-check('register distinguishes probable Haidh from confirmed Haidh',
-  /status === 'probable-haidh'/.test(regJs) && /Probable Haidh/.test(regJs));
-check('calendar range evidence explicitly excludes probable Haidh',
-  /status === 'haidh' \|\| \(status === 'predicted-haidh' && prev <= today\)/.test(attJs));
+const summaryJs=read('js/maktabSummary.js');
+check('individual Attendance UI no longer carries probable Haidh', !/probable[-_ ]haidh/i.test(attJs));
+check('calendar consumes explicit activity and keeps predictions distinct',
+  /row\.status === 'activity'/.test(attJs) && /haidh-cal-day-activity/.test(attJs) && /status === 'predicted-haidh'/.test(attJs));
+check('register renders plain confirmed H and predicted h text',
+  /mkregister-status-haidh-confirmed[^>]*[^]*?>H<\/span>/.test(regJs)
+  && /mkregister-status-haidh-predicted[^>]*[^]*?>h<\/span>/.test(regJs));
+check('Maktab Summary has no pink Haidh note/raw attendance fallback',
+  !/td\.textContent = 'Haidh'/.test(summaryJs) && !/data\.attendance/.test(summaryJs));
 
 // ---- endpoint parity + historical stop evidence ----
 const db=new DatabaseSync(':memory:');
@@ -93,10 +88,11 @@ db.exec(`
 `);
 db.exec(`INSERT INTO maktab_settings (id,maktab_day_min,absence_flag_days,teaching_days,timezone) VALUES (1,1,30,'["mon","tue","wed","thu"]','UTC')`);
 db.exec(`INSERT INTO maktab_terms (id,name,term_from,term_to) VALUES (1,'Audit Term','2026-09-01','2026-09-03')`);
-db.exec(`INSERT INTO students (id,name,role,active,track_haidh,haidh_ruling) VALUES ('L','Logger','student',1,0,'hanafi'),('A','Ammarah','student',1,1,'hanafi'),('P','Probable','student',1,1,'hanafi')`);
-// Aug 31 is BEFORE the displayed term and is the stop evidence the old register query clipped away.
-db.exec(`INSERT INTO maktab_sabaq_log (student_id,date) VALUES ('L','2026-09-01'),('L','2026-09-02'),('A','2026-08-31')`);
-db.exec(`INSERT INTO attendance (student_id,date,status) VALUES ('A','2026-08-25','haidh'),('P','2026-09-01','haidh')`);
+db.exec(`INSERT INTO students (id,name,role,active,track_haidh,haidh_ruling) VALUES ('L','Logger','student',1,0,'hanafi'),('A','Ammarah','student',1,1,'hanafi'),('P','Predicted','student',1,1,'hanafi')`);
+// Make each displayed date a qualifying Maktab day. Ammarah's 31 Aug log is
+// stop evidence before the displayed term, proving normalization is historical.
+db.exec(`INSERT INTO maktab_sabaq_log (student_id,date) VALUES ('L','2026-09-01'),('L','2026-09-02'),('L','2026-09-03'),('A','2026-08-31')`);
+db.exec(`INSERT INTO attendance (student_id,date,status) VALUES ('A','2026-08-25','haidh'),('A','2026-09-01','haidh'),('P','2026-09-02','predicted-haidh')`);
 const stmt=(sql,args)=>({
  async run(){const r=db.prepare(sql).run(...args);return {meta:{last_row_id:Number(r.lastInsertRowid)}};},
  async first(){return db.prepare(sql).get(...args)??null;},
@@ -106,16 +102,13 @@ const env={DB:{prepare(sql){return Object.assign(stmt(sql,[]),{bind(...args){ret
 const auth={id:'T',role:'teacher'};
 const page=(await handleAttendancePage({url:'https://x/attendance/page?student_id=A&from=2026-09-01&to=2026-09-03'},env,auth)).data;
 const register=(await handleMaktabRegister({url:'https://x/maktab/attendance-register?term_id=1'},env,auth)).data;
-const row=register.students.find(s=>s.id==='A');
-const probableRow=register.students.find(s=>s.id==='P');
-check('pre-term log stop evidence is respected by individual page', page.absent_dates.includes('2026-09-01') && !page.probable_haidh_dates.includes('2026-09-01'));
-check('register uses the same full historical stop evidence as individual page', row && row.cells['2026-09-01']==='' && row.attendance_percent===page.percent);
-check('calendar receives probable calendar days before the stopping log, including non-Maktab days',
-  page.probable_haidh_dates.includes('2026-08-30') && !page.probable_haidh_dates.includes('2026-09-01'));
-check('term register paints probable Haidh on a teaching day even when that date is not a qualifying Maktab day',
-  probableRow && probableRow.cells['2026-09-03']==='probable-haidh');
-check('endpoint reporting exposes active/Haidh/absence counts without relabelling Haidh as present',
-  Number.isInteger(page.active_days) && Number.isInteger(page.haidh_days) && Number.isInteger(page.probable_haidh_days) && Array.isArray(page.absent_dates));
+const aRow=register.students.find(s=>s.id==='A');
+const pRow=register.students.find(s=>s.id==='P');
+check('pre-term activity stop suppresses stale resumed confirmed Haidh on the individual page', page.absent_dates.includes('2026-09-01'));
+check('register uses the same normalized stop evidence (Absent is blank by contract)', aRow && aRow.cells['2026-09-01']==='');
+check('an explicit prediction remains predicted in the register', pRow && pRow.cells['2026-09-02']==='predicted-haidh');
+check('page exposes predicted dates/counts and no probable field',
+  Array.isArray(page.predicted_haidh_dates) && Number.isInteger(page.predicted_haidh_days) && !('probable_haidh_dates' in page));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail?1:0);

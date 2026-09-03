@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.12.1 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.14 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -548,8 +548,8 @@ document.addEventListener('click', (e) => {
 // V4.2.12.1 — Summary ordering is based on the DISPLAYED day, not
 // historical attendance. A real log is the strongest state. Logged students
 // are grouped by Group then first name; confirmed Haidh and the remainder are
-// each plain first-name alphabetical bands. Probable/derived Haidh is not a
-// confirmed-Haidh sort state.
+// each plain first-name alphabetical bands. Haidh ordering is fed only by
+// the normalized Attendance read; raw attendance rows are never consulted.
 function maktabSummaryNameKey(student){
   const full = String((student && student.name) || '').trim();
   const first = (full.split(/\s+/)[0] || '').toLocaleLowerCase();
@@ -670,18 +670,21 @@ async function renderMaktabSummaryScreen(){
   (data.sabaq_dhor || []).forEach(r => (byStudent.sabaqDhor[r.student_id] = byStudent.sabaqDhor[r.student_id] || []).push(r));
   (data.dhor || []).forEach(r => (byStudent.dhor[r.student_id] = byStudent.dhor[r.student_id] || []).push(r));
 
-  const haidhByStudent = {};
-  (data.attendance || []).forEach(r => { haidhByStudent[r.student_id] = r.status; });
-
-  // V3.67.0 (delivery (f)): derived attendance — absent / haidh
-  // propagation / the attention flag. Fetched alongside, and failing
-  // softly: a summary that can still show today's entries is more useful
-  // than an error, and every value here is derived rather than recorded.
+  // V4.2.14: consume the SAME normalized Attendance model used by the
+  // register/calendar. There is deliberately no raw-Haidh fallback: if this
+  // request fails, Summary omits Haidh state rather than surfacing stale data.
   let derived = {};
   let isMaktabDay = false;
+  const haidhByStudent = {};
   try {
     const att = await apiGetMaktabAttendance(date);
-    if(att && att.attendance){ derived = att.attendance; isMaktabDay = !!att.isMaktabDay; }
+    if(att && att.attendance){
+      derived = att.attendance;
+      isMaktabDay = !!att.isMaktabDay;
+      Object.entries(derived).forEach(([studentId, state]) => {
+        if(state && (state.status === 'haidh' || state.status === 'predicted-haidh')) haidhByStudent[studentId] = state.status;
+      });
+    }
   } catch(e){ derived = {}; }
 
   host.innerHTML = '';
@@ -727,9 +730,8 @@ async function renderMaktabSummaryScreen(){
     haidhTd.className = 'maktab-haidh-col';
     const btn = document.createElement('button');
     btn.type = 'button';
-    // V4.2.11.4: the attendance icon is navigation only. Haidh state is
-    // carried by the small pink text in the Sabaq cell, so the icon stays
-    // neutral instead of duplicating that state with a yellow tint.
+    // V4.2.14: the attendance icon is navigation only. Summary no longer
+    // paints a separate Haidh note; the Attendance surface owns that state.
     btn.className = 'maktab-haidh-check';
     btn.innerHTML = iconHtml('attendance');
     btn.setAttribute('aria-label', 'Open attendance for ' + stu.name);
@@ -772,14 +774,10 @@ async function renderMaktabSummaryScreen(){
       td.className = 'journal-cell';
       td.setAttribute('data-label', CELL_LABEL[type]);   // V4.2.2: the mobile card's caption
       const d = derived[stu.id];
-      if(type === 'sabaq' && !hasAnyLog && haidhByStudent[stu.id] === 'haidh'){
-        td.className = 'journal-cell journal-cell-haidh';
-        // V4.2.11.4: only a CONFIRMED stored Haidh day earns the pink
-        // notation. A propagated/derived day remains excused from absence,
-        // but is surfaced as Probable Haidh on her calendar instead of
-        // being presented here as confirmed fact.
-        td.textContent = 'Haidh';
-      } else if(type === 'sabaq' && !hasAnyLog && d && d.status === 'absent'){
+      // V4.2.14: the pink Haidh note is removed. Haidh may still affect the
+      // normalized sort/attendance result, but the Sabaq cell stays visually
+      // empty unless there is an explicit Absent result.
+      if(type === 'sabaq' && !hasAnyLog && d && d.status === 'absent'){
         td.className = 'journal-cell journal-cell-absent';
         td.textContent = 'Absent';
       } else {

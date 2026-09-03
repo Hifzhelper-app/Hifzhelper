@@ -1,22 +1,22 @@
-/* Hifzhelper build 4.2.13.1 | js/sw.js */
-// Current as of V3.67.0
-const CACHE_NAME = 'hifzhelper-v4.2.13.1'; // V4.2.13.1 mobile Attendance width / rolled-up percentage
+/* Hifzhelper build 4.2.14 | js/sw.js */
+// V4.2.14 — normalized Haidh/activity model
+const CACHE_NAME = 'hifzhelper-v4.2.14'; // V4.2.14 normalized Haidh/activity model
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=4.2.13.1', 'shared/data.js?v=4.2.13.1', 'shared/haidhRules.js?v=4.2.13.1', './appicons/logo.png',
-  './css/tokens.css?v=4.2.13.1', './css/base.css?v=4.2.13.1', './css/nav.css?v=4.2.13.1', './css/journal-table.css?v=4.2.13.1',
-  './css/components.css?v=4.2.13.1', './css/detail-pages.css?v=4.2.13.1', './css/settings.css?v=4.2.13.1', './css/admin.css?v=4.2.13.1',
-  './css/haidh.css?v=4.2.13.1', './css/juzTracker.css?v=4.2.13.1', './css/sih.css?v=4.2.13.1',
-  './js/icons.js?v=4.2.13.1', './js/customDate.js?v=4.2.13.1', './js/api.js?v=4.2.13.1', './js/logContext.js?v=4.2.13.1', './js/uiSwitch.js?v=4.2.13.1', './js/position.js?v=4.2.13.1',
-  './js/auth.js?v=4.2.13.1', './js/home.js?v=4.2.13.1', './js/tajweed.js?v=4.2.13.1',
-  './js/commentPrivacy.js?v=4.2.13.1', './js/maktabSummary.js?v=4.2.13.1', './js/maktabSettings.js?v=4.2.13.1', './js/maktabSetup.js?v=4.2.13.1', './js/maktabDay.js?v=4.2.13.1', './js/maktabJournal.js?v=4.2.13.1', './js/maktabCalendarPage.js?v=4.2.13.1', './js/maktabAttendancePage.js?v=4.2.13.1', './js/session-timer.js?v=4.2.13.1', './js/journal.js?v=4.2.13.1', './js/dhorPage.js?v=4.2.13.1',
-  './js/sabaqPage.js?v=4.2.13.1', './js/sabaqDhorPage.js?v=4.2.13.1', './js/reflectionCard.js?v=4.2.13.1',
-  './js/logDetailScreen.js?v=4.2.13.1', './js/haidhDetailScreen.js?v=4.2.13.1', './js/kaabaTracker.js?v=4.2.13.1',
-  './js/juzTrackerScreen.js?v=4.2.13.1', './js/sihScreen.js?v=4.2.13.1', './assets/quran-heart.svg?v=4.2.13.1', './assets/quran-heart-regions.json?v=4.2.13.1', './assets/quran-heart-lines.svg?v=4.2.13.1',
-  './js/settingsScreen.js?v=4.2.13.1', './js/adminPage.js?v=4.2.13.1', './js/app.js?v=4.2.13.1'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=4.2.14', 'shared/data.js?v=4.2.14', 'shared/haidhRules.js?v=4.2.14', './appicons/logo.png',
+  './css/tokens.css?v=4.2.14', './css/base.css?v=4.2.14', './css/nav.css?v=4.2.14', './css/journal-table.css?v=4.2.14',
+  './css/components.css?v=4.2.14', './css/detail-pages.css?v=4.2.14', './css/settings.css?v=4.2.14', './css/admin.css?v=4.2.14',
+  './css/haidh.css?v=4.2.14', './css/juzTracker.css?v=4.2.14', './css/sih.css?v=4.2.14',
+  './js/icons.js?v=4.2.14', './js/customDate.js?v=4.2.14', './js/api.js?v=4.2.14', './js/logContext.js?v=4.2.14', './js/uiSwitch.js?v=4.2.14', './js/position.js?v=4.2.14',
+  './js/auth.js?v=4.2.14', './js/home.js?v=4.2.14', './js/tajweed.js?v=4.2.14',
+  './js/commentPrivacy.js?v=4.2.14', './js/maktabSummary.js?v=4.2.14', './js/maktabSettings.js?v=4.2.14', './js/maktabSetup.js?v=4.2.14', './js/maktabDay.js?v=4.2.14', './js/maktabJournal.js?v=4.2.14', './js/maktabCalendarPage.js?v=4.2.14', './js/maktabAttendancePage.js?v=4.2.14', './js/session-timer.js?v=4.2.14', './js/journal.js?v=4.2.14', './js/dhorPage.js?v=4.2.14',
+  './js/sabaqPage.js?v=4.2.14', './js/sabaqDhorPage.js?v=4.2.14', './js/reflectionCard.js?v=4.2.14',
+  './js/logDetailScreen.js?v=4.2.14', './js/haidhDetailScreen.js?v=4.2.14', './js/kaabaTracker.js?v=4.2.14',
+  './js/juzTrackerScreen.js?v=4.2.14', './js/sihScreen.js?v=4.2.14', './assets/quran-heart.svg?v=4.2.14', './assets/quran-heart-regions.json?v=4.2.14', './assets/quran-heart-lines.svg?v=4.2.14',
+  './js/settingsScreen.js?v=4.2.14', './js/adminPage.js?v=4.2.14', './js/app.js?v=4.2.14'
 ];
 
 self.addEventListener('install', (event) => {

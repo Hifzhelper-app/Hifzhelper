@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | shared/haidhRules.js */
+/* Hifzhelper build 4.2.14 | shared/haidhRules.js */
 // ============================================================
 // Hifzhelper — Haidh validation rules (V3.39)
 // Works as a plain global-scope script in the browser (file:// safe — no
@@ -20,7 +20,9 @@
 //    date). The student never sees this adjustment.
 // ============================================================
 
-const HAIDH_OFFICIAL_MAX_DURATION = { hanafi: 10, shafii: 15 };
+// V4.2.14: one global continuous-Haidh limit. The ruling field is retained
+// for existing profiles/UI compatibility, but neither path may exceed 10 days.
+const HAIDH_OFFICIAL_MAX_DURATION = { hanafi: 10, shafii: 10 };
 const HAIDH_GAP_OFFICIAL = 15; // shown to the student; fixed regardless of ruling
 const HAIDH_GAP_CODE = 14;     // actually enforced (HAIDH_GAP_OFFICIAL - 1)
 
@@ -48,8 +50,9 @@ function haidhDaysBetween(aISO, bISO) {
   return Math.round((new Date(bISO + 'T00:00:00') - new Date(aISO + 'T00:00:00')) / 86400000);
 }
 
-// Given the student's OTHER existing haidh/predicted-haidh dates
-// (YYYY-MM-DD strings, any order, not including candidateDate) and the
+// Given the student's OTHER existing CONFIRMED Haidh dates (V4.2.14;
+// predictions are plans, never run evidence), as YYYY-MM-DD strings (any
+// order, not including candidateDate), and the
 // date being marked, works out:
 //  - runLength: how many contiguous calendar days the resulting run
 //    would span, including candidateDate itself
@@ -78,7 +81,7 @@ function evaluateHaidhMark(existingDates, candidateDate) {
       if (gapDays === null || gap < gapDays) gapDays = gap;
     }
   }
-  return { runLength, gapDays };
+  return { runStart, runEnd, runLength, gapDays };
 }
 
 // V3.40.3 bug fix: rewritten to evaluate the WHOLE proposed range as one

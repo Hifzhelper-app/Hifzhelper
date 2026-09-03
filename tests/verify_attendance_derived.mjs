@@ -25,49 +25,43 @@ const days = (...d) => d;
   check('maktab day, no log, no haidh → absent', r.statuses['2026-08-01'] === 'absent');
 }
 
-// ---- propagation: CALENDAR days, not maktab days ----
+// ---- V4.2.14: no probable propagation; predictions are explicit state ----
 {
-  // haidh marked 01 only. Maktab meets 02, 05, 09, 11, 15. Hanafi max 10:
-  // the run covers 01..10, so 02/05/09 are haidh, 11 and 15 are absent.
   const md = days('2026-08-02', '2026-08-05', '2026-08-09', '2026-08-11', '2026-08-15');
   const r = deriveStudentAttendance(md, [], ['2026-08-01'], 'hanafi', 30);
-  check('propagation: continues on later maktab days with no log',
-    r.statuses['2026-08-02'] === 'probable-haidh' && r.statuses['2026-08-05'] === 'probable-haidh' && r.statuses['2026-08-09'] === 'probable-haidh');
-  check('propagation: stops at the hanafi max of 10 CALENDAR days → absent after',
-    r.statuses['2026-08-11'] === 'absent' && r.statuses['2026-08-15'] === 'absent');
+  check('confirmed Day 1 does not invent probable Haidh on later Maktab days',
+    md.every(d => r.statuses[d] === 'absent') && !('probableHaidhDates' in r));
 
-  // shafii = 15 days from the 01, i.e. 01..15 inclusive — so the 15th is
-  // still covered and absence starts on the 16th. (First draft of this
-  // check expected the 15th to be absent; the code was right and the
-  // expectation was off by the inclusive start day.)
+  const predicted = deriveStudentAttendance(
+    md, [], ['2026-08-01'], 'hanafi', 30, null, [], ['2026-08-02','2026-08-05','2026-08-09']
+  );
+  check('explicit predictions remain predicted on their exact dates',
+    predicted.statuses['2026-08-02'] === 'predicted-haidh'
+    && predicted.statuses['2026-08-05'] === 'predicted-haidh'
+    && predicted.statuses['2026-08-09'] === 'predicted-haidh');
+  check('predictions do not propagate beyond their stored dates',
+    predicted.statuses['2026-08-11'] === 'absent' && predicted.statuses['2026-08-15'] === 'absent');
+
   const shafii = deriveStudentAttendance(md.concat('2026-08-16'), [], ['2026-08-01'], 'shafii', 30);
-  check('propagation: shafii covers 15 days — the 11th and 15th are haidh, the 16th absent',
-    shafii.statuses['2026-08-11'] === 'probable-haidh' && shafii.statuses['2026-08-15'] === 'probable-haidh'
+  check('ruling field does not restore old Shafii/probable propagation',
+    shafii.statuses['2026-08-11'] === 'absent' && shafii.statuses['2026-08-15'] === 'absent'
     && shafii.statuses['2026-08-16'] === 'absent');
 }
 
-// ---- THE case that distinguishes calendar days from maktab days ----
+// ---- activity/absence precedence and exact-date truth ----
 {
-  // haidh 01; the maktab then does not meet for a fortnight; next maktab
-  // day is the 20th. Under the WRONG rule (counting maktab days) the
-  // allowance is untouched and the 20th would still read haidh. Under
-  // the correct calendar rule she is long past her max → absent.
   const r = deriveStudentAttendance(days('2026-08-20'), [], ['2026-08-01'], 'hanafi', 30);
-  check('DISTINGUISHING CASE: a gap in maktab days still consumes the allowance → absent',
-    r.statuses['2026-08-20'] === 'absent');
+  check('a distant Maktab day is absent unless explicitly confirmed/predicted', r.statuses['2026-08-20'] === 'absent');
 
-  // and the inverse: a dense run inside the window is still haidh
   const dense = deriveStudentAttendance(days('2026-08-02','2026-08-03','2026-08-04'), [], ['2026-08-01'], 'hanafi', 30);
-  check('inverse: maktab days inside the window are all haidh',
-    Object.values(dense.statuses).every(v => v === 'probable-haidh'));
+  check('nearby Maktab days are not silently converted to Haidh', Object.values(dense.statuses).every(v => v === 'absent'));
 }
 
-// ---- consecutive marks form one run, measured from its START ----
+// ---- consecutive confirmed marks stay confirmed only where stored ----
 {
-  // marks on 01,02,03 are one run starting 01 → hanafi covers to the 10th
-  const r = deriveStudentAttendance(days('2026-08-09', '2026-08-12'), [], ['2026-08-01','2026-08-02','2026-08-03'], 'hanafi', 30);
-  check('a consecutive run is measured from its start, not its last mark',
-    r.statuses['2026-08-09'] === 'probable-haidh' && r.statuses['2026-08-12'] === 'absent');
+  const r = deriveStudentAttendance(days('2026-08-02','2026-08-03','2026-08-09','2026-08-12'), [], ['2026-08-01','2026-08-02','2026-08-03'], 'hanafi', 30);
+  check('stored confirmed dates remain confirmed', r.statuses['2026-08-02'] === 'haidh' && r.statuses['2026-08-03'] === 'haidh');
+  check('a confirmed run does not create a probable tail', r.statuses['2026-08-09'] === 'absent' && r.statuses['2026-08-12'] === 'absent');
 }
 
 // ---- the attention flag: MAKTAB days, resets on any log ----
@@ -167,6 +161,20 @@ const log = (sid, date) => handleSaveMaktabSabaq(post({ student_id: sid, date, s
   check('endpoint: no log, no haidh, on a maktab day → absent', r.attendance.S1.status === 'absent');
   check('endpoint: the haidh mark from 08-02 does NOT still cover 08-20 (calendar max exceeded)',
     r.attendance.S1.status === 'absent');
+}
+
+// ---- V4.2.14 write path: activity ends a stored Haidh/prediction run ----
+{
+  db.exec("INSERT OR REPLACE INTO attendance VALUES ('S1','2026-08-25','haidh')");
+  db.exec("INSERT OR REPLACE INTO attendance VALUES ('S1','2026-08-26','haidh')");
+  db.exec("INSERT OR REPLACE INTO attendance VALUES ('S1','2026-08-27','predicted-haidh')");
+  db.exec("INSERT OR REPLACE INTO attendance VALUES ('S1','2026-09-20','predicted-haidh')");
+  const saved = await log('S1', '2026-08-25');
+  const same = db.prepare("SELECT status FROM attendance WHERE student_id='S1' AND date='2026-08-25'").get();
+  const stale = db.prepare("SELECT date FROM attendance WHERE student_id='S1' AND date IN ('2026-08-26','2026-08-27')").all();
+  const later = db.prepare("SELECT status FROM attendance WHERE student_id='S1' AND date='2026-09-20'").get();
+  check('v4214 save: a Maktab log overwrites same-day stored Haidh with activity/present evidence', !!(saved.data && saved.data.id) && same && same.status === 'present');
+  check('v4214 save: stale remainder is cleared without deleting a later prediction cycle', stale.length === 0 && later && later.status === 'predicted-haidh');
 }
 
 // ---- gating ----

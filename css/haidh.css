@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/haidh.css */
+/* Hifzhelper build 4.2.14 | css/haidh.css */
 /* ============================================================
    Hifzhelper — Haidh calendar (V3.39)
    ============================================================ */
@@ -55,12 +55,8 @@
 .haidh-cal-day-muted { color: var(--color-ink-faint); background: var(--color-page-bg); }
 .haidh-cal-day-today { border-color: var(--color-accent); border-width: 2px; }
 
-/* Confirmed/actual haidh — full shade. Planned/predicted — lighter
-   shade (confirmed in chat: visually distinct, using the existing
-   predicted-haidh status). No difference once a planned day auto-
-   resolves — that's a backend/attendance distinction, not a visual one
-   here; a day only ever shows "planned" while it's still genuinely in
-   the future. */
+/* V4.2.14: confirmed Haidh stays dark pink; predicted Haidh stays light
+   pink even after its date passes. A prediction is never promoted by time. */
 .haidh-cal-day-confirmed {
   background: var(--color-haidh);
   border-color: var(--color-haidh);
@@ -69,6 +65,13 @@
 .haidh-cal-day-planned {
   background: var(--color-haidh-soft);
   border-color: var(--color-haidh-soft);
+  color: var(--color-ink);
+}
+
+/* Logged Maktab activity overrides both Haidh states and terminates the run. */
+.haidh-cal-day-activity {
+  background: var(--color-activity-soft);
+  border-color: var(--color-activity);
   color: var(--color-ink);
 }
 
