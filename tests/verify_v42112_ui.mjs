@@ -29,10 +29,12 @@ check('day-header row has a strong bottom separator including the two row-spanni
 check('Present uses a bold lime TEXT tick',
   /mkregister-status-present" aria-hidden="true">✓<\/span>/.test(page)
   && /\.mkregister-status-present \{ color: #78BE3F; font-size: 22px; font-weight: 900/.test(css));
-check('Haidh reuses the old thin green check and no yellow Haidh disk remains',
-  /mkregister-status-haidh[\s\S]*iconHtml\('check'\)/.test(page)
-  && !/iconHtml\('haidh'\)/.test(page)
-  && !/background: #FFD400/.test(css));
+check('Haidh uses plain dark-pink H / light-pink h text with no icon pill',
+  /mkregister-status-haidh-confirmed" aria-hidden="true">H<\/span>/.test(page)
+  && /mkregister-status-haidh-predicted" aria-hidden="true">h<\/span>/.test(page)
+  && /mkregister-status-haidh-confirmed \{ color: var\(--color-haidh\);[^}]*font-weight: 800/.test(css)
+  && /mkregister-status-haidh-predicted \{ color: var\(--color-haidh\);[^}]*font-weight: 400/.test(css)
+  && !/iconHtml\('haidh'\)/.test(page));
 check('Attendance % is the second column and is returned per student',
   /mkregister-student-head" rowspan="2">[\s\S]*Student[\s\S]*<\/th><th class="mkregister-percent-head" rowspan="2">Attendance %<\/th>/.test(page)
   && /attendance_percent: summary\.percent/.test(worker));
@@ -53,8 +55,8 @@ check('admin primary menu order is Home, Maktab, Attendance, Student Management,
 check('Attendance and Calendar are not duplicated in the later personal-tools group',
   /!\['home', 'sih', 'juzTracker', 'attendancePage'\]\.includes\(x\.id\)/.test(auth)
   && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
-check('V4.2.11.2 page/cache contract remains valid after V4.2.13.1',
-  /js\/app\.js\?v=4\.2\.13\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.13\.1'/.test(sw));
+check('V4.2.11.2 page/cache contract remains valid after V4.2.14',
+  /js\/app\.js\?v=4\.2\.14/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

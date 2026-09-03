@@ -14,6 +14,21 @@ Base URLs:
 
 ---
 
+## V4.2.14 — Authoritative single Haidh model checks
+
+1. Run `node tests/verify_v4214_haidh_engine.mjs`. It must prove the global 10-day / 11-touched edge, 15-day / 14-intervening purity rule, activity precedence, no old-run resume, prediction non-promotion, Day-1 regeneration, activity write rejection, and retired teacher gap bypass.
+2. Confirmed reset: seed old predictions, confirm a valid new period, and verify every old prediction is removed and the new prediction cycles are anchored to the first confirmed day.
+3. Activity termination: place confirmed/predicted rows around a Maktab log. `/attendance`, individual Attendance, and the register must all show activity/present on the log date and must not surface stale Haidh after it from that old episode.
+4. Calendar visual check: confirmed dark pink; predicted light pink even after the predicted date has passed; actual Maktab activity light green and unselectable as Haidh while it exists.
+5. Register visual check: present/logged bold green `✓`; confirmed dark-pink `H`; predicted lighter-pink `h`; absent blank. No Haidh SVG/check/pill/background.
+6. Summary check: no pink “Haidh” cell note. Force the normalized Attendance request to fail and confirm Summary does not fall back to raw Haidh data.
+7. Purity boundary: after a termination, a new confirmed period with fewer than 14 intervening dates must fail `haidh_gap`; the boundary with 14 intervening dates is permitted. Sending the old teacher gap-bypass field must not change that result.
+8. Run cumulative suites: `node tests/verify_attendance_derived.mjs`, `node tests/verify_v3761_haidh_predictions.mjs`, `node tests/verify_v3762_haidh_decision.mjs`, `node tests/verify_v4213_attendance_model.mjs`, the V4.2.11–V4.2.14 UI harnesses, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, and `node tests/run-all.mjs`.
+
+**Build target:** all reporting harnesses must have zero failures. Any older non-reporting harness blocked by a missing optional dependency must be called out separately rather than counted as a pass.
+
+**Automated coverage in this V4.2.14 build:** dedicated engine **22/22**; core derived Attendance **34/34**; prediction/reset **23/23**; retired decision/override **9/9**; V4.2.13 compatibility model **16/16**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **461 passed, 0 failed among reporting harnesses**. **26 older harnesses do not report** in this checkout because `jsdom` is unavailable and/or their legacy SQLite fixture is already behind the current schema; they are not counted as passes, and `run-all.mjs` therefore exits non-zero despite zero reported failures.
+
 ## V4.2.13.1 — Mobile Attendance width checks
 
 1. On a phone, open Maktab Attendance. The register should sit closer to the left/right edge of its green track; other screens must retain their existing screen inset.

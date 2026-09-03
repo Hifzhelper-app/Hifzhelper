@@ -1,12 +1,13 @@
-/* Hifzhelper build 4.2.13.1 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.14 | js/maktabAttendancePage.js */
 // ============================================================
-// Hifzhelper — Maktab Attendance register (V4.2.13.1).
+// Hifzhelper — Maktab Attendance register (V4.2.14).
 //
 // One roster, one existing Attendance % value, then narrow teaching-day
 // columns grouped beneath merged date-range headings. The current Maktab
 // week is put in view automatically when the current term opens.
-// Present = bold lime text tick. Haa'idha = the former thin green present
-// check. Absent/unresolved = blank. Selecting a student's name opens her
+// Present = bold lime text tick. Confirmed Haidh = dark-pink uppercase H;
+// predicted Haidh = lighter-pink lowercase h. Absent/unresolved = blank.
+// Selecting a student's name opens her
 // individual Attendance page, where editing continues to live.
 // ============================================================
 
@@ -47,7 +48,7 @@ function mkregFirstNameKey(name){
 function mkregStudentRank(student, date){
   const status = student && student.cells ? student.cells[date] : '';
   if(status === 'present') return 0;
-  if(status === 'haidh' || status === 'probable-haidh') return 1;
+  if(status === 'haidh' || status === 'predicted-haidh') return 1;
   return 2;
 }
 function mkregSortStudents(students, date){
@@ -133,15 +134,12 @@ async function mkregisterPaint(){
       let label = 'Absent';
       if(status === 'present'){
         mark = '<span class="mkregister-status mkregister-status-present" aria-hidden="true">✓</span>';
-        label = 'Present';
+        label = 'Present / logged';
       } else if(status === 'haidh'){
-        mark = `<span class="mkregister-status mkregister-status-haidh" aria-hidden="true">${iconHtml('check')}</span>`;
-        label = 'Haidh';
-      } else if(status === 'probable-haidh'){
-        mark = `<span class="mkregister-status mkregister-status-haidh mkregister-status-probable" aria-hidden="true">${iconHtml('check')}</span>`;
-        label = 'Probable Haidh';
+        mark = '<span class="mkregister-status mkregister-status-haidh-confirmed" aria-hidden="true">H</span>';
+        label = 'Confirmed Haidh';
       } else if(status === 'predicted-haidh'){
-        mark = `<span class="mkregister-status mkregister-status-haidh mkregister-status-predicted" aria-hidden="true">${iconHtml('check')}</span>`;
+        mark = '<span class="mkregister-status mkregister-status-haidh-predicted" aria-hidden="true">h</span>';
         label = 'Predicted Haidh';
       } else if(c.future){
         label = 'Not yet recorded';
@@ -152,7 +150,7 @@ async function mkregisterPaint(){
     }).join('')).join('');
     const pct = s.attendance_percent == null ? '—' : `${s.attendance_percent}%`;
     const pctTitle = s.attendance_maktab_days
-      ? `${s.attendance_active_days || 0} active · ${s.attendance_haidh_days || 0} Haidh${s.attendance_probable_haidh_days ? ` (${s.attendance_probable_haidh_days} probable)` : ''} · ${s.attendance_absent_days || 0} absent · ${s.attendance_maktab_days} resolved Maktab days`
+      ? `${s.attendance_active_days || 0} active · ${s.attendance_haidh_days || 0} Haidh${s.attendance_predicted_haidh_days ? ` (${s.attendance_predicted_haidh_days} predicted)` : ''} · ${s.attendance_absent_days || 0} absent · ${s.attendance_maktab_days} resolved Maktab days`
       : 'No resolved Maktab days in this period';
     return `<tr>
       <th class="mkregister-student-cell" scope="row"><button type="button" class="mkregister-student" data-student-id="${mkregEsc(s.id)}" title="Open ${mkregEsc(s.name)} attendance">${mkregEsc(s.name)}</button></th>

@@ -30,11 +30,24 @@ numbers; headings are unique, search the text.
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
 | ~~79~~ | ~~**Deploy + device-verify V4.2.12.1 Quick Log refinement**~~ | **SUPERSEDED by V4.2.13** | V4.2.13 carries the V4.2.12.1 frontend forward and adds the audited Attendance/Haidh correction. |
 | ~~80~~ | ~~**Deploy + device-verify V4.2.13 Attendance/Haidh audit**~~ | **SUPERSEDED by V4.2.13.1 device pass** | V4.2.13 remains the required Worker/model base; V4.2.13.1 overlays the mobile register-width refinement. |
-| **81** | **Deploy + device-verify V4.2.13.1 mobile Attendance width** | **READY — build complete** | **Deploy V4.2.13 Worker/model first if not already live, then this frontend overlay; no migration.** Confirm collapsed `%`, narrower Student column and 4–5 visible day columns on phone.
+| ~~81~~ | ~~**Deploy + device-verify V4.2.13.1 mobile Attendance width**~~ | **SUPERSEDED by V4.2.14** | V4.2.14 carries the mobile-width work forward with the authoritative single Haidh model. |
+| **82** | **Deploy + device-verify V4.2.14 single Haidh model** | **READY — build complete** | **Worker + frontend; no migration.** Deploy the V4.2.14 Worker/model files first, then the Pages overlay. Verify activity termination, dark/light pink calendar states, green activity, and register `H` / `h`. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.13.1 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.14 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **No migration. Deploy the Worker/model first**, including the new `worker/src/haidhTimeline.js`, then overlay the changed Pages/frontend files and hard-refresh until the page/cache key reads **v4.2.14**.
+2. Confirm a new **confirmed Haidh** mark replaces the old prediction set, is Day 1 of the real period, and regenerates predictions from that first confirmed day.
+3. Confirm **Maktab activity wins** on the same date, ends the active confirmed/predicted run, and stale stored Haidh rows after that stop do not make the old run resume.
+4. Student Haidh calendar: **dark pink = confirmed**, **light pink = predicted**, **light green = Maktab activity**. A prediction must remain light pink after its date passes until explicitly confirmed.
+5. Attendance register: logged/present is the existing bold green `✓`; confirmed Haidh is plain dark-pink **`H`**; predicted Haidh is plain lighter-pink **`h`**; absent is blank. No Haidh check icon/pill/background remains.
+6. Maktab Summary must not paint a separate pink “Haidh” note and must not fall back to raw Haidh rows. If the normalized Attendance read fails, Summary omits Haidh state rather than inventing one.
+7. Confirm global limits: maximum continuous Haidh **10 days** (11 touched dates only for the partial-day edge), and a new period requires **15 days / 14 intervening calendar days** of purity. The former teacher gap-bypass option is gone; explicit **Absent** remains available.
+8. Run `node tests/verify_v4214_haidh_engine.mjs`, `node tests/verify_attendance_derived.mjs`, `node tests/verify_v3761_haidh_predictions.mjs`, `node tests/verify_v4213_attendance_model.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`.
+   - Current build result: **461 passed, 0 failed among reporting harnesses**. `run-all.mjs` still exits non-zero because 26 older harnesses cannot report in this checkout (missing `jsdom` and/or legacy SQLite fixture drift); do not count those as passes or as V4.2.14 product failures.
+
+## V4.2.13.1 — SUPERSEDED BY V4.2.14 FOR DEPLOYMENT
 
 1. **Frontend overlay only.** V4.2.13's Worker/model must already be deployed. Upload the V4.2.13.1 Pages files and hard-refresh until the page/cache key reads **v4.2.13.1**. No migration and no new Worker deployment.
 2. On a phone, open Maktab Attendance. Confirm the green screen inset is reduced only for this screen and that the sticky Student column is narrower with ellipsis for long names.

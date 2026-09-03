@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.14 | worker/src/maktabLog.js */
 // ============================================================
 // Hifzhelper -- Maktab log endpoints (V3.58.0, maktab delivery (d)).
 // The teacher-confirmed record of a Hifz day, completely independent of
@@ -36,6 +37,7 @@
 import { isDuplicate, updateLog, deleteLog, getLogs, applyPrivacy } from './logHelpers.js';
 import { isValidDate, isInRange, isTeacherOrAbove } from './utils.js';
 import { computeDefaultDhorEntry, mergeDhorUnitsIntoPool } from './dhorSchedule.js';
+import { haidhAddDaysISO, haidhCodeMaxRunDays } from '../../shared/haidhRules.js';
 
 // V3.59.0 (maktab delivery (e1)): one round-trip payload for the maktab
 // summary screen — the active-student roster PLUS all three tables'
@@ -81,20 +83,15 @@ async function handleMaktabSummary(request, env, auth) {
     return rows;
   }
 
-  // V3.60.0 ((e2)): the date's haidh marks ride along so the summary can
-  // show "Haidh" in an empty row (PJ journal pattern) and the teacher can
-  // see who's marked before tapping in. haidh/predicted only -- present/
-  // absent are DERIVED for the maktab (delivery (f)), never read from here.
-  const attendance = (await env.DB.prepare(
-    `SELECT student_id, status FROM attendance WHERE date = ? AND status IN ('haidh','predicted-haidh')`
-  ).bind(date).all()).results;
+  // V4.2.14: raw attendance rows no longer ride on the Summary payload.
+  // The frontend obtains Haidh state only from /maktab/attendance, whose
+  // normalized timeline also knows about activity stop-evidence.
 
   return { data: {
     students,
     sabaq: await dayRows('maktab_sabaq_log', CONFIG.sabaq),
     sabaq_dhor: await dayRows('maktab_sabaq_dhor_log', CONFIG.sabaqDhor),
     dhor: await dayRows('maktab_dhor_log', CONFIG.dhor),
-    attendance,
   } };
 }
 
@@ -212,16 +209,22 @@ async function handleSave(cfg, request, env, auth) {
     await mergeDhorUnitsIntoPool(env, body.student_id, src.segment_from, src.segment_to, src.ref, { maktab: true });
   }
 
-  // Haidh overwrite (confirmed in chat: "the save overwrites the haidh
-  // mark" -- haidh and a log cannot co-exist, log always wins).
-  // Targeted, NOT the PJ's unconditional present-upsert: this resolves
-  // a haidh conflict without writing new 'present' rows into the PJ's
-  // attendance for every maktab save -- PJ attendance keeps reflecting
-  // PJ activity. Maktab attendance itself is DERIVED at read time
-  // (delivery (f)); nothing to sync here.
-  await env.DB.prepare(
-    `UPDATE attendance SET status = 'present' WHERE student_id = ? AND date = ? AND status IN ('haidh','predicted-haidh')`
-  ).bind(body.student_id, body.date).run();
+  // V4.2.14: Maktab activity is the strongest evidence. If this date was
+  // inside a confirmed/predicted Haidh run, activity wins on the date AND
+  // terminates the remainder of that old run. Future prediction cycles are
+  // safely outside this bounded 11-touched-date episode window.
+  const existingHaidh = await env.DB.prepare(
+    `SELECT status FROM attendance WHERE student_id = ? AND date = ? AND status IN ('haidh','predicted-haidh')`
+  ).bind(body.student_id, body.date).first();
+  if (existingHaidh) {
+    await env.DB.prepare(
+      `UPDATE attendance SET status = 'present' WHERE student_id = ? AND date = ? AND status IN ('haidh','predicted-haidh')`
+    ).bind(body.student_id, body.date).run();
+    const through = haidhAddDaysISO(body.date, haidhCodeMaxRunDays('hanafi') - 1);
+    await env.DB.prepare(
+      `DELETE FROM attendance WHERE student_id = ? AND date > ? AND date <= ? AND status IN ('haidh','predicted-haidh')`
+    ).bind(body.student_id, body.date, through).run();
+  }
 
   return { data: { id: result.meta.last_row_id, isDuplicate: dup } };
 }

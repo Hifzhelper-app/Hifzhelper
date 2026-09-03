@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11 | js/api.js */
+/* Hifzhelper build 4.2.14 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -308,9 +308,8 @@ function apiSetAttendanceFor(studentId, date, status){
 // V3.76.0 (Phase 2): the range write for a named student — the maktab's
 // haidh calendar marks a range as the student's own does. Teacher-gated in
 // the worker; a student's own id passes, anyone else's is ignored.
-// V3.76.2: opts = { overrideGap: true } (teacher decides to mark haidh
-// despite the gap) or { status: 'absent' } (teacher marks the range absent
-// instead). Both teacher-gated in the worker; a student's flag is ignored.
+// V4.2.14: purity/run limits are global; the former override-gap option
+// is retired. Explicit teacher Absent uses apiSetAttendanceFor instead.
 // V3.80.0: the attendance page. Own vs For, like every student-scoped pair.
 function apiGetAttendancePage(from, to){
   const qs = (from && to) ? `?from=${from}&to=${to}` : '';
@@ -321,10 +320,8 @@ function apiGetAttendancePageFor(studentId, from, to){
   if(from && to){ parts.push(`from=${from}`, `to=${to}`); }
   return apiFetch('/attendance/page?' + parts.join('&'));
 }
-function apiMarkHaidhRangeFor(studentId, startDate, endDate, opts){
+function apiMarkHaidhRangeFor(studentId, startDate, endDate){
   const body = { student_id: studentId, startDate, endDate };
-  if(opts && opts.overrideGap) body.override_gap = true;
-  if(opts && opts.status) body.status = opts.status;
   return apiFetch('/attendance/mark-range', { method: 'POST', body: JSON.stringify(body) });
 }
 

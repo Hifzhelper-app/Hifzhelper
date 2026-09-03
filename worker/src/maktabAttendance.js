@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.13 | worker/src/maktabAttendance.js */
+/* Hifzhelper build 4.2.14 | worker/src/maktabAttendance.js */
 // ============================================================
 // Hifzhelper -- derived maktab attendance (V3.67.0, delivery (f)).
 // The last of the six maktab deliveries. NOTHING IS STORED: every value
@@ -14,17 +14,13 @@
 //                absent on them.
 //   present    = the student has any Maktab log that day. Derived, never
 //                stored as Maktab attendance.
-//   haidh      = an explicit confirmed `attendance.status='haidh'` row.
-//   probable   = a read-only calendar-day assumption after confirmed Haidh,
-//                bounded by the student's ruling maximum. It is NOT stored.
-//                A later Maktab log or explicit teacher Absent mark is hard
-//                evidence that ends that assumed run; it cannot resume after
-//                that stop unless a NEW confirmed Haidh mark starts a run.
-//   predicted  = an explicit `predicted-haidh` row. It keeps its established
-//                exact-date behaviour but never seeds probable propagation.
-//   absent     = a completed qualifying Maktab day with no log, confirmed /
-//                probable Haidh, or other explicit excusal.
-//   biology    = confirmed/probable duration is counted in CALENDAR days,
+//   haidh      = normalized confirmed `attendance.status='haidh'`.
+//   predicted  = normalized `predicted-haidh`; time passing never promotes it.
+//   activity   = any Maktab log; strongest evidence, ends the current Haidh run.
+//   absent     = a completed qualifying Maktab day with no log/Haidh, or an
+//                explicit teacher absence marker. Explicit absence also stops
+//                an existing Haidh run for compatibility with teacher records.
+//   biology    = confirmed/predicted duration is counted in CALENDAR days,
 //                NOT Maktab days. Weekends and non-teaching days consume the
 //                allowance and therefore appear on the Haidh calendar.
 //   flag       = no maktab log for >= absence_flag_days consecutive
@@ -35,7 +31,7 @@
 import { isTeacherOrAbove, isValidDate, maktabTodayISO } from './utils.js';
 import { termContainingToday } from './maktabCalendar.js';   // V3.87.0: terms drive attendance
 import { readMaktabSettings, teachingDaysOf, WEEKDAY_KEYS } from './maktabSettings.js';   // V3.98.0
-import { haidhOfficialMaxDuration } from '../../shared/haidhRules.js';
+import { normalizeHaidhTimeline } from './haidhTimeline.js';
 
 function daysBetweenISO(a, b) {
   return Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
@@ -69,80 +65,36 @@ async function loadLoggedPairs(env) {
   return byStudent;
 }
 
-// V4.2.13 — one explicit attendance state model.
+// V4.2.14 — one normalized attendance state model.
 //
-// Confirmed Haidh is stored fact (`attendance.status='haidh'`). Probable
-// Haidh is derived, read-only state that may extend a confirmed run across
-// CALENDAR days up to the student's ruling maximum. Crucially, the first
-// later MAKTAB log or explicit teacher Absent mark TERMINATES that assumed
-// run; it may not resume after that evidence. This closes the historical
-// leakage where a student could log after Haidh, miss a later day, and still
-// be silently excused by the old earlier run.
-function addDaysISO(iso, days) {
-  const d = new Date(iso + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+// There is no third/probable Haidh state. Confirmed and predicted rows are
+// normalized against stronger Maktab activity (and explicit teacher Absent
+// stop-evidence) by worker/src/haidhTimeline.js. Activity wins immediately
+// and an old Haidh episode cannot resume after the stop.
 function asDateSet(values) {
   return values instanceof Set ? new Set(values) : new Set(values || []);
 }
 
-// Calendar-day probable Haidh, not just Maktab days. This is deliberately
-// exported so regression tests can prove weekends/non-teaching days are
-// visible in the Haidh calendar while only Maktab days affect attendance.
-// Only CONFIRMED Haidh seeds an assumed run. Predictions retain their
-// existing exact-date semantics but never seed additional probable days.
-export function deriveProbableHaidhDates(confirmedHaidhDates, loggedDates, explicitAbsentDates, ruling) {
-  const confirmed = asDateSet(confirmedHaidhDates);
-  const logged = asDateSet(loggedDates);
-  const explicitAbsent = asDateSet(explicitAbsentDates);
-  const maxDays = haidhOfficialMaxDuration(ruling);
-  const sortedConfirmed = [...confirmed].sort();
-  const probable = new Set();
-  const consumedConfirmed = new Set();
 
-  for (const start of sortedConfirmed) {
-    if (consumedConfirmed.has(start)) continue;
-    consumedConfirmed.add(start);
-    const limit = addDaysISO(start, maxDays - 1);
-
-    // Walk day-by-day so a stop before a later confirmed mark leaves that
-    // later mark free to start a genuinely new episode. Confirmed points
-    // reached without a stop belong to the same episode and do not reset
-    // its maximum-duration clock.
-    for (let d = addDaysISO(start, 1); d <= limit; d = addDaysISO(d, 1)) {
-      if (logged.has(d) || explicitAbsent.has(d)) break;
-      if (confirmed.has(d)) { consumedConfirmed.add(d); continue; }
-      probable.add(d);
-    }
-  }
-  return [...probable].sort();
-}
-
-// Pure, so the harness can drive every branch without a DB. Signature is
-// backward-compatible through argument 7; V4.2.13 adds arg 8 for explicit
-// predicted-Haidh dates so predictions cannot accidentally seed propagation.
+// Pure, so the harness can drive every branch without a DB. Signature stays
+// backward-compatible through argument 8.
 export function deriveStudentAttendance(maktabDays, loggedDates, confirmedHaidhDates, ruling, absenceFlagDays, todayISO) {
   const logged = asDateSet(loggedDates);
   const confirmedHaidh = asDateSet(confirmedHaidhDates);
   const explicitAbsent = asDateSet(arguments.length > 6 && arguments[6] ? arguments[6] : []);
   const predictedHaidh = asDateSet(arguments.length > 7 && arguments[7] ? arguments[7] : []);
-  const probableHaidhDates = deriveProbableHaidhDates(confirmedHaidh, logged, explicitAbsent, ruling);
-  const probableHaidh = new Set(probableHaidhDates);
+  const rawRows = [
+    ...[...confirmedHaidh].map(date => ({ date, status: 'haidh' })),
+    ...[...predictedHaidh].map(date => ({ date, status: 'predicted-haidh' })),
+  ];
+  const timeline = normalizeHaidhTimeline(rawRows, logged, explicitAbsent, ruling || 'hanafi');
 
   const statuses = {};
   for (const date of maktabDays) {
-    if (logged.has(date)) { statuses[date] = 'present'; continue; }       // strongest evidence
-    if (confirmedHaidh.has(date)) { statuses[date] = 'haidh'; continue; } // stored fact
-    if (explicitAbsent.has(date)) { statuses[date] = 'absent'; continue; } // teacher fact; also stops propagation
-
-    // Preserve the established lazy prediction behaviour on the exact
-    // predicted date, but predictions do NOT seed further probable days.
-    if (predictedHaidh.has(date)) {
-      statuses[date] = todayISO && date > todayISO ? 'predicted-haidh' : 'haidh';
-      continue;
-    }
-    if (probableHaidh.has(date)) { statuses[date] = 'probable-haidh'; continue; }
+    if (logged.has(date)) { statuses[date] = 'present'; continue; }
+    const haidhStatus = timeline.byDate.get(date);
+    if (haidhStatus === 'haidh' || haidhStatus === 'predicted-haidh') { statuses[date] = haidhStatus; continue; }
+    if (explicitAbsent.has(date)) { statuses[date] = 'absent'; continue; }
 
     // Today/future without explicit evidence is unresolved, never absent.
     if (todayISO && date >= todayISO) continue;
@@ -160,36 +112,36 @@ export function deriveStudentAttendance(maktabDays, loggedDates, confirmedHaidhD
   }
   return {
     statuses,
-    probableHaidhDates,
+    haidhByDate: timeline.byDate,
+    confirmedHaidhDates: timeline.confirmedDates,
+    predictedHaidhDates: timeline.predictedDates,
     noLogStreak: streak,
     flagged: absenceFlagDays > 0 && streak >= absenceFlagDays,
   };
 }
 
-// V4.2.13: reporting no longer calls every non-absence "Present". Only
-// resolved student-days participate in the denominator; an unresolved
-// current day cannot silently inflate attendance. Active and Haidh are
-// counted separately, while confirmed + probable Haidh are both excused.
+// V4.2.14: reporting separates logged activity, confirmed Haidh, predicted
+// Haidh and absence. Both Haidh states are excused; unresolved today/future
+// dates stay out of the denominator.
 export function summarizeAttendancePeriod(maktabDays, statuses, from, to) {
   const qualifyingDays = maktabDays.filter(d => d >= from && d <= to);
-  const resolvedDays = qualifyingDays.filter(d => ['present','haidh','probable-haidh','absent'].includes(statuses[d]));
+  const resolvedDays = qualifyingDays.filter(d => ['present','haidh','predicted-haidh','absent'].includes(statuses[d]));
   const active_dates = resolvedDays.filter(d => statuses[d] === 'present');
   const confirmed_haidh_dates = resolvedDays.filter(d => statuses[d] === 'haidh');
-  const probable_haidh_dates = resolvedDays.filter(d => statuses[d] === 'probable-haidh');
+  const predicted_haidh_dates = resolvedDays.filter(d => statuses[d] === 'predicted-haidh');
   const absent_dates = resolvedDays.filter(d => statuses[d] === 'absent');
   const active_days = active_dates.length;
   const confirmed_haidh_days = confirmed_haidh_dates.length;
-  const probable_haidh_days = probable_haidh_dates.length;
-  const haidh_days = confirmed_haidh_days + probable_haidh_days;
+  const predicted_haidh_days = predicted_haidh_dates.length;
+  const haidh_days = confirmed_haidh_days + predicted_haidh_days;
   const attended_days = active_days + haidh_days;
   const percent = resolvedDays.length ? Math.round((attended_days / resolvedDays.length) * 100) : null;
   return {
     periodDays: resolvedDays, qualifyingDays,
-    active_dates, confirmed_haidh_dates, probable_haidh_dates, absent_dates,
-    active_days, confirmed_haidh_days, probable_haidh_days, haidh_days,
+    active_dates, confirmed_haidh_dates, predicted_haidh_dates, absent_dates,
+    active_days, confirmed_haidh_days, predicted_haidh_days, haidh_days,
     attended_days,
-    // legacy alias retained for older callers/tests; no UI should label this "present".
-    present_days: attended_days,
+    present_days: attended_days, // compatibility alias
     percent,
   };
 }
@@ -259,7 +211,7 @@ export async function handleMaktabAttendance(request, env, auth) {
 //   "day"     = MAKTAB DAY (the user's standing definition, 2026-08-28);
 //               haidh stays on calendar days — both exactly as
 //               deriveStudentAttendance has always computed them.
-//   reporting = ACTIVE (a log), HAIDH (confirmed + probable) and ABSENT
+//   reporting = ACTIVE (a log), HAIDH (confirmed + predicted) and ABSENT
 //               are reported separately. Attendance % counts Active + Haidh
 //               over RESOLVED Maktab days; an unresolved current day is not
 //               silently counted as present.
@@ -334,22 +286,16 @@ export async function handleAttendancePage(request, env, auth) {
     today, absentDates, predicted
   );
 
-  // V4.2.13: probable Haidh is a CALENDAR-day derivation, not a Maktab-day
-  // derivation. Returning the pure helper's full range makes weekends and
-  // non-teaching days visible in the Haidh calendar while only Maktab days
-  // participate in attendance reporting.
-  const probable_haidh_dates = derived.probableHaidhDates;
-
   const periodSummary = summarizeAttendancePeriod(allMaktabDays, derived.statuses, from, to);
   const {
     periodDays, absent_dates, active_days, haidh_days,
-    confirmed_haidh_days, probable_haidh_days, present_days, percent
+    confirmed_haidh_days, predicted_haidh_days, present_days, percent
   } = periodSummary;
 
   // The last 3 CONFIRMED runs, newest first: consecutive calendar dates
   // of 'haidh' rows only (a prediction is a plan, not history — V3.76.1).
   const ranges = [];
-  for (const d of confirmed) {
+  for (const d of derived.confirmedHaidhDates) {
     const last = ranges[ranges.length - 1];
     const next = last && new Date(new Date(last.to + 'T00:00:00Z').getTime() + 86400000).toISOString().slice(0, 10);
     if (last && d === next) last.to = d;
@@ -360,10 +306,10 @@ export async function handleAttendancePage(request, env, auth) {
   return { data: {
     student_id: studentId, from, to, source,
     maktab_days: periodDays.length,
-    active_days, haidh_days, confirmed_haidh_days, probable_haidh_days,
+    active_days, haidh_days, confirmed_haidh_days, predicted_haidh_days,
     present_days, percent,   // present_days kept as a compatibility alias; UI uses active/Haidh counts
     maktab_day_min: settings.maktab_day_min,
-    absent_dates, haidh_ranges, probable_haidh_dates,
+    absent_dates, haidh_ranges, predicted_haidh_dates: derived.predictedHaidhDates,
     track_haidh: !!student.track_haidh,
     term_from: settings.term_from || null, term_to: settings.term_to || null,
   } };
@@ -459,7 +405,8 @@ export async function handleMaktabWeek(request, env, auth) {
       for (const s of students.results) {
         const status = derivedByStudent[s.id].statuses[date];
         if (status === 'present') col.present.push(s.name);
-        else if (status === 'haidh' || status === 'probable-haidh') col.haidh.push(s.name);
+        else if (status === 'haidh') col.haidh.push(s.name);
+        else if (status === 'predicted-haidh') col.predictedHaidh.push(s.name);
         else col.absent.push(s.name);
       }
     } else {
@@ -595,23 +542,16 @@ export async function handleMaktabRegister(request, env, auth) {
     );
 
     const cells = {};
-    const probableCalendar = new Set(derived.probableHaidhDates || []);
     for (const w of weeks) for (const c of w.columns) {
       const key = `${s.id}|${c.date}`;
       let status = '';
-      // Even a below-threshold/future teaching day can contain real evidence;
-      // show it while the column itself stays muted as appropriate. Probable
-      // Haidh is CALENDAR-day state, so it is also painted from the full
-      // probable range rather than only `derived.statuses` (which intentionally
-      // contains qualifying Maktab days only). A blank below-threshold cell is
-      // still never inferred as absence.
+      // Real activity is strongest. Otherwise paint the normalized Haidh
+      // timeline even on below-threshold/future teaching dates; a blank
+      // below-threshold cell is still never inferred as absence.
       if (loggedOn.has(key)) status = 'present';
       else {
-        const explicitMark = markAt.get(key);
-        if (explicitMark === 'haidh') status = 'haidh';
-        else if (explicitMark === 'predicted-haidh') status = c.date > today ? 'predicted-haidh' : 'haidh';
-        else if (probableCalendar.has(c.date)) status = 'probable-haidh';
-        else if (derived.statuses[c.date] === 'haidh') status = 'haidh';
+        const normalized = derived.haidhByDate && derived.haidhByDate.get(c.date);
+        if (normalized === 'haidh' || normalized === 'predicted-haidh') status = normalized;
       }
       cells[c.date] = status;
     }
@@ -623,7 +563,7 @@ export async function handleMaktabRegister(request, env, auth) {
       attendance_percent: summary.percent,
       attendance_active_days: summary.active_days,
       attendance_haidh_days: summary.haidh_days,
-      attendance_probable_haidh_days: summary.probable_haidh_days,
+      attendance_predicted_haidh_days: summary.predicted_haidh_days,
       attendance_absent_days: summary.absent_dates.length,
       attendance_present_days: summary.present_days,   // compatibility alias
       attendance_maktab_days: summary.periodDays.length,

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.13 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.14 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -54,7 +54,7 @@
 
 let haidhCalViewYear = null;
 let haidhCalViewMonth = null; // 0-indexed, matches JS Date
-let haidhCalAttendance = {};  // date (YYYY-MM-DD) -> 'haidh' | 'predicted-haidh'
+let haidhCalAttendance = {};  // date -> 'haidh' | 'predicted-haidh' | 'activity'
 let haidhRangeStart = null;   // pending range being built, not yet saved
 let haidhRangeEnd = null;
 // V4.2.11.1: each full calendar render owns a generation. If a teacher
@@ -79,7 +79,7 @@ function haidhCalClient(){
     return {
       get:       ()           => apiGetAttendanceFor(id),
       clear:     (date)       => apiClearAttendanceFor(id, date),
-      markRange: (start, end, opts) => apiMarkHaidhRangeFor(id, start, end, opts),   // opts: V3.76.2 teacher decision
+      markRange: (start, end) => apiMarkHaidhRangeFor(id, start, end),
       setDay:    (date, status) => apiSetAttendanceFor(id, date, status),           // V4.0.0: "Mark absent"
     };
   }
@@ -94,56 +94,14 @@ function haidhCalClient(){
   };
 }
 
-// V3.76.2: the teacher's decision bar. Shown ONLY in maktab mode, ONLY on a
-// gap refusal (the worker says which rule refused via e.code — no prose
-// matching). It replaces the confirm bar in place, over the still-pending
-// selection, and offers the old confirm's two outcomes plus the way back:
-//   Mark as haidh anyway → resubmit with override_gap (worker skips the gap
-//                          rule only; the run cap still refuses)
-//   Mark absent          → the range written as 'absent' (what the old
-//                          Cancel did)
-//   Adjust dates         → back to the confirm bar, selection kept
-// Never a browser confirm(): it cannot offer three, cannot be styled, and on
-// a phone it covers the dates being decided about.
-function haidhShowDecision(message){
-  document.getElementById('haidhRangeBar').classList.add('hidden');
-  const bar = document.getElementById('haidhRangeDecision');
-  document.getElementById('haidhRangeDecisionText').textContent = message;
-  bar.classList.remove('hidden');
-}
+// V4.2.14: the old teacher purity-gap decision bar is retired. Keep only
+// a safe hide helper so reset/selection cleanup also works with older DOM
+// fixtures that still carry the obsolete element.
 function haidhHideDecision(){
-  document.getElementById('haidhRangeDecision').classList.add('hidden');
-}
-async function haidhDecide(opts){
-  const bounds = haidhPendingRangeBounds();
-  if(!bounds) return;
-  const errEl = document.getElementById('haidhCalError');
-  errEl.textContent = '';
-  try{
-    await haidhCalClient().markRange(bounds[0], bounds[1], opts);
-    haidhHideDecision();
-    haidhClearPendingRange();
-    await loadHaidhCalAttendance();
-    renderHaidhCalGrid();
-  } catch(e){
-    // A second refusal (e.g. the run cap on "haidh anyway") is shown as the
-    // plain error, with the selection kept, as everywhere else.
-    haidhHideDecision();
-    renderHaidhRangeBar();
-    errEl.textContent = e.message;
-  }
+  const bar = document.getElementById('haidhRangeDecision');
+  if(bar) bar.classList.add('hidden');
 }
 
-// V3.40.3 bug fix: build a YYYY-MM-DD string from a LOCAL calendar date
-// directly, never via .toISOString() -- new Date(y,m,d) is local
-// midnight, but .toISOString() always converts to UTC, silently
-// shifting the date backward a day for anyone in a timezone ahead of
-// UTC (confirmed live: South African Standard Time, UTC+2). Reading the
-// constructed Date's own local getters back out avoids the UTC
-// round-trip entirely, so this is correct regardless of the device's
-// timezone or offset direction. Date's constructor already normalizes
-// out-of-range month/day values (e.g. day 32, month -1), so this stays
-// correct for the prev/next-month trailing cells below too.
 function haidhLocalISO(year, month, day){
   const dt = new Date(year, month, day);
   const y = dt.getFullYear();
@@ -167,21 +125,10 @@ async function loadHaidhCalAttendance(expectedGeneration){
   const data = await haidhCalClient().get();   // V3.76.0: routed by context
   const nextAttendance = {};
   (data || []).forEach(row => {
-    if(row.status === 'haidh' || row.status === 'predicted-haidh') nextAttendance[row.date] = row.status;
+    if(row.status === 'haidh' || row.status === 'predicted-haidh' || row.status === 'activity') {
+      nextAttendance[row.date] = row.status;
+    }
   });
-
-  // V4.2.11.4: attendance propagation can excuse a later Maktab day even
-  // though no Haidh row was explicitly stored for that date. The Attendance
-  // page returns those dates separately as Probable Haidh. Merge them only
-  // for the SAME student currently loaded, and never overwrite a real mark.
-  const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
-  const currentStudentId = inMaktab
-    ? (typeof logCtxStudentId === 'function' ? logCtxStudentId() : null)
-    : (typeof currentUser !== 'undefined' && currentUser ? currentUser.id : null);
-  const probableDates = attPageData && String(attPageData.student_id) === String(currentStudentId)
-    ? (attPageData.probable_haidh_dates || [])
-    : [];
-  probableDates.forEach(date => { if(!nextAttendance[date]) nextAttendance[date] = 'probable-haidh'; });
   if(expectedGeneration != null && expectedGeneration !== haidhCalRenderGeneration) return false;
   haidhCalAttendance = nextAttendance;
   return true;
@@ -242,18 +189,21 @@ function haidhCalDayCell(dateISO, inCurrentMonth){
   if(!inCurrentMonth) btn.classList.add('haidh-cal-day-muted');
   if(dateISO === haidhTodayISO()) btn.classList.add('haidh-cal-day-today');
   const status = haidhCalAttendance[dateISO];
-  // V3.39: auto-confirm is evaluated lazily, on the fly (confirmed in
-  // chat) — a predicted day that's already in the past with no log
-  // reads as genuinely haidh here, same full shade as an explicitly
-  // confirmed day; only a predicted day still ahead of today shows the
-  // lighter "still just a plan" shade.
-  const isFuture = dateISO > haidhTodayISO();
-  if(status === 'haidh' || (status === 'predicted-haidh' && !isFuture)) btn.classList.add('haidh-cal-day-confirmed');
-  else if(status === 'predicted-haidh' && isFuture) btn.classList.add('haidh-cal-day-planned');
-  else if(status === 'probable-haidh') {
-    btn.classList.add('haidh-cal-day-probable');
-    btn.title = btn.title ? btn.title + ' · Probable Haidh' : 'Probable Haidh';
-    btn.setAttribute('aria-label', dateISO + ': Probable Haidh');
+  // V4.2.14: predictions never auto-confirm merely because the date passed.
+  // Activity is the strongest state and therefore gets the green calendar
+  // treatment even when a stale raw Haidh/prediction once existed here.
+  if(status === 'haidh') {
+    btn.classList.add('haidh-cal-day-confirmed');
+    btn.title = btn.title ? btn.title + ' · Confirmed Haidh' : 'Confirmed Haidh';
+    btn.setAttribute('aria-label', dateISO + ': Confirmed Haidh');
+  } else if(status === 'predicted-haidh') {
+    btn.classList.add('haidh-cal-day-planned');
+    btn.title = btn.title ? btn.title + ' · Predicted Haidh' : 'Predicted Haidh';
+    btn.setAttribute('aria-label', dateISO + ': Predicted Haidh');
+  } else if(status === 'activity') {
+    btn.classList.add('haidh-cal-day-activity');
+    btn.title = btn.title ? btn.title + ' · Maktab activity' : 'Maktab activity';
+    btn.setAttribute('aria-label', dateISO + ': Maktab activity');
   }
   // V3.40.2: the pending (not-yet-saved) range being built takes visual
   // priority over a saved status if they ever overlap -- see the CSS
@@ -275,14 +225,11 @@ function haidhCalDayCell(dateISO, inCurrentMonth){
 function haidhRangeTouchesPastOrToday(bounds){
   let runStart = bounds[0];
   const today = haidhTodayISO();
-  // Mirror worker/src/attendance.js::haidhEvidenceDates. Probable Haidh is
-  // display-only and a FUTURE prediction is a plan, so neither may extend
-  // the range backward as if it were stored factual evidence.
+  // V4.2.14: only confirmed Haidh is factual run evidence. Predictions
+  // remain predictions even after their date passes; activity terminates a run.
   while(true){
     const prev = haidhAddDaysISO(runStart, -1);
-    const status = haidhCalAttendance[prev];
-    const isEvidence = status === 'haidh' || (status === 'predicted-haidh' && prev <= today);
-    if(!isEvidence) break;
+    if(haidhCalAttendance[prev] !== 'haidh') break;
     runStart = prev;
   }
   return runStart <= today;
@@ -332,16 +279,14 @@ async function onHaidhCalDayTap(dateISO){
   haidhHideDecision();   // V3.76.2: tapping a day IS adjusting — the confirm bar comes back below
   const status = haidhCalAttendance[dateISO];
 
-  // Tapping an already-confirmed/planned day OUTSIDE of an active
-  // pending selection still clears just that one day directly, exactly
-  // as before V3.40.2 — continuity with the original "tap a marked day
-  // to clear it" behavior, which only ever applied to removing, never
-  // to adding (Claude's own judgment call, not separately asked — see
-  // TODO.md).
-  // A probable day is derived, not a saved mark, so tapping it begins a
-  // normal selection (allowing the teacher to confirm it) rather than
-  // attempting to DELETE a row that does not exist.
-  if(status && status !== 'probable-haidh' && haidhRangeStart == null){
+  // A logged-activity day is read-only Haidh-calendar evidence: it wins
+  // visually and cannot be cleared through the Haidh control. Confirmed and
+  // predicted marks retain the existing tap-to-clear behaviour.
+  if(status === 'activity' && haidhRangeStart == null){
+    errEl.textContent = 'Maktab activity is logged on this date and takes precedence over Haidh.';
+    return;
+  }
+  if((status === 'haidh' || status === 'predicted-haidh') && haidhRangeStart == null){
     try{
       await haidhCalClient().clear(dateISO);   // V3.76.0: routed by context
       await loadHaidhCalAttendance();
@@ -385,14 +330,8 @@ async function onHaidhRangeConfirm(){
     // selection is deliberately kept (not cleared) on failure, so the
     // student can see exactly what was rejected and adjust it directly
     // rather than having to re-select from scratch.
-    // V3.76.2: in maktab mode a GAP refusal is the teacher's decision, not
-    // a dead end — the decision bar replaces the confirm bar, selection
-    // kept. Any other refusal, and every refusal on the student's own
-    // calendar, is the plain message as before.
-    if(e && e.code === 'haidh_gap' && typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()){
-      haidhShowDecision(e.message);
-      return;
-    }
+    // V4.2.14: the purity rule is global. A gap refusal is shown just like
+    // any other validation refusal; there is no teacher bypass path.
     errEl.textContent = e.message;
   }
 }
@@ -487,14 +426,6 @@ if(haidhAbsentBtnEl) haidhAbsentBtnEl.addEventListener('click', async () => {
   btn.disabled = false;
 });
 
-// V3.76.2: the decision bar's three buttons.
-document.getElementById('haidhDecisionAdjustBtn').addEventListener('click', () => {
-  haidhHideDecision();
-  renderHaidhRangeBar();   // the selection is still pending — the confirm bar returns
-});
-document.getElementById('haidhDecisionAbsentBtn').addEventListener('click', () => haidhDecide({ status: 'absent' }));
-document.getElementById('haidhDecisionHaidhBtn').addEventListener('click', () => haidhDecide({ overrideGap: true }));
-
 // ============================================================
 // V3.80.0: the ATTENDANCE PAGE. Owns the screen; the haidh calendar
 // below it is rendered by renderHaidhDetailScreen, unchanged, inside
@@ -561,18 +492,16 @@ async function loadAttendancePeriod(opts){
     return false;
   }
   attPageData = d;
-  // V4.2.13: reporting distinguishes ACTIVE logs from Haidh instead of
-  // labelling every excused day "Present". Probable Haidh remains visible
-  // in the detail count without being promoted to confirmed fact.
+  // V4.2.14: reporting distinguishes logged activity, confirmed Haidh,
+  // predicted Haidh and absence under the one normalized model.
   document.getElementById('attCardTitle').textContent =
     d.source === 'term' ? 'Attendance this Term' : 'Attendance';
   if(d.maktab_days){
     const activeDays = Number(d.active_days || 0);
     const haidhDays = Number(d.haidh_days || 0);
-    const probableDays = Number(d.probable_haidh_days || 0);
     const absentDays = Array.isArray(d.absent_dates) ? d.absent_dates.length : 0;
     const dayWord = n => n === 1 ? 'day' : 'days';
-    const haidhPart = `${haidhDays} Haidh ${dayWord(haidhDays)}${probableDays ? ` (${probableDays} probable)` : ''}`;
+    const haidhPart = `${haidhDays} Haidh ${dayWord(haidhDays)}`;
     document.getElementById('attSentence').textContent =
       `${activeDays} active ${dayWord(activeDays)} · ${haidhPart} · ${absentDays} absent · ${d.percent}% attendance`;
   } else {
