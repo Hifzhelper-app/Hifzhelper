@@ -29,11 +29,21 @@ numbers; headings are unique, search the text.
 | ~~10~~ | ~~**The list of eleven**~~ | **ALL PHASES BUILT** — V3.75.0, V3.76.0, V3.78.0 | Delivery 3 (items 7, 8, 9 + the timezone) shipped 2026-08-27. Timezone display answered: **everyone sees maktab time**. |
 | **9** | **Reword the empty-pool message** | **DEFERRED with the PJ set (2026-08-30)** | `dhorSchedule.js:176` says "No memorised juz'/quarters recorded **yet** in Hifz Setup", implying she never set it up when she may have cleared it deliberately. Cosmetic, not a bug. |
 | ~~79~~ | ~~**Deploy + device-verify V4.2.12.1 Quick Log refinement**~~ | **SUPERSEDED by V4.2.13** | V4.2.13 carries the V4.2.12.1 frontend forward and adds the audited Attendance/Haidh correction. |
-| **80** | **Deploy + device-verify V4.2.13 Attendance/Haidh audit** | **READY — build complete** | **Worker first, then frontend; no migration.** Verify return-log/Absent stop evidence, probable calendar range, Active-vs-Haidh reporting and register/page parity. |
+| ~~80~~ | ~~**Deploy + device-verify V4.2.13 Attendance/Haidh audit**~~ | **SUPERSEDED by V4.2.13.1 device pass** | V4.2.13 remains the required Worker/model base; V4.2.13.1 overlays the mobile register-width refinement. |
+| **81** | **Deploy + device-verify V4.2.13.1 mobile Attendance width** | **READY — build complete** | **Deploy V4.2.13 Worker/model first if not already live, then this frontend overlay; no migration.** Confirm collapsed `%`, narrower Student column and 4–5 visible day columns on phone.
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.13 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.13.1 — READY TO DEPLOY / COMPLETE THE UPDATE
+
+1. **Frontend overlay only.** V4.2.13's Worker/model must already be deployed. Upload the V4.2.13.1 Pages files and hard-refresh until the page/cache key reads **v4.2.13.1**. No migration and no new Worker deployment.
+2. On a phone, open Maktab Attendance. Confirm the green screen inset is reduced only for this screen and that the sticky Student column is narrower with ellipsis for long names.
+3. Attendance % must be collapsed by default behind the `%` button in the Student heading. Reveal it, compare values with V4.2.13/individual Attendance, then collapse it again.
+4. With percentage collapsed, confirm roughly 4–5 attendance-day columns are visible on the target phone. Current-week positioning, weekly headers and attendance state marks must remain unchanged.
+5. Run `node tests/verify_v42131_mobile_attendance.mjs`, `node tests/verify_v4213_attendance_model.mjs`, the cumulative register/UI harnesses, `verify_build_stamp.mjs`, and `verify_syntax.mjs`.
+
+## V4.2.13 — SUPERSEDED BY V4.2.13.1 FOR DEVICE DEPLOYMENT
+
 
 1. **No migration. Deploy the Worker first:** `worker/src/maktabAttendance.js`. Then overlay the changed Pages/frontend files and hard-refresh until the page/cache key reads **v4.2.13**.
 2. Reproduce the original leakage pattern: confirmed Haidh → later Maktab log → later completed blank Maktab day. The later blank must be **Absent**, not probable Haidh. Confirm additional later blanks do not resume the old Haidh run.

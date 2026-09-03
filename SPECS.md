@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.13.1** — Mobile Attendance register width: narrower Student column and on-demand Attendance %
 - **V4.2.13** — Attendance/Haidh derivation audit: stop evidence, probable calendar state, and Active-vs-Haidh reporting
 - **V4.2.12.1** — Quick Log compact-card/mobile-combined refinement + displayed-day Summary ordering
 - **V4.2.12** — Trial Quick Log from Maktab Summary cells: minimal Sabaq / Sabaq Dhor / Dhor entry without leaving the table
@@ -127,6 +128,16 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.13.1 — Mobile Attendance register width
+
+**Decision:** keep the Attendance register data model and all V4.2.13 attendance states unchanged; this release is a phone-layout trial only. The register's useful horizontal space should prioritise teaching days rather than a permanently visible percentage column.
+
+On phone widths the Attendance screen trims only its own green-track side inset, the sticky Student column becomes a compact 128px with ellipsis, and day columns tighten to 40px. Attendance % remains available but is rolled up initially behind a small `%` reveal control in the Student heading. When revealed it returns as the second sticky column. Desktop/tablet preserve the existing permanent `Student | Attendance % | days…` layout.
+
+The target is roughly five visible teaching-day cells on a normal phone while keeping the existing attendance tick sizes and current-week auto-positioning. No calculation, Worker, schema or navigation behavior changes.
 
 ---
 

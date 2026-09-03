@@ -1,6 +1,6 @@
-/* Hifzhelper build 4.2.13 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.13.1 | js/maktabAttendancePage.js */
 // ============================================================
-// Hifzhelper — Maktab Attendance register (V4.2.11.3).
+// Hifzhelper — Maktab Attendance register (V4.2.13.1).
 //
 // One roster, one existing Attendance % value, then narrow teaching-day
 // columns grouped beneath merged date-range headings. The current Maktab
@@ -160,9 +160,9 @@ async function mkregisterPaint(){
     </tr>`;
   }).join('');
 
-  host.innerHTML = `<div class="mkregister-scroll"><table class="mkregister-grid">
+  host.innerHTML = `<div class="mkregister-scroll"><table class="mkregister-grid" id="mkregisterGrid">
     <thead>
-      <tr><th class="mkregister-student-head" rowspan="2">Student</th><th class="mkregister-percent-head" rowspan="2">Attendance %</th>${weekHead}</tr>
+      <tr><th class="mkregister-student-head" rowspan="2"><span class="mkregister-student-head-inner"><span class="mkregister-student-head-label">Student</span><button type="button" class="mkregister-percent-toggle" aria-expanded="false" aria-controls="mkregisterGrid" aria-label="Show Attendance percentage" title="Show Attendance %">%</button></span></th><th class="mkregister-percent-head" rowspan="2">Attendance %</th>${weekHead}</tr>
       <tr>${dayHead}</tr>
     </thead>
     <tbody>${body || `<tr><td colspan="${colCount + 2}" class="form-hint">No active students.</td></tr>`}</tbody>
@@ -171,6 +171,21 @@ async function mkregisterPaint(){
   const focusCurrentWeek = () => mkregFocusCurrentWeek(host, data);
   if(typeof requestAnimationFrame === 'function') requestAnimationFrame(focusCurrentWeek);
   else focusCurrentWeek();
+
+  // V4.2.13.1: phones default to a rolled-up Attendance % column so 4–5
+  // teaching days can remain visible beside the sticky Student column. The
+  // percentage values themselves are unchanged; this is presentation only.
+  const percentToggle = host.querySelector('.mkregister-percent-toggle');
+  const grid = host.querySelector('.mkregister-grid');
+  if(percentToggle && grid){
+    percentToggle.addEventListener('click', () => {
+      const open = !grid.classList.contains('mkregister-percent-open');
+      grid.classList.toggle('mkregister-percent-open', open);
+      percentToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      percentToggle.setAttribute('aria-label', open ? 'Hide Attendance percentage' : 'Show Attendance percentage');
+      percentToggle.title = open ? 'Hide Attendance %' : 'Show Attendance %';
+    });
+  }
 
   host.querySelectorAll('.mkregister-student').forEach(btn => {
     btn.addEventListener('click', () => {
