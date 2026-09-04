@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.14.1 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -134,10 +134,10 @@ function maktabQuickVerseField(side, label){
   </div>`;
 }
 
-function maktabQuickConfirmControl(compact){
-  return `<label class="maktab-quick-confirm${compact ? ' maktab-quick-confirm-compact' : ''}">
+function maktabQuickConfirmControl(){
+  return `<label class="maktab-quick-confirm maktab-quick-confirm-action">
     <input type="checkbox" id="maktabQuickLogConfirm" aria-label="Confirm selection">
-    ${compact ? '' : '<span>Confirm selection</span>'}
+    <span>Confirm</span>
   </label>`;
 }
 
@@ -214,18 +214,17 @@ function maktabQuickDhorControls(){
   const draft = maktabQuickTypeDraft('dhor') || { juz:null, unit:'quarter', position:1 };
   const juzOptions = Array.from({length:30}, (_,i) => `<option value="${i+1}"${draft.juz === i+1 ? ' selected' : ''}>Juz ${i+1}</option>`).join('');
   return `<div class="maktab-quick-dhor-grid">
-    <div class="maktab-quick-dhor-unit-row">
-      <span class="maktab-quick-control-label">Juz Portion</span>
-      <div class="unit-pill maktab-quick-unit-pill" id="mql_dhor_unit">
+    <div class="maktab-quick-dhor-primary-row">
+      <select id="mql_dhor_juz" aria-label="Juz selector"><option value="">Juz</option>${juzOptions}</select>
+      <div class="unit-pill maktab-quick-unit-pill" id="mql_dhor_unit" aria-label="Juz portion">
         <button type="button" data-unit="quarter" class="${draft.unit === 'quarter' ? 'on' : ''}">Quarter</button>
         <button type="button" data-unit="half" class="${draft.unit === 'half' ? 'on' : ''}">Half</button>
         <button type="button" data-unit="full" class="${draft.unit === 'full' ? 'on' : ''}">Juz</button>
       </div>
     </div>
-    <div class="maktab-quick-dhor-selection-row">
-      <select id="mql_dhor_juz" aria-label="Juz"><option value="">Select Juz</option>${juzOptions}</select>
+    <div class="maktab-quick-dhor-position-row" id="mql_dhor_position_row">
+      <span class="maktab-quick-control-label">Portion number</span>
       <div class="unit-pill maktab-quick-position-pill" id="mql_dhor_position" aria-label="Portion number"></div>
-      ${maktabQuickConfirmControl(true)}
     </div>
   </div>`;
 }
@@ -235,12 +234,15 @@ function maktabQuickRenderDhorPosition(){
   const pill = document.getElementById('mql_dhor_position');
   if(!draft || !pill) return;
   const unit = draft.unit || 'quarter';
+  const row = document.getElementById('mql_dhor_position_row');
   if(unit === 'full'){
     pill.classList.add('hidden');
+    if(row) row.classList.add('hidden');
     draft.position = 1;
     return;
   }
   pill.classList.remove('hidden');
+  if(row) row.classList.remove('hidden');
   const count = unit === 'half' ? 2 : 4;
   if(draft.position > count) draft.position = 1;
   pill.innerHTML = Array.from({length:count}, (_,i) => `<button type="button" data-pos="${i+1}" class="${draft.position === i+1 ? 'on' : ''}">${i+1}</button>`).join('');
@@ -266,7 +268,7 @@ function maktabQuickWireDhor(){
 
 function maktabQuickBodyHtml(type){
   if(type === 'dhor') return maktabQuickDhorControls();
-  return `<div class="maktab-quick-range-grid">${maktabQuickVerseField('from', 'Ayah From')}${maktabQuickVerseField('to', 'Ayah To')}</div>${maktabQuickConfirmControl(false)}`;
+  return `<div class="maktab-quick-range-grid">${maktabQuickVerseField('from', 'Ayah From')}${maktabQuickVerseField('to', 'Ayah To')}</div>`;
 }
 
 function maktabQuickRenderBody(){
@@ -418,6 +420,7 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType){
     <div id="maktabQuickBody"></div>
     <div class="form-error" id="maktabQuickLogError"></div>
     <div class="maktab-quick-actions">
+      ${maktabQuickConfirmControl()}
       <button type="button" class="primary maktab-quick-save" id="maktabQuickLogSave">Save</button>
       <button type="button" class="maktab-quick-details" id="maktabQuickLogDetails">Detail</button>
     </div>
@@ -723,21 +726,21 @@ async function renderMaktabSummaryScreen(){
     // deleted (js/maktabDay.js). stopPropagation stays: the row itself
     // still opens the day view.
     // V3.80.0: the leading icon is ATTENDANCE, on EVERY student (was the
-    // haidh icon, haa'idah only) — it opens her attendance page, which
-    // holds the haidh calendar for haa'idah. The haidh 'marked' tint is
-    // kept on the icon so today's state stays visible at a glance.
+    // haidh icon, haa'idah only). V4.2.14.1 turns it into Quick Attendance;
+    // the sheet's Detail action opens the full page/Haidh calendar.
     const haidhTd = document.createElement('td');
     haidhTd.className = 'maktab-haidh-col';
     const btn = document.createElement('button');
     btn.type = 'button';
-    // V4.2.14: the attendance icon is navigation only. Summary no longer
-    // paints a separate Haidh note; the Attendance surface owns that state.
+    // V4.2.14.1: the attendance icon is a QUICK ACTION. The sheet can mark
+    // Present / confirmed Haidh / Absent for the summary's selected date;
+    // its Detail action preserves the route to the full Attendance page.
     btn.className = 'maktab-haidh-check';
     btn.innerHTML = iconHtml('attendance');
-    btn.setAttribute('aria-label', 'Open attendance for ' + stu.name);
+    btn.setAttribute('aria-label', 'Quick attendance for ' + stu.name);
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openMaktabAttendancePage(stu, date);
+      maktabOpenQuickAttendance(stu, date, { afterSave: () => renderMaktabSummaryScreen() });
     });
     haidhTd.appendChild(btn);
     tr.appendChild(haidhTd);
