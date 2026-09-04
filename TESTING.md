@@ -14,6 +14,20 @@ Base URLs:
 
 ---
 
+## V4.2.14.1 — Quick Log + Quick Attendance checks
+
+1. Run `node tests/verify_v421141_ui.mjs`. It must pin the non-overlapping Quick Log layout, common 42px control height, smaller register `H/h`, Summary Quick Attendance, Student Summary Quick Attendance, activity precedence and page/cache key.
+2. **Quick Log mobile layout:** open Dhor from Maktab Summary. Confirm the type selector is its own row, Juz and Juz Portion share the next row, Portion number is below, and Confirm/Save/Detail share the action row without overlap.
+3. **Height parity:** visually compare the type selector, Juz selector, Juz Portion, Portion number, Confirm, Save and Detail. Their outer controls should all read as the same height.
+4. **Attendance register:** compare V4.2.14 and V4.2.14.1 on the same phone. `H/h` must be about one-quarter smaller; Present `✓`, cell widths and Haidh colours remain unchanged.
+5. **Summary Quick Attendance:** tap the attendance icon for an unlogged student. Choose Present, Haidh and Absent in separate test dates and confirm the saved state appears through the existing Attendance model. Detail must open the full Attendance page on the same student/date.
+6. **Student Summary parity:** open a student from Maktab Summary, then tap the Student Summary attendance icon. It must open the same Quick Attendance sheet for the carried date; Detail must still open full Attendance.
+7. **Activity precedence:** for a date with any Maktab log, Quick Attendance must show Logged activity/Present, disable manual Haidh/Absent overrides, and leave the V4.2.14 normalized activity truth intact.
+8. **Future behavior:** future Present is disabled; future Haidh saves as predicted Haidh. Past/today Haidh goes through the existing V4.2.14 confirmation/purity/run validation.
+9. Run cumulative UI/version/syntax suites and `node tests/run-all.mjs`. Do not count missing-`jsdom` non-reporters as passes. **Build result: V4.2.14.1 UI 11/11; Quick Log compatibility 12/12; V4.2.8 cumulative compatibility 17/17; build/version 6/6; served-JS syntax 36/36; cumulative runner 472 passed, 0 failed among reporting harnesses. 26 older harnesses do not report because `jsdom` is absent and/or their legacy SQLite fixtures are behind the current schema.**
+
+---
+
 ## V4.2.14 — Authoritative single Haidh model checks
 
 1. Run `node tests/verify_v4214_haidh_engine.mjs`. It must prove the global 10-day / 11-touched edge, 15-day / 14-intervening purity rule, activity precedence, no old-run resume, prediction non-promotion, Day-1 regeneration, activity write rejection, and retired teacher gap bypass.

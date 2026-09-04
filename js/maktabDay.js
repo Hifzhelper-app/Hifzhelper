@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/maktabDay.js */
+/* Hifzhelper build 4.2.14.1 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -51,6 +51,174 @@ function maktabTodayISO(){
 function openMaktabAttendancePage(student, date){
   setMaktabLogContext(student, date || maktabTodayISO());
   showScreen('attendancePage', { maktab: true, date });
+}
+
+// ============================================================
+// V4.2.14.1 — Quick Attendance, shared by Maktab Summary + Student Summary.
+//
+// The existing attendance icon used to navigate straight to the full page.
+// It now opens one small action sheet for the date already in context:
+// Present | Haidh | Absent, then Save or Detail. Detail preserves the full
+// Attendance/Haidh calendar route. Logged Maktab activity is immutable here:
+// activity already means Present and is the strongest state in V4.2.14, so
+// the sheet shows it but will not pretend an attendance toggle can override it.
+// ============================================================
+let maktabQuickAttendanceState = null;
+let maktabQuickAttendanceOpenToken = 0;
+
+function maktabQuickAttendanceEsc(value){
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function maktabQuickAttendanceFormatDate(iso){
+  const d = new Date(String(iso || '') + 'T00:00:00');
+  if(Number.isNaN(d.getTime())) return String(iso || '');
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`;
+}
+
+function maktabQuickAttendanceChoice(status){
+  if(status === 'activity' || status === 'present') return 'present';
+  if(status === 'haidh' || status === 'predicted-haidh') return 'haidh';
+  if(status === 'absent' || status === 'predicted-absent') return 'absent';
+  return '';
+}
+
+function maktabQuickAttendanceLabel(status){
+  if(status === 'activity') return 'Logged activity · Present';
+  if(status === 'present') return 'Present';
+  if(status === 'haidh') return 'Confirmed Haidh';
+  if(status === 'predicted-haidh') return 'Predicted Haidh';
+  if(status === 'absent') return 'Absent';
+  if(status === 'predicted-absent') return 'Planned absent';
+  return 'Not marked';
+}
+
+function maktabCloseQuickAttendance(){
+  maktabQuickAttendanceOpenToken++;
+  const el = document.getElementById('maktabQuickAttendanceSheet');
+  if(el) el.remove();
+  maktabQuickAttendanceState = null;
+}
+
+function maktabPaintQuickAttendance(){
+  const state = maktabQuickAttendanceState;
+  if(!state) return;
+  document.querySelectorAll('[data-mqa-status]').forEach(btn => {
+    const selected = btn.dataset.mqaStatus === state.choice;
+    btn.classList.toggle('on', selected);
+    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    // A real Maktab log is stronger than every attendance row. Show the
+    // resulting Present state, but do not offer a fake override that the
+    // normalized model would immediately ignore/reject.
+    btn.disabled = state.lockedByActivity && btn.dataset.mqaStatus !== 'present';
+  });
+  const save = document.getElementById('maktabQuickAttendanceSave');
+  if(save) save.disabled = !state.choice || state.lockedByActivity || (state.future && state.choice === 'present');
+  const hint = document.getElementById('maktabQuickAttendanceHint');
+  if(hint){
+    if(state.lockedByActivity) hint.textContent = 'Maktab activity is already logged on this date, so attendance is Present.';
+    else if(state.future && state.choice === 'present') hint.textContent = 'A future date cannot be marked Present.';
+    else hint.textContent = '';
+  }
+}
+
+async function maktabSaveQuickAttendance(){
+  const state = maktabQuickAttendanceState;
+  if(!state || !state.choice) return;
+  const err = document.getElementById('maktabQuickAttendanceError');
+  const save = document.getElementById('maktabQuickAttendanceSave');
+  if(err) err.textContent = '';
+  if(state.lockedByActivity){
+    if(err) err.textContent = 'Activity is already logged and takes precedence.';
+    return;
+  }
+  if(state.future && state.choice === 'present'){
+    if(err) err.textContent = 'A future date cannot be marked Present.';
+    return;
+  }
+  let status = state.choice;
+  if(state.choice === 'haidh') status = state.future ? 'predicted-haidh' : 'haidh';
+  if(state.choice === 'absent') status = state.future ? 'predicted-absent' : 'absent';
+  try{
+    if(save) save.disabled = true;
+    await apiSetAttendanceFor(state.student.id, state.date, status);
+    const afterSave = state.afterSave;
+    maktabCloseQuickAttendance();
+    if(typeof afterSave === 'function') await afterSave();
+  } catch(e){
+    if(err) err.textContent = e && e.message ? e.message : "Couldn't save attendance.";
+    const live = document.getElementById('maktabQuickAttendanceSave');
+    if(live) live.disabled = false;
+  }
+}
+
+async function maktabOpenQuickAttendance(student, date, opts){
+  maktabCloseQuickAttendance();
+  const openToken = ++maktabQuickAttendanceOpenToken;
+  const targetDate = date || maktabTodayISO();
+  let rows = [], loadError = '';
+  try{ rows = await apiGetAttendanceFor(student.id); }
+  catch(e){ loadError = e && e.message ? e.message : "Couldn't load attendance."; }
+  if(openToken !== maktabQuickAttendanceOpenToken) return;
+
+  const row = (Array.isArray(rows) ? rows : []).find(r => r.date === targetDate);
+  const currentStatus = row ? row.status : '';
+  const future = targetDate > maktabTodayISO();
+  maktabQuickAttendanceState = {
+    student,
+    date: targetDate,
+    currentStatus,
+    choice: maktabQuickAttendanceChoice(currentStatus),
+    future,
+    lockedByActivity: currentStatus === 'activity',
+    afterSave: opts && opts.afterSave
+  };
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay maktab-quick-attendance-modal';
+  overlay.id = 'maktabQuickAttendanceSheet';
+  overlay.innerHTML = `<div class="modal-card maktab-quick-attendance-card" role="dialog" aria-modal="true" aria-label="Quick Attendance">
+    <button type="button" class="close-btn" aria-label="Close">&times;</button>
+    <div class="maktab-quick-heading is-combined">
+      <span class="maktab-name-pill maktab-quick-student" title="${maktabQuickAttendanceEsc(student.name)}">${maktabQuickAttendanceEsc(student.name)}</span>
+    </div>
+    <div class="maktab-quick-attendance-meta">
+      <span class="maktab-quick-date">${maktabQuickAttendanceEsc(maktabQuickAttendanceFormatDate(targetDate))}</span>
+      <span class="maktab-quick-attendance-current">${maktabQuickAttendanceEsc(maktabQuickAttendanceLabel(currentStatus))}</span>
+    </div>
+    <div class="maktab-quick-attendance-status" role="group" aria-label="Attendance status">
+      <button type="button" data-mqa-status="present">Present</button>
+      <button type="button" data-mqa-status="haidh">${future ? 'Predict Haidh' : 'Haidh'}</button>
+      <button type="button" data-mqa-status="absent">${future ? 'Plan absent' : 'Absent'}</button>
+    </div>
+    <div class="form-hint maktab-quick-attendance-hint" id="maktabQuickAttendanceHint"></div>
+    <div class="form-error" id="maktabQuickAttendanceError">${maktabQuickAttendanceEsc(loadError)}</div>
+    <div class="maktab-quick-attendance-actions">
+      <button type="button" class="primary" id="maktabQuickAttendanceSave">Save</button>
+      <button type="button" class="maktab-quick-details" id="maktabQuickAttendanceDetails">Detail</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('.close-btn').addEventListener('click', maktabCloseQuickAttendance);
+  overlay.addEventListener('click', e => { if(e.target === overlay) maktabCloseQuickAttendance(); });
+  overlay.querySelectorAll('[data-mqa-status]').forEach(btn => btn.addEventListener('click', () => {
+    if(!maktabQuickAttendanceState || btn.disabled) return;
+    maktabQuickAttendanceState.choice = btn.dataset.mqaStatus;
+    maktabPaintQuickAttendance();
+  }));
+  document.getElementById('maktabQuickAttendanceSave').addEventListener('click', maktabSaveQuickAttendance);
+  document.getElementById('maktabQuickAttendanceDetails').addEventListener('click', () => {
+    const snapshot = maktabQuickAttendanceState;
+    if(!snapshot) return;
+    maktabCloseQuickAttendance();
+    openMaktabAttendancePage(snapshot.student, snapshot.date);
+  });
+  maktabPaintQuickAttendance();
 }
 // V3.76.0 opener, kept as the route in: the calendar has no standalone
 // screen since V3.80.0, so opening "the calendar" means opening the page.
@@ -175,7 +343,8 @@ function exitMaktabDay(){
 // expanded recent days, weekly rollup rows, Load more — reusing the
 // journal's own row/rollup renderers, but over the MAKTAB'S entries for
 // this student ONLY, read-only. Rows tap through to that day's log
-// cards; the header's attendance icon opens her attendance page.
+// cards; the header's attendance icon opens Quick Attendance, whose Detail
+// action opens her full attendance page.
 // Data: the three maktab GETs (student_id in teacher mode; her own
 // read-only path calls without one).
 // ============================================================
@@ -199,9 +368,10 @@ async function renderStudentSummaryScreen(){
   const attBtn = document.getElementById('studentSummaryAttendanceBtn');
   if(attBtn){
     if(typeof iconHtml === 'function') attBtn.innerHTML = iconHtml('attendance');
+    attBtn.setAttribute('aria-label', 'Quick attendance');
     attBtn.onclick = () => {
       const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
-      openMaktabAttendancePage(student, logCtxDate());
+      maktabOpenQuickAttendance(student, logCtxDate());
     };
   }
   const closeBtn = document.getElementById('studentSummaryCloseBtn');

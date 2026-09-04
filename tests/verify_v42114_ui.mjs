@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.14 supersession of the V4.2.11.4 probable-Haidh UI contract.
+// V4.2.14.1 supersession of the V4.2.11.4 probable-Haidh UI contract.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -40,8 +40,8 @@ check('register uses plain pink H/h text, not check icons or pills',
   />H<\/span>/.test(register) && />h<\/span>/.test(register)
   && /mkregister-status-haidh-confirmed/.test(registerCss) && /mkregister-status-haidh-predicted/.test(registerCss)
   && !/mkregister-status-haidh[^-]/.test(register));
-check('V4.2.14 page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.14/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14'/.test(sw));
+check('V4.2.14.1 page/cache keys agree',
+  /js\/app\.js\?v=4\.2\.14\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
 
 // Dynamic proof: explicit prediction is exact-date state; a confirmed day does
 // not propagate. A log on the predicted date wins in the register.

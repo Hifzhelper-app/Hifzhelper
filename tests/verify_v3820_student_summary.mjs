@@ -7,7 +7,7 @@
 // data"). This harness now pins the revised world: the rail is back to
 // THREE cards, the page exists with the PJ layout (expanded days +
 // rollups + Load more), the name tap opens the PAGE, the attendance
-// icon navigates, and rows tap through to the day view.
+// icon opens Quick Attendance (whose Detail action preserves navigation), and rows tap through to the day view.
 // ============================================================
 
 import fs from 'fs';
@@ -83,7 +83,7 @@ function pageDom(dates) {
     function journalCellShorthand(type, entries){ return (entries || []).length ? type + ':' + entries.length : '—'; }
     function renderJournalRollupRow(from, to){ const tr = document.createElement('tr'); tr.className = 'journal-rollup-row'; tr.textContent = from + '..' + to; return tr; }
     function openMaktabDay(stu, date){ opened.push([stu.id, date]); }
-    function openMaktabAttendancePage(stu, date){ attOpened.push([stu.id, date]); }
+    function maktabOpenQuickAttendance(stu, date){ attOpened.push([stu.id, date]); }
     function showScreen(id){ screens.push(id); return Promise.resolve(); }
     function setMaktabLogContext(){}
     function maktabTodayISO(){ return '2026-08-28'; }
@@ -118,7 +118,7 @@ const manyDates = Array.from({ length: 24 }, (_, i) => {
   expanded[1].click();
   check('page: a row tap opens that DAY\'s log cards', JSON.stringify(w.eval('opened[0]')) === JSON.stringify(['STU2', manyDates[1]]));
   w.document.getElementById('studentSummaryAttendanceBtn').click();
-  check('page: the attendance icon opens her attendance page on the ctx date', JSON.stringify(w.eval('attOpened[0]')) === '["STU2","2026-08-27"]');
+  check('page: the attendance icon opens Quick Attendance on the ctx date', JSON.stringify(w.eval('attOpened[0]')) === '["STU2","2026-08-27"]');
   w.document.getElementById('studentSummaryCloseBtn').click();
   check('page: close returns to the maktab summary', w.eval('screens').includes('maktabSummary'));
 }

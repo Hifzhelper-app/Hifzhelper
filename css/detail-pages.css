@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14 | css/detail-pages.css */
+/* Hifzhelper build 4.2.14.1 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2315,9 +2315,10 @@
 }
 /* Present: deliberately a TEXT glyph, not an SVG/icon. */
 .mkregister-status-present { color: #78BE3F; font-size: 22px; font-weight: 900; line-height: 1; }
-/* V4.2.14: plain Haidh text only — no pill/background/border/check icon. */
-.mkregister-status-haidh-confirmed { color: var(--color-haidh); font-size: 18px; font-weight: 800; }
-.mkregister-status-haidh-predicted { color: var(--color-haidh); font-size: 18px; font-weight: 400; opacity: .55; }
+/* V4.2.14.1: plain Haidh text only, reduced about 25% so H/h does not
+   dominate the narrow teaching-day cell. No pill/background/border/icon. */
+.mkregister-status-haidh-confirmed { color: var(--color-haidh); font-size: 14px; font-weight: 800; }
+.mkregister-status-haidh-predicted { color: var(--color-haidh); font-size: 14px; font-weight: 400; opacity: .55; }
 /* V4.2.13.1 — mobile register width trial. Attendance % is rolled up by
    default behind a compact reveal control so the register spends the phone's
    width on teaching days. The Student column is deliberately narrower and

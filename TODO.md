@@ -31,11 +31,23 @@ numbers; headings are unique, search the text.
 | ~~79~~ | ~~**Deploy + device-verify V4.2.12.1 Quick Log refinement**~~ | **SUPERSEDED by V4.2.13** | V4.2.13 carries the V4.2.12.1 frontend forward and adds the audited Attendance/Haidh correction. |
 | ~~80~~ | ~~**Deploy + device-verify V4.2.13 Attendance/Haidh audit**~~ | **SUPERSEDED by V4.2.13.1 device pass** | V4.2.13 remains the required Worker/model base; V4.2.13.1 overlays the mobile register-width refinement. |
 | ~~81~~ | ~~**Deploy + device-verify V4.2.13.1 mobile Attendance width**~~ | **SUPERSEDED by V4.2.14** | V4.2.14 carries the mobile-width work forward with the authoritative single Haidh model. |
-| **82** | **Deploy + device-verify V4.2.14 single Haidh model** | **READY — build complete** | **Worker + frontend; no migration.** Deploy the V4.2.14 Worker/model files first, then the Pages overlay. Verify activity termination, dark/light pink calendar states, green activity, and register `H` / `h`. |
+| ~~82~~ | ~~**Deploy + device-verify V4.2.14 single Haidh model**~~ | **SUPERSEDED by V4.2.14.1 frontend overlay** | The V4.2.14 Worker/model remains the required base; V4.2.14.1 carries its frontend forward with the Quick Log/Quick Attendance fixes. |
+| **83** | **Deploy + device-verify V4.2.14.1 Quick Log + Quick Attendance** | **READY — build complete** | **Frontend overlay; no new Worker/migration.** If V4.2.14 Worker/model is not live yet, deploy that first. Then overlay V4.2.14.1 and verify pill spacing, smaller `H/h`, and Quick Attendance from both Summary surfaces. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.14 — READY TO DEPLOY / COMPLETE THE UPDATE
+## V4.2.14.1 — READY TO DEPLOY / DEVICE-VERIFY
+
+1. **No new Worker or migration in this patch.** V4.2.14.1 is a Pages/frontend overlay on the V4.2.14 authoritative Haidh Worker/model. If V4.2.14 is not deployed yet, deploy its Worker/model files first; then overlay V4.2.14.1 and hard-refresh until the page/cache key reads **v4.2.14.1**.
+2. Open the **mobile Maktab Summary Quick Log** and select Dhor. The rows must read cleanly with no overlap: type selector; `Juz selector | Quarter/Half/Juz`; Portion number; `Confirm | Save | Detail`.
+3. Confirm the type selector, Juz select, Juz Portion pill, Portion number pill, Confirm, Save and Detail have the **same visual control height**. Quarter shows 1–4, Half 1–2, Juz hides Portion number.
+4. Open the Maktab **Attendance register**. Confirm `H` and `h` are visibly about one-quarter smaller than V4.2.14 while the green Present `✓` is unchanged.
+5. On **Maktab Summary**, tap a student's attendance icon. Quick Attendance must show the student, selected Summary date, current state, **Present / Haidh / Absent**, Save and Detail. Save must update the selected date; Detail opens the full Attendance page.
+6. Repeat from the **Student Summary** header attendance icon. It must open the same Quick Attendance action for the carried date, not bypass to a separate implementation.
+7. Activity precedence: on a date with a real Maktab log, Quick Attendance must show **Logged activity · Present** and must not offer a fake Haidh/Absent override. Future Present is blocked; future Haidh remains a prediction.
+8. Run `node tests/verify_v421141_ui.mjs`, `node tests/verify_v42121_ui.mjs`, the V4.2.11–V4.2.14 compatibility UI harnesses, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`. Any older harness that cannot report because `jsdom` is absent remains an environment limitation, not a counted pass. **Build result: 472 passed, 0 failed among reporting harnesses; 26 older harnesses do not report because `jsdom` is absent and/or their legacy SQLite fixtures are behind the current schema.**
+
+## V4.2.14 — SUPERSEDED BY V4.2.14.1 FOR FRONTEND DEPLOYMENT
 
 1. **No migration. Deploy the Worker/model first**, including the new `worker/src/haidhTimeline.js`, then overlay the changed Pages/frontend files and hard-refresh until the page/cache key reads **v4.2.14**.
 2. Confirm a new **confirmed Haidh** mark replaces the old prediction set, is Day 1 of the real period, and regenerates predictions from that first confirmed day.
