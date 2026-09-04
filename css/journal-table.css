@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.12.1 | css/journal-table.css */
+/* Hifzhelper build 4.2.14.1 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -655,21 +655,40 @@
 .maktab-quick-verse-field { min-width: 0; }
 .maktab-quick-verse-field input { border: 0; border-radius: 0; padding: 0; }
 
-.maktab-quick-type-switch {
+/* V4.2.14.1: keep every Quick Log selector in normal flow. The shared
+   .unit-pill rule is loaded later (detail-pages.css) and is absolute by
+   default, so these scoped two-class selectors deliberately outrank it. */
+.maktab-quick-log-card .maktab-quick-type-switch {
   position: static;
   right: auto;
   display: flex;
   width: 100%;
   min-width: 0;
+  height: 42px;
+  min-height: 42px;
   margin: 0 0 12px;
+  box-sizing: border-box;
 }
-.maktab-quick-type-switch button { flex: 1 1 0; min-width: 0; }
+.maktab-quick-log-card .maktab-quick-type-switch button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
 
 .maktab-quick-dhor-grid { display: grid; gap: 10px; }
-.maktab-quick-dhor-unit-row {
-  display: flex;
+.maktab-quick-dhor-primary-row {
+  display: grid;
+  grid-template-columns: minmax(100px, 30%) minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+.maktab-quick-dhor-position-row {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
 }
 .maktab-quick-control-label {
   flex: 0 0 auto;
@@ -678,73 +697,83 @@
   color: var(--color-ink-soft);
   white-space: nowrap;
 }
-.maktab-quick-unit-pill,
-.maktab-quick-position-pill {
+.maktab-quick-log-card .maktab-quick-unit-pill,
+.maktab-quick-log-card .maktab-quick-position-pill {
   position: static;
   right: auto;
   display: flex;
+  width: 100%;
   min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
 }
-.maktab-quick-unit-pill {
-  width: 60%;
-  max-width: 310px;
+.maktab-quick-log-card .maktab-quick-unit-pill button,
+.maktab-quick-log-card .maktab-quick-position-pill button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
-.maktab-quick-unit-pill button,
-.maktab-quick-position-pill button { flex: 1 1 0; min-width: 0; }
-.maktab-quick-dhor-selection-row {
-  display: grid;
-  grid-template-columns: minmax(112px, 30%) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-}
-.modal-card .maktab-quick-dhor-selection-row select {
+.modal-card .maktab-quick-dhor-primary-row select {
   width: 100%;
   min-width: 0;
   height: 42px;
   margin: 0;
   padding: 0 34px 0 12px;
   border-radius: 999px;
+  box-sizing: border-box;
 }
-.maktab-quick-position-pill { width: 100%; min-height: 42px; }
-.maktab-quick-position-pill button { min-height: 42px; }
 .maktab-quick-confirm {
   display: flex !important;
   align-items: center;
-  gap: 8px;
-  margin: 14px 0 0 !important;
+  justify-content: center;
+  gap: 7px;
+  margin: 0 !important;
   font-size: 13px !important;
   font-weight: 600;
   color: var(--color-ink) !important;
 }
-.maktab-quick-confirm-compact {
-  justify-content: center;
-  margin: 0 !important;
-  width: 34px;
+.maktab-quick-confirm-action {
   height: 42px;
+  min-width: 0;
+  padding: 0 9px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  box-sizing: border-box;
 }
 .modal-card .maktab-quick-confirm input {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   margin: 0;
+  padding: 0;
   accent-color: var(--palette-evergreen, #344C3D);
 }
 .maktab-quick-actions {
   display: grid;
-  grid-template-columns: minmax(140px, 230px) auto;
+  grid-template-columns: minmax(86px, .8fr) minmax(120px, 1.35fr) auto;
   justify-content: start;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 12px;
 }
-.maktab-quick-actions .maktab-quick-save { width: 100%; }
+.maktab-quick-actions .maktab-quick-save {
+  width: 100%;
+  height: 42px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
 .maktab-quick-details {
+  min-height: 42px;
   border: 0;
   background: transparent;
   color: var(--color-ink-soft);
   font: inherit;
   font-size: 12px;
   font-weight: 600;
-  padding: 8px 4px;
+  padding: 0 8px;
   cursor: pointer;
 }
 .maktab-quick-log-card .form-error { min-height: 18px; margin-top: 4px; }
@@ -764,10 +793,84 @@
   .maktab-quick-heading.is-combined .maktab-quick-student { width: 100%; }
   .maktab-quick-date-row { margin-bottom: 10px; }
   .maktab-quick-range-row { grid-template-columns: 74px minmax(0, 1fr); }
-  .maktab-quick-dhor-unit-row { align-items: center; }
-  .maktab-quick-unit-pill { width: 60%; max-width: none; }
-  .maktab-quick-dhor-selection-row {
-    grid-template-columns: minmax(100px, 30%) minmax(0, 1fr) auto;
-  }
-  .maktab-quick-actions { grid-template-columns: minmax(120px, 55%) auto; }
+  .maktab-quick-dhor-primary-row { grid-template-columns: minmax(94px, 30%) minmax(0, 1fr); }
+  .maktab-quick-dhor-position-row { grid-template-columns: 96px minmax(0, 1fr); }
+  .maktab-quick-actions { grid-template-columns: minmax(82px, .8fr) minmax(112px, 1.25fr) auto; }
+}
+
+/* ============================================================
+   V4.2.14.1 — shared Quick Attendance sheet.
+   Summary and Student Summary use the same card; Detail remains the route to
+   the full Attendance page. All tap controls share the same 42px height.
+   ============================================================ */
+.maktab-quick-attendance-card { max-width: 520px; }
+.maktab-quick-attendance-card .maktab-quick-heading { grid-template-columns: minmax(0, 1fr); padding-right: 28px; }
+.maktab-quick-attendance-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.maktab-quick-attendance-current {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--color-canvas);
+  color: var(--color-ink-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+.maktab-quick-attendance-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  height: 42px;
+  min-height: 42px;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+.maktab-quick-attendance-status button {
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  border-right: 1px solid var(--color-table-border);
+  background: transparent;
+  color: var(--color-ink-soft);
+  font: inherit;
+  font-size: 12px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+.maktab-quick-attendance-status button:last-child { border-right: 0; }
+.maktab-quick-attendance-status button.on {
+  background: var(--color-accent-soft, #D0DBE7);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+.maktab-quick-attendance-status button:disabled { opacity: .52; cursor: default; }
+.maktab-quick-attendance-hint { min-height: 18px; margin: 7px 0 0; }
+.maktab-quick-attendance-card .form-error { min-height: 18px; margin-top: 2px; }
+.maktab-quick-attendance-actions {
+  display: grid;
+  grid-template-columns: minmax(120px, 220px) auto;
+  justify-content: start;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+.maktab-quick-attendance-actions .primary {
+  width: 100%;
+  height: 42px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.maktab-quick-attendance-actions .maktab-quick-details { height: 42px; }
+@media (max-width: 767px) {
+  .maktab-quick-attendance-card { padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom)); }
+  .maktab-quick-attendance-actions { grid-template-columns: minmax(120px, 55%) auto; }
 }
