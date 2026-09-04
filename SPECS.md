@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.14.1** — Quick Log pill alignment + shared Quick Attendance on Maktab/Student Summary
 - **V4.2.14** — Authoritative single Haidh model: confirmed/predicted/activity, Day-1 prediction reset, global 10/15 limits
 - **V4.2.13.1** — Mobile Attendance register width: narrower Student column and on-demand Attendance %
 - **V4.2.13** — Attendance/Haidh derivation audit: stop evidence, probable calendar state, and Active-vs-Haidh reporting
@@ -129,6 +130,22 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.14.1 — Quick Log alignment + shared Quick Attendance
+
+**Quick Log layout decision.** The mobile Quick Log keeps one combined `Sabaq | Sabaq Dhor | Dhor` selector. Dhor then uses a predictable vertical flow: Juz selector beside Juz Portion, Portion number on the next row, and Confirm/Save/Detail on one action row. The visual bug was not a data-flow problem: the shared `.unit-pill` rule in `detail-pages.css` is absolute-positioned and loads after `journal-table.css`, so it was winning the cascade and physically stacking the Dhor pills over the type selector. The patch fixes that at the scoped Quick Log selector level instead of changing `.unit-pill` globally and risking the full detail cards.
+
+**Sizing decision.** The Quick Log's outer interactive controls use a 42px visual height. This applies to the combined type selector, Juz selector, Juz Portion pill, Portion number pill, Confirm, Save and Detail. Internal segmented-pill buttons can be 40px inside the 1px border while the outside control remains 42px.
+
+**Quick Attendance decision.** The existing attendance icon on Maktab Summary and Student Summary becomes the fast action point rather than adding a second icon. It opens one shared sheet for the already-selected date with Present, Haidh, Absent, Save and Detail. `Detail` preserves the full Attendance/Haidh-calendar route, so quick entry does not remove any existing capability. Both surfaces call the same function in `maktabDay.js`; there is no duplicated attendance implementation.
+
+**Authority/precedence.** Quick Attendance writes through the existing teacher attendance endpoint. A real Maktab log is immutable in this sheet because V4.2.14 declares activity strongest; the sheet reports `Logged activity · Present` and disables manual Haidh/Absent choices. Today/past Haidh is a confirmed mark and therefore uses the V4.2.14 global purity/run/reset rules. Future Haidh remains `predicted-haidh`; future Present is invalid.
+
+**Register refinement.** `H/h` is reduced from 18px to 14px so Haidh remains legible but no longer dominates the narrow Attendance cells. Present `✓` and all V4.2.14 state semantics remain unchanged.
+
+**No migration / no new Worker.** This release changes frontend behavior and cache keys only; it depends on the V4.2.14 Worker/model already delivered.
 
 ---
 

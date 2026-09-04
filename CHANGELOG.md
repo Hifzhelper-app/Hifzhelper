@@ -26,6 +26,25 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.14.1 — Quick Log alignment + Quick Attendance (2026-09-04)
+
+**Files touched:** `index.html`; `css/journal-table.css`, `css/detail-pages.css`; `js/maktabDay.js`, `js/maktabSummary.js`, `js/sw.js`; `tests/verify_v3820_student_summary.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4212_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v428_ui.mjs`, `tests/verify_v421141_ui.mjs` (new); `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**
+
+1. **Quick Log overlap removed.** The shared `.unit-pill` absolute-position rule was overriding the Quick Log sheet because `detail-pages.css` loads after `journal-table.css`. V4.2.14.1 scopes the Quick Log pill selectors strongly enough to keep every selector in normal flow.
+2. **Dhor Quick Log follows the requested row order.** `Sabaq | Sabaq Dhor | Dhor` selector first; `Juz selector | Juz Portion` on the next row; `Portion number` on its own row; then `Confirm | Save | Detail`. Quarter/Half/Juz and portion-number behavior are unchanged.
+3. **Common control height.** The type selector, Juz select, Juz Portion pill, Portion number pill, Confirm, Save and Detail all use a 42px outer control height so no pill sits taller than its neighbour.
+4. **Attendance register Haidh mark reduced.** Confirmed `H` and predicted `h` move from 18px to 14px (about 22–25% smaller) while keeping the V4.2.14 colours/weights and no-pill treatment.
+5. **Quick Attendance on Maktab Summary.** The existing attendance icon now opens a small date-aware sheet with **Present / Haidh / Absent**, **Save**, and **Detail**. Detail preserves the route to the full Attendance page. A real Maktab log is shown as locked Present because V4.2.14 activity precedence cannot be overridden by a manual attendance toggle.
+6. **Quick Attendance on Student Summary.** The header attendance icon opens the same Quick Attendance sheet for the carried Summary date; Detail again opens the full Attendance page.
+7. **Future dates remain predictive.** Quick Haidh on a future date writes `predicted-haidh`; future Absent writes the existing `predicted-absent` state; future Present is blocked. Past/today Haidh confirms and therefore still goes through the V4.2.14 global Haidh validation/reset rules.
+8. **Version discipline preserved.** Only served files edited by this patch receive a `4.2.14.1` top build header. The page/service-worker cache key moves to `4.2.14.1`; untouched served-file headers remain on their last-edit version.
+
+**Regression coverage:** dedicated V4.2.14.1 UI harness **11/11**; Quick Log compatibility **12/12**; cumulative V4.2.8 compatibility **17/17**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **472 passed, 0 failed among reporting harnesses**; **26 older harnesses do not report** because this checkout lacks `jsdom` and/or their legacy SQLite fixtures are behind the current schema.
+
+**Deployment:** V4.2.14.1 is a frontend overlay on the V4.2.14 Haidh Worker/model. If V4.2.14 has not yet been deployed, deploy its Worker/model files first, then overlay the V4.2.14.1 frontend files and hard-refresh. **No new Worker deployment and no D1 migration for V4.2.14.1 itself.**
+
+---
+
 ## V4.2.14 — Authoritative single Haidh model (2026-09-03)
 
 **Files touched:** `index.html`; `css/detail-pages.css`, `css/haidh.css`, `css/tokens.css`; `js/api.js`, `js/haidhDetailScreen.js`, `js/maktabAttendancePage.js`, `js/maktabSummary.js`, `js/sw.js`; `shared/haidhRules.js`; `worker/src/attendance.js`, `worker/src/haidhTimeline.js` (new), `worker/src/maktabAttendance.js`, `worker/src/maktabLog.js`; `tests/verify_attendance_derived.mjs`, `tests/verify_v3761_haidh_predictions.mjs`, `tests/verify_v3762_haidh_decision.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v4212_ui.mjs`, `tests/verify_v4213_attendance_model.mjs`, `tests/verify_v4214_haidh_engine.mjs` (new); `SCHEMA.md`, `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **WORKER + FRONTEND — no schema migration.**
