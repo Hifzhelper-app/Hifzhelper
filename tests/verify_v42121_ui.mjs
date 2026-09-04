@@ -22,21 +22,22 @@ check('desktop Quick Log header keeps type and student name on one aligned line'
 check('Quick Log date is a shared second row in Wed 02 Sep form',
   /maktab-quick-date-row/.test(js)
   && /return `\$\{days\[d\.getDay\(\)\]\} \$\{String\(d\.getDate\(\)\)\.padStart\(2, '0'\)\} \$\{months\[d\.getMonth\(\)\]\}`/.test(js));
-check('Dhor Portion switch is compact and limited to about sixty percent width',
-  /Juz Portion/.test(js)
+check('Dhor Juz selector and Juz Portion switch share one non-overlapping row',
+  /maktab-quick-dhor-primary-row/.test(js)
+  && /id="mql_dhor_juz"/.test(js)
   && /data-unit="quarter"[^>]*>Quarter</.test(js)
   && /data-unit="half"[^>]*>Half</.test(js)
   && /data-unit="full"[^>]*>Juz</.test(js)
-  && /\.maktab-quick-unit-pill[\s\S]{0,220}width: 60%/.test(css));
-check('Dhor Juz, portion number and compact confirmation share one row',
-  /maktab-quick-dhor-selection-row/.test(js)
-  && /id="mql_dhor_juz"/.test(js)
+  && /maktab-quick-log-card \.maktab-quick-unit-pill[\s\S]{0,220}position: static/.test(css));
+check('Dhor Portion number has its own row and confirmation moves beside Save + Detail',
+  /maktab-quick-dhor-position-row/.test(js)
   && /id="mql_dhor_position"/.test(js)
-  && /maktabQuickConfirmControl\(true\)/.test(js)
-  && /grid-template-columns: minmax\(112px, 30%\) minmax\(0, 1fr\) auto/.test(css));
-check('Save is deliberately narrower and Detail remains beside it',
-  /grid-template-columns: minmax\(140px, 230px\) auto/.test(css)
-  && /id="maktabQuickLogDetails">Detail<\/button>/.test(js));
+  && /maktabQuickConfirmControl\(\)/.test(js)
+  && /grid-template-columns: minmax\(86px, \.8fr\) minmax\(120px, 1\.35fr\) auto/.test(css));
+check('Confirm, Save and Detail share the same 42px action height',
+  /maktab-quick-confirm-action[\s\S]{0,160}height: 42px/.test(css)
+  && /maktab-quick-actions \.maktab-quick-save[\s\S]{0,160}height: 42px/.test(css)
+  && /maktab-quick-details[\s\S]{0,120}min-height: 42px/.test(css));
 
 check('phone uses one combined Quick Log card with a three-type selector',
   /maktabQuickIsMobile\(\)/.test(js)
@@ -83,9 +84,9 @@ check('render uses the sorted roster and only groups the logged band',
   && /band === 0 && prevBand === 0 && groupKey !== prevGroup/.test(js)
   && /wireMaktabSummarySearch\(sortedStudents, date\)/.test(js));
 
-check('page/cache release key is 4.2.14',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.14')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14'/.test(sw));
+check('page/cache release key is 4.2.14.1',
+  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.14.1')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

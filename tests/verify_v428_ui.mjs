@@ -47,9 +47,9 @@ check('4.2.8.2: instant-name paint wraps attendance SVG in the same sizing class
   /attendanceGhost\.className = 'maktab-haidh-check maktab-summary-skeleton-attendance';/.test(summaryJs)
   && /haidhTd\.appendChild\(attendanceGhost\);/.test(summaryJs)
   && !/haidhTd\.innerHTML = typeof iconHtml/.test(summaryJs));
-check('4.2.8.2/V4.2.12: summary targets remain distinct after Quick Log replaces direct cell navigation',
+check('4.2.8.2/V4.2.14.1: summary targets remain distinct with Quick Log and Quick Attendance',
   /nameTd\.addEventListener\('click',[\s\S]{0,220}openStudentSummaryPage/.test(summaryJs)
-  && /btn\.addEventListener\('click',[\s\S]{0,220}openMaktabAttendancePage/.test(summaryJs)
+  && /btn\.addEventListener\('click',[\s\S]{0,260}maktabOpenQuickAttendance/.test(summaryJs)
   && /td\.addEventListener\('click',[\s\S]{0,360}maktabOpenQuickLog/.test(summaryJs)
   && /maktabQuickLogDetails[\s\S]{0,500}openMaktabDay/.test(summaryJs));
 
