@@ -26,6 +26,23 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.14.5 — Current-week activity-first Attendance ordering (2026-09-05)
+
+**Files touched:** `index.html`; `js/maktabAttendancePage.js`, `js/sw.js`; `tests/verify_v42145_ui.mjs` (new), `tests/verify_v42144_ui.mjs`, `tests/verify_v42143_ui.mjs`, `tests/verify_v42142_ui.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v4211_ui.mjs`; `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**
+
+1. **Attendance primary sort is now current-week active/logged-day count.** The register counts actual green `✓`/`present` cells in the Maktab week containing `today` and sorts that number descending before considering Attendance %. Four active days therefore rank above three, three above two, and so on, even when the lower-activity row displays 100%.
+2. **This fixes the mixed Present/Haidh case from device testing.** A student with several active days at 80% now sits above a 100% student whose current week contains fewer active days and more `H/h` days. Attendance % is a secondary tie-breaker only when current-week active counts are equal.
+3. **Zero-activity ordering remains meaningful.** When two students have no current-week ticks, a Haidh/Predicted-Haidh row ranks above an absent/unresolved-only row. Term-wide active-day count, current-day state and first-name alphabetical order remain later stability tie-breakers.
+4. **Week scope is explicit.** The sort uses the week whose `monday` matches the Monday of `data.today`; Friday/weekend openings still use the Mon–Thu week that just ran. A safe nearest rendered-week fallback is retained for historical/nearest-term edge cases.
+5. **Maktab Summary ordering is unchanged.** It remains displayed-day log presence only: logged students alphabetically, then unlogged students alphabetically.
+6. **Version discipline preserved.** Only served files actually edited for this correction carry `4.2.14.5` top build headers; page/service-worker cache keys advance together to `4.2.14.5`.
+
+**Regression coverage:** dedicated V4.2.14.5 harness **10/10**; V4.2.14.4 compatibility **12/12**; V4.2.14.3 compatibility **8/8**; V4.2.14.2 compatibility **12/12**; V4.2.11 register/UI compatibility **7/7 + 12/12 + 11/11 + 16/16**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **514 passed, 0 failed among reporting harnesses**; the same **26 older harnesses do not report** because `jsdom` and/or their legacy fixtures are unavailable.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.14.4 and hard-refresh until the page/cache key reads **v4.2.14.5**. **No Worker deployment and no D1 migration.**
+
+---
+
 ## V4.2.14.4 — Selectable dates on Quick Action cards (2026-09-05)
 
 **Files touched:** `index.html`; `css/journal-table.css`; `js/maktabDay.js`, `js/maktabSummary.js`, `js/sw.js`; `tests/verify_v42144_ui.mjs` (new), `tests/verify_v42143_ui.mjs`, `tests/verify_v42142_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`; `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**

@@ -14,6 +14,16 @@ Base URLs:
 
 ---
 
+## V4.2.14.5 — Current-week activity-first Attendance ordering
+
+1. Run `node tests/verify_v42145_ui.mjs`; it must report **10/10** and prove that the Maktab week containing today is the sort week, current-week green ticks are counted directly from cells, and weekly activity outranks Attendance %.
+2. Recreate the reported pattern in Attendance for the current Maktab week: a student with **4 green ticks at 80%** must appear above a student with **3 green ticks at 100%**; 3 ticks must appear above 1 tick; any row with at least 1 tick must appear above a zero-tick Haidh-only row.
+3. For students with **zero** current-week green ticks, confirm Haidh/Predicted-Haidh rows appear above absent/unresolved-only rows.
+4. For two students with the **same current-week active-day count**, confirm Attendance % descending is used only as the next tie-breaker.
+5. Open Attendance on a Friday/weekend and confirm the sort still uses that week's Monday-based teaching block (for a Mon–Thu Maktab, the four days that just ran), not a future week or the whole term's active count.
+6. Re-check Maktab Summary: it must remain **logged students alphabetically, then unlogged students alphabetically**; this Attendance correction must not change Summary ordering.
+7. Run `node tests/verify_v42144_ui.mjs`, `node tests/verify_v42143_ui.mjs`, `node tests/verify_v42142_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_v42111_ui.mjs`, `node tests/verify_v42113_ui.mjs`, `node tests/verify_v4211_ui.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`. Current cumulative result: **514 passed, 0 failed among reporting harnesses**; **26 older harnesses remain non-reporting** because `jsdom` and/or legacy fixtures are unavailable.
+
 ## V4.2.14.4 — Selectable Quick Action dates
 
 1. Run `node tests/verify_v42144_ui.mjs`; it must report **12/12** and pin both native date inputs, date-change state updates, selected-date Save/Detail behavior, 42px controls and the V4.2.14.4 cache key.

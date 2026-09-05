@@ -64,9 +64,9 @@ check('both quick-action date controls keep the common 42px pill height',
   && /\.maktab-quick-date-input,[\s\S]{0,180}height: 42px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('V4.2.14.4 page and service-worker cache versions agree',
-  versions.length > 0 && versions.every(v => v === '4.2.14.4')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.4'/.test(sw));
+check('V4.2.14.4 feature remains present while page/cache carry forward to V4.2.14.5',
+  versions.length > 0 && versions.every(v => v === '4.2.14.5')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
 
 check('only the quick-action served files edited in this release carry V4.2.14.4 headers',
   /^\/\* Hifzhelper build 4\.2\.14\.4 \| js\/maktabSummary\.js \*\//.test(summary)

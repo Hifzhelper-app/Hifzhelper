@@ -20,8 +20,8 @@ check('current term register focuses the current Maktab week after paint',
   && /requestAnimationFrame\(focusCurrentWeek\)/.test(page));
 check('historical or future terms are not forcibly repositioned',
   /if\(data\.today < data\.from \|\| data\.today > data\.to\) return;/.test(page));
-check('attendance page source header advances because this served file changed again in V4.2.14.3',
-  /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/maktabAttendancePage\.js \*\//.test(page));
+check('attendance page source header advances because this served file changed again in V4.2.14.5',
+  /^\/\* Hifzhelper build 4\.2\.14\.5 \| js\/maktabAttendancePage\.js \*\//.test(page));
 
 const iso = d => d.toISOString().slice(0, 10);
 const shift = (base, n) => { const d = new Date(base + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
