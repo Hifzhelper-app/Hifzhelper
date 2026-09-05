@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.14.3** — Attendance tick-first roster bands: active/logged above Haidh-only above absent
 - **V4.2.14.2** — Independent Attendance/Maktab Summary ordering + Student Summary label quick actions
 - **V4.2.14.1** — Quick Log pill alignment + shared Quick Attendance on Maktab/Student Summary
 - **V4.2.14** — Authoritative single Haidh model: confirmed/predicted/activity, Day-1 prediction reset, global 10/15 limits
@@ -131,6 +132,28 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.14.3 — Attendance tick-first ordering correction
+
+### Decision
+
+The Attendance register is not a simple percentage leaderboard. A student who has actually attended/logged on at least one resolved Maktab day must appear above a student whose resolved period consists only of Haidh, even when the Haidh-only row displays a higher Attendance %. The register therefore uses three primary bands:
+
+1. **Active/logged:** at least one green-tick day in the register period. Inside this band, sort Attendance % descending, then active/logged-day count descending.
+2. **Haidh-only:** no active/logged days, but at least one confirmed or predicted Haidh day.
+3. **Absent/unresolved-only:** no active/logged days and no Haidh days.
+
+Current-day state and first-name alphabetical order remain stable tie-breakers after the band/performance keys. This rule is deliberately local to Attendance. Maktab Summary continues to use only displayed-day log presence and alphabetical order.
+
+### Defensive payload rule
+
+The sort prefers `attendance_active_days`, `attendance_haidh_days`, and `attendance_predicted_haidh_days`, but also inspects the returned cell map as a fallback. This prevents a partial/older payload from classifying a visible green-tick or H/h row into the wrong band.
+
+### Delivery
+
+Frontend only. No Worker logic or database schema changed. Page and service-worker cache keys advance to V4.2.14.3 so the corrected sort cannot be hidden behind a cached V4.2.14.2 script.
 
 ---
 

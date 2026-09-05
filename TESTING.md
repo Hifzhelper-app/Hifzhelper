@@ -14,6 +14,15 @@ Base URLs:
 
 ---
 
+## V4.2.14.3 — Attendance tick-first ordering
+
+1. Run `node tests/verify_v42143_ui.mjs`. It must prove a lower-percentage student with at least one active/logged tick ranks above a higher-percentage Haidh-only student.
+2. On the Attendance register, create/locate examples matching the device report: at least one **100% Haidh-only** student and one **80% student with green ticks**. The tick student must be above the Haidh-only student.
+3. Inside the active/logged band, confirm **Attendance % descending** still applies; for equal percentages, the student with more active/logged days comes first.
+4. After all students with ticks, confirm **Haidh-only** students appear, then **absent/unresolved-only** students. Confirmed `H` and predicted `h` both belong to the Haidh-only band only when the student has no active/logged day in the register period.
+5. Re-check Maktab Summary: its order must remain **logged students alphabetically, then unlogged students alphabetically**. Attendance %, Haidh status, and this new Attendance banding must not affect Summary.
+6. Run `node tests/verify_v42142_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_v42111_ui.mjs`, `node tests/verify_v4211_ui.mjs`, `node tests/verify_build_stamp.mjs`, and `node tests/verify_syntax.mjs`. Current result: **493 passed, 0 failed among reporting harnesses** in the cumulative runner; **26 older harnesses remain non-reporting** because `jsdom` and/or legacy fixtures are unavailable.
+
 ## V4.2.14.2 — Ordering + Student Summary label quick actions
 
 1. Run `node tests/verify_v42142_ui.mjs`. It must prove the three Student Summary activity labels are buttons into the shared Quick Log, Attendance remains separate, the two ordering models are independent, grey 14px `H/h` is preserved, and page/cache keys agree.

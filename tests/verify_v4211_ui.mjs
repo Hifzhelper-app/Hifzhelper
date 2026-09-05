@@ -71,14 +71,14 @@ const v4211Page = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
 const v4211Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.11-or-later page/cache keys agree',
   !!v4211Page && v4211Page === v4211Cache);
-check('V4.2.11 pins remain on untouched files while V4.2.14-edited files carry the new header',
+check('V4.2.11 pins remain on untouched files while later-edited files carry their current last-edit header',
   /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/admin\.css \*\//.test(adminCss)
   && /^\/\* Hifzhelper build 4\.2\.14\.2 \| css\/detail-pages\.css \*\//.test(css)
   && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.14 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.14 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
-  && /^\/\* Hifzhelper build 4\.2\.14\.2 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.14\.2 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/maktabAttendancePage\.js \*\//.test(page)
+  && /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/sw\.js \*\//.test(sw));
 check('no new migration was introduced for gender/track_haidh',
   fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
 

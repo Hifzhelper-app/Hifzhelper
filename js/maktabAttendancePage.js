@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.2 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.14.3 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.14).
 //
@@ -38,10 +38,13 @@ function mkregMondayOf(iso){
   return d.toISOString().slice(0, 10);
 }
 
-// V4.2.14.2: Attendance has an independent performance ordering. Sort by
-// decreasing Attendance %, then by the greatest number of active/logged days.
-// Remaining ties use today's resolved state (active/present, then Haidh, then
-// absent/unresolved), with first-name alphabetical order only as the final tie.
+// V4.2.14.3: Attendance uses three explicit roster bands. Any student with
+// at least one active/logged day (a green tick in this register period) must
+// rank above a student whose resolved attendance is Haidh-only, even when the
+// Haidh-only student's Attendance % is higher. Haidh-only then ranks above
+// absent/unresolved-only. Inside the active/logged band, Attendance % remains
+// descending, then active/logged-day count; current-day state and first-name
+// alphabetical order are stable tie-breakers.
 function mkregFirstNameKey(name){
   const full = String(name || '').trim().replace(/\s+/g, ' ');
   return { first: (full.split(' ')[0] || '').toLocaleLowerCase(), full: full.toLocaleLowerCase() };
@@ -60,8 +63,24 @@ function mkregActiveDays(student){
   const n = Number(student && student.attendance_active_days);
   return Number.isFinite(n) ? n : 0;
 }
+function mkregHaidhDays(student){
+  const confirmed = Number(student && student.attendance_haidh_days);
+  const predicted = Number(student && student.attendance_predicted_haidh_days);
+  return (Number.isFinite(confirmed) ? confirmed : 0) + (Number.isFinite(predicted) ? predicted : 0);
+}
+function mkregHasCellStatus(student, wanted){
+  const cells = student && student.cells ? Object.values(student.cells) : [];
+  return cells.some(status => wanted.includes(status));
+}
+function mkregStudentBand(student){
+  if(mkregActiveDays(student) > 0 || mkregHasCellStatus(student, ['present'])) return 0;
+  if(mkregHaidhDays(student) > 0 || mkregHasCellStatus(student, ['haidh','predicted-haidh'])) return 1;
+  return 2;
+}
 function mkregSortStudents(students, date){
   return (students || []).slice().sort((a, b) => {
+    const band = mkregStudentBand(a) - mkregStudentBand(b);
+    if(band) return band;
     const pct = mkregAttendancePercent(b) - mkregAttendancePercent(a);
     if(pct) return pct;
     const active = mkregActiveDays(b) - mkregActiveDays(a);
