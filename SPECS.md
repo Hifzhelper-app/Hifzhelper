@@ -17,6 +17,8 @@ Newest first.
 
 ## Index
 
+- **V4.2.14.4** — Selectable dates on shared Quick Log and Quick Attendance cards
+- **V4.2.14.3** — Attendance tick-first roster bands: active/logged above Haidh-only above absent
 - **V4.2.14.2** — Independent Attendance/Maktab Summary ordering + Student Summary label quick actions
 - **V4.2.14.1** — Quick Log pill alignment + shared Quick Attendance on Maktab/Student Summary
 - **V4.2.14** — Authoritative single Haidh model: confirmed/predicted/activity, Day-1 prediction reset, global 10/15 limits
@@ -131,6 +133,40 @@ Newest first.
 - Done — V3.30.0 (2026-08-03)
 - Done — V3.29.0 (2026-08-03)
 - Done — V3.28.0 (2026-08-03)
+
+---
+
+## V4.2.14.4 — Selectable Quick Action dates
+
+**Decision:** the date shown on a Quick Action card is no longer a read-only label. It is part of the action and therefore must be directly selectable without forcing the teacher into the full detail screen. This applies equally to the shared Quick Log card and shared Quick Attendance card, regardless of whether they were opened from Maktab Summary or Student Summary.
+
+**Quick Log model:** changing the date keeps the student and currently selected Sabaq/Sabaq Dhor/Dhor type. The card must not display the previous date's existing rows under the new date, so those rows are cleared immediately and the selected day's Summary data is loaded for that student. The date read is race-token guarded. Confirmation is deliberately cleared on every date change because changing the date changes the meaning of the pending write. The draft controls may remain; Save always posts `state.date`, and Detail always opens `snapshot.date`.
+
+**Quick Attendance model:** the card already loads the student's normalized Attendance timeline. Changing date selects the corresponding row from that same normalized source, resets the selected status to the selected day's state, recalculates whether the day is future, and re-applies the V4.2.14 activity-wins rule. This prevents a Haidh/Absent choice made for one date from silently carrying onto another date. Future Present remains invalid; future Haidh/Absent remain predictions/plans. Save and Detail use the selected date.
+
+**Picker implementation:** reuse `wireCustomDateDisplay()` rather than a custom button calling `showPicker()`. The existing native-input-as-the-tap-target pattern is required because iOS does not reliably open the date picker from scripted `showPicker()` calls. The visible control remains a compact 42px pill consistent with the other quick-action controls.
+
+**Scope:** frontend only. No attendance rule, Haidh rule, Maktab log schema, Worker route, or migration changes.
+
+## V4.2.14.3 — Attendance tick-first ordering correction
+
+### Decision
+
+The Attendance register is not a simple percentage leaderboard. A student who has actually attended/logged on at least one resolved Maktab day must appear above a student whose resolved period consists only of Haidh, even when the Haidh-only row displays a higher Attendance %. The register therefore uses three primary bands:
+
+1. **Active/logged:** at least one green-tick day in the register period. Inside this band, sort Attendance % descending, then active/logged-day count descending.
+2. **Haidh-only:** no active/logged days, but at least one confirmed or predicted Haidh day.
+3. **Absent/unresolved-only:** no active/logged days and no Haidh days.
+
+Current-day state and first-name alphabetical order remain stable tie-breakers after the band/performance keys. This rule is deliberately local to Attendance. Maktab Summary continues to use only displayed-day log presence and alphabetical order.
+
+### Defensive payload rule
+
+The sort prefers `attendance_active_days`, `attendance_haidh_days`, and `attendance_predicted_haidh_days`, but also inspects the returned cell map as a fallback. This prevents a partial/older payload from classifying a visible green-tick or H/h row into the wrong band.
+
+### Delivery
+
+Frontend only. No Worker logic or database schema changed. Page and service-worker cache keys advance to V4.2.14.3 so the corrected sort cannot be hidden behind a cached V4.2.14.2 script.
 
 ---
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.14.2 — independent Attendance/Summary ordering + Student Summary quick actions.
+// V4.2.14.2 compatibility — ordering + Student Summary quick actions; cache carried through V4.2.14.4.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -58,33 +58,32 @@ vm.createContext(attCtx);
 vm.runInContext(attSortSource, attCtx);
 const sortDate = '2026-09-04';
 const attendanceSample = [
-  { id:'A', name:'Amina Absent', attendance_percent:95, attendance_active_days:5, cells:{ [sortDate]:'absent' } },
-  { id:'B', name:'Bilqees High', attendance_percent:100, attendance_active_days:1, cells:{ [sortDate]:'absent' } },
-  { id:'C', name:'Celine ActiveDays', attendance_percent:95, attendance_active_days:7, cells:{ [sortDate]:'haidh' } },
-  { id:'D', name:'Dina Present', attendance_percent:95, attendance_active_days:5, cells:{ [sortDate]:'present' } },
-  { id:'E', name:'Emaan Haidh', attendance_percent:95, attendance_active_days:5, cells:{ [sortDate]:'haidh' } },
-  { id:'F', name:'Fatima Absent', attendance_percent:95, attendance_active_days:5, cells:{ [sortDate]:'absent' } },
+  { id:'A', name:'Amina Active 80', attendance_percent:80, attendance_active_days:4, attendance_haidh_days:0, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'present' } },
+  { id:'B', name:'Bilqees Active 100', attendance_percent:100, attendance_active_days:1, attendance_haidh_days:2, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'haidh' } },
+  { id:'C', name:'Celine Haidh Only', attendance_percent:100, attendance_active_days:0, attendance_haidh_days:7, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'haidh' } },
+  { id:'D', name:'Dina Predicted Only', attendance_percent:100, attendance_active_days:0, attendance_haidh_days:0, attendance_predicted_haidh_days:4, cells:{ [sortDate]:'predicted-haidh' } },
+  { id:'E', name:'Emaan Absent Only', attendance_percent:100, attendance_active_days:0, attendance_haidh_days:0, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'absent' } },
 ];
 const attendanceOrdered = attCtx.mkregSortStudents(attendanceSample, sortDate).map(s => s.id);
-check('Attendance ordering is decreasing percentage then decreasing active-day count',
+check('Attendance uses active/logged, then Haidh-only, then absent/unresolved roster bands',
+  /function mkregStudentBand\(student\)/.test(attendance)
+  && /mkregActiveDays\(student\) > 0/.test(attendance)
+  && /mkregHaidhDays\(student\) > 0/.test(attendance)
+  && JSON.stringify(attendanceOrdered) === JSON.stringify(['B','A','C','D','E']));
+
+check('Attendance percentage and active-day count still descend inside the active/logged band',
   /const pct = mkregAttendancePercent\(b\) - mkregAttendancePercent\(a\)/.test(attendance)
   && /const active = mkregActiveDays\(b\) - mkregActiveDays\(a\)/.test(attendance)
-  && JSON.stringify(attendanceOrdered.slice(0, 2)) === JSON.stringify(['B','C']));
-
-check('Attendance tie-state order is active/present, then Haidh, then absent/unresolved',
-  /if\(status === 'present'\) return 0;/.test(attendance)
-  && /if\(status === 'haidh' \|\| status === 'predicted-haidh'\) return 1;/.test(attendance)
-  && /return 2;/.test(attendance)
-  && JSON.stringify(attendanceOrdered) === JSON.stringify(['B','C','D','E','A','F']));
+  && JSON.stringify(attendanceOrdered.slice(0, 2)) === JSON.stringify(['B','A']));
 
 check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, not calendar pink',
   /mkregister-status-haidh-confirmed \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css)
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('V4.2.14.2 page assets and service-worker cache key agree',
-  versions.length > 0 && versions.every(v => v === '4.2.14.2')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.2'/.test(sw));
+check('current page assets and service-worker cache key agree at V4.2.14.4',
+  versions.length > 0 && versions.every(v => v === '4.2.14.4')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.4'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

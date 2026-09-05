@@ -33,11 +33,33 @@ numbers; headings are unique, search the text.
 | ~~81~~ | ~~**Deploy + device-verify V4.2.13.1 mobile Attendance width**~~ | **SUPERSEDED by V4.2.14** | V4.2.14 carries the mobile-width work forward with the authoritative single Haidh model. |
 | ~~82~~ | ~~**Deploy + device-verify V4.2.14 single Haidh model**~~ | **SUPERSEDED by V4.2.14.1 frontend overlay** | The V4.2.14 Worker/model remains the required base; V4.2.14.1 carries its frontend forward with the Quick Log/Quick Attendance fixes. |
 | ~~83~~ | ~~**Deploy + device-verify V4.2.14.1 Quick Log + Quick Attendance**~~ | **SUPERSEDED by V4.2.14.2** | V4.2.14.2 carries this frontend forward and adds the independent ordering + Student Summary activity quick actions. |
-| **84** | **Deploy + device-verify V4.2.14.2 ordering + Student Summary quick actions** | **READY — build complete** | **Frontend overlay; no new Worker/migration.** Attendance and Maktab Summary now sort independently; Student Summary Sabaq/Sabaq Dhor/Dhor labels open the shared Maktab Quick Log. |
+| ~~84~~ | ~~**Deploy + device-verify V4.2.14.2 ordering + Student Summary quick actions**~~ | **SUPERSEDED by V4.2.14.3** | V4.2.14.3 carries the V4.2.14.2 UI forward and corrects Attendance so any student with ticks ranks above Haidh-only students. |
+| ~~85~~ | ~~**Deploy + device-verify V4.2.14.3 tick-first Attendance ordering**~~ | **SUPERSEDED by V4.2.14.4** | V4.2.14.4 carries the tick-first ordering forward and adds selectable dates to both shared Quick Action cards. |
+| **86** | **Deploy + device-verify V4.2.14.4 selectable Quick Action dates** | **READY — build complete** | **Frontend overlay; no new Worker/migration.** Quick Log and Quick Attendance dates are native/selectable; Save and Detail follow the selected date. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
 
-## V4.2.14.2 — READY TO DEPLOY / DEVICE-VERIFY
+## V4.2.14.4 — READY TO DEPLOY / DEVICE-VERIFY
+
+1. **Frontend overlay only.** Keep the V4.2.14 Worker/model and V4.2.14.3 frontend underneath. Overlay V4.2.14.4 Pages files and hard-refresh until the page/cache key reads **v4.2.14.4**. No migration or Worker deploy.
+2. Open a Quick Log from **Maktab Summary**. Tap the date pill, choose another day, and confirm the student + selected Sabaq/Sabaq Dhor/Dhor type stay in place. Existing-log text must reload for the selected day; the old date's rows must never remain displayed under the new date. Confirm is cleared on date change.
+3. Save after changing Quick Log date and verify the log lands on the selected date. Change date again and use **Detail**; the full detail screen must open on that selected date. Repeat from **Student Summary** to confirm the shared card behaves identically.
+4. Open **Quick Attendance**, change the date and confirm its current-state label and selected status match that date. A day with Maktab activity must lock to Present. Future dates must block Present and show **Predict Haidh / Plan absent**.
+5. Save Quick Attendance after changing date and verify the write uses the new date. **Detail** must open full Attendance on the currently selected date.
+6. On iPhone/iOS, confirm tapping either date pill opens the native date picker directly. Both date pills should retain the same 42px visual height as the other quick-action controls.
+7. Re-check V4.2.14.3 Attendance ordering and V4.2.14.2 Maktab Summary ordering; this release does not alter either sort model.
+8. Run `node tests/verify_v42144_ui.mjs`, `node tests/verify_v42143_ui.mjs`, `node tests/verify_v42142_ui.mjs`, `node tests/verify_v421141_ui.mjs`, `node tests/verify_v4212_ui.mjs`, `node tests/verify_v42121_ui.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`. **Build result: 505 passed, 0 failed among reporting harnesses; 26 older harnesses remain non-reporting because `jsdom` is absent and/or legacy fixtures are unavailable.**
+
+## V4.2.14.3 — SUPERSEDED BY V4.2.14.4 FOR FRONTEND DEPLOYMENT
+
+1. **Frontend overlay only.** Keep the V4.2.14 Worker/model and V4.2.14.2 frontend underneath. Overlay V4.2.14.3 Pages files and hard-refresh until the page/cache key reads **v4.2.14.3**. No migration.
+2. **Attendance primary bands:** every student with at least one active/logged tick in the register period must appear before every Haidh-only student, regardless of Attendance %. Haidh-only students then appear before absent/unresolved-only students.
+3. **Inside the tick band:** Attendance % decreases first; equal percentages use decreasing active/logged-day count; current-day state and first-name alphabetical are only later tie-breakers.
+4. Device check using the reported pattern: an **80% row with green ticks must sit above a 100% all-H row**.
+5. **Maktab Summary remains independent:** displayed-day logs first alphabetically, then no-log students alphabetically. Do not apply the Attendance bands there.
+6. Run `node tests/verify_v42143_ui.mjs`, `node tests/verify_v42142_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`. **Build result: 493 passed, 0 failed among reporting harnesses; 26 older harnesses remain non-reporting because `jsdom` is absent and/or legacy fixtures are unavailable.**
+
+## V4.2.14.2 — SUPERSEDED BY V4.2.14.3 FOR FRONTEND DEPLOYMENT
 
 1. **Frontend overlay only.** Keep the V4.2.14 Worker/model. Overlay V4.2.14.2 Pages files and hard-refresh until the page/cache key reads **v4.2.14.2**. No migration.
 2. **Attendance ordering is independent:** highest Attendance % first; ties use the greatest number of active/logged days; remaining ties rank Present/active, then Haidh, then absent/unresolved; alphabetical first name is the final tie-breaker.

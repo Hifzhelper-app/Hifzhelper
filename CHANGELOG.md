@@ -26,6 +26,39 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.14.4 — Selectable dates on Quick Action cards (2026-09-05)
+
+**Files touched:** `index.html`; `css/journal-table.css`; `js/maktabDay.js`, `js/maktabSummary.js`, `js/sw.js`; `tests/verify_v42144_ui.mjs` (new), `tests/verify_v42143_ui.mjs`, `tests/verify_v42142_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`; `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**
+
+1. **Quick Log date is now selectable.** The date line is a real native `type=date` control wrapped with the existing iOS-safe `wireCustomDateDisplay()` pattern. It opens the platform date picker while keeping the app's compact formatted date pill.
+2. **Changing a Quick Log date changes the actual write date.** Student and selected Sabaq/Sabaq Dhor/Dhor type remain in place; the card clears the previous day's visible existing-log rows, reloads the selected day's rows for that student, and requires confirmation again before Save. Stale overlapping date reads are token-guarded.
+3. **Quick Attendance date is now selectable using the same date-control pattern.** A newly selected date re-resolves that student's normalized attendance row, resets the selected status to that date's actual state, recomputes future Present/Haidh/Absent semantics, and reapplies activity precedence/locking.
+4. **Save and Detail follow the selected date on both cards.** Quick Log posts `state.date` for Sabaq, Sabaq Dhor and Dhor and opens Detail on that date. Quick Attendance writes and opens the full Attendance page on its selected date.
+5. **Date pill height remains aligned.** Both new date controls use the existing 42px quick-action control height and the native-input-as-tap-target behavior required for iOS.
+6. **Version discipline preserved.** Only the served files actually edited for this feature carry `4.2.14.4` top build headers; page/service-worker cache keys advance together to `4.2.14.4`.
+
+**Regression coverage:** dedicated V4.2.14.4 harness **12/12**; V4.2.14.3 compatibility **9/9**; V4.2.14.2 compatibility **12/12**; V4.2.14.1 compatibility **11/11**; Quick Log compatibility **15/15 + 12/12**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **505 passed, 0 failed among reporting harnesses**; the same **26 older harnesses do not report** because `jsdom` and/or their legacy fixtures are unavailable.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.14.3 and hard-refresh until the page/cache key reads **v4.2.14.4**. **No Worker deployment and no D1 migration.**
+
+---
+
+## V4.2.14.3 — Attendance tick-first ordering correction (2026-09-05)
+
+**Files touched:** `index.html`; `js/maktabAttendancePage.js`, `js/sw.js`; `tests/verify_v42143_ui.mjs` (new), `tests/verify_v42142_ui.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v4211_ui.mjs`; `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**
+
+1. **Attendance now uses tick-first roster bands.** Any student with at least one active/logged day in the displayed register period is placed above every student whose resolved attendance is Haidh-only, even if that Haidh-only student has a higher Attendance %. This directly fixes the device case where 100% all-H rows appeared above 80% students with green ticks.
+2. **Within the active/logged band, performance ordering remains.** Attendance % sorts descending, then active/logged-day count descending. Current-day state and first-name alphabetical order remain stable tie-breakers.
+3. **Haidh-only is the second band; absent/unresolved-only is last.** Confirmed and predicted Haidh both count as the Haidh-only band when there are no active/logged days. Aggregate counts are used first, with cell-state fallback so older/partial payloads still sort correctly.
+4. **Maktab Summary ordering is unchanged.** It remains displayed-day log presence only: logged students alphabetically, then unlogged students alphabetically.
+5. **Cache/version discipline preserved.** `js/maktabAttendancePage.js` and `js/sw.js` carry `4.2.14.3` last-edit headers; page/service-worker cache keys advance together to `4.2.14.3`; untouched served files keep their own last-edit headers.
+
+**Regression coverage:** dedicated V4.2.14.3 ordering harness **9/9**; V4.2.14.2 compatibility **12/12**; register-data parity **7/7**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **493 passed, 0 failed among reporting harnesses**; **26 older harnesses do not report** because this checkout lacks `jsdom` and/or their legacy fixtures.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.14.2 and hard-refresh. **No Worker deployment and no D1 migration for V4.2.14.3.**
+
+---
+
 ## V4.2.14.2 — Independent ordering + Student Summary label quick actions (2026-09-04)
 
 **Files touched:** `index.html`; `css/detail-pages.css`; `js/maktabAttendancePage.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/sw.js`; `tests/verify_v42142_ui.mjs` (new), `tests/verify_v421141_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v4212_ui.mjs`, `tests/verify_v42114_ui.mjs`; `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**
