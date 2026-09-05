@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.2 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.14.4 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -97,6 +97,62 @@ function maktabQuickFormatDate(iso){
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${days[d.getDay()]} ${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`;
+}
+
+// V4.2.14.4 — Quick Log date is a real native date control, using the
+// app's shared direct-tap wrapper so it remains selectable on iOS as well as
+// desktop. Changing date keeps the student + selected log type, reloads that
+// student's existing entries for the new day, and clears the confirmation so
+// a teacher cannot accidentally save a draft against a newly selected date.
+function maktabQuickDateControl(id, date, label){
+  return `<div class="maktab-quick-date-control"><input type="date" id="${id}" class="maktab-quick-date-input" value="${maktabQuickEscape(date)}" aria-label="${maktabQuickEscape(label)}"></div>`;
+}
+
+function maktabQuickEntryMapForDate(data, studentId){
+  const sid = String(studentId == null ? '' : studentId);
+  const own = rows => (Array.isArray(rows) ? rows : []).filter(r => String(r && r.student_id) === sid);
+  return {
+    sabaq: own(data && data.sabaq),
+    sabaqDhor: own(data && data.sabaq_dhor),
+    dhor: own(data && data.dhor)
+  };
+}
+
+async function maktabQuickChangeDate(nextDate){
+  const state = maktabQuickLogState;
+  if(!state || !nextDate || nextDate === state.date) return;
+  state.date = nextDate;
+  state.dateLoadToken = (state.dateLoadToken || 0) + 1;
+  const token = state.dateLoadToken;
+
+  // Never leave the previous day's rows visible under a new date while the
+  // exact-day read is in flight.
+  state.entriesByType = { sabaq: [], sabaqDhor: [], dhor: [] };
+  maktabQuickRenderBody();
+  const confirmBox = document.getElementById('maktabQuickLogConfirm');
+  if(confirmBox) confirmBox.checked = false;
+  const save = document.getElementById('maktabQuickLogSave');
+  if(save) save.disabled = true;
+  const err = document.getElementById('maktabQuickLogError');
+  if(err) err.textContent = 'Loading selected date…';
+
+  try{
+    const data = await apiMaktabSummary(nextDate);
+    if(maktabQuickLogState !== state || token !== state.dateLoadToken) return;
+    state.entriesByType = maktabQuickEntryMapForDate(data, state.student.id);
+    maktabQuickRenderBody();
+  } catch(e){
+    if(maktabQuickLogState !== state || token !== state.dateLoadToken) return;
+    state.entriesByType = { sabaq: [], sabaqDhor: [], dhor: [] };
+    maktabQuickRenderBody();
+    const liveErr = document.getElementById('maktabQuickLogError');
+    if(liveErr) liveErr.textContent = "Couldn't load existing logs for the selected date.";
+  } finally {
+    if(maktabQuickLogState === state && token === state.dateLoadToken){
+      const liveSave = document.getElementById('maktabQuickLogSave');
+      if(liveSave) liveSave.disabled = false;
+    }
+  }
 }
 
 function maktabQuickExistingText(type, entries){
@@ -393,7 +449,7 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType, o
   const entryMap = entriesByType || { sabaq: [], sabaqDhor: [], dhor: [] };
   if(!entriesByType) entryMap[type] = (entries || []).slice();
   maktabQuickLogState = {
-    student, date, type, combined,
+    student, date, type, combined, dateLoadToken: 0,
     entriesByType: {
       sabaq: (entryMap.sabaq || []).slice(),
       sabaqDhor: (entryMap.sabaqDhor || []).slice(),
@@ -417,7 +473,7 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType, o
       ${combined ? '' : desktopHeading}
       <span class="maktab-name-pill maktab-quick-student" title="${maktabQuickEscape(student.name)}">${maktabQuickEscape(student.name)}</span>
     </div>
-    <div class="maktab-quick-date-row"><span class="maktab-quick-date">${maktabQuickEscape(maktabQuickFormatDate(date))}</span></div>
+    <div class="maktab-quick-date-row">${maktabQuickDateControl('maktabQuickLogDate', date, 'Quick Log date')}</div>
     ${combined ? maktabQuickTypeSelector() : ''}
     <div id="maktabQuickExisting"></div>
     <div id="maktabQuickBody"></div>
@@ -429,6 +485,13 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType, o
     </div>
   </div>`;
   document.body.appendChild(overlay);
+  const quickDateInput = document.getElementById('maktabQuickLogDate');
+  if(typeof wireCustomDateDisplay === 'function') wireCustomDateDisplay('maktabQuickLogDate');
+  if(quickDateInput) quickDateInput.addEventListener('change', () => {
+    if(!maktabQuickLogState) return;
+    if(!quickDateInput.value){ quickDateInput.value = maktabQuickLogState.date; return; }
+    maktabQuickChangeDate(quickDateInput.value);
+  });
   overlay.querySelector('.close-btn').addEventListener('click', maktabCloseQuickLog);
   overlay.addEventListener('click', e => { if(e.target === overlay) maktabCloseQuickLog(); });
   document.getElementById('maktabQuickLogSave').addEventListener('click', maktabSaveQuickLog);

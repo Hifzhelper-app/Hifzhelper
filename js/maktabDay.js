@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.2 | js/maktabDay.js */
+/* Hifzhelper build 4.2.14.4 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -97,6 +97,26 @@ function maktabQuickAttendanceLabel(status){
   return 'Not marked';
 }
 
+// V4.2.14.4 — Quick Attendance date is selectable. The native input remains
+// the real tap target (via wireCustomDateDisplay) so iOS opens its picker
+// reliably. A date change re-resolves the normalized attendance row and
+// future semantics for that student instead of carrying the old choice over.
+function maktabQuickAttendanceDateControl(date){
+  return `<div class="maktab-quick-date-control"><input type="date" id="maktabQuickAttendanceDate" class="maktab-quick-date-input" value="${maktabQuickAttendanceEsc(date)}" aria-label="Quick Attendance date"></div>`;
+}
+
+function maktabQuickAttendanceApplyDate(nextDate){
+  const state = maktabQuickAttendanceState;
+  if(!state || !nextDate) return;
+  state.date = nextDate;
+  const row = (state.attendanceRows || []).find(r => r && r.date === nextDate);
+  state.currentStatus = row ? row.status : '';
+  state.choice = maktabQuickAttendanceChoice(state.currentStatus);
+  state.future = nextDate > maktabTodayISO();
+  state.lockedByActivity = state.currentStatus === 'activity';
+  maktabPaintQuickAttendance();
+}
+
 function maktabCloseQuickAttendance(){
   maktabQuickAttendanceOpenToken++;
   const el = document.getElementById('maktabQuickAttendanceSheet');
@@ -116,6 +136,12 @@ function maktabPaintQuickAttendance(){
     // normalized model would immediately ignore/reject.
     btn.disabled = state.lockedByActivity && btn.dataset.mqaStatus !== 'present';
   });
+  const current = document.querySelector('.maktab-quick-attendance-current');
+  if(current) current.textContent = maktabQuickAttendanceLabel(state.currentStatus);
+  const haidhBtn = document.querySelector('[data-mqa-status="haidh"]');
+  const absentBtn = document.querySelector('[data-mqa-status="absent"]');
+  if(haidhBtn) haidhBtn.textContent = state.future ? 'Predict Haidh' : 'Haidh';
+  if(absentBtn) absentBtn.textContent = state.future ? 'Plan absent' : 'Absent';
   const save = document.getElementById('maktabQuickAttendanceSave');
   if(save) save.disabled = !state.choice || state.lockedByActivity || (state.future && state.choice === 'present');
   const hint = document.getElementById('maktabQuickAttendanceHint');
@@ -171,6 +197,7 @@ async function maktabOpenQuickAttendance(student, date, opts){
   maktabQuickAttendanceState = {
     student,
     date: targetDate,
+    attendanceRows: Array.isArray(rows) ? rows.slice() : [],
     currentStatus,
     choice: maktabQuickAttendanceChoice(currentStatus),
     future,
@@ -187,7 +214,7 @@ async function maktabOpenQuickAttendance(student, date, opts){
       <span class="maktab-name-pill maktab-quick-student" title="${maktabQuickAttendanceEsc(student.name)}">${maktabQuickAttendanceEsc(student.name)}</span>
     </div>
     <div class="maktab-quick-attendance-meta">
-      <span class="maktab-quick-date">${maktabQuickAttendanceEsc(maktabQuickAttendanceFormatDate(targetDate))}</span>
+      ${maktabQuickAttendanceDateControl(targetDate)}
       <span class="maktab-quick-attendance-current">${maktabQuickAttendanceEsc(maktabQuickAttendanceLabel(currentStatus))}</span>
     </div>
     <div class="maktab-quick-attendance-status" role="group" aria-label="Attendance status">
@@ -203,6 +230,13 @@ async function maktabOpenQuickAttendance(student, date, opts){
     </div>
   </div>`;
   document.body.appendChild(overlay);
+  const quickDateInput = document.getElementById('maktabQuickAttendanceDate');
+  if(typeof wireCustomDateDisplay === 'function') wireCustomDateDisplay('maktabQuickAttendanceDate');
+  if(quickDateInput) quickDateInput.addEventListener('change', () => {
+    if(!maktabQuickAttendanceState) return;
+    if(!quickDateInput.value){ quickDateInput.value = maktabQuickAttendanceState.date; return; }
+    maktabQuickAttendanceApplyDate(quickDateInput.value);
+  });
 
   overlay.querySelector('.close-btn').addEventListener('click', maktabCloseQuickAttendance);
   overlay.addEventListener('click', e => { if(e.target === overlay) maktabCloseQuickAttendance(); });

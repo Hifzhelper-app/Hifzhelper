@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.1 | css/journal-table.css */
+/* Hifzhelper build 4.2.14.4 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -630,6 +630,41 @@
   font-weight: 600;
   white-space: nowrap;
 }
+/* V4.2.14.4: the date pill on both Quick Log and Quick Attendance is
+   now selectable. Keep the native input as the real iOS-safe tap target while
+   wireCustomDateDisplay supplies the same formatted pill used elsewhere. */
+.maktab-quick-date-control {
+  flex: 0 0 150px;
+  width: 150px;
+  height: 42px;
+  min-width: 0;
+}
+.maktab-quick-date-control .custom-date-wrap {
+  width: 100%;
+  height: 42px;
+}
+.maktab-quick-date-input,
+.custom-date-display.maktab-quick-date-input {
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  background: var(--color-canvas);
+  color: var(--color-ink-soft);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.custom-date-display.maktab-quick-date-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .maktab-quick-existing {
   margin: 4px 0 12px;
   padding: 7px 10px;
@@ -792,6 +827,7 @@
   }
   .maktab-quick-heading.is-combined .maktab-quick-student { width: 100%; }
   .maktab-quick-date-row { margin-bottom: 10px; }
+  .maktab-quick-date-control { flex-basis: 142px; width: 142px; }
   .maktab-quick-range-row { grid-template-columns: 74px minmax(0, 1fr); }
   .maktab-quick-dhor-primary-row { grid-template-columns: minmax(94px, 30%) minmax(0, 1fr); }
   .maktab-quick-dhor-position-row { grid-template-columns: 96px minmax(0, 1fr); }

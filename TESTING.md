@@ -14,6 +14,17 @@ Base URLs:
 
 ---
 
+## V4.2.14.4 — Selectable Quick Action dates
+
+1. Run `node tests/verify_v42144_ui.mjs`; it must report **12/12** and pin both native date inputs, date-change state updates, selected-date Save/Detail behavior, 42px controls and the V4.2.14.4 cache key.
+2. **Quick Log:** open a Sabaq/Sabaq Dhor/Dhor quick card from Maktab Summary or Student Summary. Tap the date pill and choose a different date. The student and selected activity type must remain unchanged.
+3. On the newly selected Quick Log date, confirm **Already logged** updates to that day's entries rather than showing the old date's entries. While the date is changing, old entries must disappear rather than being displayed under the new date. The Confirm box must be cleared after the date change.
+4. Save one Quick Log entry after changing the date. Confirm it is written to the newly selected date. Tap **Detail** after another date change and confirm the full detail card opens on that selected date. Repeat at least once from Student Summary and once from Maktab Summary.
+5. **Quick Attendance:** open the shared Attendance quick card, change the date, and confirm the current-state label/selected button update to that date's normalized state. A date with real activity must show Present/activity precedence and lock Haidh/Absent.
+6. Change Quick Attendance to a future date. Present must remain blocked, and the labels must change to **Predict Haidh** / **Plan absent**. Save Haidh or Absent and confirm the selected future date is used. Detail must open full Attendance on the date currently shown in the card.
+7. On iPhone/iOS, tapping either quick-card date pill must open the native date picker directly. Confirm both date controls visually match the 42px quick-action height.
+8. Run `node tests/verify_v42143_ui.mjs`, `node tests/verify_v42142_ui.mjs`, `node tests/verify_v421141_ui.mjs`, `node tests/verify_v4212_ui.mjs`, `node tests/verify_v42121_ui.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`. Current cumulative result: **505 passed, 0 failed among reporting harnesses**; **26 older harnesses remain non-reporting** because `jsdom` and/or legacy fixtures are unavailable.
+
 ## V4.2.14.3 — Attendance tick-first ordering
 
 1. Run `node tests/verify_v42143_ui.mjs`. It must prove a lower-percentage student with at least one active/logged tick ranks above a higher-percentage Haidh-only student.

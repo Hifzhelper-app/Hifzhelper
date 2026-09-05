@@ -41,7 +41,7 @@ check('cell data is a defensive fallback when aggregate counts are absent', ctx.
 check('Maktab Summary sort code is untouched by this Attendance correction', !/maktabSummary/.test(attendance));
 check('served Attendance file carries the V4.2.14.3 last-edit header', /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page and service-worker cache keys advance together to V4.2.14.3', versions.length > 0 && versions.every(v => v === '4.2.14.3') && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.3'/.test(sw));
+check('page and service-worker cache keys carry forward together to V4.2.14.4', versions.length > 0 && versions.every(v => v === '4.2.14.4') && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.4'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

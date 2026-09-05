@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.14.2 compatibility — independent ordering + Student Summary quick actions; V4.2.14.3 tick-first correction.
+// V4.2.14.2 compatibility — ordering + Student Summary quick actions; cache carried through V4.2.14.4.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -81,9 +81,9 @@ check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, n
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('V4.2.14.3 page assets and service-worker cache key agree',
-  versions.length > 0 && versions.every(v => v === '4.2.14.3')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.3'/.test(sw));
+check('current page assets and service-worker cache key agree at V4.2.14.4',
+  versions.length > 0 && versions.every(v => v === '4.2.14.4')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.4'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

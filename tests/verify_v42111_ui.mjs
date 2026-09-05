@@ -59,7 +59,7 @@ check('V4.2.11.1 pins still identify untouched files while later-edited files ca
   && /^\/\* Hifzhelper build 4\.2\.11\.1 \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.14 \| js\/haidhDetailScreen\.js \*\//.test(haidh)
   && /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/maktabAttendancePage\.js \*\//.test(register)
-  && /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.14\.4 \| js\/sw\.js \*\//.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

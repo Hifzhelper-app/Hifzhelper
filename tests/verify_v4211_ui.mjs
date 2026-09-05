@@ -78,7 +78,7 @@ check('V4.2.11 pins remain on untouched files while later-edited files carry the
   && /^\/\* Hifzhelper build 4\.2\.14 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.14 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
   && /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.14\.3 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.14\.4 \| js\/sw\.js \*\//.test(sw));
 check('no new migration was introduced for gender/track_haidh',
   fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
 
