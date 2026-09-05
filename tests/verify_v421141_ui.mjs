@@ -43,7 +43,7 @@ check('Maktab Summary attendance icon opens Quick Attendance and refreshes Summa
 
 check('Student Summary attendance icon opens the same Quick Attendance action on its context date',
   /studentSummaryAttendanceBtn/.test(day)
-  && /maktabOpenQuickAttendance\(student, logCtxDate\(\)\)/.test(day));
+  && /maktabOpenQuickAttendance\(student, (?:logCtxDate\(\)|quickDate)/.test(day));
 
 check('Quick Attendance offers Present, Haidh and Absent plus Save and Detail',
   /data-mqa-status="present">Present<\/button>/.test(day)
@@ -65,9 +65,10 @@ check('Attendance register H/h is about 25 percent smaller than V4.2.14',
   /mkregister-status-haidh-confirmed \{[^}]*font-size: 14px/.test(detailCss)
   && /mkregister-status-haidh-predicted \{[^}]*font-size: 14px/.test(detailCss));
 
-check('V4.2.14.1 page and service-worker cache keys agree',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.14.1')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
+const servedVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
+const swVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.14.1 cache-consistency contract remains true on later overlays',
+  servedVersions.length > 0 && !!swVersion && servedVersions.every(v => v === swVersion));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

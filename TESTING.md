@@ -14,6 +14,18 @@ Base URLs:
 
 ---
 
+## V4.2.14.2 — Ordering + Student Summary label quick actions
+
+1. Run `node tests/verify_v42142_ui.mjs`. It must prove the three Student Summary activity labels are buttons into the shared Quick Log, Attendance remains separate, the two ordering models are independent, grey 14px `H/h` is preserved, and page/cache keys agree.
+2. **Student Summary activity:** open a student from Maktab Summary on a selected date. Tap **Sabaq**, **Sabaq Dhor**, and **Dhor** in the pink header. Each must open the same Quick Log sheet used from Maktab Summary, preselected to that type and on the carried date. Save a new entry and confirm Student Summary refreshes without leaving the page. Detail must still open the full detail card.
+3. **No duplicate activity action:** confirm the old journal/activity icon is no longer beside the student name. The Attendance icon remains and still opens Quick Attendance.
+4. **Maktab Summary ordering:** create at least two logged and two unlogged students with mixed Groups/Haidh. Logged students must be first alphabetically; all unlogged students follow alphabetically. Group and Haidh must not create separators or special bands.
+5. **Attendance ordering:** verify decreasing Attendance %. For equal percentages, the larger active/logged-day count comes first. For remaining ties, active/present comes before Haidh, which comes before absent/unresolved; first-name alphabetical is final.
+6. **Haidh register mark:** confirmed `H` and predicted `h` remain 14px and grey; Present remains the bold green `✓`. Confirmed/predicted calendar days remain dark/light pink respectively.
+7. Run cumulative suites plus `node tests/run-all.mjs`. **Build result: 484 passed, 0 failed among reporting harnesses. 26 older harnesses do not report because `jsdom` is absent and/or legacy SQLite fixtures are behind the current schema; `run-all.mjs` therefore exits non-zero despite zero reported failures.**
+
+---
+
 ## V4.2.14.1 — Quick Log + Quick Attendance checks
 
 1. Run `node tests/verify_v421141_ui.mjs`. It must pin the non-overlapping Quick Log layout, common 42px control height, smaller register `H/h`, Summary Quick Attendance, Student Summary Quick Attendance, activity precedence and page/cache key.

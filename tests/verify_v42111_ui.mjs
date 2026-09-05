@@ -49,15 +49,17 @@ check('current term Attendance register focuses the current Maktab week rather t
   && /w\.monday === monday/.test(register)
   && /scroll\.scrollLeft = Math\.max\(0, target\.offsetLeft - stickyWidth - 3\)/.test(register));
 
+const v42111Page = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
+const v42111Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('page/cache keys have advanced together beyond the V4.2.11.1 patch',
-  /js\/app\.js\?v=4\.2\.14\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
+  !!v42111Page && v42111Page === v42111Cache && v42111Page !== '4.2.11.1');
 check('V4.2.11.1 pins still identify untouched files while later-edited files carry V4.2.14 headers',
   /^\/\* Hifzhelper build 4\.2\.11\.1 \| css\/admin\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.14\.1 \| css\/detail-pages\.css \*\//.test(detailCss)
+  && /^\/\* Hifzhelper build 4\.2\.14\.2 \| css\/detail-pages\.css \*\//.test(detailCss)
   && /^\/\* Hifzhelper build 4\.2\.11\.1 \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.14 \| js\/haidhDetailScreen\.js \*\//.test(haidh)
-  && /^\/\* Hifzhelper build 4\.2\.14 \| js\/maktabAttendancePage\.js \*\//.test(register)
-  && /^\/\* Hifzhelper build 4\.2\.14\.1 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.14\.2 \| js\/maktabAttendancePage\.js \*\//.test(register)
+  && /^\/\* Hifzhelper build 4\.2\.14\.2 \| js\/sw\.js \*\//.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

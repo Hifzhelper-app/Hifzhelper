@@ -36,12 +36,15 @@ check('calendar paints Maktab activity light green and activity wins',
 check('past predictions do not auto-confirm in the calendar',
   /status === 'predicted-haidh'[\s\S]*haidh-cal-day-planned/.test(haidh)
   && !/predicted-haidh' && !isFuture/.test(haidh));
-check('register uses plain pink H/h text, not check icons or pills',
+check('register uses plain grey H/h text, not check icons or pills',
   />H<\/span>/.test(register) && />h<\/span>/.test(register)
-  && /mkregister-status-haidh-confirmed/.test(registerCss) && /mkregister-status-haidh-predicted/.test(registerCss)
+  && /mkregister-status-haidh-confirmed \{ color: var\(--color-ink-soft\)/.test(registerCss)
+  && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\)/.test(registerCss)
   && !/mkregister-status-haidh[^-]/.test(register));
-check('V4.2.14.1 page/cache keys agree',
-  /js\/app\.js\?v=4\.2\.14\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
+const v42114Page = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
+const v42114Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.14 page/cache contract remains synchronized on later overlays',
+  !!v42114Page && v42114Page === v42114Cache);
 
 // Dynamic proof: explicit prediction is exact-date state; a confirmed day does
 // not propagate. A log on the predicted date wins in the register.

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.1 | css/detail-pages.css */
+/* Hifzhelper build 4.2.14.2 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -1768,15 +1768,14 @@
 .maktab-search-empty { font-size: 13px; color: var(--color-ink-faint); padding: 10px 12px; }
 
 /* V3.85.0/V3.85.1: the standalone student-summary page. The header is
-   ONE single-row grid sized like the journal itself (the user's
-   suggestion): icon | name | attendance | close, sharing the table's
-   70% centering on wide screens so nothing floats off to the corners. */
+   ONE single-row grid sized like the journal itself. V4.2.14.2 keeps only
+   name | attendance | close here; activity quick actions now live on the
+   Sabaq / Sabaq Dhor / Dhor labels immediately below. */
 #screen-studentSummary .journal-header-row { margin-top: var(--space-sm); }
 .ss-header {
   display: grid;
-  /* V3.90.0 (user): the attendance icon sits DIRECTLY AFTER the name —
-     "Umme's attendance" — with the X keeping the far corner. */
-  grid-template-columns: auto auto auto 1fr;
+  /* Attendance sits directly after the student's name; X owns the far edge. */
+  grid-template-columns: auto auto 1fr;
   align-items: center;
   gap: var(--space-sm);
   margin: var(--space-sm) 0;
@@ -1785,10 +1784,36 @@
 .ss-header .screen-close-btn { justify-self: end; }
 .ss-header h2 { margin: 0; }
 .att-nav-btn { background: none; border: none; padding: 4px; cursor: pointer; color: var(--color-ink-soft); }
-/* the attendance icon reads at the same visual weight as the title now
-   (the first cut's 22px was far too small — user) */
 .att-nav-btn svg, .att-nav-btn .icon { width: 30px; height: 30px; display: block; }
 .ss-header .screen-close-btn { position: static; margin: 0; }
+
+/* V4.2.14.2: the existing activity labels ARE the quick-action buttons.
+   Preserve the journal-header geometry/background; the button fills the cell
+   so the whole label area is a comfortable touch target without adding a
+   second pill, row or visual language. */
+#screen-studentSummary .ss-quick-log-head { padding: 0; }
+#screen-studentSummary .ss-quick-log-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 11px var(--space-sm);
+  margin: 0;
+  text-align: left;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+#screen-studentSummary .ss-quick-log-btn:active { opacity: .68; }
+#screen-studentSummary .ss-quick-log-btn:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+#screen-studentSummary .ss-quick-log-btn:disabled { cursor: default; opacity: .7; }
 @media (min-width: 768px){   /* the journal's own breakpoint (journal-table.css) */
   .ss-header { width: 70%; margin-left: auto; margin-right: auto; }
 }
@@ -2315,10 +2340,10 @@
 }
 /* Present: deliberately a TEXT glyph, not an SVG/icon. */
 .mkregister-status-present { color: #78BE3F; font-size: 22px; font-weight: 900; line-height: 1; }
-/* V4.2.14.1: plain Haidh text only, reduced about 25% so H/h does not
-   dominate the narrow teaching-day cell. No pill/background/border/icon. */
-.mkregister-status-haidh-confirmed { color: var(--color-haidh); font-size: 14px; font-weight: 800; }
-.mkregister-status-haidh-predicted { color: var(--color-haidh); font-size: 14px; font-weight: 400; opacity: .55; }
+/* V4.2.14.2: plain GREY Haidh text only, retaining V4.2.14.1's ~25%
+   size reduction. No pill/background/border/icon; calendar pink is separate. */
+.mkregister-status-haidh-confirmed { color: var(--color-ink-soft); font-size: 14px; font-weight: 800; }
+.mkregister-status-haidh-predicted { color: var(--color-ink-soft); font-size: 14px; font-weight: 400; opacity: .55; }
 /* V4.2.13.1 — mobile register width trial. Attendance % is rolled up by
    default behind a compact reveal control so the register spends the phone's
    width on teaching days. The Student column is deliberately narrower and

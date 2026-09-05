@@ -32,9 +32,20 @@ numbers; headings are unique, search the text.
 | ~~80~~ | ~~**Deploy + device-verify V4.2.13 Attendance/Haidh audit**~~ | **SUPERSEDED by V4.2.13.1 device pass** | V4.2.13 remains the required Worker/model base; V4.2.13.1 overlays the mobile register-width refinement. |
 | ~~81~~ | ~~**Deploy + device-verify V4.2.13.1 mobile Attendance width**~~ | **SUPERSEDED by V4.2.14** | V4.2.14 carries the mobile-width work forward with the authoritative single Haidh model. |
 | ~~82~~ | ~~**Deploy + device-verify V4.2.14 single Haidh model**~~ | **SUPERSEDED by V4.2.14.1 frontend overlay** | The V4.2.14 Worker/model remains the required base; V4.2.14.1 carries its frontend forward with the Quick Log/Quick Attendance fixes. |
-| **83** | **Deploy + device-verify V4.2.14.1 Quick Log + Quick Attendance** | **READY — build complete** | **Frontend overlay; no new Worker/migration.** If V4.2.14 Worker/model is not live yet, deploy that first. Then overlay V4.2.14.1 and verify pill spacing, smaller `H/h`, and Quick Attendance from both Summary surfaces. |
+| ~~83~~ | ~~**Deploy + device-verify V4.2.14.1 Quick Log + Quick Attendance**~~ | **SUPERSEDED by V4.2.14.2** | V4.2.14.2 carries this frontend forward and adds the independent ordering + Student Summary activity quick actions. |
+| **84** | **Deploy + device-verify V4.2.14.2 ordering + Student Summary quick actions** | **READY — build complete** | **Frontend overlay; no new Worker/migration.** Attendance and Maktab Summary now sort independently; Student Summary Sabaq/Sabaq Dhor/Dhor labels open the shared Maktab Quick Log. |
 
 **Dependency chain:** (j) → (k) → (l) is fixed. Everything else slots in freely.
+
+## V4.2.14.2 — READY TO DEPLOY / DEVICE-VERIFY
+
+1. **Frontend overlay only.** Keep the V4.2.14 Worker/model. Overlay V4.2.14.2 Pages files and hard-refresh until the page/cache key reads **v4.2.14.2**. No migration.
+2. **Attendance ordering is independent:** highest Attendance % first; ties use the greatest number of active/logged days; remaining ties rank Present/active, then Haidh, then absent/unresolved; alphabetical first name is the final tie-breaker.
+3. **Maktab Summary ordering is independent:** all students with any Sabaq/Sabaq Dhor/Dhor log on the displayed date first, alphabetically; then all students without a log, alphabetically. Group, Haidh and Attendance % must not move a student between these two bands.
+4. Open **Student Summary** from Maktab Summary. The separate journal/activity icon is gone. Tap the **Sabaq**, **Sabaq Dhor**, and **Dhor** header labels: each must open the **same Quick Log sheet used by Maktab Summary**, preselected to the tapped activity and carrying the Student Summary date. Save must refresh Student Summary; Detail must open the full log detail route.
+5. The Student Summary **Attendance** icon remains beside the student name and opens the existing shared Quick Attendance sheet for the carried date.
+6. Attendance register confirmed `H` and predicted `h` remain **14px** and use the agreed **grey** text; calendar confirmed/predicted days remain pink shades separately.
+7. Run `node tests/verify_v42142_ui.mjs`, `node tests/verify_v421141_ui.mjs`, `node tests/verify_v42121_ui.mjs`, `node tests/verify_v42113_ui.mjs`, `node tests/verify_v42111_register_data.mjs`, `node tests/verify_build_stamp.mjs`, `node tests/verify_syntax.mjs`, then `node tests/run-all.mjs`. **Build result: 484 passed, 0 failed among reporting harnesses; 26 older harnesses remain non-reporting because `jsdom` is absent and/or legacy SQLite fixtures are behind the current schema.**
 
 ## V4.2.14.1 — READY TO DEPLOY / DEVICE-VERIFY
 
