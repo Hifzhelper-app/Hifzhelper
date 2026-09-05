@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.14.2 compatibility — ordering + Student Summary quick actions; cache carried through V4.2.14.4.
+// V4.2.14.2 compatibility — ordering + Student Summary quick actions; cache carried through V4.2.14.5.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -50,40 +50,38 @@ check('Maktab Summary sorts alphabetically inside each band',
   && /aa\.first\.localeCompare\(bb\.first/.test(summary));
 
 
-const attSortStart = attendance.indexOf('function mkregFirstNameKey');
+const attSortStart = attendance.indexOf('function mkregMondayOf');
 const attSortEnd = attendance.indexOf('// V4.2.11.1+', attSortStart);
 const attSortSource = attendance.slice(attSortStart, attSortEnd);
 const attCtx = {};
 vm.createContext(attCtx);
 vm.runInContext(attSortSource, attCtx);
-const sortDate = '2026-09-04';
+const sortDate = '2026-09-05';
+const sortWeeks = [{ monday:'2026-08-31', columns:[{date:'2026-08-31'},{date:'2026-09-01'},{date:'2026-09-02'},{date:'2026-09-03'}] }];
 const attendanceSample = [
-  { id:'A', name:'Amina Active 80', attendance_percent:80, attendance_active_days:4, attendance_haidh_days:0, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'present' } },
-  { id:'B', name:'Bilqees Active 100', attendance_percent:100, attendance_active_days:1, attendance_haidh_days:2, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'haidh' } },
-  { id:'C', name:'Celine Haidh Only', attendance_percent:100, attendance_active_days:0, attendance_haidh_days:7, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'haidh' } },
-  { id:'D', name:'Dina Predicted Only', attendance_percent:100, attendance_active_days:0, attendance_haidh_days:0, attendance_predicted_haidh_days:4, cells:{ [sortDate]:'predicted-haidh' } },
-  { id:'E', name:'Emaan Absent Only', attendance_percent:100, attendance_active_days:0, attendance_haidh_days:0, attendance_predicted_haidh_days:0, cells:{ [sortDate]:'absent' } },
+  { id:'A', name:'Amina Active 80', attendance_percent:80, attendance_active_days:4, cells:{'2026-08-31':'present','2026-09-01':'present','2026-09-02':'present','2026-09-03':'present'} },
+  { id:'B', name:'Bilqees Active 100', attendance_percent:100, attendance_active_days:1, cells:{'2026-09-03':'present'} },
+  { id:'C', name:'Celine Haidh Only', attendance_percent:100, attendance_active_days:0, cells:{'2026-08-31':'haidh','2026-09-01':'haidh','2026-09-02':'haidh','2026-09-03':'haidh'} },
+  { id:'D', name:'Dina Predicted Only', attendance_percent:100, attendance_active_days:0, cells:{'2026-08-31':'predicted-haidh','2026-09-01':'predicted-haidh'} },
+  { id:'E', name:'Emaan Absent Only', attendance_percent:100, attendance_active_days:0, cells:{'2026-08-31':'absent','2026-09-01':'absent','2026-09-02':'absent','2026-09-03':'absent'} },
 ];
-const attendanceOrdered = attCtx.mkregSortStudents(attendanceSample, sortDate).map(s => s.id);
-check('Attendance uses active/logged, then Haidh-only, then absent/unresolved roster bands',
-  /function mkregStudentBand\(student\)/.test(attendance)
-  && /mkregActiveDays\(student\) > 0/.test(attendance)
-  && /mkregHaidhDays\(student\) > 0/.test(attendance)
-  && JSON.stringify(attendanceOrdered) === JSON.stringify(['B','A','C','D','E']));
+const attendanceOrdered = attCtx.mkregSortStudents(attendanceSample, sortDate, sortWeeks).map(s => s.id);
+check('Attendance keeps active/logged, then Haidh-only, then absent/unresolved roster precedence',
+  /function mkregStudentWeekBand\(student, dates\)/.test(attendance)
+  && JSON.stringify(attendanceOrdered) === JSON.stringify(['A','B','C','D','E']));
 
-check('Attendance percentage and active-day count still descend inside the active/logged band',
-  /const pct = mkregAttendancePercent\(b\) - mkregAttendancePercent\(a\)/.test(attendance)
-  && /const active = mkregActiveDays\(b\) - mkregActiveDays\(a\)/.test(attendance)
-  && JSON.stringify(attendanceOrdered.slice(0, 2)) === JSON.stringify(['B','A']));
+check('Attendance now uses current-week active-day count before Attendance percentage',
+  /const weeklyActive = mkregActiveDaysForDates\(b, sortDates\) - mkregActiveDaysForDates\(a, sortDates\)/.test(attendance)
+  && attendanceOrdered[0] === 'A' && attendanceOrdered[1] === 'B');
 
 check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, not calendar pink',
   /mkregister-status-haidh-confirmed \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css)
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('current page assets and service-worker cache key agree at V4.2.14.4',
-  versions.length > 0 && versions.every(v => v === '4.2.14.4')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.4'/.test(sw));
+check('current page assets and service-worker cache key agree at V4.2.14.5',
+  versions.length > 0 && versions.every(v => v === '4.2.14.5')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -136,6 +136,20 @@ Newest first.
 
 ---
 
+## V4.2.14.5 — Current-week activity-first Attendance ordering
+
+### Ordering contract
+
+The Attendance register's primary ordering signal is **actual activity in the current Maktab week**, not the term-wide Attendance %. Determine the week containing `data.today` from the register's existing `weeks[].monday` structure, count each student's `present` cells within that week, and sort the count descending. This means a student with four green ticks is above a student with three, three above two, and so on, regardless of whether the lower-activity student has a higher percentage because Haidh days are excused.
+
+When current-week active-day counts are equal, use the current-week evidence band next: any row with activity remains in the active band; with zero activity, Haidh/predicted-Haidh ranks above absent/unresolved-only. Only then use term-wide Attendance % descending, then term-wide active-day count, current-day resolved state, and first-name alphabetical order for stable ties.
+
+The current-week count is derived from the visible `cells` map, not from `attendance_active_days`, because that aggregate covers the whole register period. On Friday/weekend the relevant week is still the Monday-based Maktab week that just ran. If an exact current week is unavailable in a nearest/historical register edge case, use the latest rendered week starting on/before the reference date, otherwise the first rendered week.
+
+**Scope separation remains absolute:** Maktab Summary does not use this rule. Its order remains students with displayed-day logs alphabetically, followed by students without displayed-day logs alphabetically.
+
+**Delivery:** frontend only; no Attendance/Haidh calculation, Worker route, schema or migration change.
+
 ## V4.2.14.4 — Selectable Quick Action dates
 
 **Decision:** the date shown on a Quick Action card is no longer a read-only label. It is part of the action and therefore must be directly selectable without forcing the teacher into the full detail screen. This applies equally to the shared Quick Log card and shared Quick Attendance card, regardless of whether they were opened from Maktab Summary or Student Summary.

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.3 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.14.5 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.14).
 //
@@ -38,13 +38,11 @@ function mkregMondayOf(iso){
   return d.toISOString().slice(0, 10);
 }
 
-// V4.2.14.3: Attendance uses three explicit roster bands. Any student with
-// at least one active/logged day (a green tick in this register period) must
-// rank above a student whose resolved attendance is Haidh-only, even when the
-// Haidh-only student's Attendance % is higher. Haidh-only then ranks above
-// absent/unresolved-only. Inside the active/logged band, Attendance % remains
-// descending, then active/logged-day count; current-day state and first-name
-// alphabetical order are stable tie-breakers.
+// V4.2.14.5: current-week activity is the primary roster order.
+// Count actual Present/logged cells in the Maktab week containing `today`.
+// More green ticks always rank higher, regardless of the term-wide Attendance %.
+// After all students with activity, Haidh-only rows precede absent/unresolved rows.
+// Attendance % is now a secondary tie-breaker only when weekly activity is equal.
 function mkregFirstNameKey(name){
   const full = String(name || '').trim().replace(/\s+/g, ' ');
   return { first: (full.split(' ')[0] || '').toLocaleLowerCase(), full: full.toLocaleLowerCase() };
@@ -63,28 +61,50 @@ function mkregActiveDays(student){
   const n = Number(student && student.attendance_active_days);
   return Number.isFinite(n) ? n : 0;
 }
-function mkregHaidhDays(student){
-  const confirmed = Number(student && student.attendance_haidh_days);
-  const predicted = Number(student && student.attendance_predicted_haidh_days);
-  return (Number.isFinite(confirmed) ? confirmed : 0) + (Number.isFinite(predicted) ? predicted : 0);
+function mkregWeekDates(weeks, date){
+  const list = (weeks || []).filter(w => w && Array.isArray(w.columns) && w.columns.length);
+  if(!list.length) return [];
+  const monday = mkregMondayOf(date);
+  let week = list.find(w => w.monday === monday);
+  if(!week){
+    // Safe historical/nearest-term fallback: use the latest rendered week that
+    // starts on/before the reference date; otherwise use the first rendered week.
+    const past = list.filter(w => String(w.monday || (w.columns[0] && w.columns[0].date) || '') <= date);
+    week = past[past.length - 1] || list[0];
+  }
+  return (week.columns || []).map(c => c && c.date).filter(Boolean);
 }
-function mkregHasCellStatus(student, wanted){
-  const cells = student && student.cells ? Object.values(student.cells) : [];
-  return cells.some(status => wanted.includes(status));
+function mkregActiveDaysForDates(student, dates){
+  const cells = student && student.cells ? student.cells : {};
+  return (dates || []).reduce((count, d) => count + (cells[d] === 'present' ? 1 : 0), 0);
 }
-function mkregStudentBand(student){
-  if(mkregActiveDays(student) > 0 || mkregHasCellStatus(student, ['present'])) return 0;
-  if(mkregHaidhDays(student) > 0 || mkregHasCellStatus(student, ['haidh','predicted-haidh'])) return 1;
+function mkregHaidhDaysForDates(student, dates){
+  const cells = student && student.cells ? student.cells : {};
+  return (dates || []).reduce((count, d) => count + ((cells[d] === 'haidh' || cells[d] === 'predicted-haidh') ? 1 : 0), 0);
+}
+function mkregStudentWeekBand(student, dates){
+  if(mkregActiveDaysForDates(student, dates) > 0) return 0;
+  if(mkregHaidhDaysForDates(student, dates) > 0) return 1;
   return 2;
 }
-function mkregSortStudents(students, date){
+function mkregSortStudents(students, date, weeks){
+  const sortDates = mkregWeekDates(weeks, date);
   return (students || []).slice().sort((a, b) => {
-    const band = mkregStudentBand(a) - mkregStudentBand(b);
+    // Primary: number of actual active/logged days in the current Maktab week.
+    const weeklyActive = mkregActiveDaysForDates(b, sortDates) - mkregActiveDaysForDates(a, sortDates);
+    if(weeklyActive) return weeklyActive;
+
+    // With equal activity, Haidh-only sits above absent/unresolved-only.
+    const band = mkregStudentWeekBand(a, sortDates) - mkregStudentWeekBand(b, sortDates);
     if(band) return band;
+
+    // Attendance % remains useful, but only after weekly activity/status.
     const pct = mkregAttendancePercent(b) - mkregAttendancePercent(a);
     if(pct) return pct;
-    const active = mkregActiveDays(b) - mkregActiveDays(a);
-    if(active) return active;
+
+    // Stable longer-period tie-breaker before current-day state/alphabetical.
+    const totalActive = mkregActiveDays(b) - mkregActiveDays(a);
+    if(totalActive) return totalActive;
     const rank = mkregStudentRank(a, date) - mkregStudentRank(b, date);
     if(rank) return rank;
     const ak = mkregFirstNameKey(a.name), bk = mkregFirstNameKey(b.name);
@@ -135,7 +155,7 @@ async function mkregisterPaint(){
   mkregisterData = data;
 
   const weeks = data.weeks || [];
-  const students = mkregSortStudents(data.students || [], data.today);
+  const students = mkregSortStudents(data.students || [], data.today, weeks);
   const colCount = weeks.reduce((n, w) => n + (w.columns || []).length, 0);
   if(!colCount){
     host.innerHTML = '<p class="form-hint">No teaching days are configured for this period.</p>';

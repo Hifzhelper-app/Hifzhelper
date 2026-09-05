@@ -58,8 +58,8 @@ check('a log outranks Haidh because register cells already resolve log as Presen
   /if\(status === 'present'\) return 0;[\s\S]*status === 'haidh' \|\| status === 'predicted-haidh'/.test(att));
 check('status groups sort alphabetically by first name',
   /ak\.first\.localeCompare\(bk\.first\)/.test(att));
-check('register applies the order using the current Maktab date',
-  /mkregSortStudents\(data\.students \|\| \[\], data\.today\)/.test(att));
+check('register applies the order using the current Maktab date and week model',
+  /mkregSortStudents\(data\.students \|\| \[\], data\.today, weeks\)/.test(att));
 const v42113PageVersion = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
 const v42113CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.11.3 date behavior remains intact while later overlays advance page/cache together',
