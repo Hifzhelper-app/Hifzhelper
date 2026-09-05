@@ -26,6 +26,23 @@ Maktab deployment only — `hifzhelper-personal-db` diverged at V3.57 and takes
 none of these.
 ---
 
+## V4.2.14.2 — Independent ordering + Student Summary label quick actions (2026-09-04)
+
+**Files touched:** `index.html`; `css/detail-pages.css`; `js/maktabAttendancePage.js`, `js/maktabDay.js`, `js/maktabSummary.js`, `js/sw.js`; `tests/verify_v42142_ui.mjs` (new), `tests/verify_v421141_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42111_register_data.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v4212_ui.mjs`, `tests/verify_v42114_ui.mjs`; `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**
+
+1. **Attendance and Maktab Summary no longer share an ordering model.** Attendance sorts by decreasing Attendance %, then decreasing active/logged-day count, then current resolved state (Present/active → Haidh → absent/unresolved), then first-name alphabetical order.
+2. **Maktab Summary is log-presence only.** Students with any displayed-day Sabaq/Sabaq Dhor/Dhor log come first alphabetically; students with no displayed-day log follow alphabetically. Group, Haidh and Attendance % are deliberately ignored by this screen's sort.
+3. **Student Summary activity quick actions moved onto the labels.** The separate journal/activity icon is removed. The existing **Sabaq**, **Sabaq Dhor**, and **Dhor** header labels are now touch buttons. Each calls `maktabOpenQuickLog()` directly — the exact same Quick Log implementation used from Maktab Summary — preselected to the tapped type and the carried Summary date. Save refreshes Student Summary; Detail preserves the full log route.
+4. **Quick Attendance remains independent.** The Attendance icon beside the student name continues to open the shared Quick Attendance sheet on the carried date.
+5. **Register H/h corrected to the agreed neutral grey.** The V4.2.14.1 14px reduction is preserved; only the register text colour is corrected to `--color-ink-soft`. The student Haidh calendar keeps its dark/light pink semantics.
+6. **Version discipline preserved.** Only served files edited in this overlay carry a `4.2.14.2` top build header; untouched served-file headers retain their last-edit version. Page/service-worker cache keys advance together to `4.2.14.2`.
+
+**Regression coverage:** dedicated V4.2.14.2 UI harness **12/12**; V4.2.14.1 compatibility **11/11**; V4.2.12.1 compatibility **12/12**; V4.2.11.3 compatibility **11/11**; register-data parity **7/7**; build/version **6/6**; served-JS syntax **36/36**. The cumulative runner reports **484 passed, 0 failed among reporting harnesses**; **26 older harnesses do not report** because this checkout lacks `jsdom` and/or their legacy SQLite fixtures are behind the current schema.
+
+**Deployment:** overlay the changed Pages/frontend files on V4.2.14.1 (with the V4.2.14 Worker/model already present) and hard-refresh. **No Worker deployment and no D1 migration for V4.2.14.2.**
+
+---
+
 ## V4.2.14.1 — Quick Log alignment + Quick Attendance (2026-09-04)
 
 **Files touched:** `index.html`; `css/journal-table.css`, `css/detail-pages.css`; `js/maktabDay.js`, `js/maktabSummary.js`, `js/sw.js`; `tests/verify_v3820_student_summary.mjs`, `tests/verify_v4211_ui.mjs`, `tests/verify_v42111_ui.mjs`, `tests/verify_v42112_ui.mjs`, `tests/verify_v42113_ui.mjs`, `tests/verify_v42114_ui.mjs`, `tests/verify_v4212_ui.mjs`, `tests/verify_v42121_ui.mjs`, `tests/verify_v428_ui.mjs`, `tests/verify_v421141_ui.mjs` (new); `SPECS.md`, `TODO.md`, `CHANGELOG.md`, `TESTING.md`. **FRONTEND ONLY — no Worker/schema migration change.**

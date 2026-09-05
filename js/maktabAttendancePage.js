@@ -1,12 +1,12 @@
-/* Hifzhelper build 4.2.14 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.14.2 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.14).
 //
 // One roster, one existing Attendance % value, then narrow teaching-day
 // columns grouped beneath merged date-range headings. The current Maktab
 // week is put in view automatically when the current term opens.
-// Present = bold lime text tick. Confirmed Haidh = dark-pink uppercase H;
-// predicted Haidh = lighter-pink lowercase h. Absent/unresolved = blank.
+// Present = bold lime text tick. Confirmed Haidh = grey uppercase H;
+// predicted Haidh = grey lowercase h. Absent/unresolved = blank.
 // Selecting a student's name opens her
 // individual Attendance page, where editing continues to live.
 // ============================================================
@@ -38,9 +38,10 @@ function mkregMondayOf(iso){
   return d.toISOString().slice(0, 10);
 }
 
-// V4.2.11.3: current-day register order. A real log is strongest evidence
-// and therefore outranks Haidh; everyone else follows. Within each status
-// band sort by FIRST name, then full name for stable ties.
+// V4.2.14.2: Attendance has an independent performance ordering. Sort by
+// decreasing Attendance %, then by the greatest number of active/logged days.
+// Remaining ties use today's resolved state (active/present, then Haidh, then
+// absent/unresolved), with first-name alphabetical order only as the final tie.
 function mkregFirstNameKey(name){
   const full = String(name || '').trim().replace(/\s+/g, ' ');
   return { first: (full.split(' ')[0] || '').toLocaleLowerCase(), full: full.toLocaleLowerCase() };
@@ -51,8 +52,20 @@ function mkregStudentRank(student, date){
   if(status === 'haidh' || status === 'predicted-haidh') return 1;
   return 2;
 }
+function mkregAttendancePercent(student){
+  const n = Number(student && student.attendance_percent);
+  return Number.isFinite(n) ? n : -1;
+}
+function mkregActiveDays(student){
+  const n = Number(student && student.attendance_active_days);
+  return Number.isFinite(n) ? n : 0;
+}
 function mkregSortStudents(students, date){
   return (students || []).slice().sort((a, b) => {
+    const pct = mkregAttendancePercent(b) - mkregAttendancePercent(a);
+    if(pct) return pct;
+    const active = mkregActiveDays(b) - mkregActiveDays(a);
+    if(active) return active;
     const rank = mkregStudentRank(a, date) - mkregStudentRank(b, date);
     if(rank) return rank;
     const ak = mkregFirstNameKey(a.name), bk = mkregFirstNameKey(b.name);

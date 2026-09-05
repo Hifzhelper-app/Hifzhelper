@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.1 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.14.2 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -371,8 +371,10 @@ async function maktabSaveQuickLog(){
     const result = await maktabQuickPost(path, payload, duplicateLabel);
     if(!result) return;
     if(state.type === 'sabaq') await maktabQuickSyncSabaqPosition(state.student.id, oldSabaqHistory, state.ref);
+    const afterSave = state.afterSave;
     maktabCloseQuickLog();
-    await renderMaktabSummaryScreen();
+    if(typeof afterSave === 'function') await afterSave();
+    else await renderMaktabSummaryScreen();
   } catch(e){
     if(err) err.textContent = "Couldn't save: " + e.message;
   } finally {
@@ -381,7 +383,7 @@ async function maktabSaveQuickLog(){
   }
 }
 
-async function maktabOpenQuickLog(student, date, type, entries, entriesByType){
+async function maktabOpenQuickLog(student, date, type, entries, entriesByType, opts){
   maktabCloseQuickLog();
   const openToken = ++maktabQuickLogOpenToken;
   let settings = null;
@@ -402,7 +404,8 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType){
       sabaqDhor: { from:null, to:null },
       dhor: { juz:null, unit:'quarter', position:1 }
     },
-    ref: maktabQuickRefForMushaf(settings && settings.mushaf)
+    ref: maktabQuickRefForMushaf(settings && settings.mushaf),
+    afterSave: opts && opts.afterSave
   };
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay maktab-quick-log-modal';
@@ -548,11 +551,11 @@ document.addEventListener('click', (e) => {
   if(!e.target.closest || !e.target.closest('#maktabEntryPeek')) maktabCloseEntryPeek();
 });
 
-// V4.2.12.1 — Summary ordering is based on the DISPLAYED day, not
-// historical attendance. A real log is the strongest state. Logged students
-// are grouped by Group then first name; confirmed Haidh and the remainder are
-// each plain first-name alphabetical bands. Haidh ordering is fed only by
-// the normalized Attendance read; raw attendance rows are never consulted.
+// V4.2.14.2 — Maktab Summary has its own intentionally simple ordering.
+// For the DISPLAYED day only: every student with any Sabaq / Sabaq Dhor /
+// Dhor log comes first in first-name alphabetical order; every student with
+// no log follows in the same alphabetical order. Attendance %, Haidh state
+// and Group do not participate in this screen's ordering.
 function maktabSummaryNameKey(student){
   const full = String((student && student.name) || '').trim();
   const first = (full.split(/\s+/)[0] || '').toLocaleLowerCase();
@@ -563,10 +566,8 @@ function maktabSummaryHasLog(studentId, byStudent){
   return ['sabaq', 'sabaqDhor', 'dhor'].some(type => ((byStudent[type] && byStudent[type][studentId]) || []).length > 0);
 }
 
-function maktabSummarySortBand(student, byStudent, haidhByStudent){
-  if(maktabSummaryHasLog(student.id, byStudent)) return 0;
-  if(haidhByStudent[student.id] === 'haidh') return 1;
-  return 2;
+function maktabSummarySortBand(student, byStudent){
+  return maktabSummaryHasLog(student.id, byStudent) ? 0 : 1;
 }
 
 function maktabSummaryCompareName(a, b){
@@ -576,24 +577,10 @@ function maktabSummaryCompareName(a, b){
     || aa.id.localeCompare(bb.id, undefined, { sensitivity:'base', numeric:true });
 }
 
-function maktabSummaryCompareGroup(a, b){
-  const ga = String(a.group_name || '').trim();
-  const gb = String(b.group_name || '').trim();
-  if(!ga && gb) return 1;
-  if(ga && !gb) return -1;
-  return ga.localeCompare(gb, undefined, { sensitivity:'base', numeric:true });
-}
-
-function maktabSummarySortedStudents(students, byStudent, haidhByStudent){
+function maktabSummarySortedStudents(students, byStudent){
   return (students || []).slice().sort((a, b) => {
-    const ab = maktabSummarySortBand(a, byStudent, haidhByStudent);
-    const bb = maktabSummarySortBand(b, byStudent, haidhByStudent);
-    if(ab !== bb) return ab - bb;
-    if(ab === 0){
-      const groupCmp = maktabSummaryCompareGroup(a, b);
-      if(groupCmp) return groupCmp;
-    }
-    return maktabSummaryCompareName(a, b);
+    const band = maktabSummarySortBand(a, byStudent) - maktabSummarySortBand(b, byStudent);
+    return band || maktabSummaryCompareName(a, b);
   });
 }
 
@@ -678,41 +665,19 @@ async function renderMaktabSummaryScreen(){
   // request fails, Summary omits Haidh state rather than surfacing stale data.
   let derived = {};
   let isMaktabDay = false;
-  const haidhByStudent = {};
   try {
     const att = await apiGetMaktabAttendance(date);
     if(att && att.attendance){
       derived = att.attendance;
       isMaktabDay = !!att.isMaktabDay;
-      Object.entries(derived).forEach(([studentId, state]) => {
-        if(state && (state.status === 'haidh' || state.status === 'predicted-haidh')) haidhByStudent[studentId] = state.status;
-      });
     }
   } catch(e){ derived = {}; }
 
   host.innerHTML = '';
-  const sortedStudents = maktabSummarySortedStudents(data.students || [], byStudent, haidhByStudent);
-  // V4.2.12.1: group spacing belongs only to the LOGGED band, because that
-  // is the only band whose requested order is Group -> first name. Confirmed
-  // Haidh and the remaining students are deliberately plain alphabetical
-  // lists, so applying group gaps there would imply a grouping that is not
-  // part of their sort rule.
-  let prevGroup = null;
-  let prevBand = null;
-  sortedStudents.forEach((stu, i) => {
-    const band = maktabSummarySortBand(stu, byStudent, haidhByStudent);
-    const groupKey = stu.group_name || null;
-    if(i > 0 && band === 0 && prevBand === 0 && groupKey !== prevGroup){
-      const gap = document.createElement('tr');
-      gap.className = 'maktab-group-gap';
-      gap.setAttribute('aria-hidden', 'true');
-      const gtd = document.createElement('td');
-      gtd.colSpan = 5;
-      gap.appendChild(gtd);
-      host.appendChild(gap);
-    }
-    prevBand = band;
-    prevGroup = band === 0 ? groupKey : null;
+  const sortedStudents = maktabSummarySortedStudents(data.students || [], byStudent);
+  // V4.2.14.2: no Group or Haidh separators here. The two ordering bands
+  // are simply logged and unlogged, and each band remains alphabetical.
+  sortedStudents.forEach((stu) => {
     const tr = document.createElement('tr');
     tr.className = 'maktab-summary-row';
 

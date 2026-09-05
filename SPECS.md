@@ -17,6 +17,7 @@ Newest first.
 
 ## Index
 
+- **V4.2.14.2** — Independent Attendance/Maktab Summary ordering + Student Summary label quick actions
 - **V4.2.14.1** — Quick Log pill alignment + shared Quick Attendance on Maktab/Student Summary
 - **V4.2.14** — Authoritative single Haidh model: confirmed/predicted/activity, Day-1 prediction reset, global 10/15 limits
 - **V4.2.13.1** — Mobile Attendance register width: narrower Student column and on-demand Attendance %
@@ -132,6 +133,18 @@ Newest first.
 - Done — V3.28.0 (2026-08-03)
 
 ---
+
+## V4.2.14.2 — Independent ordering + Student Summary activity quick actions
+
+### Ordering contracts
+
+The **Attendance register** and **Maktab Summary** intentionally use different sort functions. Attendance is a performance/attendance view: decreasing Attendance %, then decreasing active/logged-day count, then the current resolved status (active/present before Haidh before absent/unresolved), and only then alphabetical first name. Maktab Summary is a work-entry view: on the displayed date, every student with any log comes first alphabetically, followed by every student without a log alphabetically. No Group/Haidh/percentage band is allowed to leak between the two screens.
+
+### Student Summary quick actions
+
+The Student Summary does not add a second activity toolbar. Its existing **Sabaq**, **Sabaq Dhor**, and **Dhor** column labels become the quick-action touch targets. Tapping one calls the same `maktabOpenQuickLog()` function used by a Maktab Summary cell, with the Student Summary's carried student/date and the tapped type as the initial selection. The shared mobile combined selector remains available inside that sheet. Save refreshes Student Summary so a new entry appears immediately; Detail opens the full log card. Attendance remains the separate calendar icon beside the student name and continues to use shared Quick Attendance.
+
+The register `H/h` stays at the V4.2.14.1 reduced 14px size and is neutral grey, keeping pink reserved for confirmed/predicted states in the Haidh calendar.
 
 ## V4.2.14.1 — Quick Log alignment + shared Quick Attendance
 

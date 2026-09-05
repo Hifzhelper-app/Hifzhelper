@@ -50,8 +50,8 @@ check('duplicate protection is preserved with the established abortable force fl
   /result\.isDuplicate && !result\.id/.test(js)
   && /confirm\(`\$\{duplicateLabel\} has already been saved/.test(js)
   && /force: true/.test(js));
-check('successful Quick Log refreshes the current summary/date instead of changing screens',
-  /maktabCloseQuickLog\(\);\n\s*await renderMaktabSummaryScreen\(\);/.test(js));
+check('successful Quick Log refreshes the caller or current summary instead of forcing a screen change',
+  /const afterSave = state\.afterSave;[\s\S]{0,180}maktabCloseQuickLog\(\);[\s\S]{0,180}if\(typeof afterSave === 'function'\) await afterSave\(\);[\s\S]{0,120}else await renderMaktabSummaryScreen\(\)/.test(js));
 check('Sabaq keeps its best-effort maktab position metadata sync after a quick save',
   /maktabQuickSyncSabaqPosition/.test(js)
   && /apiGetMaktabPosition\(studentId\)/.test(js)
@@ -60,9 +60,10 @@ check('Sabaq keeps its best-effort maktab position metadata sync after a quick s
 check('Quick Log has compact responsive sheet styling',
   /\.maktab-quick-log-card \{ max-width: 520px; \}/.test(css)
   && /@media \(max-width: 767px\)[\s\S]*\.maktab-quick-log-card/.test(css));
-check('page/cache release key is 4.2.14.1',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.14.1')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
+const v4212Versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
+const v4212Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('page/cache release keys advance together on later Quick Log overlays',
+  v4212Versions.length > 0 && !!v4212Cache && v4212Versions.every(v => v === v4212Cache));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

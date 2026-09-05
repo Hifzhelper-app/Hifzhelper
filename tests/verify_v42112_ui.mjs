@@ -29,11 +29,11 @@ check('day-header row has a strong bottom separator including the two row-spanni
 check('Present uses a bold lime TEXT tick',
   /mkregister-status-present" aria-hidden="true">✓<\/span>/.test(page)
   && /\.mkregister-status-present \{ color: #78BE3F; font-size: 22px; font-weight: 900/.test(css));
-check('Haidh uses plain dark-pink H / light-pink h text with no icon pill',
+check('Haidh uses plain grey H / h text with no icon pill',
   /mkregister-status-haidh-confirmed" aria-hidden="true">H<\/span>/.test(page)
   && /mkregister-status-haidh-predicted" aria-hidden="true">h<\/span>/.test(page)
-  && /mkregister-status-haidh-confirmed \{ color: var\(--color-haidh\);[^}]*font-weight: 800/.test(css)
-  && /mkregister-status-haidh-predicted \{ color: var\(--color-haidh\);[^}]*font-weight: 400/.test(css)
+  && /mkregister-status-haidh-confirmed \{ color: var\(--color-ink-soft\);[^}]*font-weight: 800/.test(css)
+  && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\);[^}]*font-weight: 400/.test(css)
   && !/iconHtml\('haidh'\)/.test(page));
 check('Attendance % is the second column and is returned per student',
   /mkregister-student-head" rowspan="2">[\s\S]*Student[\s\S]*<\/th><th class="mkregister-percent-head" rowspan="2">Attendance %<\/th>/.test(page)
@@ -55,8 +55,10 @@ check('admin primary menu order is Home, Maktab, Attendance, Student Management,
 check('Attendance and Calendar are not duplicated in the later personal-tools group',
   /!\['home', 'sih', 'juzTracker', 'attendancePage'\]\.includes\(x\.id\)/.test(auth)
   && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
-check('V4.2.11.2 page/cache contract remains valid after V4.2.14.1',
-  /js\/app\.js\?v=4\.2\.14\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
+const v42112Page = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
+const v42112Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.11.2 page/cache contract remains valid on later overlays',
+  !!v42112Page && v42112Page === v42112Cache);
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

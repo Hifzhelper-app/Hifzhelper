@@ -60,8 +60,10 @@ check('status groups sort alphabetically by first name',
   /ak\.first\.localeCompare\(bk\.first\)/.test(att));
 check('register applies the order using the current Maktab date',
   /mkregSortStudents\(data\.students \|\| \[\], data\.today\)/.test(att));
-check('V4.2.11.3 behavior remains intact under the V4.2.14.1 page/cache key',
-  /js\/app\.js\?v=4\.2\.14\.1/.test(html) && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.1'/.test(sw));
+const v42113PageVersion = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
+const v42113CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.11.3 date behavior remains intact while later overlays advance page/cache together',
+  !!v42113PageVersion && v42113PageVersion === v42113CacheVersion);
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

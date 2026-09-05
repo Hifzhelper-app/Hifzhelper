@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.1 | js/maktabDay.js */
+/* Hifzhelper build 4.2.14.2 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -343,8 +343,9 @@ function exitMaktabDay(){
 // expanded recent days, weekly rollup rows, Load more — reusing the
 // journal's own row/rollup renderers, but over the MAKTAB'S entries for
 // this student ONLY, read-only. Rows tap through to that day's log
-// cards; the header's attendance icon opens Quick Attendance, whose Detail
-// action opens her full attendance page.
+// cards; the Sabaq / Sabaq Dhor / Dhor header labels open the SAME Quick
+// Log sheet used by Maktab Summary, preselected to that activity, while the
+// attendance icon opens Quick Attendance. Detail preserves the full route.
 // Data: the three maktab GETs (student_id in teacher mode; her own
 // read-only path calls without one).
 // ============================================================
@@ -363,16 +364,18 @@ async function renderStudentSummaryScreen(){
   const tbody = document.getElementById('studentSummaryTbody');
   if(!tbody) return;
   document.getElementById('studentSummaryTitle').textContent = logCtxStudentName() || 'Summary';
-  const hIcon = document.getElementById('studentSummaryHeaderIcon');
-  if(hIcon && typeof iconHtml === 'function') hIcon.innerHTML = iconHtml('journal');
+  const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
+  const quickDate = logCtxDate() || maktabTodayISO();
+  const quickLogButtons = Array.from(document.querySelectorAll('#screen-studentSummary [data-ss-quick-type]'));
+  // Disable while the three activity feeds load; the exact Maktab Summary
+  // Quick Log action is wired below once we have the carried-date entries.
+  quickLogButtons.forEach(btn => { btn.disabled = true; btn.onclick = null; });
   const attBtn = document.getElementById('studentSummaryAttendanceBtn');
   if(attBtn){
     if(typeof iconHtml === 'function') attBtn.innerHTML = iconHtml('attendance');
     attBtn.setAttribute('aria-label', 'Quick attendance');
-    attBtn.onclick = () => {
-      const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
-      maktabOpenQuickAttendance(student, logCtxDate());
-    };
+    attBtn.title = 'Quick attendance';
+    attBtn.onclick = () => maktabOpenQuickAttendance(student, quickDate, { afterSave: () => renderStudentSummaryScreen() });
   }
   const closeBtn = document.getElementById('studentSummaryCloseBtn');
   if(closeBtn) closeBtn.onclick = () => showScreen('maktabSummary');
@@ -400,6 +403,22 @@ async function renderStudentSummaryScreen(){
     (days[r.date] = days[r.date] || { sabaq: [], sabaqDhor: [], dhor: [] })[key].push(r);
   });
   bucket(sabaq, 'sabaq'); bucket(sabaqDhor, 'sabaqDhor'); bucket(dhor, 'dhor');
+
+  // V4.2.14.2: each activity LABEL is the Student Summary quick action.
+  // It calls maktabOpenQuickLog directly — the very same sheet/function used
+  // by Maktab Summary — and simply chooses the tapped label as the initial
+  // activity. On mobile the shared sheet still exposes its Sabaq/Sabaq Dhor/
+  // Dhor selector, exactly as it does from Maktab Summary.
+  const entriesByType = days[quickDate] || { sabaq: [], sabaqDhor: [], dhor: [] };
+  quickLogButtons.forEach(btn => {
+    const type = btn.dataset.ssQuickType;
+    if(!['sabaq', 'sabaqDhor', 'dhor'].includes(type)) return;
+    btn.disabled = false;
+    btn.onclick = () => maktabOpenQuickLog(
+      student, quickDate, type, entriesByType[type] || [], entriesByType,
+      { afterSave: () => renderStudentSummaryScreen() }
+    );
+  });
 
   const allDates = Object.keys(days).sort().reverse();
   tbody.innerHTML = '';
