@@ -7,7 +7,8 @@
     "deploy:prod": "wrangler deploy --env production",
     "migrate:local": "wrangler d1 migrations apply hifzhelper-maktab1-dev --local",
     "migrate:dev": "wrangler d1 migrations apply hifzhelper-maktab1-dev --remote --env development",
-    "migrate:prod": "wrangler d1 migrations apply hifzhelper-maktab1 --remote --env production"
+    "migrate:prod": "wrangler d1 migrations apply hifzhelper-maktab1 --remote --env production",
+    "seed:dev-from-prod-once": "bash tools/seed-dev-from-prod-once.sh"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
