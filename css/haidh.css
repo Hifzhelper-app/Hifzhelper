@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.8 | css/haidh.css */
+/* Hifzhelper build 4.2.15.9 | css/haidh.css */
 /* ============================================================
    Hifzhelper — Haidh calendar (V3.39)
    ============================================================ */
@@ -277,3 +277,36 @@
 }
 .maktab-quick-attendance-save,
 .maktab-quick-attendance-close { width: 50px; height: 50px; }
+
+
+/* ============================================================
+   V4.2.15.9 — Attendance Quick Action: Detail and Save share the same
+   icon + label treatment. Close remains icon-only, but all three icon slots
+   keep the same 50px top-row alignment established in V4.2.15.8. */
+.maktab-quick-attendance-save {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  width: 52px;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.05;
+  cursor: pointer;
+}
+.maktab-quick-attendance-save-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  color: var(--palette-evergreen);
+}
+.maktab-quick-attendance-save-icon svg { width: 36px; height: 36px; }
+.maktab-quick-attendance-save:disabled { opacity: .4; cursor: default; }

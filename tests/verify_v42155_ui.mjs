@@ -26,8 +26,8 @@ const haidhCss = read('css/haidh.css');
 
 check('page assets and service-worker cache remain aligned after later overlays',
   [...html.matchAll(/\?v=([0-9.]+)/g)].length > 0
-  && [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.8')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.8'/.test(sw));
+  && [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.9')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.9'/.test(sw));
 
 check('Daily Report converts each entry separately and joins every same-activity entry with commas',
   /function maktabDailyReportSingleEntryText\(type, entry\)/.test(report)
@@ -141,7 +141,7 @@ check('V4.2.15.5 remains frontend-only; the later V4.2.15.7 migration is separat
 
 check('only edited product files carry V4.2.15.5 last-edit headers while representative untouched files retain older headers',
   /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDailyReport\.js \*\//.test(report)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
+  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(cal)
   && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/maktabSummary\.js \*\//.test(summary)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(read('js/maktabAttendancePage.js'))

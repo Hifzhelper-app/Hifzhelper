@@ -78,7 +78,7 @@ check('V4.2.11 pins remain on untouched files while later-edited files carry the
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/sw\.js \*\//.test(sw));
 check('later migrations do not reintroduce the old gender/track_haidh schema change',
   !read('worker/migrations/0030_hifz_class_zoom_link.sql').includes('track_haidh')
   && !read('worker/migrations/0030_hifz_class_zoom_link.sql').includes('ADD COLUMN gender'));
