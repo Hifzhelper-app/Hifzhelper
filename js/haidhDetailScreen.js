@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.15.2 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -286,7 +286,13 @@ async function onHaidhCalDayTap(dateISO){
     errEl.textContent = 'Maktab activity is logged on this date and takes precedence over Haidh.';
     return;
   }
-  if((status === 'haidh' || status === 'predicted-haidh') && haidhRangeStart == null){
+  // V4.2.15.2: the Quick Attendance popup is a MARKING surface. While it
+  // is open, even an already-Haidh day becomes part of the pending selection
+  // so Save can deliberately replace it with Haidh/Absent. On the full
+  // Student Attendance page the established tap-an-existing-mark-to-clear
+  // behaviour remains exactly unchanged.
+  const quickAttendanceOpen = typeof maktabQuickAttendanceIsOpen === 'function' && maktabQuickAttendanceIsOpen();
+  if((status === 'haidh' || status === 'predicted-haidh') && haidhRangeStart == null && !quickAttendanceOpen){
     try{
       await haidhCalClient().clear(dateISO);   // V3.76.0: routed by context
       await loadHaidhCalAttendance();

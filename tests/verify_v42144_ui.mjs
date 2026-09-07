@@ -14,6 +14,7 @@ const day = read('js/maktabDay.js');
 const css = read('css/journal-table.css');
 const html = read('index.html');
 const sw = read('js/sw.js');
+const haidh = read('js/haidhDetailScreen.js');
 
 check('Quick Log renders a real selectable date input',
   /type="date" id="\$\{id\}" class="maktab-quick-date-input"/.test(summary)
@@ -39,24 +40,21 @@ check('Quick Log Save and Detail continue to use the currently selected state da
   && /payload = \{ student_id: state\.student\.id, date: state\.date, segment_from:/.test(summary)
   && /openMaktabDay\([\s\S]{0,260}snapshot\.date, snapshot\.type\)/.test(summary));
 
-check('Quick Attendance renders the same native/selectable date pattern',
-  /type="date" id="maktabQuickAttendanceDate" class="maktab-quick-date-input"/.test(day)
-  && /wireCustomDateDisplay\('maktabQuickAttendanceDate'\)/.test(day));
+check('V4.2.15.2 Attendance quick action carries the selected Summary date into the reused calendar popup',
+  /const selectedDate = date \|\| maktabTodayISO\(\)/.test(day)
+  && /renderHaidhDetailScreen\(\{ maktab: true, date: selectedDate \}\)/.test(day));
 
-check('Quick Attendance date change re-resolves the normalized row instead of carrying the old choice',
-  /function maktabQuickAttendanceApplyDate\(nextDate\)[\s\S]{0,500}state\.date = nextDate/.test(day)
-  && /state\.attendanceRows \|\| \[\]\)\.find\(r => r && r\.date === nextDate\)/.test(day)
-  && /state\.choice = maktabQuickAttendanceChoice\(state\.currentStatus\)/.test(day));
+check('the shared Attendance calendar keeps its native month/day selection instead of a second Quick Attendance date control',
+  !/maktabQuickAttendanceDate/.test(day)
+  && /onHaidhCalDayTap\(dateISO\)/.test(haidh));
 
-check('Quick Attendance recomputes future semantics and activity lock on the selected date',
-  /state\.future = nextDate > maktabTodayISO\(\)/.test(day)
-  && /state\.lockedByActivity = state\.currentStatus === 'activity'/.test(day)
-  && /haidhBtn\.textContent = state\.future \? 'Predict Haidh' : 'Haidh'/.test(day)
-  && /absentBtn\.textContent = state\.future \? 'Plan absent' : 'Absent'/.test(day));
+check('the shared Attendance calendar keeps activity precedence and range Haidh semantics',
+  /status === 'activity' && haidhRangeStart == null/.test(haidh)
+  && /haidhCalClient\(\)\.markRange\(bounds\[0\], bounds\[1\]\)/.test(haidh));
 
-check('Quick Attendance Save and Detail use the newly selected date',
-  /apiSetAttendanceFor\(state\.student\.id, state\.date, status\)/.test(day)
-  && /openMaktabAttendancePage\(snapshot\.student, snapshot\.date\)/.test(day));
+check('the shared Attendance calendar supports the existing Absent range action',
+  /for\(let d = bounds\[0\]; d <= bounds\[1\]; d = haidhAddDaysISO\(d, 1\)\)/.test(haidh)
+  && /client\.setDay\(d, 'predicted-absent'\)/.test(haidh));
 
 check('both quick-action date controls keep the common 42px pill height',
   /\.maktab-quick-date-control \{[\s\S]{0,180}height: 42px/.test(css)
@@ -64,14 +62,14 @@ check('both quick-action date controls keep the common 42px pill height',
   && /\.maktab-quick-date-input,[\s\S]{0,180}height: 42px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('V4.2.14.4 feature remains present while page/cache carry forward to V4.2.14.5',
-  versions.length > 0 && versions.every(v => v === '4.2.14.5')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.14.4 Quick Log date feature remains present while page/cache carry forward together',
+  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
-check('only the quick-action served files edited in this release carry V4.2.14.4 headers',
-  /^\/\* Hifzhelper build 4\.2\.14\.4 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.14\.4 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.14\.4 \| css\/journal-table\.css \*\//.test(css));
+check('quick-action files retain their last-edit headers while the later Attendance popup edits carry current headers',
+  /^\/\* Hifzhelper build 4\.2\.15 \| js\/maktabSummary\.js \*\//.test(summary)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabDay\.js \*\//.test(day)
+  && /^\/\* Hifzhelper build 4\.2\.15\.1 \| css\/journal-table\.css \*\//.test(css));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

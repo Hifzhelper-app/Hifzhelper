@@ -50,10 +50,10 @@ check('register backend spans the selected/current term and uses configured teac
   && /for \(let mon = registerMondayOf\(from\); mon <= to;/.test(workerAtt));
 check('Female and conditional Haaidha controls exist in Register a student',
   /id="admin_new_female"/.test(admin) && /id="admin_new_haidh_wrap"/.test(admin)
-  && /id="admin_new_haidh"/.test(admin) && /wrap\.classList\.toggle\('hidden', !femaleEl\.checked\)/.test(admin));
+  && /id="admin_new_haidh"/.test(admin) && /wrap\.classList\.toggle\('hidden', !female\)/.test(admin));
 check('registration API carries gender/track_haidh and worker stores them without a migration',
   /gender: p\.gender \|\| null, track_haidh: !!p\.track_haidh/.test(api)
-  && /gender, track_haidh\) VALUES/.test(workerAdmin)
+  && /gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected\) VALUES/.test(workerAdmin)
   && /const trackHaidh = gender === 'F'/.test(workerAdmin));
 check('mobile registration styling keeps Female/Haaidha together',
   /\.admin-mobile-register-profile/.test(adminCss) && /\.admin-register-check/.test(adminCss));
@@ -72,13 +72,13 @@ const v4211Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.11-or-later page/cache keys agree',
   !!v4211Page && v4211Page === v4211Cache);
 check('V4.2.11 pins remain on untouched files while later-edited files carry their current last-edit header',
-  /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| css\/admin\.css \*\//.test(adminCss)
-  && /^\/\* Hifzhelper build 4\.2\.14\.2 \| css\/detail-pages\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.11(?:\.\d+)? \| js\/adminPage\.js \*\//.test(admin)
-  && /^\/\* Hifzhelper build 4\.2\.14 \| js\/api\.js \*\//.test(api)
-  && /^\/\* Hifzhelper build 4\.2\.14 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
-  && /^\/\* Hifzhelper build 4\.2\.14\.5 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.14\.5 \| js\/sw\.js \*\//.test(sw));
+  /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/admin\.css \*\//.test(adminCss)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/detail-pages\.css \*\//.test(css)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/adminPage\.js \*\//.test(admin)
+  && /^\/\* Hifzhelper build 4\.2\.15\.1 \| js\/api\.js \*\//.test(api)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(page)
+  && /^\/\* Hifzhelper build 4\.2\.15\.3 \| js\/sw\.js \*\//.test(sw));
 check('no new migration was introduced for gender/track_haidh',
   fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
 

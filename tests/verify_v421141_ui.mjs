@@ -13,6 +13,7 @@ const summary = read('js/maktabSummary.js');
 const day = read('js/maktabDay.js');
 const journalCss = read('css/journal-table.css');
 const detailCss = read('css/detail-pages.css');
+const haidh = read('js/haidhDetailScreen.js');
 const html = read('index.html');
 const sw = read('js/sw.js');
 
@@ -31,35 +32,36 @@ check('Quick Log Juz, Juz Portion and Portion Number controls share the same hei
   /\.maktab-quick-log-card \.maktab-quick-unit-pill,[\s\S]*\.maktab-quick-log-card \.maktab-quick-position-pill \{[\s\S]*position: static;[\s\S]*min-height: 42px/.test(journalCss)
   && /\.modal-card \.maktab-quick-dhor-primary-row select \{[\s\S]*height: 42px/.test(journalCss));
 
-check('Confirm, Save and Detail are one action row at matching height',
-  /\$\{maktabQuickConfirmControl\(\)\}[\s\S]*maktabQuickLogSave[\s\S]*maktabQuickLogDetails/.test(summary)
+check('Confirm and Save remain matching actions while Detail is promoted beside the date',
+  /maktabQuickConfirmControl\(\)/.test(summary)
+  && /id="maktabQuickLogSave"/.test(summary)
+  && /maktab-quick-date-row[\s\S]{0,500}id="maktabQuickLogDetails"/.test(summary)
   && /\.maktab-quick-confirm-action \{[\s\S]*height: 42px/.test(journalCss)
   && /\.maktab-quick-actions \.maktab-quick-save \{[\s\S]*height: 42px/.test(journalCss)
-  && /\.maktab-quick-details \{[\s\S]*min-height: 42px/.test(journalCss));
+  && /\.maktab-quick-detail-icon \{[\s\S]{0,180}height: 42px/.test(journalCss));
 
-check('Maktab Summary attendance icon opens Quick Attendance and refreshes Summary after save',
-  /maktabOpenQuickAttendance\(stu, date, \{ afterSave: \(\) => renderMaktabSummaryScreen\(\) \}\)/.test(summary)
-  && /aria-label', 'Quick attendance for '/.test(summary));
+check('Maktab Summary attendance icon now opens the existing Attendance calendar directly',
+  /maktabOpenQuickAttendance\(stu, date\)/.test(summary)
+  && /aria-label', 'Attendance for '/.test(summary));
 
-check('Student Summary attendance icon opens the same Quick Attendance action on its context date',
+check('Student Summary attendance icon opens the same Attendance calendar on its context date',
   /studentSummaryAttendanceBtn/.test(day)
   && /maktabOpenQuickAttendance\(student, (?:logCtxDate\(\)|quickDate)/.test(day));
 
-check('Quick Attendance offers Present, Haidh and Absent plus Save and Detail',
-  /data-mqa-status="present">Present<\/button>/.test(day)
-  && /data-mqa-status="haidh">\$\{future \? 'Predict Haidh' : 'Haidh'\}<\/button>/.test(day)
-  && /data-mqa-status="absent">\$\{future \? 'Plan absent' : 'Absent'\}<\/button>/.test(day)
-  && /id="maktabQuickAttendanceSave">Save<\/button>/.test(day)
-  && /id="maktabQuickAttendanceDetails">Detail<\/button>/.test(day));
+check('V4.2.15.2 keeps the established Student Attendance calendar as the Quick Attendance popup engine',
+  /function maktabOpenQuickAttendance\(student, date\)/.test(day)
+  && /getElementById\('attHaidhBlock'\)/.test(day)
+  && /maktabQuickAttendanceCalendarHost'\)\.appendChild\(block\)/.test(day)
+  && /renderHaidhDetailScreen\(\{ maktab: true, date: selectedDate \}\)/.test(day));
 
-check('Quick Attendance respects future prediction semantics and activity precedence',
-  /state\.choice === 'haidh'\) status = state\.future \? 'predicted-haidh' : 'haidh'/.test(day)
-  && /state\.choice === 'absent'\) status = state\.future \? 'predicted-absent' : 'absent'/.test(day)
-  && /lockedByActivity: currentStatus === 'activity'/.test(day)
-  && /Activity is already logged and takes precedence/.test(day));
+check('the established calendar owns Haidh/Absent range semantics and activity precedence',
+  /tap 1 = start, tap 2 = end/.test(haidh)
+  && /haidhCalClient\(\)\.markRange\(bounds\[0\], bounds\[1\]\)/.test(haidh)
+  && /client\.setDay\(d, 'predicted-absent'\)/.test(haidh)
+  && /Maktab activity is logged on this date and takes precedence over Haidh/.test(haidh));
 
-check('Quick Attendance Detail preserves the route to the full Attendance page',
-  /maktabQuickAttendanceDetails[\s\S]{0,500}openMaktabAttendancePage\(snapshot\.student, snapshot\.date\)/.test(day));
+check('the Attendance popup Detail action preserves the route to the full Student Attendance page',
+  /maktabQuickAttendanceDetail[\s\S]{0,500}showScreen\('attendancePage', \{ maktab: true, date: snapshot\.date \}\)/.test(day));
 
 check('Attendance register H/h is about 25 percent smaller than V4.2.14',
   /mkregister-status-haidh-confirmed \{[^}]*font-size: 14px/.test(detailCss)

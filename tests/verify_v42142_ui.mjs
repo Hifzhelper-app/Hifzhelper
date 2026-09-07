@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.14.2 compatibility — ordering + Student Summary quick actions; cache carried through V4.2.14.5.
+// V4.2.14.2 compatibility — ordering + Student Summary quick actions; cache carried through later overlays.
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -71,7 +71,7 @@ check('Attendance keeps active/logged, then Haidh-only, then absent/unresolved r
   && JSON.stringify(attendanceOrdered) === JSON.stringify(['A','B','C','D','E']));
 
 check('Attendance now uses current-week active-day count before Attendance percentage',
-  /const weeklyActive = mkregActiveDaysForDates\(b, sortDates\) - mkregActiveDaysForDates\(a, sortDates\)/.test(attendance)
+  /const activeA = mkregActiveDaysForDates\(a, currentWeekDates\);[\s\S]{0,180}const activeB = mkregActiveDaysForDates\(b, currentWeekDates\);[\s\S]{0,180}const weeklyActive = activeB - activeA/.test(attendance)
   && attendanceOrdered[0] === 'A' && attendanceOrdered[1] === 'B');
 
 check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, not calendar pink',
@@ -79,9 +79,9 @@ check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, n
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('current page assets and service-worker cache key agree at V4.2.14.5',
-  versions.length > 0 && versions.every(v => v === '4.2.14.5')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('current page assets and service-worker cache key still agree after later overlays',
+  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

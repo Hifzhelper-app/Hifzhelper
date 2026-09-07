@@ -1,11 +1,13 @@
+/* Hifzhelper build 4.2.15.2 | worker/src/admin.js */
 // ============================================================
 // Hifzhelper — admin endpoints
 // Every handler here is gated to role === 'admin' — nothing here is
 // reachable by a student or teacher token, even if they guess the path.
 // ============================================================
 
-import { generateUniqueId } from './utils.js';
+import { generateUniqueId, isValidDate } from './utils.js';
 import { nextDisambiguatedName, findDuplicateMatch } from './auth.js';
+import { haidhOfficialMaxDuration, haidhMinCycleFrequency, haidhAddDaysISO } from '../../shared/haidhRules.js';
 
 function requireAdmin(auth) {
   if (!auth || auth.role !== 'admin') return { error: 'Not authorized', status: 403 };
@@ -18,7 +20,7 @@ export async function handleListUsers(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
   const { results } = await env.DB.prepare(
-    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id FROM students ORDER BY created_date DESC'
+    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students ORDER BY created_date DESC'
   ).all();
   return { data: results };
 }
@@ -70,7 +72,7 @@ export async function handleUpdateUser(request, env, auth) {
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.id) return { error: 'id is required', status: 400 };
 
-  const row = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(body.id).first();
+  const row = await env.DB.prepare('SELECT id, gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students WHERE id = ?').bind(body.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
 
   const setClauses = [];
@@ -110,9 +112,53 @@ export async function handleUpdateUser(request, env, auth) {
       values.push(gid);
     }
   }
+
+  // V4.2.15.2: Student Management's Haidh pill edits the same setup fields
+  // as registration/PJ Setup. A completed save also replaces the student's
+  // prediction set from the entered next-expected date, matching PJ Setup.
+  const haidhTouched = body.track_haidh !== undefined || body.gender !== undefined || body.haidh_ruling !== undefined ||
+    body.haidh_cycle_length !== undefined || body.haidh_period_length !== undefined || body.haidh_next_expected !== undefined;
+  let predictionStatements = [];
+  if (haidhTouched) {
+    const trackHaidh = body.track_haidh !== undefined ? !!body.track_haidh : !!row.track_haidh;
+    const gender = body.gender !== undefined ? String(body.gender || '') : row.gender;
+    if (gender && !['M', 'F'].includes(gender)) return { error: 'gender must be M or F', status: 400 };
+    const ruling = body.haidh_ruling !== undefined ? String(body.haidh_ruling || 'hanafi') : (row.haidh_ruling || 'hanafi');
+    const cycle = body.haidh_cycle_length !== undefined ? Number(body.haidh_cycle_length) : Number(row.haidh_cycle_length);
+    const period = body.haidh_period_length !== undefined ? Number(body.haidh_period_length) : Number(row.haidh_period_length);
+    const nextExpected = body.haidh_next_expected !== undefined ? String(body.haidh_next_expected || '') : String(row.haidh_next_expected || '');
+    if (trackHaidh) {
+      if (!['hanafi', 'shafii'].includes(ruling)) return { error: 'haidh_ruling must be hanafi or shafii', status: 400 };
+      if (!Number.isInteger(cycle) || cycle < 1 || !Number.isInteger(period) || period < 1 || !isValidDate(nextExpected)) {
+        return { error: 'Haidh cycle frequency, duration, and next expected day are required', status: 400 };
+      }
+      const maxDuration = haidhOfficialMaxDuration(ruling);
+      if (period > maxDuration) return { error: `Duration cannot exceed ${maxDuration} days for the selected ruling`, status: 400 };
+      const minFrequency = haidhMinCycleFrequency(period);
+      if (cycle < minFrequency) return { error: `Haidh cycle frequency must be at least ${minFrequency} days for a ${period}-day duration`, status: 400 };
+    }
+    setClauses.push('gender = ?', 'track_haidh = ?', 'haidh_ruling = ?', 'haidh_cycle_length = ?', 'haidh_period_length = ?', 'haidh_next_expected = ?');
+    values.push(trackHaidh ? 'F' : (gender || null), trackHaidh ? 1 : 0, trackHaidh ? ruling : null, trackHaidh ? cycle : null, trackHaidh ? period : null, trackHaidh ? nextExpected : null);
+    if (trackHaidh) {
+      predictionStatements.push(env.DB.prepare(`DELETE FROM attendance WHERE student_id = ? AND status = 'predicted-haidh'`).bind(body.id));
+      const lastStart = haidhAddDaysISO(nextExpected, -cycle);
+      const effectivePeriod = Math.min(period, haidhOfficialMaxDuration(ruling));
+      for (let c = 0; c < 4; c++) {
+        for (let d = 0; d < effectivePeriod; d++) {
+          const date = haidhAddDaysISO(lastStart, c * cycle + d);
+          predictionStatements.push(env.DB.prepare(
+            `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'predicted-haidh') ON CONFLICT(student_id, date) DO NOTHING`
+          ).bind(body.id, date));
+        }
+      }
+    }
+  }
+
   if (setClauses.length === 0) return { error: 'No valid fields to update', status: 400 };
   values.push(body.id);
-  await env.DB.prepare(`UPDATE students SET ${setClauses.join(', ')} WHERE id = ?`).bind(...values).run();
+  const updateStmt = env.DB.prepare(`UPDATE students SET ${setClauses.join(', ')} WHERE id = ?`).bind(...values);
+  if (predictionStatements.length) await env.DB.batch([updateStmt, ...predictionStatements]);
+  else await updateStmt.run();
   return { data: { saved: true } };
 }
 
@@ -141,7 +187,7 @@ export async function handleDeleteUser(request, env, auth) {
   return { data: { deleted: true } };
 }
 
-// POST /admin/register-student — body: { name, whatsapp_number?, force?, gender?, track_haidh? }.
+// POST /admin/register-student — body: { name, whatsapp_number?, force?, gender?, track_haidh?, haidh_ruling?, haidh_cycle_length?, haidh_period_length?, haidh_next_expected? }.
 // Creates a new student with an app-generated unique ID, no PIN yet — same
 // first-login flow as every other account. Runs the same duplicate check
 // as self-registration (V3.4/V3.4.2, see findDuplicateMatch in auth.js) —
@@ -202,6 +248,26 @@ export async function handleRegisterStudent(request, env, auth) {
   if (gender != null && !['M', 'F'].includes(gender)) return { error: 'gender must be M or F', status: 400 };
   const trackHaidh = gender === 'F' && body.track_haidh === true ? 1 : 0;
 
+  // V4.2.15.1: Admin registration can complete the same Haidh setup the
+  // student would otherwise fill in later. Validate against the shared
+  // rules before creating anything so a failed setup never leaves a partial
+  // account behind.
+  let haidhRuling = null, haidhCycleLength = null, haidhPeriodLength = null, haidhNextExpected = null;
+  if (trackHaidh) {
+    haidhRuling = body.haidh_ruling || 'hanafi';
+    if (!['hanafi', 'shafii'].includes(haidhRuling)) return { error: 'haidh_ruling must be hanafi or shafii', status: 400 };
+    haidhCycleLength = Number(body.haidh_cycle_length);
+    haidhPeriodLength = Number(body.haidh_period_length);
+    haidhNextExpected = body.haidh_next_expected == null ? '' : String(body.haidh_next_expected);
+    if (!Number.isInteger(haidhCycleLength) || haidhCycleLength < 1 || !Number.isInteger(haidhPeriodLength) || haidhPeriodLength < 1 || !isValidDate(haidhNextExpected)) {
+      return { error: 'Haidh cycle frequency, duration, and next expected day are required', status: 400 };
+    }
+    const maxDuration = haidhOfficialMaxDuration(haidhRuling);
+    if (haidhPeriodLength > maxDuration) return { error: `Duration cannot exceed ${maxDuration} days for the selected ruling`, status: 400 };
+    const minFrequency = haidhMinCycleFrequency(haidhPeriodLength);
+    if (haidhCycleLength < minFrequency) return { error: `Haidh cycle frequency must be at least ${minFrequency} days for a ${haidhPeriodLength}-day duration`, status: 400 };
+  }
+
   const match = await findDuplicateMatch(env, trimmedName, whatsapp);
   if (match && !body.force) return { data: { matched: true, matchedId: match.id, matchedActive: match.active } };
 
@@ -209,9 +275,32 @@ export async function handleRegisterStudent(request, env, auth) {
 
   const id = await generateUniqueId(env);
   const today = new Date().toISOString().slice(0, 10);
-  await env.DB.prepare(
-    'INSERT INTO students (id, name, role, created_date, active, whatsapp_number, gender, track_haidh) VALUES (?, ?, ?, ?, 1, ?, ?, ?)'
-  ).bind(id, finalName, 'student', today, whatsapp, gender, trackHaidh).run();
+  const statements = [env.DB.prepare(
+    'INSERT INTO students (id, name, role, created_date, active, whatsapp_number, gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(id, finalName, 'student', today, whatsapp, gender, trackHaidh, haidhRuling, haidhCycleLength, haidhPeriodLength, haidhNextExpected)];
 
-  return { data: { id, name: finalName, gender, track_haidh: !!trackHaidh, matchedId: match ? match.id : undefined, matchedActive: match ? match.active : undefined } };
+  // Match the Personal Journal setup prediction behaviour exactly: its
+  // endpoint receives lastStart = nextExpected - cycleLength and stores four
+  // periods, with factual attendance able to win via DO NOTHING later.
+  if (trackHaidh) {
+    const lastStart = haidhAddDaysISO(haidhNextExpected, -haidhCycleLength);
+    const effectivePeriodLength = Math.min(haidhPeriodLength, haidhOfficialMaxDuration(haidhRuling));
+    for (let cycle = 0; cycle < 4; cycle++) {
+      for (let d = 0; d < effectivePeriodLength; d++) {
+        const date = haidhAddDaysISO(lastStart, cycle * haidhCycleLength + d);
+        statements.push(env.DB.prepare(
+          `INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'predicted-haidh')
+           ON CONFLICT(student_id, date) DO NOTHING`
+        ).bind(id, date));
+      }
+    }
+  }
+
+  // Preserve the pre-V4.2.15.1 single-statement path for ordinary
+  // registrations; only the Haidh setup needs an atomic D1 batch so the
+  // student and her initial predictions cannot be separated by a failure.
+  if (statements.length === 1) await statements[0].run();
+  else await env.DB.batch(statements);
+
+  return { data: { id, name: finalName, gender, track_haidh: !!trackHaidh, haidh_ruling: haidhRuling, haidh_cycle_length: haidhCycleLength, haidh_period_length: haidhPeriodLength, haidh_next_expected: haidhNextExpected, matchedId: match ? match.id : undefined, matchedActive: match ? match.active : undefined } };
 }

@@ -65,16 +65,16 @@ const tied = [
   { id:'pct80', name:'Pct Eighty', attendance_percent:80, attendance_active_days:7, cells:{'2026-09-01':'present','2026-09-02':'present'} },
   { id:'pct100', name:'Pct Hundred', attendance_percent:100, attendance_active_days:2, cells:{'2026-09-01':'present','2026-09-02':'present'} },
 ];
-check('Attendance percentage is only a tie-breaker when current-week active-day counts are equal',
-  ctx.mkregSortStudents(tied, today, weeks)[0].id === 'pct100');
+check('V4.2.15.1 changes equal active-day count tie-breaker from Attendance percentage to alphabetic name',
+  ctx.mkregSortStudents(tied, today, weeks)[0].id === 'pct80');
 check('render path passes the week model into the sort',
-  /mkregSortStudents\(data\.students \|\| \[\], data\.today, weeks\)/.test(attendance));
-check('Maktab Attendance served file carries the V4.2.14.5 last-edit header',
-  /^\/\* Hifzhelper build 4\.2\.14\.5 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
+  /mkregSortStudents\(data\.students \|\| \[\], data\.today, weeks, 'default', null, data\.from, data\.to\)/.test(attendance));
+check('Maktab Attendance served file carries the current V4.2.15.2 last-edit header',
+  /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page and service-worker cache versions agree at V4.2.14.5',
-  versions.length > 0 && versions.every(v => v === '4.2.14.5')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('page and service-worker cache versions agree after later overlays',
+  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

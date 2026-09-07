@@ -1,0 +1,171 @@
+/* Hifzhelper build 4.2.15.3 | css/daily-report.css */
+/* ============================================================
+   V4.2.15.3 — Daily Maktab Report.
+   A read-only, date-selectable filtered copy of Maktab Summary, presented
+   in the existing modal language and shared through the device share sheet.
+   ============================================================ */
+
+/* Maktab Summary keeps date | centre actions | close as the established
+   three-track header. Attendance and Daily Report are sibling rectangular
+   actions rather than a new navigation rail. */
+.maktab-summary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 8px;
+  min-width: 0;
+}
+.maktab-summary-actions .maktab-summary-attendance-link,
+.maktab-summary-actions .maktab-daily-report-link { justify-self: auto; }
+
+.maktab-daily-report-overlay { z-index: 360; }
+.modal-card.maktab-daily-report-card {
+  width: min(1100px, calc(100vw - 24px));
+  max-width: 1100px;
+  max-height: 92vh;
+  padding: 20px;
+}
+.maktab-daily-report-heading { padding-right: 36px; }
+.modal-card.maktab-daily-report-card h2 {
+  margin: 0;
+  font-size: 21px;
+  color: var(--color-ink);
+}
+.maktab-daily-report-subtitle {
+  margin-top: 3px;
+  color: var(--color-ink-soft);
+  font-size: 13px;
+}
+.maktab-daily-report-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0 12px;
+}
+.maktab-daily-report-date-control { min-width: 0; }
+.maktab-daily-report-date-control .custom-date-wrap { width: auto; }
+.maktab-daily-report-date-control .custom-date-display {
+  min-height: 38px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  border: 1px solid var(--color-table-border);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.maktab-daily-report-count {
+  color: var(--color-ink-soft);
+  font-size: 13px;
+  text-align: right;
+}
+.maktab-daily-report-share { min-width: 96px; }
+.maktab-daily-report-share:disabled { opacity: .5; cursor: default; }
+.maktab-daily-report-preview {
+  overflow: auto;
+  max-height: min(62vh, 680px);
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  -webkit-overflow-scrolling: touch;
+}
+.maktab-daily-report-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+.maktab-daily-report-table th,
+.maktab-daily-report-table td {
+  padding: 12px 14px;
+  border-right: 1px solid var(--color-table-border);
+  border-bottom: 1px solid var(--color-table-border);
+  text-align: left;
+  vertical-align: middle;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.maktab-daily-report-table th:last-child,
+.maktab-daily-report-table td:last-child { border-right: none; }
+.maktab-daily-report-table tbody tr:last-child td { border-bottom: none; }
+.maktab-daily-report-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-table-header-log);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.maktab-daily-report-table th.report-no,
+.maktab-daily-report-table th.report-student { background: var(--palette-sage); }
+.maktab-daily-report-table .report-no { width: 54px; text-align: center; color: var(--color-ink-soft); }
+.maktab-daily-report-table .report-student { width: 235px; }
+.maktab-daily-report-name-pill {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: var(--color-accent-soft);
+  padding: 5px 12px;
+  font-weight: 600;
+}
+/* Count badges in this report are a compact visual copy of Summary, not an
+   interactive entry peek. */
+.maktab-daily-report-table .entry-count-badge {
+  pointer-events: none;
+  margin-left: 4px;
+}
+.maktab-daily-report-loading,
+.maktab-daily-report-empty {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: 14px;
+}
+.maktab-daily-report-status {
+  min-height: 20px;
+  margin-top: 8px;
+  color: var(--color-ink-soft);
+  font-size: 12px;
+}
+.maktab-daily-report-status.is-error { color: var(--color-error); }
+
+@media (max-width: 767px) {
+  .maktab-summary-actions { gap: 5px; }
+  .maktab-summary-actions .maktab-cross-nav-btn {
+    min-height: 34px;
+    padding: 5px 7px;
+    gap: 4px;
+    font-size: 11px;
+  }
+  .maktab-summary-actions .maktab-cross-nav-btn svg { width: 15px; height: 15px; }
+  .modal-card.maktab-daily-report-card {
+    width: 100%;
+    max-width: none;
+    max-height: 94vh;
+    padding: 16px 12px max(16px, env(safe-area-inset-bottom));
+  }
+  .maktab-daily-report-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .maktab-daily-report-count {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: left;
+  }
+  .maktab-daily-report-share { min-width: 86px; padding-left: 10px; padding-right: 10px; }
+  .maktab-daily-report-preview { max-height: 60vh; }
+}

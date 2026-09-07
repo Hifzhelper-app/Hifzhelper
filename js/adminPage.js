@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.1 | js/adminPage.js */
+/* Hifzhelper build 4.2.15.2 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -21,6 +21,7 @@ function adminIsMobile(){
 // user as its FIRST ROW — no separate register box any more.
 function adminShowAddRow(show){
   adminAdding = !!show;
+  if(show) adminNewHaidhRuling = 'hanafi';
   if(!show) adminMatchedId = null;
   renderAdminUsersList();
 }
@@ -94,13 +95,53 @@ async function adminSaveField(user, fields, describe){
 // already promotes directly; the second-account path was redundant).
 const ADMIN_COLGROUP = `<colgroup>
   <col style="width:110px"><col><col style="width:130px"><col style="width:125px">
-  <col style="width:140px"><col style="width:110px"><col style="width:230px">
+  <col style="width:140px"><col style="width:110px"><col style="width:105px"><col style="width:230px">
 </colgroup>`;
 let adminAdding = false;   // the "Register a user" row is open
 // V4.2.1 (user): after registering, the NEW user is pinned to the TOP row
 // and highlighted, so her role, group, copy and share are right there.
 // Cleared when the screen is left or another user is registered.
 let adminJustCreatedId = null;
+// V4.2.15.1: the registration-only Haidh setup mirrors the PJ Setup ruling switch.
+let adminNewHaidhRuling = 'hanafi';
+
+function adminHaidhSetupComplete(user){
+  return !!(user && user.role === 'student' && user.track_haidh && user.haidh_cycle_length && user.haidh_period_length && user.haidh_next_expected);
+}
+
+function adminOpenHaidhSettings(user){
+  if(!user || user.role !== 'student') return;
+  let ruling = user.haidh_ruling || 'hanafi';
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay admin-haidh-settings-modal';
+  overlay.innerHTML = `<div class="modal-card admin-haidh-settings-card" role="dialog" aria-modal="true" aria-label="Haidh settings for ${String(user.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">
+    <div class="admin-haidh-settings-head"><strong>Haaidha</strong><span class="maktab-name-pill">${String(user.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><button type="button" class="icon-btn admin-haidh-settings-save" id="adminEditHaidhSave" aria-label="Save Haidh settings" title="Save">${iconHtml('save')}</button><button type="button" class="close-btn" id="adminEditHaidhClose" aria-label="Close">&times;</button></div>
+    ${adminRegistrationHaidhSetupMarkup('admin_edit', { open:true, showTitle:false, cycle:user.haidh_cycle_length || '', period:user.haidh_period_length || '', next:user.haidh_next_expected || '' })}
+    <div class="form-error" id="adminEditHaidhError"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  renderSwitch('admin_edit_haidh_ruling_switch', ruling);
+  wireSwitch('admin_edit_haidh_ruling_switch', value => { ruling = value; renderSwitch('admin_edit_haidh_ruling_switch', ruling); });
+  const close = () => overlay.remove();
+  document.getElementById('adminEditHaidhClose').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if(e.target === overlay) close(); });
+  document.getElementById('adminEditHaidhSave').addEventListener('click', async () => {
+    const err = document.getElementById('adminEditHaidhError'); err.textContent = '';
+    const cycle = parseInt(document.getElementById('admin_edit_haidh_cycle_length').value, 10);
+    const period = parseInt(document.getElementById('admin_edit_haidh_period_length').value, 10);
+    const next = document.getElementById('admin_edit_haidh_next_expected').value;
+    const profile = { track_haidh:true, haidh_ruling:ruling, haidh_cycle_length:cycle, haidh_period_length:period, haidh_next_expected:next };
+    const problem = adminRegistrationProfileError(profile);
+    if(problem){ err.textContent = problem; return; }
+    const save = document.getElementById('adminEditHaidhSave'); save.disabled = true;
+    try{
+      await apiAdminUpdateUser(user.id, Object.assign({ gender:'F' }, profile));
+      close();
+      adminFlash('Haidh settings saved');
+      await loadAdminUsers();
+    } catch(e){ err.textContent = "Couldn't save: " + e.message; save.disabled = false; }
+  });
+}
 
 function renderAdminUsersList(){
   const query = (document.getElementById('admin_search').value || '').trim().toLowerCase();
@@ -134,8 +175,9 @@ function renderAdminUsersList(){
       </div>
       <div class="admin-mobile-register-profile">
         <label class="admin-register-check"><input type="checkbox" id="admin_new_female"><span>Female</span></label>
-        <label class="admin-register-check hidden" id="admin_new_haidh_wrap"><input type="checkbox" id="admin_new_haidh"><span>Haaidha</span></label>
+        <label class="admin-register-check admin-register-haidh-check hidden" id="admin_new_haidh_wrap"><span>Haaidha</span><input type="checkbox" id="admin_new_haidh"></label>
       </div>
+      ${adminRegistrationHaidhSetupMarkup()}
       <div class="admin-mobile-register-actions"><button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button></div>
       <div class="admin-mobile-register-match hidden" id="adminRegisterMatchRow">
         <div class="form-hint" id="adminRegisterMatchHint"></div>
@@ -151,7 +193,7 @@ function renderAdminUsersList(){
   list.innerHTML = `${mobileRegister}
     <table class="admin-table admin-table-head">${ADMIN_COLGROUP}<thead><tr>
       <th class="admin-th-id">Unique ID</th><th>Name</th><th>WhatsApp</th><th>Role</th>
-      <th>Group</th><th>Status</th><th class="admin-th-actions">Actions</th>
+      <th>Group</th><th>Status</th><th>Haidh Settings</th><th class="admin-th-actions">Actions</th>
     </tr></thead></table>
     <div class="admin-wrap"><table class="admin-table admin-table-body">${ADMIN_COLGROUP}<tbody></tbody></table></div>`;
   const tbody = list.querySelector('tbody');
@@ -171,17 +213,23 @@ function renderAdminUsersList(){
         <td data-label="Group"><select class="admin-inline" id="admin_new_group" disabled><option value="">None</option></select></td>
         <td data-label="Status"><span class="admin-new-profile-inline">
           <label class="admin-register-check"><input type="checkbox" id="admin_new_female"><span>Female</span></label>
-          <label class="admin-register-check hidden" id="admin_new_haidh_wrap"><input type="checkbox" id="admin_new_haidh"><span>Haaidha</span></label>
+          <label class="admin-register-check admin-register-haidh-check hidden" id="admin_new_haidh_wrap"><span>Haaidha</span><input type="checkbox" id="admin_new_haidh"></label>
         </span></td>
+        <td data-label="Haidh Settings"><span class="admin-dash">—</span></td>
         <td class="admin-actions-cell" data-label="Actions">
           <button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button>
           <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
         </td>`;
       tbody.appendChild(tr);
+      const trHaidh = document.createElement('tr');
+      trHaidh.className = 'admin-row admin-row-new-haidh hidden';
+      trHaidh.id = 'adminNewHaidhSetupRow';
+      trHaidh.innerHTML = `<td colspan="8">${adminRegistrationHaidhSetupMarkup()}</td>`;
+      tbody.appendChild(trHaidh);
       const trMatch = document.createElement('tr');
       trMatch.className = 'admin-row admin-row-match hidden';
       trMatch.id = 'adminRegisterMatchRow';
-      trMatch.innerHTML = `<td colspan="7">
+      trMatch.innerHTML = `<td colspan="8">
         <div class="form-hint" id="adminRegisterMatchHint"></div>
         <div class="admin-match-actions">
           <button type="button" class="secondary" id="adminRegisterCancelBtn">Cancel</button>
@@ -193,7 +241,7 @@ function renderAdminUsersList(){
       tbody.appendChild(trMatch);
       const trErr = document.createElement('tr');
       trErr.className = 'admin-row admin-row-newerr';
-      trErr.innerHTML = `<td colspan="7"><div class="form-error" id="adminRegisterRowError"></div></td>`;
+      trErr.innerHTML = `<td colspan="8"><div class="form-error" id="adminRegisterRowError"></div></td>`;
       tbody.appendChild(trErr);
     }
     wireAdminRegisterRow();
@@ -209,7 +257,7 @@ function renderAdminUsersList(){
   }
 
   if(!filtered.length && !adminAdding){
-    tbody.innerHTML = '<tr><td colspan="7" class="admin-list-empty">No matching users.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="admin-list-empty">No matching users.</td></tr>';
     return;
   }
 
@@ -227,6 +275,7 @@ function renderAdminUsersList(){
       </select></td>
       <td data-label="Group">${u.role === 'student' ? '<select class="admin-inline" data-f="group_id" disabled><option>…</option></select>' : '<span class="admin-dash">—</span>'}</td>
       <td data-label="Status"><label class="admin-status"><input type="checkbox" class="admin-inline" data-f="active"${u.active ? ' checked' : ''}><span>${u.active ? 'Active' : 'Inactive'}</span></label></td>
+      <td data-label="Haidh Settings">${u.role === 'student' ? `<button type="button" class="admin-haidh-pill${adminHaidhSetupComplete(u) ? ' is-complete' : ''}" data-haidh-settings="${u.id}">Haidh</button>` : '<span class="admin-dash">—</span>'}</td>
       <td class="admin-actions-cell" data-label="Actions"></td>`;
     tbody.appendChild(tr);
 
@@ -238,7 +287,7 @@ function renderAdminUsersList(){
     tr.querySelector('.admin-actions-cell').innerHTML = actionsHtml;
     const trActions = document.createElement('tr');
     trActions.className = 'admin-row admin-row-actions';
-    trActions.innerHTML = `<td colspan="7"><div class="admin-actions-strip">${actionsHtml}</div></td>`;
+    trActions.innerHTML = `<td colspan="8"><div class="admin-actions-strip">${actionsHtml}</div></td>`;
     tbody.appendChild(trActions);
 
     const wire = (scope) => {
@@ -275,6 +324,8 @@ function renderAdminUsersList(){
         const v = groupEl.value === '' ? null : Number(groupEl.value);
         if(String(v ?? '') !== String(u.group_id ?? '')) adminSaveField(u, { group_id: v }, 'Group');
       });
+      const haidhBtn = scope.querySelector('[data-haidh-settings]');
+      if(haidhBtn) haidhBtn.addEventListener('click', () => adminOpenHaidhSettings(u));
       const copyBtn = scope.querySelector('[data-copy-url]');
       if(copyBtn){
         copyBtn.innerHTML = iconHtml('copy');
@@ -354,23 +405,93 @@ let adminMatchedId = null;
 // "Register a user" above the table. Wired per render (the row is rebuilt
 // each time). Continue re-submits whatever the row CURRENTLY holds with
 // force:true — the V3.4.2 semantics, unchanged.
+function adminRegistrationHaidhSetupMarkup(prefix, options){
+  // V4.2.15.2: this is deliberately the ONE Haidh-settings component for
+  // both registration and the Student Management Haidh pill. The caller
+  // supplies only an id prefix / current values; labels, ruling switch and
+  // control layout stay identical.
+  const idp = prefix || 'admin_new';
+  const opts = options || {};
+  const hidden = opts.open ? '' : ' hidden';
+  const title = opts.showTitle === false ? '' : '<div class="admin-register-haidh-title"><strong>Haidh setup</strong></div>';
+  const cycle = opts.cycle == null ? '' : String(opts.cycle);
+  const period = opts.period == null ? '' : String(opts.period);
+  const next = opts.next == null ? '' : String(opts.next);
+  return `<div class="admin-register-haidh-setup${hidden}" id="${idp}_haidh_setup">
+    ${title}
+    <div class="haidh-ruling-row">
+      <div class="switch-track" id="${idp}_haidh_ruling_switch">
+        <div class="switch-thumb"></div>
+        <button type="button" class="switch-option" data-value="hanafi">Hanafi</button>
+        <button type="button" class="switch-option" data-value="shafii">Shafi'i</button>
+      </div>
+    </div>
+    <p class="form-hint" style="margin-top:0;">Plans will be adjusted for haidh days. Can be adjusted for actual haidh at any time.</p>
+    <div class="settings-row"><label>Haidh cycle frequency (days)</label><input type="number" inputmode="numeric" id="${idp}_haidh_cycle_length" min="1" value="${cycle}"></div>
+    <div class="settings-row"><label>How many haidh days per cycle</label><input type="number" inputmode="numeric" id="${idp}_haidh_period_length" min="1" value="${period}"></div>
+    <div class="settings-row"><label>Next expected haidh day</label><input type="date" id="${idp}_haidh_next_expected" value="${next}"></div>
+  </div>`;
+}
+
 function adminRegistrationProfileValues(){
   const femaleEl = document.getElementById('admin_new_female');
   const haidhEl = document.getElementById('admin_new_haidh');
   const female = !!(femaleEl && femaleEl.checked);
-  return { gender: female ? 'F' : 'M', track_haidh: !!(female && haidhEl && haidhEl.checked) };
+  const trackHaidh = !!(female && haidhEl && haidhEl.checked);
+  const cycleEl = document.getElementById('admin_new_haidh_cycle_length');
+  const periodEl = document.getElementById('admin_new_haidh_period_length');
+  const nextEl = document.getElementById('admin_new_haidh_next_expected');
+  return {
+    gender: female ? 'F' : 'M',
+    track_haidh: trackHaidh,
+    haidh_ruling: trackHaidh ? adminNewHaidhRuling : null,
+    haidh_cycle_length: trackHaidh && cycleEl && cycleEl.value ? parseInt(cycleEl.value, 10) : null,
+    haidh_period_length: trackHaidh && periodEl && periodEl.value ? parseInt(periodEl.value, 10) : null,
+    haidh_next_expected: trackHaidh && nextEl ? nextEl.value : null
+  };
+}
+
+function adminRegistrationProfileError(profile){
+  if(!profile.track_haidh) return '';
+  if(!profile.haidh_cycle_length || !profile.haidh_period_length || !profile.haidh_next_expected){
+    return 'Please fill in Haidh cycle frequency, duration, and next expected day.';
+  }
+  const maxDuration = haidhOfficialMaxDuration(profile.haidh_ruling || 'hanafi');
+  if(profile.haidh_period_length > maxDuration){
+    return `Duration cannot exceed ${maxDuration} days for the selected ruling.`;
+  }
+  const minFrequency = haidhMinCycleFrequency(profile.haidh_period_length);
+  if(profile.haidh_cycle_length < minFrequency){
+    return `Haidh cycle frequency must be at least ${minFrequency} days for a ${profile.haidh_period_length}-day duration.`;
+  }
+  return '';
 }
 
 function wireAdminRegistrationProfile(){
   const femaleEl = document.getElementById('admin_new_female');
   const haidhEl = document.getElementById('admin_new_haidh');
   const wrap = document.getElementById('admin_new_haidh_wrap');
-  if(!femaleEl || !haidhEl || !wrap) return;
+  const setup = document.getElementById('admin_new_haidh_setup');
+  const setupRow = document.getElementById('adminNewHaidhSetupRow');
+  if(!femaleEl || !haidhEl || !wrap || !setup) return;
+
+  adminNewHaidhRuling = 'hanafi';
+  renderSwitch('admin_new_haidh_ruling_switch', adminNewHaidhRuling);
+  wireSwitch('admin_new_haidh_ruling_switch', (value) => {
+    adminNewHaidhRuling = value;
+    renderSwitch('admin_new_haidh_ruling_switch', adminNewHaidhRuling);
+  });
+
   const sync = () => {
-    wrap.classList.toggle('hidden', !femaleEl.checked);
-    if(!femaleEl.checked) haidhEl.checked = false;
+    const female = femaleEl.checked;
+    if(!female) haidhEl.checked = false;
+    wrap.classList.toggle('hidden', !female);
+    const open = female && haidhEl.checked;
+    setup.classList.toggle('hidden', !open);
+    if(setupRow) setupRow.classList.toggle('hidden', !open);
   };
   femaleEl.addEventListener('change', sync);
+  haidhEl.addEventListener('change', sync);
   sync();
 }
 
@@ -385,8 +506,11 @@ function wireAdminRegisterRow(){
     const name = document.getElementById('admin_new_name').value.trim();
     const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
     if(!name){ errEl.textContent = 'Enter a name.'; return; }
+    const profile = adminRegistrationProfileValues();
+    const profileError = adminRegistrationProfileError(profile);
+    if(profileError){ errEl.textContent = profileError; return; }
     try{
-      const result = await apiAdminRegisterStudent(name, whatsapp || null, true, adminRegistrationProfileValues());
+      const result = await apiAdminRegisterStudent(name, whatsapp || null, true, profile);
       await finishAdminRegisterUI(result);
     } catch(e){ errEl.textContent = "Couldn't register: " + e.message; }
   });
@@ -404,8 +528,11 @@ async function attemptAdminRegister(){
   const name = document.getElementById('admin_new_name').value.trim();
   const whatsapp = document.getElementById('admin_new_whatsapp').value.trim();
   if(!name){ errEl.textContent = 'Enter a name.'; return; }
+  const profile = adminRegistrationProfileValues();
+  const profileError = adminRegistrationProfileError(profile);
+  if(profileError){ errEl.textContent = profileError; return; }
   try{
-    const result = await apiAdminRegisterStudent(name, whatsapp || null, false, adminRegistrationProfileValues());
+    const result = await apiAdminRegisterStudent(name, whatsapp || null, false, profile);
     if(result.matched){
       adminMatchedId = result.matchedId;
       // V3.4.3 item 5: names the actual matched student — the list can
