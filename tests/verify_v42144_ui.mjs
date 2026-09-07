@@ -40,8 +40,9 @@ check('Quick Log Save and Detail continue to use the currently selected state da
   && /payload = \{ student_id: state\.student\.id, date: state\.date, segment_from:/.test(summary)
   && /openMaktabDay\([\s\S]{0,260}snapshot\.date, snapshot\.type\)/.test(summary));
 
-check('V4.2.15 Attendance quick action carries the selected Summary date into the full Attendance calendar',
-  /function maktabOpenQuickAttendance\(student, date\)\{\s*openMaktabAttendancePage\(student, date \|\| maktabTodayISO\(\)\);\s*\}/.test(day));
+check('V4.2.15.2 Attendance quick action carries the selected Summary date into the reused calendar popup',
+  /const selectedDate = date \|\| maktabTodayISO\(\)/.test(day)
+  && /renderHaidhDetailScreen\(\{ maktab: true, date: selectedDate \}\)/.test(day));
 
 check('the shared Attendance calendar keeps its native month/day selection instead of a second Quick Attendance date control',
   !/maktabQuickAttendanceDate/.test(day)
@@ -65,9 +66,9 @@ const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1]
 check('V4.2.14.4 Quick Log date feature remains present while page/cache carry forward together',
   versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
-check('quick-action files retain their last-edit headers while the shared navigation CSS advances in V4.2.15.1',
+check('quick-action files retain their last-edit headers while the later Attendance popup edits carry current headers',
   /^\/\* Hifzhelper build 4\.2\.15 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.15 \| js\/maktabDay\.js \*\//.test(day)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.1 \| css\/journal-table\.css \*\//.test(css));
 
 console.log(`${pass} passed, ${fail} failed`);

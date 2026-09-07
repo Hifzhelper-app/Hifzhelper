@@ -71,7 +71,7 @@ check('Attendance keeps active/logged, then Haidh-only, then absent/unresolved r
   && JSON.stringify(attendanceOrdered) === JSON.stringify(['A','B','C','D','E']));
 
 check('Attendance now uses current-week active-day count before Attendance percentage',
-  /const activeA = mkregActiveDaysForDates\(a, sortDates\);[\s\S]{0,180}const activeB = mkregActiveDaysForDates\(b, sortDates\);[\s\S]{0,180}const weeklyActive = activeB - activeA/.test(attendance)
+  /const activeA = mkregActiveDaysForDates\(a, currentWeekDates\);[\s\S]{0,180}const activeB = mkregActiveDaysForDates\(b, currentWeekDates\);[\s\S]{0,180}const weeklyActive = activeB - activeA/.test(attendance)
   && attendanceOrdered[0] === 'A' && attendanceOrdered[1] === 'B');
 
 check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, not calendar pink',

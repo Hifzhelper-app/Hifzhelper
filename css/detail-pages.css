@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.1 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.2 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2264,6 +2264,21 @@
 .log-detail-student-search-result:focus { background: var(--color-accent-soft, #D0DBE7); }
 .log-detail-student-search-empty { padding: 8px 12px; color: var(--color-ink-soft); font-size: 13px; }
 
+
+/* V4.2.15.2: the individual Maktab Student Summary now uses the same
+   white header-card language as Attendance, with rectangular navigation
+   actions in the header. */
+#screen-studentSummary .student-summary-header-row { position: relative; gap: var(--space-sm); }
+#screen-studentSummary .student-summary-header-row h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#screen-studentSummary .student-summary-header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); }
+#screen-studentSummary .student-summary-header-actions .maktab-cross-nav-btn { white-space: nowrap; }
+@media (max-width: 767px) {
+  #screen-studentSummary .student-summary-header-row { padding-left: var(--space-sm); padding-right: var(--space-sm); }
+  #screen-studentSummary .student-summary-header-actions { gap: 4px; }
+  #screen-studentSummary .student-summary-header-actions .maktab-cross-nav-btn { padding: 5px 7px; font-size: 10px; }
+  #screen-studentSummary .student-summary-header-actions .maktab-cross-nav-btn svg { width: 14px; height: 14px; }
+}
+
 /* ============================================================
    V4.2.11.2 — Attendance register grid. Student and existing Attendance %
    are the two sticky identity columns. Weekly date ranges are merged on row
@@ -2280,6 +2295,7 @@
 .mkregister-host { min-width: 0; }
 .mkregister-scroll {
   width: 100%; overflow: auto; -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y; overscroll-behavior-inline: contain; scroll-behavior: auto;
   background: var(--color-surface, #fff); border: 1px solid var(--color-table-border);
   border-radius: var(--radius-md); max-height: calc(100vh - var(--auth-band-height, 60px) - 125px);
 }

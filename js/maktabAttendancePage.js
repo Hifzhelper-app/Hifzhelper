@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.1 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.15.2 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.14).
 //
@@ -92,56 +92,77 @@ function mkregStudentWeekBand(student, dates){
   if(mkregHaidhDaysForDates(student, dates) > 0) return 1;
   return 2;
 }
-function mkregSortStudents(students, date, weeks, sortKey, sortDirection){
+function mkregTermDates(weeks, from, to){
+  const dates = [];
+  (weeks || []).forEach(w => (w && Array.isArray(w.columns) ? w.columns : []).forEach(c => {
+    const d = c && c.date;
+    if(!d) return;
+    if(from && d < from) return;
+    if(to && d > to) return;
+    dates.push(d);
+  }));
+  return dates;
+}
+function mkregSortStudents(students, date, weeks, sortKey, sortDirection, termFrom, termTo){
   const weekDates = mkregWeekDates(weeks, date);
   // Compatibility for isolated one-day callers/tests: when no week model is
   // supplied, the reference date itself is the current activity window.
-  const sortDates = weekDates.length ? weekDates : (date ? [date] : []);
+  const currentWeekDates = weekDates.length ? weekDates : (date ? [date] : []);
   const key = sortKey || 'default';
   const direction = sortDirection || (key === 'attendance' ? 'desc' : 'asc');
+  const termDates = mkregTermDates(weeks, termFrom, termTo);
+  const attendanceDates = termDates.length ? termDates : currentWeekDates;
   return (students || []).slice().sort((a, b) => {
     if(key === 'name'){
       const cmp = mkregCompareNames(a, b);
       return direction === 'desc' ? -cmp : cmp;
     }
     if(key === 'attendance'){
-      // Manual Attendance sort keeps the roster's factual-state precedence:
-      // current-week activity first, then Haidh, then absent/unresolved.
-      // Attendance % sorts within that state band, so a Haidh-only 100%
-      // never jumps ahead of a student with actual Maktab activity.
-      const bandA = mkregStudentWeekBand(a, sortDates);
-      const bandB = mkregStudentWeekBand(b, sortDates);
-      const band = bandA - bandB;
-      if(band) return band;
+      // V4.2.15.2: the manual Attendance sort is TERM-WIDE, not current-week.
+      // Activity is the first key, Attendance % the second, and alphabetic
+      // name the stable tie-break. The reverse state reverses the two numeric
+      // keys but keeps alphabetic ties readable A-Z.
+      const activeA = mkregActiveDaysForDates(a, attendanceDates);
+      const activeB = mkregActiveDaysForDates(b, attendanceDates);
+      if(activeA !== activeB) return direction === 'asc' ? activeA - activeB : activeB - activeA;
       const pctA = mkregAttendancePercent(a), pctB = mkregAttendancePercent(b);
       if(pctA !== pctB) return direction === 'asc' ? pctA - pctB : pctB - pctA;
       return mkregCompareNames(a, b);
     }
 
-    // DEFAULT — unchanged first level from V4.2.14.5.
-    const activeA = mkregActiveDaysForDates(a, sortDates);
-    const activeB = mkregActiveDaysForDates(b, sortDates);
+    // DEFAULT — unchanged first level from V4.2.14.5 / V4.2.15.1:
+    // current-week active-day count, then alphabetic ties, then Haidh A-Z,
+    // then absent/unresolved A-Z.
+    const activeA = mkregActiveDaysForDates(a, currentWeekDates);
+    const activeB = mkregActiveDaysForDates(b, currentWeekDates);
     const weeklyActive = activeB - activeA;
     if(weeklyActive) return weeklyActive;
-
-    // This is the V4.2.15.1 change: ties inside the active band are now
-    // alphabetical, NOT Attendance %. The same alphabetical tie rule applies
-    // after Haidh-only and absent-only banding.
     if(activeA > 0) return mkregCompareNames(a, b);
-    const band = mkregStudentWeekBand(a, sortDates) - mkregStudentWeekBand(b, sortDates);
+    const band = mkregStudentWeekBand(a, currentWeekDates) - mkregStudentWeekBand(b, currentWeekDates);
     if(band) return band;
     return mkregCompareNames(a, b);
   });
 }
 
+// V4.2.15.2: each sortable header is a 3-state control.
+// Name: default -> A-Z -> Z-A -> default.
+// Attendance: default -> term-wide high-to-low -> low-to-high -> default.
 function mkregSetSort(host, data, key){
+  const firstDirection = key === 'attendance' ? 'desc' : 'asc';
+  const secondDirection = firstDirection === 'asc' ? 'desc' : 'asc';
   if(mkregisterSortKey !== key){
     mkregisterSortKey = key;
-    mkregisterSortDirection = key === 'attendance' ? 'desc' : 'asc';
+    mkregisterSortDirection = firstDirection;
+  } else if(mkregisterSortDirection === firstDirection){
+    mkregisterSortDirection = secondDirection;
   } else {
-    mkregisterSortDirection = mkregisterSortDirection === 'asc' ? 'desc' : 'asc';
+    mkregisterSortKey = 'default';
+    mkregisterSortDirection = null;
   }
-  const sorted = mkregSortStudents(data.students || [], data.today, data.weeks || [], mkregisterSortKey, mkregisterSortDirection);
+  const sorted = mkregSortStudents(
+    data.students || [], data.today, data.weeks || [], mkregisterSortKey,
+    mkregisterSortDirection, data.from, data.to
+  );
   const tbody = host.querySelector('.mkregister-grid tbody');
   if(tbody){
     const byId = new Map(Array.from(tbody.querySelectorAll('tr[data-student-id]')).map(tr => [tr.dataset.studentId, tr]));
@@ -162,8 +183,14 @@ function mkregUpdateSortButtons(host){
     btn.classList.toggle('is-active', active);
     btn.classList.toggle('is-asc', active && mkregisterSortDirection === 'asc');
     btn.setAttribute('aria-pressed', active ? 'true' : 'false');
-    if(btn.dataset.sortKey === 'name') btn.setAttribute('aria-label', active && mkregisterSortDirection === 'asc' ? 'Sort students Z to A' : 'Sort students A to Z');
-    if(btn.dataset.sortKey === 'attendance') btn.setAttribute('aria-label', active && mkregisterSortDirection === 'desc' ? 'Sort Attendance lowest first' : 'Sort Attendance highest first');
+    if(btn.dataset.sortKey === 'name'){
+      btn.setAttribute('aria-label', !active ? 'Sort students A to Z' : (mkregisterSortDirection === 'asc' ? 'Sort students Z to A' : 'Return to default student order'));
+      btn.title = !active ? 'A-Z' : (mkregisterSortDirection === 'asc' ? 'Z-A' : 'Default order');
+    }
+    if(btn.dataset.sortKey === 'attendance'){
+      btn.setAttribute('aria-label', !active ? 'Sort Attendance highest first for the term' : (mkregisterSortDirection === 'desc' ? 'Sort Attendance lowest first for the term' : 'Return to default Attendance order'));
+      btn.title = !active ? 'Term: active days then Attendance %, highest first' : (mkregisterSortDirection === 'desc' ? 'Term: lowest first' : 'Default order');
+    }
   });
 }
 
@@ -212,7 +239,7 @@ async function mkregisterPaint(){
   mkregisterData = data;
 
   const weeks = data.weeks || [];
-  const students = mkregSortStudents(data.students || [], data.today, weeks);
+  const students = mkregSortStudents(data.students || [], data.today, weeks, 'default', null, data.from, data.to);
   const colCount = weeks.reduce((n, w) => n + (w.columns || []).length, 0);
   if(!colCount){
     host.innerHTML = '<p class="form-hint">No teaching days are configured for this period.</p>';

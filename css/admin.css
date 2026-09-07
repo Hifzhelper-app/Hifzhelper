@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.1 | css/admin.css */
+/* Hifzhelper build 4.2.15.2 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -455,3 +455,23 @@ button.secondary.admin-register-btn {
   }
 }
 
+
+
+/* V4.2.15.2 — Student Management now uses the exact Attendance-style
+   white header row at every width, not only a mobile imitation. */
+#screen-admin .admin-header-row { display:flex; align-items:center; gap:var(--space-sm); background:var(--color-surface); padding:var(--space-sm) var(--space-md); border-radius:var(--radius-md); margin-bottom:var(--space-md); }
+#screen-admin .admin-header-row h2 { margin:0; }
+#screen-admin .admin-header-row .screen-close-btn { margin-left:auto; }
+.admin-haidh-pill { display:inline-flex; align-items:center; justify-content:center; width:auto; min-width:64px; padding:5px 10px; border:1px solid var(--color-table-border); border-radius:999px; background:var(--color-page-bg); color:var(--color-ink-faint); font:inherit; font-size:12px; font-weight:700; cursor:pointer; opacity:.65; }
+.admin-haidh-pill.is-complete { background:var(--palette-evergreen); border-color:var(--palette-evergreen); color:#fff; opacity:1; }
+.admin-haidh-settings-card { width:min(620px, calc(100vw - 24px)); max-height:90vh; overflow:auto; }
+.admin-haidh-settings-head { display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-sm); }
+.admin-haidh-settings-head .maktab-name-pill { flex:1 1 auto; min-width:0; }
+.admin-haidh-settings-save { color:var(--palette-evergreen); }
+.admin-haidh-settings-save svg { width:28px; height:28px; }
+@media (max-width: 767px) {
+  .admin-row-fields tr { min-width:0; }
+  .admin-row-fields td[data-label="Haidh Settings"] { grid-area: haidh; }
+  .admin-table tr.admin-row-fields { grid-template-areas: 'name name name name name name' 'id id id wa wa wa' 'role role group group status status' 'haidh haidh haidh haidh haidh haidh'; }
+  .admin-row-fields td[data-label="Haidh Settings"] { padding-top:2px; }
+}

@@ -45,8 +45,9 @@ check('Quick Log Detail uses the detail icon+label beside the date and opens the
   && /maktabQuickLogDetails[\s\S]{0,350}openMaktabDay/.test(summary)
   && /\.maktab-quick-detail-icon \{[\s\S]{0,180}width: 42px;[\s\S]{0,80}height: 42px/.test(css));
 
-check('per-student Attendance action routes directly to the established Attendance calendar',
-  /function maktabOpenQuickAttendance\(student, date\)\{\s*openMaktabAttendancePage\(student, date \|\| maktabTodayISO\(\)\);\s*\}/.test(day)
+check('per-student Attendance action opens the quick popup powered by the established Attendance calendar',
+  /function maktabOpenQuickAttendance\(student, date\)/.test(day)
+  && /maktabQuickAttendanceCalendarHost'\)\.appendChild\(block\)/.test(day)
   && /maktabOpenQuickAttendance\(stu, date\)/.test(summary));
 
 check('existing Attendance calendar retains start/end selection plus Haidh and Absent writes',
@@ -56,9 +57,9 @@ check('existing Attendance calendar retains start/end selection plus Haidh and A
   && /client\.setDay\(d, 'predicted-absent'\)/.test(haidh));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('V4.2.15 functionality remains on the later V4.2.15.1 page/cache overlay',
-  versions.length > 0 && versions.every(v => v === '4.2.15.1')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.1'/.test(sw));
+check('V4.2.15 functionality remains on the later V4.2.15.2 page/cache overlay',
+  versions.length > 0 && versions.every(v => v === '4.2.15.2')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.2'/.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

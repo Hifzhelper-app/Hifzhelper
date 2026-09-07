@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14 | css/haidh.css */
+/* Hifzhelper build 4.2.15.2 | css/haidh.css */
 /* ============================================================
    Hifzhelper — Haidh calendar (V3.39)
    ============================================================ */
@@ -147,3 +147,38 @@
 .att-haidh-ranges-title { font-size: 13px; color: var(--color-ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
 .att-haidh-range { font-size: 14px; color: var(--color-ink); font-family: var(--font-mono); }
 #attHaidhBlock.hidden { display: none; }
+
+
+/* V4.2.15.2 — Maktab Summary Attendance Quick Action. It literally
+   reuses/moves the Student Attendance Haidh calendar DOM into this modal,
+   so calendar colours and selection behaviour cannot drift. */
+.maktab-quick-attendance-modal .maktab-quick-attendance-card {
+  width: min(760px, calc(100vw - 24px)); max-height: min(92vh, 900px); overflow: auto;
+}
+.maktab-quick-attendance-head { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.maktab-quick-attendance-head .maktab-name-pill { flex: 1 1 auto; min-width: 0; }
+.maktab-quick-attendance-head .maktab-quick-attendance-save { margin-left: auto; }
+.maktab-quick-attendance-detail { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: transparent; color: var(--color-ink); font: inherit; cursor: pointer; }
+.maktab-quick-attendance-detail svg { width: 30px; height: 30px; }
+.maktab-quick-attendance-modal #attHaidhBlock { width: 100%; max-width: none; margin: 0; padding: 0; border: 0; box-shadow: none; }
+.maktab-quick-attendance-modal #attHaidhBlock .att-haidh-heading,
+.maktab-quick-attendance-modal #attHaidhBlock .att-haidh-subtext,
+.maktab-quick-attendance-modal #attHaidhHistoryBtn { display: none; }
+.maktab-quick-attendance-modal #attHaidhBlock .screen-content { width: 100%; max-width: none; margin: 0; }
+.maktab-quick-attendance-modal #haidhRangeActions { display: none !important; }
+.maktab-quick-attendance-mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm); margin-top: var(--space-md); }
+.maktab-quick-attendance-mode { border: 1px solid var(--color-table-border); background: var(--color-surface); color: var(--color-ink); border-radius: var(--radius-md); padding: 10px 12px; font: inherit; font-weight: 700; cursor: pointer; }
+.maktab-quick-attendance-mode.is-active { background: var(--palette-evergreen); border-color: var(--palette-evergreen); color: #fff; }
+.maktab-quick-attendance-save { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 0; border: 0; background: transparent; color: var(--palette-evergreen); cursor: pointer; }
+.maktab-quick-attendance-save svg { width: 30px; height: 30px; }
+.maktab-quick-attendance-save:disabled { opacity: .4; cursor: default; }
+.maktab-quick-attendance-help { color: var(--color-ink-soft); font-size: 13px; margin: 4px 0 0; }
+@media (max-width: 767px) {
+  .maktab-quick-attendance-modal .maktab-quick-attendance-card { width: calc(100vw - 12px); padding: var(--space-sm); }
+  .maktab-quick-attendance-modal .haidh-cal-day { font-size: 14px; }
+}
+/* V4.2.15.2: Detail is promoted beside the popup heading, as in the
+   existing quick-detail treatment, instead of living below the actions. */
+.maktab-quick-attendance-tools {
+  display: flex; justify-content: flex-end; align-items: center; min-height: 48px;
+}

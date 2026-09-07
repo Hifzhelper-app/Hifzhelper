@@ -48,9 +48,11 @@ check('Student Summary attendance icon opens the same Attendance calendar on its
   /studentSummaryAttendanceBtn/.test(day)
   && /maktabOpenQuickAttendance\(student, (?:logCtxDate\(\)|quickDate)/.test(day));
 
-check('V4.2.15 retires the one-day Quick Attendance sheet in favour of the established calendar',
-  /function maktabOpenQuickAttendance\(student, date\)\{\s*openMaktabAttendancePage\(student, date \|\| maktabTodayISO\(\)\);\s*\}/.test(day)
-  && !/maktabQuickAttendanceSave|data-mqa-status/.test(day));
+check('V4.2.15.2 keeps the established Student Attendance calendar as the Quick Attendance popup engine',
+  /function maktabOpenQuickAttendance\(student, date\)/.test(day)
+  && /getElementById\('attHaidhBlock'\)/.test(day)
+  && /maktabQuickAttendanceCalendarHost'\)\.appendChild\(block\)/.test(day)
+  && /renderHaidhDetailScreen\(\{ maktab: true, date: selectedDate \}\)/.test(day));
 
 check('the established calendar owns Haidh/Absent range semantics and activity precedence',
   /tap 1 = start, tap 2 = end/.test(haidh)
@@ -58,8 +60,8 @@ check('the established calendar owns Haidh/Absent range semantics and activity p
   && /client\.setDay\(d, 'predicted-absent'\)/.test(haidh)
   && /Maktab activity is logged on this date and takes precedence over Haidh/.test(haidh));
 
-check('the Attendance quick action preserves the direct route to the full Attendance page',
-  /function maktabOpenQuickAttendance[\s\S]{0,180}openMaktabAttendancePage/.test(day));
+check('the Attendance popup Detail action preserves the route to the full Student Attendance page',
+  /maktabQuickAttendanceDetail[\s\S]{0,500}showScreen\('attendancePage', \{ maktab: true, date: snapshot\.date \}\)/.test(day));
 
 check('Attendance register H/h is about 25 percent smaller than V4.2.14',
   /mkregister-status-haidh-confirmed \{[^}]*font-size: 14px/.test(detailCss)

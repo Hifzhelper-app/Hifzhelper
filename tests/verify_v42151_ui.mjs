@@ -73,21 +73,22 @@ check('manual Student chevron sorts alphabetically in both directions',
   nameAsc[0] === 'Aaliyah Absent' && nameAsc.at(-1) === 'Zubeida Absent'
   && nameDesc[0] === 'Zubeida Absent' && nameDesc.at(-1) === 'Aaliyah Absent');
 
-const attDesc = ctx.mkregSortStudents(sample, today, weeks, 'attendance', 'desc').map(s => s.id);
-const attAsc = ctx.mkregSortStudents(sample, today, weeks, 'attendance', 'asc').map(s => s.id);
-check('manual Attendance sort keeps actual-activity students ahead of Haidh regardless of Haidh percentage',
-  Math.max(...['active3z','active4m','active3a'].map(id => attDesc.indexOf(id))) < Math.min(attDesc.indexOf('haidhA'), attDesc.indexOf('haidhz'))
-  && Math.max(...['active3z','active4m','active3a'].map(id => attAsc.indexOf(id))) < Math.min(attAsc.indexOf('haidhA'), attAsc.indexOf('haidhz')));
-check('manual Attendance chevron sorts percentage within each state band',
-  attDesc.indexOf('active3z') < attDesc.indexOf('active4m') && attDesc.indexOf('active4m') < attDesc.indexOf('active3a')
-  && attAsc.indexOf('active3a') < attAsc.indexOf('active4m') && attAsc.indexOf('active4m') < attAsc.indexOf('active3z'));
+const attDesc = ctx.mkregSortStudents(sample, today, weeks, 'attendance', 'desc', '2026-09-07', '2026-09-10').map(s => s.id);
+const attAsc = ctx.mkregSortStudents(sample, today, weeks, 'attendance', 'asc', '2026-09-07', '2026-09-10').map(s => s.id);
+check('manual Attendance sort is term-wide active-day count first, then Attendance percentage',
+  attDesc[0] === 'active4m'
+  && attDesc.indexOf('active3z') < attDesc.indexOf('active3a')
+  && attAsc[0] === 'absa');
+check('manual Attendance reverse state reverses numeric keys while alphabet breaks exact ties',
+  attAsc.indexOf('active3a') < attAsc.indexOf('active3z')
+  && /return mkregCompareNames\(a, b\);/.test(attendance));
 
 check('Personal Journal Haaidha confirmation is forced onto the same heading row as the text',
   /<label class="haidh-heading-check">\s*<h2>Haaidha<\/h2>\s*<input type="checkbox" id="haaidha_checkbox">/.test(html)
   && /#section-haidh\.detail-page \.haidh-heading-check\s*\{[\s\S]{0,150}display: inline-flex[\s\S]{0,120}align-items: center/.test(settingsCss));
 
 check('Student Management Haaidha selection reveals the Personal-Journal-style Haidh setup controls',
-  /adminRegistrationHaidhSetupMarkup\(\)[\s\S]{0,900}Hanafi[\s\S]{0,180}Shafi'i[\s\S]{0,420}Haidh cycle frequency \(days\)[\s\S]{0,240}How many haidh days per cycle[\s\S]{0,240}Next expected haidh day/.test(admin)
+  /function adminRegistrationHaidhSetupMarkup\(prefix, options\)[\s\S]{0,1100}Hanafi[\s\S]{0,180}Shafi'i[\s\S]{0,420}Haidh cycle frequency \(days\)[\s\S]{0,300}How many haidh days per cycle[\s\S]{0,300}Next expected haidh day/.test(admin)
   && /haidhEl\.addEventListener\('change', sync\)/.test(admin)
   && /setup\.classList\.toggle\('hidden', !open\)/.test(admin)
   && /admin-register-check admin-register-haidh-check hidden[^>]*><span>Haaidha<\/span><input type="checkbox" id="admin_new_haidh">/.test(admin));
@@ -106,12 +107,12 @@ check('registration API carries the full Haidh setup and backend stores it with 
   && /INSERT INTO students \(id, name, role, created_date, active, whatsapp_number, gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected\)/.test(worker)
   && /INSERT INTO attendance \(student_id, date, status\) VALUES \(\?, \?, 'predicted-haidh'\)/.test(worker));
 
-check('all changed served assets advance together to V4.2.15.1',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.1')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.1'/.test(sw)
-  && /^\/\* Hifzhelper build 4\.2\.15\.1 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
-  && /^\/\* Hifzhelper build 4\.2\.15\.1 \| js\/adminPage\.js \*\//.test(admin)
-  && /^\/\* Hifzhelper build 4\.2\.15\.1 \| css\/admin\.css \*\//.test(adminCss));
+check('later V4.2.15.2 overlay keeps page/cache aligned and bumps only re-edited files',
+  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.2')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.2'/.test(sw)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/adminPage\.js \*\//.test(admin)
+  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/admin\.css \*\//.test(adminCss));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

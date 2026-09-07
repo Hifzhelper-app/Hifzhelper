@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15 | js/maktabDay.js */
+/* Hifzhelper build 4.2.15.2 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -54,16 +54,131 @@ function openMaktabAttendancePage(student, date){
 }
 
 // ============================================================
-// V4.2.15 — Attendance quick action = the existing Student Attendance calendar.
+// V4.2.15.2 — Attendance Quick Action POPUP.
 //
-// The temporary V4.2.14 single-day Present | Haidh | Absent sheet is retired.
-// Tapping the attendance icon now opens the established Attendance page at the
-// selected date, so the teacher uses the SAME calendar behavior as Student
-// Attendance: pick a single date (same start/end) or a start/end range, then
-// apply Haidh or Absent subject to the existing attendance/Haidh rules.
+// Reuse means reuse: the popup temporarily moves the real #attHaidhBlock
+// (the Student Attendance calendar) into the modal and lets
+// js/haidhDetailScreen.js continue to own day selection, month navigation,
+// clearing existing Haidh marks, and the authoritative /mark-range rules.
+// The popup adds only the quick-action choice (Haidh vs Absent) + Save.
 // ============================================================
-function maktabOpenQuickAttendance(student, date){
-  openMaktabAttendancePage(student, date || maktabTodayISO());
+let maktabQuickAttendanceState = null;
+
+function maktabQuickAttendanceBounds(){
+  if(typeof haidhPendingRangeBounds !== 'function') return null;
+  return haidhPendingRangeBounds(); // one tap may be saved as a single day
+}
+function maktabQuickAttendanceIsOpen(){ return !!maktabQuickAttendanceState; }
+function maktabQuickAttendanceSelectionMode(){
+  return maktabQuickAttendanceState ? maktabQuickAttendanceState.mode : null;
+}
+function maktabQuickAttendanceSetMode(mode){
+  if(!maktabQuickAttendanceState) return;
+  maktabQuickAttendanceState.mode = mode;
+  document.querySelectorAll('#maktabQuickAttendanceSheet [data-mqa-mode]').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.mqaMode === mode);
+    btn.setAttribute('aria-pressed', btn.dataset.mqaMode === mode ? 'true' : 'false');
+  });
+}
+function maktabCloseQuickAttendance(options){
+  const state = maktabQuickAttendanceState;
+  if(!state) return;
+  if(typeof haidhClearPendingRange === 'function') haidhClearPendingRange();
+  const block = document.getElementById('attHaidhBlock');
+  const page = document.getElementById('screen-attendancePage');
+  if(block && page) page.appendChild(block);
+  if(state.overlay && state.overlay.parentNode) state.overlay.remove();
+  maktabQuickAttendanceState = null;
+  if(!(options && options.keepContext)){
+    if(state.priorContext){
+      setMaktabLogContext(state.priorContext.student, state.priorContext.date, { readOnly: state.priorContext.readOnly });
+    } else {
+      clearLogContext();
+    }
+  }
+}
+async function maktabSaveQuickAttendance(){
+  const state = maktabQuickAttendanceState;
+  if(!state) return;
+  const err = document.getElementById('maktabQuickAttendanceError');
+  if(err) err.textContent = '';
+  const bounds = maktabQuickAttendanceBounds();
+  if(!bounds){ if(err) err.textContent = 'Select a date or date range.'; return; }
+  if(!state.mode){ if(err) err.textContent = 'Choose Mark as Haidh or Mark Absent.'; return; }
+  const save = document.getElementById('maktabQuickAttendanceSave');
+  if(save) save.disabled = true;
+  try{
+    const client = haidhCalClient();
+    if(state.mode === 'haidh'){
+      // Exact Student Attendance / Worker Haidh behaviour and validation.
+      await client.markRange(bounds[0], bounds[1]);
+    } else {
+      // Quick Attendance records a factual absence for every selected day.
+      // Logged activity is stronger and cannot be replaced by an absence.
+      for(let d = bounds[0]; d <= bounds[1]; d = haidhAddDaysISO(d, 1)){
+        if(typeof haidhCalAttendance !== 'undefined' && haidhCalAttendance[d] === 'activity'){
+          throw new Error(`Maktab activity is already logged on ${d} and takes precedence over absence.`);
+        }
+      }
+      // Explicit absence is stop evidence for the normalized Haidh run.
+      for(let d = bounds[0]; d <= bounds[1]; d = haidhAddDaysISO(d, 1)){
+        await client.setDay(d, 'absent');
+      }
+    }
+    maktabCloseQuickAttendance();
+  } catch(e){
+    if(err) err.textContent = e.message;
+    if(save) save.disabled = false;
+  }
+}
+async function maktabOpenQuickAttendance(student, date){
+  if(maktabQuickAttendanceState) maktabCloseQuickAttendance();
+  const selectedDate = date || maktabTodayISO();
+  const priorContext = (typeof logCtxIsMaktab === 'function' && logCtxIsMaktab()) ? {
+    student: { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() },
+    date: logCtxDate(), readOnly: typeof logCtxReadOnly === 'function' ? logCtxReadOnly() : false
+  } : null;
+  setMaktabLogContext(student, selectedDate);
+  const block = document.getElementById('attHaidhBlock');
+  if(!block){ openMaktabAttendancePage(student, selectedDate); return; }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay maktab-quick-attendance-modal';
+  overlay.id = 'maktabQuickAttendanceSheet';
+  overlay.innerHTML = `<div class="modal-card maktab-quick-attendance-card" role="dialog" aria-modal="true" aria-label="Attendance quick action for ${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">
+    <div class="maktab-quick-attendance-head">
+      <strong>Attendance :</strong>
+      <span class="maktab-name-pill" title="${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}</span>
+        <button type="button" class="maktab-quick-attendance-save" id="maktabQuickAttendanceSave" aria-label="Save attendance" title="Save">${iconHtml('save')}</button>
+      <button type="button" class="close-btn" id="maktabQuickAttendanceClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="maktab-quick-attendance-tools">
+      <button type="button" class="maktab-quick-attendance-detail" id="maktabQuickAttendanceDetail" aria-label="Open full Student Attendance page" title="Detail"><span>${iconHtml('detail')}</span><span>Detail</span></button>
+    </div>
+    <div id="maktabQuickAttendanceCalendarHost"></div>
+    <p class="maktab-quick-attendance-help">Select one date, or select a start and end date.</p>
+    <div class="maktab-quick-attendance-mode-row">
+      <button type="button" class="maktab-quick-attendance-mode" data-mqa-mode="haidh" aria-pressed="false">Mark as Haidh</button>
+      <button type="button" class="maktab-quick-attendance-mode" data-mqa-mode="absent" aria-pressed="false">Mark Absent</button>
+    </div>
+    <div class="form-error" id="maktabQuickAttendanceError"></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#maktabQuickAttendanceCalendarHost').appendChild(block);
+  maktabQuickAttendanceState = { student, date: selectedDate, mode: null, overlay, priorContext };
+
+  document.getElementById('maktabQuickAttendanceClose').addEventListener('click', () => maktabCloseQuickAttendance());
+  overlay.addEventListener('click', e => { if(e.target === overlay) maktabCloseQuickAttendance(); });
+  document.querySelectorAll('#maktabQuickAttendanceSheet [data-mqa-mode]').forEach(btn => btn.addEventListener('click', () => maktabQuickAttendanceSetMode(btn.dataset.mqaMode)));
+  document.getElementById('maktabQuickAttendanceSave').addEventListener('click', maktabSaveQuickAttendance);
+  document.getElementById('maktabQuickAttendanceDetail').addEventListener('click', () => {
+    const snapshot = maktabQuickAttendanceState;
+    maktabCloseQuickAttendance({ keepContext: true });
+    showScreen('attendancePage', { maktab: true, date: snapshot.date });
+  });
+
+  resetHaidhCalendarVisualState();
+  await renderHaidhDetailScreen({ maktab: true, date: selectedDate });
 }
 
 // V3.76.0 opener, kept as the route in: the calendar has no standalone
@@ -210,6 +325,8 @@ async function renderStudentSummaryScreen(){
   const tbody = document.getElementById('studentSummaryTbody');
   if(!tbody) return;
   document.getElementById('studentSummaryTitle').textContent = logCtxStudentName() || 'Summary';
+  const headerIcon = document.getElementById('studentSummaryHeaderIcon');
+  if(headerIcon) headerIcon.innerHTML = iconHtml('maktab');
   const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
   const quickDate = logCtxDate() || maktabTodayISO();
   const quickLogButtons = Array.from(document.querySelectorAll('#screen-studentSummary [data-ss-quick-type]'));
@@ -222,6 +339,16 @@ async function renderStudentSummaryScreen(){
     attBtn.setAttribute('aria-label', 'Attendance');
     attBtn.title = 'Attendance';
     attBtn.onclick = () => maktabOpenQuickAttendance(student, quickDate);
+  }
+  const summaryBtn = document.getElementById('studentSummaryMaktabSummaryBtn');
+  if(summaryBtn){
+    summaryBtn.innerHTML = iconHtml('maktab') + '<span>Maktab Summary</span>';
+    summaryBtn.onclick = () => showScreen('maktabSummary');
+  }
+  const ajzaaBtn = document.getElementById('studentSummaryAjzaaBtn');
+  if(ajzaaBtn){
+    ajzaaBtn.innerHTML = '<span>Ajzaa Completed</span>';
+    ajzaaBtn.onclick = () => openMaktabStudentSetup({ id: logCtxStudentId(), name: logCtxStudentName() });
   }
   const closeBtn = document.getElementById('studentSummaryCloseBtn');
   if(closeBtn) closeBtn.onclick = () => showScreen('maktabSummary');
