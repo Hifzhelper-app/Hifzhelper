@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.4 | css/admin.css */
+/* Hifzhelper build 4.2.15.7 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -185,6 +185,16 @@ button.secondary.danger {
 .admin-toolbar { display: flex; gap: var(--space-sm); align-items: center; margin-bottom: var(--space-md); }
 .admin-toolbar #admin_search { flex: 1 1 auto; margin: 0; }
 .admin-toolbar .admin-add-row { flex: 0 0 auto; width: auto; margin: 0; padding: 8px 16px; }
+/* V4.2.15.7: Register a user is a primary management action, not a
+   dashed add-placeholder. */
+.admin-toolbar #adminRegisterOpenBtn {
+  border: 1px solid var(--palette-evergreen);
+  background: var(--palette-evergreen);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+}
+.admin-toolbar #adminRegisterOpenBtn:hover { filter: brightness(.96); }
 .admin-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
 .admin-table-head thead th {
   background: var(--color-table-header-log);

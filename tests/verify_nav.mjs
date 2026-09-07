@@ -59,10 +59,12 @@ check('admin counts as a teaching profile (isTeacherOrAbove parity)',
 // V3.80.0: the item became Attendance, for EVERY student — the
 // trackHaidh nav gate went with the rename; the hidePJ gate remains.
 check('the attendance item is primary-nav for every student and role-gated by destination only',
-  /if\(isTeachingProfile\(\)\) g1\.push\(MAKTAB_ATTENDANCE_NAV_ITEM\);[\s\S]*else g1\.push\(ATTENDANCE_NAV_ITEM\)/.test(auth)
+  /if\(!hidePJ\)[\s\S]{0,500}ATTENDANCE_NAV_ITEM/.test(auth)
+  && /else \{[\s\S]{0,260}MAKTAB_ATTENDANCE_NAV_ITEM/.test(auth)
   && !/currentUser\.trackHaidh &&/.test(auth));
 check('Maktab Journal goes to students, not teaching profiles',
-  /if\(!hidePJ\) g3\.push\(MAKTAB_JOURNAL_NAV_ITEM\)/.test(auth));
+  /if\(!hidePJ\)[\s\S]{0,500}MAKTAB_JOURNAL_NAV_ITEM/.test(auth)
+  && !/else \{[\s\S]{0,400}MAKTAB_JOURNAL_NAV_ITEM/.test(auth));
 // It is only safe on a student's nav because it is server-scoped to her own
 // rows. If that ever stops being true this item must come off the nav again.
 check('the student Maktab Journal sends no student_id — it cannot ask for anyone else',

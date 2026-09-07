@@ -90,14 +90,15 @@ check('calendar and term edits invalidate cache and refresh the embedded viewer 
   (settings.match(/renderMsetEmbeddedCalendar\(\)/g)||[]).length >= 5
   && /apiConfirmCalList\(year, type, rows\)[\s\S]{0,180}mcalInvalidate\(\)[\s\S]{0,180}renderMsetEmbeddedCalendar/.test(settings));
 
-check('V4.2.15.4 is frontend-only: latest migration remains 0029',
-  fs.readdirSync(path.join(ROOT,'worker/migrations')).sort().at(-1).startsWith('0029_'));
+check('V4.2.15.4 itself remains frontend-only; the only later schema addition is the V4.2.15.7 Zoom-link migration',
+  fs.existsSync(path.join(ROOT,'worker/migrations/0030_hifz_class_zoom_link.sql'))
+  && /V4\.2\.15\.7/.test(read('worker/migrations/0030_hifz_class_zoom_link.sql')));
 
 check('V4.2.15.4 untouched files retain their last-edit headers while Calendar carries its later fix header',
-  /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(att)
+  /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(att)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/auth\.js \*\//.test(auth)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabSettings\.js \*\//.test(settings)
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/auth\.js \*\//.test(auth)
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabSettings\.js \*\//.test(settings)
   && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(cal));
 
 console.log(`${pass} passed, ${fail} failed`);

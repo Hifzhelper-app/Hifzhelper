@@ -50,11 +50,12 @@ check('individual Attendance removes the separate page title and puts Attendance
   && /`Attendance — \$\{logCtxStudentName\(\)\}`/.test(haidh));
 check('individual Attendance header is capped to the same desktop width as its cards',
   /#screen-attendancePage > \.juz-tracker-header-row[\s\S]*@media \(min-width: 768px\)[\s\S]*width: 50%/.test(css));
-check('admin primary menu order remains Home, Maktab, Attendance, Student Management, Maktab Settings; standalone Calendar is retired in V4.2.15.4',
-  /if\(isTeachingProfile\(\)\) g1\.push\(MAKTAB_SUMMARY_NAV_ITEM\);[\s\S]*g1\.push\(MAKTAB_ATTENDANCE_NAV_ITEM\);[\s\S]*g1\.push\(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM\);/.test(auth)
+check('admin primary menu order remains Home, Maktab, Attendance, User Management, Maktab Settings; standalone Calendar is retired',
+  /g1 = \[\{ id: 'home',[\s\S]{0,240}MAKTAB_SUMMARY_NAV_ITEM, MAKTAB_ATTENDANCE_NAV_ITEM\]/.test(auth)
+  && /if\(currentUser\.role === 'admin'\) g1\.push\(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM\)/.test(auth)
   && !/g1\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
-check('Attendance is not duplicated later and Calendar is absent from menu/Home assembly',
-  /!\['home', 'sih', 'juzTracker', 'attendancePage'\]\.includes\(x\.id\)/.test(auth)
+check('student Attendance is in the Personal Journal primary group and Calendar is absent from menu/Home assembly',
+  /if\(!hidePJ\)[\s\S]{0,500}ATTENDANCE_NAV_ITEM[\s\S]{0,300}MAKTAB_JOURNAL_NAV_ITEM/.test(auth)
   && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth)
   && !/out\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
 const v42112Page = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];

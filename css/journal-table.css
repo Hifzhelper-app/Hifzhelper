@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.7 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -509,6 +509,22 @@
   background: var(--palette-lavender, #E3DADE);
   border-radius: 4px;
   padding-left: 6px;
+}
+
+/* V4.2.15.7: Personal Journal non-Maktab entries are real pills, not
+   tiny inline highlights. Fixed width + normal control height makes the
+   personal entries read consistently down Sabaq / Sabaq Dhor / Dhor. */
+#screen-journal .journal-table .journal-cell-text.pj-personal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 108px;
+  max-width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: 999px;
+  text-align: center;
 }
 
 /* the popup's read-only maktab rows: same shape as the tappable ones,

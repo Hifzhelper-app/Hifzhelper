@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.6 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.7 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2502,6 +2502,49 @@
   }
   .mkregister-day-head { padding-left: 1px; padding-right: 1px; letter-spacing: 0; }
   .mkregister-cell { padding-left: 2px; padding-right: 2px; }
+}
+
+/* V4.2.15.7: TRUE mobile Attendance roll-up. The prior 38px solution
+   only narrowed the Attendance <th>; Safari still reserved that table
+   column. The closed state now removes both its header and body cells from
+   table layout. Its reveal button is anchored inside the Student header,
+   so the first week starts immediately beside Student. */
+@media (max-width: 767px) {
+  .mkregister-student-head-inner { position: relative; width: 100%; box-sizing: border-box; }
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-student-head-inner { padding-right: 32px; }
+  .mkregister-percent-toggle-collapsed {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
+  }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-toggle-collapsed { display: none; }
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-percent-head,
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-percent-cell {
+    display: none !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-head {
+    display: table-cell !important;
+    left: 128px;
+    width: 68px;
+    min-width: 68px;
+    max-width: 68px;
+  }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-cell {
+    display: table-cell !important;
+    left: 128px;
+    width: 68px;
+    min-width: 68px;
+    max-width: 68px;
+  }
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-percent-toggle-collapsed { display: inline-flex; }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-toggle-expanded { display: inline-flex; }
 }
 
 /* V4.2.15.5: the per-student Maktab Summary is the current calendar month. */

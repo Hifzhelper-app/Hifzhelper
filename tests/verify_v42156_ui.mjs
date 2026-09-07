@@ -54,10 +54,10 @@ check('Haidh Settings save keeps shared biological validation and regenerates pr
   && /DELETE FROM attendance WHERE student_id = \? AND status = 'predicted-haidh'/.test(worker)
   && /ON CONFLICT\(student_id, date\) DO NOTHING/.test(worker));
 
-check('mobile collapsed Attendance column header truly rolls up to a narrow icon-only control',
-  /\.mkregister-grid:not\(\.mkregister-percent-open\) \.mkregister-percent-head\s*\{[\s\S]{0,180}width: 38px/.test(css)
-  && /\.mkregister-grid:not\(\.mkregister-percent-open\) \.mkregister-percent-head \.mkregister-sort-btn \{ display: none; \}/.test(css)
-  && /\.mkregister-grid\.mkregister-percent-open \.mkregister-percent-head\s*\{[\s\S]{0,120}width: 68px/.test(css));
+check('mobile collapsed Attendance column is structurally removed and its icon moves into the Student header',
+  /mkregister-student-head-inner[\s\S]{0,520}mkregister-percent-toggle-collapsed/.test(read('js/maktabAttendancePage.js'))
+  && /mkregister-grid:not\(\.mkregister-percent-open\) \.mkregister-percent-head,[\s\S]{0,160}\.mkregister-percent-cell[\s\S]{0,180}display: none !important/.test(css)
+  && /mkregister-grid\.mkregister-percent-open \.mkregister-percent-head[\s\S]{0,180}width: 68px/.test(css));
 
 check('Student Summary no longer contains the redundant Maktab Summary button',
   !/id="studentSummaryMaktabSummaryBtn"/.test(html)
@@ -84,20 +84,20 @@ check('visible Student Management wording is renamed to User Management',
   && !/<h2>Student Management<\/h2>/.test(html));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page asset keys and service-worker cache are aligned on V4.2.15.6',
-  versions.length > 0 && versions.every(v => v === '4.2.15.6')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.6'/.test(sw));
+check('page asset keys and service-worker cache are aligned on V4.2.15.7',
+  versions.length > 0 && versions.every(v => v === '4.2.15.7')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.7'/.test(sw));
 
 check('only actually edited representative files carry the V4.2.15.6 last-edit header',
   /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/haidhDetailScreen\.js \*\//.test(haidh)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/auth\.js \*\//.test(auth)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| css\/detail-pages\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(read('js/maktabAttendancePage.js')));
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/auth\.js \*\//.test(auth)
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/detail-pages\.css \*\//.test(css)
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(read('js/maktabAttendancePage.js')));
 
-check('V4.2.15.6 requires no D1 schema migration',
-  fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
+check('V4.2.15.6 itself required no migration; V4.2.15.7 adds only the Zoom-link migration',
+  /ALTER TABLE maktab_settings ADD COLUMN zoom_link TEXT/.test(read('worker/migrations/0030_hifz_class_zoom_link.sql')));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

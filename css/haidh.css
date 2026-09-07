@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | css/haidh.css */
+/* Hifzhelper build 4.2.15.7 | css/haidh.css */
 /* ============================================================
    Hifzhelper — Haidh calendar (V3.39)
    ============================================================ */
@@ -231,3 +231,33 @@
   .maktab-quick-attendance-identity { flex-basis: 100%; }
   .maktab-quick-attendance-controls { width: 100%; margin-left: 0; justify-content: flex-end; }
 }
+/* V4.2.15.7: Attendance Quick Action — Detail / Save / Close icon tops
+   share one horizontal row on every screen size. The identity stays to the
+   left; controls never wrap into a second row on phones. */
+.maktab-quick-attendance-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+.maktab-quick-attendance-identity {
+  flex: none;
+  min-width: 0;
+  width: 100%;
+}
+.maktab-quick-attendance-controls {
+  display: grid;
+  grid-template-columns: 52px 52px 42px;
+  align-items: start;
+  justify-content: end;
+  gap: 10px;
+  width: auto;
+  margin-left: 0;
+}
+.maktab-quick-attendance-controls > button { margin-top: 0; align-self: start; justify-self: center; }
+@media (max-width: 767px) {
+  .maktab-quick-attendance-identity { flex-basis: auto; }
+  .maktab-quick-attendance-controls { width: auto; margin-left: 0; justify-content: end; }
+}
+
