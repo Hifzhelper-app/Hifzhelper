@@ -53,10 +53,11 @@ check('Attendance register remains current-week focused but is freely horizontal
   /requestAnimationFrame\(focusCurrentWeek\)/.test(attendance)
   && /\.mkregister-scroll\s*\{[\s\S]{0,160}overflow: auto[\s\S]{0,180}touch-action: pan-x pan-y/.test(detailCss));
 
-check('Student and Attendance chevrons are both three-state controls returning to default on third tap',
-  /Name: default -> A-Z -> Z-A -> default/.test(attendance)
-  && /Attendance: default -> term-wide high-to-low -> low-to-high -> default/.test(attendance)
-  && /else \{\s*mkregisterSortKey = 'default';\s*mkregisterSortDirection = null;\s*\}/.test(attendance));
+check('later V4.2.15.4 keeps both chevrons but makes them two-way and moves reset-to-default to the dedicated Sort pill',
+  /TWO-WAY only/.test(attendance)
+  && /mkregisterSortDirection = mkregisterSortDirection === firstDirection \? secondDirection : firstDirection/.test(attendance)
+  && /function mkregResetSort\(host, data\)[\s\S]{0,120}mkregisterSortKey = 'default'/.test(attendance)
+  && /id="mkregisterDefaultSortBtn"/.test(html));
 
 const sortStart = attendance.indexOf('function mkregMondayOf');
 const sortEnd = attendance.indexOf('// V4.2.11.1+', sortStart);
@@ -115,7 +116,7 @@ const v42152CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || 
 check('V4.2.15.2 behaviour survives later page/cache overlays and its touched files retain their last-edit headers',
   v42152PageVersions.length > 0 && !!v42152CacheVersion && v42152PageVersions.every(v => v === v42152CacheVersion)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
+  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/haidh\.css \*\//.test(haidhCss));
 
 console.log(`${pass} passed, ${fail} failed`);

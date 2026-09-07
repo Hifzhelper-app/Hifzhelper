@@ -69,8 +69,8 @@ check('V4.2.15.1 changes equal active-day count tie-breaker from Attendance perc
   ctx.mkregSortStudents(tied, today, weeks)[0].id === 'pct80');
 check('render path passes the week model into the sort',
   /mkregSortStudents\(data\.students \|\| \[\], data\.today, weeks, 'default', null, data\.from, data\.to\)/.test(attendance));
-check('Maktab Attendance served file carries the current V4.2.15.2 last-edit header',
-  /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
+check('Maktab Attendance served file carries the current V4.2.15.4 last-edit header',
+  /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('page and service-worker cache versions agree after later overlays',

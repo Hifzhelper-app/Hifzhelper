@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/maktabSettings.js */
+/* Hifzhelper build 4.2.15.4 | js/maktabSettings.js */
 // ============================================================
 // Hifzhelper -- Maktab settings screen (V3.65.0, delivery (g);
 // restructured V3.79.0 into a THREE-CARD RAIL like the day view —
@@ -173,6 +173,20 @@ async function renderMaktabSettingsScreen(){
       <select id="mset_cal_year" aria-label="Year"></select>
     </div>
 
+    <!-- V4.2.15.4: the former standalone nav Calendar now lives here,
+         directly under the Calendar/year heading. Terms and staged editors
+         remain below it on the same settings card. -->
+    <div class="mset-embedded-calendar">
+      <div class="mcal-month-row">
+        <button type="button" class="secondary" id="msetMcalPrevBtn" aria-label="Previous month">&lsaquo;</button>
+        <span id="msetMcalMonthLabel"></span>
+        <button type="button" class="secondary" id="msetMcalNextBtn" aria-label="Next month">&rsaquo;</button>
+      </div>
+      <div class="mcal-weekdays" id="msetMcalWeekdays"></div>
+      <div class="mcal-grid" id="msetMcalGrid"></div>
+      <div class="mcal-list mset-mcal-list" id="msetMcalList"></div>
+    </div>
+
     <!-- V3.94.0 (user): the Terms label is gone -->
     <div class="mset-terms" id="msetTermsList"></div>
     <button type="button" class="secondary" id="mset_term_add_big">Add term</button>
@@ -185,6 +199,8 @@ async function renderMaktabSettingsScreen(){
     </div>
     <div class="form-error" id="mset_cal_error"></div>`;
   wireMsetCalendarCard();
+  if(typeof wireMsetEmbeddedCalendar === 'function') wireMsetEmbeddedCalendar();
+  if(typeof renderMsetEmbeddedCalendar === 'function') renderMsetEmbeddedCalendar();
   renderMsetTerms();
 
   renderMsetTimezoneControl();
@@ -494,12 +510,12 @@ async function renderMsetTerms(){
     row.querySelectorAll('input').forEach(inp => inp.addEventListener('change', async () => {
       const err = document.getElementById('mset_term_error');
       err.textContent = '';
-      try{ await apiUpdateMaktabTerm(t.id, { [inp.dataset.f]: inp.value }); mcalInvalidate(); }
+      try{ await apiUpdateMaktabTerm(t.id, { [inp.dataset.f]: inp.value }); mcalInvalidate(); if(typeof renderMsetEmbeddedCalendar === 'function') await renderMsetEmbeddedCalendar(); }
       catch(e){ err.textContent = e.message; await renderMsetTerms(); }
     }));
     row.querySelector('.mset-list-x').addEventListener('click', async () => {
       if(!confirm(`Delete ${t.name}?`)) return;
-      try{ await apiDeleteMaktabTerm(t.id); mcalInvalidate(); } catch(e){}
+      try{ await apiDeleteMaktabTerm(t.id); mcalInvalidate(); if(typeof renderMsetEmbeddedCalendar === 'function') await renderMsetEmbeddedCalendar(); } catch(e){}
       await renderMsetTerms();
     });
     host.appendChild(row);
@@ -517,6 +533,7 @@ async function msetAddTerm(){
   try{
     await apiCreateMaktabTerm({ name: 'New term', term_from: today, term_to: today });
     mcalInvalidate();
+    if(typeof renderMsetEmbeddedCalendar === 'function') await renderMsetEmbeddedCalendar();
     await renderMsetTerms();
   } catch(e){ err.textContent = e.message; }
 }
@@ -550,6 +567,7 @@ function wireMsetCalendarCard(){
   const thisYear = parseInt(appTodayISO().slice(0, 4));
   yearSel.innerHTML = Array.from({ length: 8 }, (_, i) => thisYear - 1 + i)
     .map(y => `<option value="${y}"${y === thisYear ? ' selected' : ''}>${y}</option>`).join('');
+  yearSel.addEventListener('change', () => { if(typeof setMsetEmbeddedCalendarYear === 'function') setMsetEmbeddedCalendarYear(yearSel.value); });
   document.getElementById('mset_term_add_big').addEventListener('click', msetAddTerm);
   document.getElementById('mset_term_add').addEventListener('click', msetAddTerm);
   document.getElementById('mset_cal_islamic').addEventListener('click', () => openCalStagePopup('islamic'));
@@ -645,6 +663,7 @@ async function openCalStagePopup(type){
     try{
       await apiConfirmCalList(year, type, rows);
       mcalInvalidate();
+      if(typeof renderMsetEmbeddedCalendar === 'function') await renderMsetEmbeddedCalendar();
       close();
     } catch(e){
       stageErr.textContent = e.message;

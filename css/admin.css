@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | css/admin.css */
+/* Hifzhelper build 4.2.15.4 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -465,10 +465,14 @@ button.secondary.admin-register-btn {
 .admin-haidh-pill { display:inline-flex; align-items:center; justify-content:center; width:auto; min-width:64px; padding:5px 10px; border:1px solid var(--color-table-border); border-radius:999px; background:var(--color-page-bg); color:var(--color-ink-faint); font:inherit; font-size:12px; font-weight:700; cursor:pointer; opacity:.65; }
 .admin-haidh-pill.is-complete { background:var(--palette-evergreen); border-color:var(--palette-evergreen); color:#fff; opacity:1; }
 .admin-haidh-settings-card { width:min(620px, calc(100vw - 24px)); max-height:90vh; overflow:auto; }
-.admin-haidh-settings-head { display:flex; align-items:center; gap:var(--space-sm); margin-bottom:var(--space-sm); }
-.admin-haidh-settings-head .maktab-name-pill { flex:1 1 auto; min-width:0; }
-.admin-haidh-settings-save { color:var(--palette-evergreen); }
-.admin-haidh-settings-save svg { width:28px; height:28px; }
+.admin-haidh-settings-head { display:flex; align-items:center; justify-content:space-between; gap:var(--space-md); margin-bottom:var(--space-sm); padding-right:0; }
+.admin-haidh-settings-titles { display:flex; align-items:baseline; gap:var(--space-sm); min-width:0; flex:1 1 auto; }
+.admin-haidh-settings-head strong, .admin-haidh-settings-student { font-size:18px; font-weight:700; color:var(--color-ink); }
+.admin-haidh-settings-student { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.admin-haidh-settings-actions { display:flex; align-items:center; gap:18px; flex:0 0 auto; }
+.admin-haidh-settings-save { color:var(--palette-evergreen); padding:6px; }
+.admin-haidh-settings-save svg { width:36px; height:36px; }
+.admin-haidh-settings-card .admin-haidh-settings-close { position:static; inset:auto; margin:0; padding:4px 2px; font-size:28px; line-height:1; }
 @media (max-width: 767px) {
   .admin-row-fields tr { min-width:0; }
   .admin-row-fields td[data-label="Haidh Settings"] { grid-area: haidh; }
