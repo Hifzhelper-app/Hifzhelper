@@ -36,7 +36,7 @@ check('Haidh uses plain grey H / h text with no icon pill',
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\);[^}]*font-weight: 400/.test(css)
   && !/iconHtml\('haidh'\)/.test(page));
 check('Attendance % is the second column and is returned per student',
-  /mkregister-student-head" rowspan="2">[\s\S]*Student[\s\S]*<\/th><th class="mkregister-percent-head" rowspan="2">Attendance %<\/th>/.test(page)
+  /mkregister-student-head" rowspan="2">[\s\S]{0,650}Student[\s\S]{0,650}<\/th><th class="mkregister-percent-head" rowspan="2">[\s\S]{0,350}Attendance %[\s\S]{0,350}<\/th>/.test(page)
   && /attendance_percent: summary\.percent/.test(worker));
 check('Attendance % and the individual page share one attendance-period summary helper',
   /export function summarizeAttendancePeriod\(/.test(worker)

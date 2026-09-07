@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.1 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -335,24 +335,28 @@
 }
 .maktab-summary-toprow .screen-close-btn { justify-self: end; }
 .maktab-summary-date-input { font: inherit; font-weight: 600; }
-.maktab-summary-attendance-link {
-  justify-self: center;
+/* V4.2.15.1: Maktab Summary <-> Attendance uses one explicit forest-green
+   rectangular navigation button in both directions. Deliberately NOT a pill. */
+.maktab-cross-nav-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   min-height: 38px;
-  padding: 6px 12px;
-  border: 1px solid var(--color-table-border);
-  border-radius: 999px;
-  background: var(--color-surface);
-  color: var(--color-ink);
+  padding: 6px 14px;
+  border: 1px solid var(--palette-evergreen);
+  border-radius: var(--radius-sm);
+  background: var(--palette-evergreen);
+  color: #fff;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
+  line-height: 1.1;
   cursor: pointer;
 }
-.maktab-summary-attendance-link svg { width: 18px; height: 18px; }
-.maktab-summary-attendance-link:hover { background: var(--surface-track); }
+.maktab-cross-nav-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+.maktab-cross-nav-btn:hover { filter: brightness(.96); }
+.maktab-summary-attendance-link { justify-self: center; }
 
 /* V4.2.11.4: the leading attendance icon is a neutral navigation
    control. Confirmed Haidh is already stated by the small pink Haidh text

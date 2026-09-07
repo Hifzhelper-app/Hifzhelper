@@ -65,10 +65,10 @@ const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1]
 check('V4.2.14.4 Quick Log date feature remains present while page/cache carry forward together',
   versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
-check('later edits advance only the three quick-action last-edit headers to V4.2.15',
+check('quick-action files retain their last-edit headers while the shared navigation CSS advances in V4.2.15.1',
   /^\/\* Hifzhelper build 4\.2\.15 \| js\/maktabSummary\.js \*\//.test(summary)
   && /^\/\* Hifzhelper build 4\.2\.15 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15 \| css\/journal-table\.css \*\//.test(css));
+  && /^\/\* Hifzhelper build 4\.2\.15\.1 \| css\/journal-table\.css \*\//.test(css));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

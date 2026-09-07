@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14 | js/api.js */
+/* Hifzhelper build 4.2.15.1 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -245,7 +245,7 @@ function apiGetMaktabGroups(){ return apiFetch('/maktab-groups'); }
 function apiCreateMaktabGroup(name){ return apiFetch('/maktab-groups', { method: 'POST', body: JSON.stringify({ name }) }); }
 function apiUpdateMaktabGroup(id, fields){ return apiFetch('/maktab-groups/update', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminCreateTeachingProfile(id){ return apiFetch('/admin/create-teaching-profile', { method: 'POST', body: JSON.stringify({ id }) }); }   // V3.77.0 (j)
-function apiAdminRegisterStudent(name, whatsapp_number, force, profile){ const p = profile || {}; return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force, gender: p.gender || null, track_haidh: !!p.track_haidh }) }); }
+function apiAdminRegisterStudent(name, whatsapp_number, force, profile){ const p = profile || {}; return apiFetch('/admin/register-student', { method: 'POST', body: JSON.stringify({ name, whatsapp_number, force: !!force, gender: p.gender || null, track_haidh: !!p.track_haidh, haidh_ruling: p.haidh_ruling || null, haidh_cycle_length: p.haidh_cycle_length ?? null, haidh_period_length: p.haidh_period_length ?? null, haidh_next_expected: p.haidh_next_expected || null }) }); }
 function apiAdminUpdateUser(id, fields){ return apiFetch('/admin/update-user', { method: 'POST', body: JSON.stringify(Object.assign({ id }, fields)) }); }
 function apiAdminDeleteUser(id){ return apiFetch('/admin/users?id=' + encodeURIComponent(id), { method: 'DELETE' }); }
 

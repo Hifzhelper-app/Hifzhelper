@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.2 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.1 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2270,6 +2270,13 @@
    one; Mon/Tue/... sit on row two with a strong rule beneath the complete
    header. Present is a bold lime text tick; Haidh reuses the former thin
    green Present check. Blank active cells remain absent/unresolved. */
+/* V4.2.15.1: Attendance header cross-navigation. The shared button style
+   lives in journal-table.css; only placement belongs to this screen. */
+#screen-maktabAttendance .juz-tracker-header-row { position: relative; }
+#screen-maktabAttendance .mkregister-summary-link {
+  position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap;
+}
+
 .mkregister-host { min-width: 0; }
 .mkregister-scroll {
   width: 100%; overflow: auto; -webkit-overflow-scrolling: touch;
@@ -2315,6 +2322,21 @@
   position: sticky; left: 0; z-index: 3; width: 180px; min-width: 180px; max-width: 180px;
   padding: 0; background: var(--color-surface, #fff); text-align: left;
 }
+.mkregister-student-cell-inner { display: flex; align-items: center; min-width: 0; }
+.mkregister-row-number {
+  flex: 0 0 28px; width: 28px; text-align: right; padding-right: 2px; box-sizing: border-box;
+  font-size: 11px; font-weight: 700; color: var(--color-ink-soft); font-variant-numeric: tabular-nums;
+}
+.mkregister-student-cell-inner .mkregister-student { flex: 1 1 auto; width: auto; min-width: 0; }
+.mkregister-sort-btn {
+  display: inline-flex; align-items: center; gap: 3px; min-width: 0; padding: 0;
+  border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; cursor: pointer;
+}
+.mkregister-sort-btn .mkregister-sort-chevron { display: inline-flex; opacity: .5; transition: transform .12s ease, opacity .12s ease; }
+.mkregister-sort-btn .mkregister-sort-chevron svg { width: 12px; height: 12px; }
+.mkregister-sort-btn.is-active .mkregister-sort-chevron { opacity: 1; }
+.mkregister-sort-btn.is-active.is-asc .mkregister-sort-chevron { transform: rotate(180deg); }
+.mkregister-percent-head .mkregister-sort-btn { justify-content: center; width: 100%; }
 .mkregister-percent-cell {
   position: sticky; left: 180px; z-index: 3; width: 92px; min-width: 92px; max-width: 92px;
   padding: 4px 6px; background: var(--color-surface, #fff); text-align: center;
@@ -2355,6 +2377,11 @@
      other screens' framing. */
   #screen-maktabAttendance { padding-left: 4px; padding-right: 4px; }
   #screen-maktabAttendance .juz-tracker-header-row { margin-left: 0; margin-right: 0; }
+  #screen-maktabAttendance .mkregister-summary-link {
+    position: static; transform: none; margin-left: auto; padding: 5px 8px; font-size: 11px;
+  }
+  #screen-maktabAttendance .mkregister-summary-link svg { width: 15px; height: 15px; }
+  #screen-maktabAttendance .juz-tracker-header-row .screen-close-btn { margin-left: 0; }
   .mkregister-scroll {
     max-height: calc(100vh - var(--auth-band-height, 60px) - 115px);
     border-left-width: 1px; border-right-width: 1px;
@@ -2387,7 +2414,8 @@
   .mkregister-grid.mkregister-percent-open .mkregister-percent-cell {
     left: 128px; width: 68px; min-width: 68px; max-width: 68px;
   }
-  .mkregister-student { padding-left: 8px; padding-right: 8px; }
+  .mkregister-row-number { flex-basis: 20px; width: 20px; font-size: 10px; }
+  .mkregister-student { padding-left: 4px; padding-right: 6px; }
   .mkregister-day-head, .mkregister-cell {
     width: 40px; min-width: 40px; max-width: 40px;
   }

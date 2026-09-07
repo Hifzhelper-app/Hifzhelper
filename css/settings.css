@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/settings.css */
+/* Hifzhelper build 4.2.15.1 | css/settings.css */
 /* ============================================================
    Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0)
    REVISED from V3.7.x/V3.8.0's 2-card swipeable rail back to ONE
@@ -537,5 +537,16 @@
 
 /* V3.96.0 (user, specced 2026-08-08/17): the Haaidha heading — text
    first, the opt-in checkbox to its RIGHT at twice the size. */
-.haidh-heading-check { display: flex; align-items: center; gap: var(--space-sm); }
-.haidh-heading-check input[type="checkbox"] { width: 32px; height: 32px; transform: none; }
+/* V4.2.15.1: .detail-page label is more specific than the old class-only
+   rule and was forcing this label back to display:block. Scope the fix to
+   the Haidh setup so Haaidha and its confirmation genuinely share one row. */
+#section-haidh.detail-page .haidh-heading-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+}
+#section-haidh.detail-page .haidh-heading-check h2 { margin: 0; }
+#section-haidh.detail-page .haidh-heading-check input[type="checkbox"] {
+  width: 32px; height: 32px; transform: none; margin: 0; flex: 0 0 auto;
+}
