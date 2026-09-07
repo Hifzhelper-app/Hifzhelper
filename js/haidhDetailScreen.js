@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | js/haidhDetailScreen.js */
+/* Hifzhelper build 4.2.15.6 | js/haidhDetailScreen.js */
 // ============================================================
 // Hifzhelper — Haidh calendar (V3.39, range-select V3.40.2, V3.40.4)
 // Month-by-month paging calendar for marking/clearing haidh days.
@@ -456,6 +456,13 @@ async function renderAttendancePage(param){
   // Otherwise showScreen() can expose the student viewed previously until
   // the new student's attendance request returns.
   resetHaidhCalendarVisualState();
+  // V4.2.15.6: the Haidh settings card is student-specific too. Hide/clear
+  // it before the first await so the previously viewed student's values can
+  // never flash while this attendance page is loading.
+  const settingsCard = document.getElementById('attHaidhSettingsCard');
+  const settingsHost = document.getElementById('attHaidhSettingsHost');
+  if(settingsCard) settingsCard.classList.add('hidden');
+  if(settingsHost) settingsHost.innerHTML = '';
   if(typeof ensureMaktabCalYear === 'function'){
     const y = parseInt(maktabTodayISO().slice(0, 4));
     await Promise.all([ensureMaktabCalYear(String(y)), ensureMaktabCalYear(String(y - 1))]);
@@ -536,9 +543,83 @@ async function loadAttendancePeriod(opts){
   } else {
     haidhBlock.classList.toggle('hidden', !showHaidhCalendar);
   }
+  renderAttendanceHaidhSettings(d);
   return showHaidhCalendar;
 }
 let attPageData = null;
+
+// V4.2.15.6 — shared Haidh Settings at the bottom of a selected student's
+// Attendance page. The actual fields/layout/validation are the SAME helper
+// used by registration and User Management; this screen only provides the
+// student context and attendance-authorised save endpoint.
+let attHaidhSettingsRuling = 'hanafi';
+function renderAttendanceHaidhSettings(data){
+  const card = document.getElementById('attHaidhSettingsCard');
+  const host = document.getElementById('attHaidhSettingsHost');
+  const save = document.getElementById('attHaidhSettingsSave');
+  const err = document.getElementById('attHaidhSettingsError');
+  const studentEl = document.getElementById('attHaidhSettingsStudent');
+  const inMaktab = typeof logCtxIsMaktab === 'function' && logCtxIsMaktab();
+  if(!card || !host || !save) return;
+  card.classList.toggle('hidden', !inMaktab);
+  if(!inMaktab) return;
+  if(typeof adminRegistrationHaidhSetupMarkup !== 'function'){
+    card.classList.add('hidden');
+    return;
+  }
+
+  attHaidhSettingsRuling = (data && data.haidh_ruling) || 'hanafi';
+  if(studentEl) studentEl.textContent = logCtxStudentName() || '';
+  host.innerHTML = adminRegistrationHaidhSetupMarkup('att_edit', {
+    open: true, showTitle: false,
+    cycle: data && data.haidh_cycle_length || '',
+    period: data && data.haidh_period_length || '',
+    next: data && data.haidh_next_expected || ''
+  });
+  renderSwitch('att_edit_haidh_ruling_switch', attHaidhSettingsRuling);
+  wireSwitch('att_edit_haidh_ruling_switch', value => {
+    attHaidhSettingsRuling = value;
+    renderSwitch('att_edit_haidh_ruling_switch', attHaidhSettingsRuling);
+  });
+  save.innerHTML = iconHtml('save');
+  save.disabled = false;
+  if(err) err.textContent = '';
+  const status = document.getElementById('attHaidhSettingsSaveStatus');
+  if(status) status.classList.remove('show');
+
+  save.onclick = async () => {
+    if(err) err.textContent = '';
+    const cycle = parseInt(document.getElementById('att_edit_haidh_cycle_length').value, 10);
+    const period = parseInt(document.getElementById('att_edit_haidh_period_length').value, 10);
+    const next = document.getElementById('att_edit_haidh_next_expected').value;
+    const profile = {
+      track_haidh: true, haidh_ruling: attHaidhSettingsRuling,
+      haidh_cycle_length: cycle, haidh_period_length: period, haidh_next_expected: next
+    };
+    const problem = typeof adminRegistrationProfileError === 'function'
+      ? adminRegistrationProfileError(profile)
+      : (!cycle || !period || !next ? 'Please fill in Haidh cycle frequency, duration, and next expected day.' : '');
+    if(problem){ if(err) err.textContent = problem; return; }
+    save.disabled = true;
+    try{
+      const saved = await apiSaveAttendanceHaidhSettings(logCtxStudentId(), profile);
+      if(attPageData) Object.assign(attPageData, saved || profile);
+      if(status){
+        status.classList.add('show');
+        clearTimeout(renderAttendanceHaidhSettings._statusTimer);
+        renderAttendanceHaidhSettings._statusTimer = setTimeout(() => status.classList.remove('show'), 1800);
+      }
+      // Settings replace the prediction plan. Repaint the existing shared
+      // calendar immediately so the page reflects the just-saved plan.
+      await renderHaidhDetailScreen({ maktab: true, date: (typeof logCtxDate === 'function' && logCtxDate()) || haidhTodayISO() });
+    } catch(e){
+      if(err) err.textContent = "Couldn't save: " + e.message;
+    } finally {
+      const liveSave = document.getElementById('attHaidhSettingsSave');
+      if(liveSave) liveSave.disabled = false;
+    }
+  };
+}
 
 // V3.86.0: one shared list popup for the two attendance buttons — the
 // same modal pattern the History rail uses, read-only.

@@ -68,7 +68,7 @@ check('V4.2.14.4 Quick Log date feature remains present while page/cache carry f
 
 check('quick-action files retain their last-edit headers while the later Attendance popup edits carry current headers',
   /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDay\.js \*\//.test(day)
+  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.5 \| css\/journal-table\.css \*\//.test(css));
 
 console.log(`${pass} passed, ${fail} failed`);

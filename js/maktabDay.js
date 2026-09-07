@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | js/maktabDay.js */
+/* Hifzhelper build 4.2.15.6 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -351,17 +351,21 @@ async function renderStudentSummaryScreen(){
   // Disable while the three activity feeds load; the exact Maktab Summary
   // Quick Log action is wired below once we have the carried-date entries.
   quickLogButtons.forEach(btn => { btn.disabled = true; btn.onclick = null; });
+  // V4.2.15.6: one dedicated circle-plus column at the far right of the
+  // activity grid opens the shared Quick Log sheet. It is intentionally
+  // separate from the Dhor heading so Dhor remains a pure data column.
+  const quickOpenBtn = document.getElementById('studentSummaryQuickLogBtn');
+  if(quickOpenBtn){
+    quickOpenBtn.innerHTML = iconHtml('circlePlus');
+    quickOpenBtn.disabled = true;
+    quickOpenBtn.onclick = null;
+  }
   const attBtn = document.getElementById('studentSummaryAttendanceBtn');
   if(attBtn){
     if(typeof iconHtml === 'function') attBtn.innerHTML = iconHtml('attendance');
     attBtn.setAttribute('aria-label', 'Attendance');
     attBtn.title = 'Attendance';
     attBtn.onclick = () => maktabOpenQuickAttendance(student, quickDate);
-  }
-  const summaryBtn = document.getElementById('studentSummaryMaktabSummaryBtn');
-  if(summaryBtn){
-    summaryBtn.innerHTML = iconHtml('maktab') + '<span>Maktab Summary</span>';
-    summaryBtn.onclick = () => showScreen('maktabSummary');
   }
   const ajzaaBtn = document.getElementById('studentSummaryAjzaaBtn');
   if(ajzaaBtn){
@@ -386,7 +390,7 @@ async function renderStudentSummaryScreen(){
       apiGetMaktabDhor(own ? undefined : id, since),
     ]);
   } catch(e){
-    tbody.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">Could not load the maktab record.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">Could not load the maktab record.</td></tr>';
     return;
   }
   const days = {};
@@ -411,11 +415,18 @@ async function renderStudentSummaryScreen(){
       { afterSave: () => renderStudentSummaryScreen() }
     );
   });
+  if(quickOpenBtn){
+    quickOpenBtn.disabled = false;
+    quickOpenBtn.onclick = () => maktabOpenQuickLog(
+      student, quickDate, 'sabaq', entriesByType.sabaq || [], entriesByType,
+      { afterSave: () => renderStudentSummaryScreen() }
+    );
+  }
 
   const allDates = Object.keys(days).sort().reverse();
   tbody.innerHTML = '';
   if(!allDates.length){
-    tbody.innerHTML = '<tr><td colspan="4" class="journal-cell journal-cell-empty">No maktab entries yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">No maktab entries yet.</td></tr>';
     return;
   }
   const rowFor = (date) => {
@@ -433,6 +444,10 @@ async function renderStudentSummaryScreen(){
       td.textContent = studentSummaryEntryText(type, days[date][type]);
       tr.appendChild(td);
     });
+    const actionTd = document.createElement('td');
+    actionTd.className = 'journal-cell student-summary-log-cell';
+    actionTd.setAttribute('aria-hidden', 'true');
+    tr.appendChild(actionTd);
     tr.addEventListener('click', () => {
       const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
       openMaktabDay(student, date);

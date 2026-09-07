@@ -12,7 +12,7 @@ import {
   handleGetMaktabPosition, handleSaveMaktabPosition,
 } from './maktabLog.js';
 import { handleGetMaktabSettings, handleSaveMaktabSettings } from './maktabSettings.js';
-import { handleMaktabAttendance, handleAttendancePage, handleMaktabWeek, handleMaktabRegister } from './maktabAttendance.js';
+import { handleMaktabAttendance, handleAttendancePage, handleAttendanceHaidhSettings, handleMaktabWeek, handleMaktabRegister } from './maktabAttendance.js';
 import { handleGetTerms, handleCreateTerm, handleUpdateTerm, handleDeleteTerm, handleGetCalendar, handleCreateCalendarEntry, handleUpdateCalendarEntry, handleDeleteCalendarEntry, handleGetProposal, handleConfirmList } from './maktabCalendar.js';   // V3.87.0/V3.88.0
 import { handleGetPlans } from './plans.js';
 import { handleGetAttendance, handleSetAttendance, handleMarkHaidhRange, handlePredictHaidh, handleDeleteAttendance } from './attendance.js';
@@ -139,6 +139,7 @@ export default {
       if (path === '/attendance' && request.method === 'GET') return respond(await handleGetAttendance(request, env, auth));
       if (path === '/attendance' && request.method === 'POST') return respond(await handleSetAttendance(request, env, auth));
       if (path === '/attendance/page' && request.method === 'GET') return respond(await handleAttendancePage(request, env, auth));   // V3.80.0
+      if (path === '/attendance/haidh-settings' && request.method === 'POST') return respond(await handleAttendanceHaidhSettings(request, env, auth));   // V4.2.15.6
       if (path === '/attendance/mark-range' && request.method === 'POST') return respond(await handleMarkHaidhRange(request, env, auth));
       if (path === '/attendance' && request.method === 'DELETE') return respond(await handleDeleteAttendance(request, env, auth));
       if (path === '/attendance/predict' && request.method === 'POST') return respond(await handlePredictHaidh(request, env, auth));

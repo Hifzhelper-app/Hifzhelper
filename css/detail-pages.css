@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.6 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -1814,6 +1814,30 @@
 #screen-studentSummary .ss-quick-log-btn:active { opacity: .68; }
 #screen-studentSummary .ss-quick-log-btn:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
 #screen-studentSummary .ss-quick-log-btn:disabled { cursor: default; opacity: .7; }
+
+/* V4.2.15.6: Student Summary has a dedicated, narrow action column at the
+   extreme right. The circle-plus lives in this column's HEADER, not inside
+   Dhor, so the four report columns remain semantically clean and aligned. */
+#screen-studentSummary .student-summary-grid-header > *:nth-child(1) { flex: 0 0 18%; }
+#screen-studentSummary .student-summary-grid-header > *:nth-child(2) { flex: 0 0 23%; }
+#screen-studentSummary .student-summary-grid-header > *:nth-child(3) { flex: 0 0 27%; }
+#screen-studentSummary .student-summary-grid-header > *:nth-child(4) { flex: 0 0 22%; }
+#screen-studentSummary .student-summary-grid-header > *:nth-child(5) { flex: 0 0 10%; }
+#screen-studentSummary .student-summary-table .ss-col-date { width: 18%; }
+#screen-studentSummary .student-summary-table .ss-col-sabaq { width: 23%; }
+#screen-studentSummary .student-summary-table .ss-col-sabaq-dhor { width: 27%; }
+#screen-studentSummary .student-summary-table .ss-col-dhor { width: 22%; }
+#screen-studentSummary .student-summary-table .ss-col-log { width: 10%; }
+#screen-studentSummary .student-summary-log-head { padding: 0; display: flex; align-items: center; justify-content: center; }
+#screen-studentSummary .student-summary-log-btn {
+  width: 100%; min-height: 40px; padding: 4px; margin: 0; border: 0; border-radius: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: inherit; cursor: pointer;
+}
+#screen-studentSummary .student-summary-log-btn svg { width: 28px; height: 28px; display: block; }
+#screen-studentSummary .student-summary-log-btn:disabled { opacity: .45; cursor: default; }
+#screen-studentSummary .student-summary-log-cell { padding: 0; }
+
 @media (min-width: 768px){   /* the journal's own breakpoint (journal-table.css) */
   .ss-header { width: 70%; margin-left: auto; margin-right: auto; }
 }
@@ -1826,6 +1850,23 @@
   padding: var(--space-md);
   margin: var(--space-sm) 0 var(--space-md);
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+/* V4.2.15.6: selected-student Attendance ends with the same Haidh setup
+   controls used by registration/User Management. The outer Attendance card
+   owns the border; the shared setup component is flattened inside it. */
+.att-haidh-settings-head { display:flex; align-items:center; justify-content:space-between; gap:var(--space-sm); margin-bottom:var(--space-sm); }
+.att-haidh-settings-title { display:flex; align-items:baseline; gap:var(--space-sm); min-width:0; }
+.att-haidh-settings-title h3 { margin:0; }
+#attHaidhSettingsStudent { font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.att-haidh-settings-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+.att-haidh-settings-save { color:var(--palette-evergreen); padding:4px; }
+.att-haidh-settings-save svg { width:34px; height:34px; display:block; }
+.att-haidh-settings-card #attHaidhSettingsHost .admin-register-haidh-setup { border:0; border-radius:0; padding:0; background:transparent; }
+.att-haidh-settings-card .save-status { min-width:0; }
+@media (max-width: 767px) {
+  .att-haidh-settings-head { align-items:flex-start; }
+  .att-haidh-settings-title { flex-direction:column; gap:2px; }
+  .att-haidh-settings-save svg { width:38px; height:38px; }
 }
 .att-custom-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .att-custom-sentence { font-size: 13px; }
@@ -2424,6 +2465,17 @@
   .mkregister-percent-head {
     display: table-cell; left: 128px; width: 68px; min-width: 68px; max-width: 68px;
     padding: 5px 3px; white-space: normal;
+  }
+  /* V4.2.15.6: when percentage VALUES are rolled up, their header rolls up
+     too. Only the centered Attendance toggle remains in a narrow sticky
+     control column. Opening the column restores the word + sort chevron. */
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-percent-head {
+    width: 38px; min-width: 38px; max-width: 38px; padding: 4px 3px; vertical-align: middle;
+  }
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-percent-head .mkregister-sort-btn { display: none; }
+  .mkregister-grid:not(.mkregister-percent-open) .mkregister-attendance-head-inner { gap: 0; height: 100%; }
+  .mkregister-grid.mkregister-percent-open .mkregister-percent-head {
+    width: 68px; min-width: 68px; max-width: 68px;
   }
   .mkregister-attendance-head-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
   .mkregister-percent-head .mkregister-sort-btn { width: auto; max-width: 100%; align-items: flex-start; gap: 2px; }
