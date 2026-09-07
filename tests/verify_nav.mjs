@@ -70,7 +70,7 @@ check('the student Maktab Journal sends no student_id — it cannot ask for anyo
 check('and the worker refuses a non-teacher who names someone else',
   /if \(!isTeacherOrAbove\(auth\) && studentId !== auth\.id\) return \{ error: 'Not authorized', status: 403 \}/.test(read('worker/src/maktabLog.js')));
 check('teacher/admin still get the Maktab item', /MAKTAB_SUMMARY_NAV_ITEM/.test(auth));
-check('admin still gets Student Management and Maktab Settings in the requested order',
+check('admin still gets User Management and Maktab Settings in the requested order',
   /g1\.push\(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM\)/.test(auth));
 
 // Drive the REAL visibleNavItems per role rather than trusting the regexes.

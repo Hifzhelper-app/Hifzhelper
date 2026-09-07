@@ -104,18 +104,17 @@ check('admin API list/update exposes and persists the existing Haidh profile fie
   && /DELETE FROM attendance WHERE student_id = \? AND status = 'predicted-haidh'/.test(worker)
   && /env\.DB\.batch\(\[updateStmt, \.\.\.predictionStatements\]\)/.test(worker));
 
-check('Student Summary copies the Attendance header style and adds Maktab Summary + Ajzaa Completed navigation',
+check('Student Summary keeps the Attendance-style header + Ajzaa navigation; later V4.2.15.6 removes the redundant Maktab Summary button',
   /id="screen-studentSummary"[\s\S]{0,800}<div class="juz-tracker-header-row screen-cap student-summary-header-row">/.test(html)
   && /id="studentSummaryAjzaaBtn"/.test(html)
-  && /id="studentSummaryMaktabSummaryBtn"/.test(html)
-  && /summaryBtn\.onclick = \(\) => showScreen\('maktabSummary'\)/.test(day)
+  && !/id="studentSummaryMaktabSummaryBtn"/.test(html)
   && /ajzaaBtn\.onclick = \(\) => openMaktabStudentSetup\(\{ id: logCtxStudentId\(\), name: logCtxStudentName\(\) \}\)/.test(day));
 
 const v42152PageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const v42152CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.15.2 behaviour survives later page/cache overlays and its touched files retain their last-edit headers',
   v42152PageVersions.length > 0 && !!v42152CacheVersion && v42152PageVersions.every(v => v === v42152CacheVersion)
-  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDay\.js \*\//.test(day)
+  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
   && /^\/\* Hifzhelper build 4\.2\.15\.5 \| css\/haidh\.css \*\//.test(haidhCss));
 

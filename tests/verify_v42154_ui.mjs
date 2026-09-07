@@ -96,7 +96,7 @@ check('V4.2.15.4 is frontend-only: latest migration remains 0029',
 check('V4.2.15.4 untouched files retain their last-edit headers while Calendar carries its later fix header',
   /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(att)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/auth\.js \*\//.test(auth)
+  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/auth\.js \*\//.test(auth)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabSettings\.js \*\//.test(settings)
   && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(cal));
 

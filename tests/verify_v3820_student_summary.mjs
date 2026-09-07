@@ -32,11 +32,12 @@ check('rail: the fourth summary dot is absent', !/logDetailSummaryDot/.test(html
 check('rail: card order remains Sabaq, Sabaq Dhor, Dhor', /const LOG_DETAIL_CARD_ORDER = \['sabaq', 'sabaqDhor', 'dhor'\];/.test(detailSrc));
 
 // ---------- standalone current-month page ----------
-check('page: Student Summary uses the Attendance-style header with Attendance, Ajzaa, Maktab Summary and close controls',
+check('page: Student Summary uses the Attendance-style header with Attendance, Ajzaa, Log and close controls',
   /id="screen-studentSummary"[\s\S]{0,900}class="juz-tracker-header-row screen-cap student-summary-header-row"/.test(html)
   && /id="studentSummaryAttendanceBtn"/.test(html)
   && /id="studentSummaryAjzaaBtn"/.test(html)
-  && /id="studentSummaryMaktabSummaryBtn"/.test(html)
+  && !/id="studentSummaryMaktabSummaryBtn"/.test(html)
+  && /id="studentSummaryQuickLogBtn"/.test(html)
   && /id="studentSummaryCloseBtn"/.test(html));
 check('page: current month label and four-column journal table exist',
   /id="studentSummaryPeriod"/.test(html)
@@ -64,7 +65,7 @@ function pageDom(dates) {
   const dom = new JSDOM(`<!DOCTYPE html><body>
     <span id="studentSummaryHeaderIcon"></span><h2 id="studentSummaryTitle"></h2>
     <button id="studentSummaryAttendanceBtn"></button><button id="studentSummaryAjzaaBtn"></button>
-    <button id="studentSummaryMaktabSummaryBtn"></button><button id="studentSummaryCloseBtn"></button>
+    <button id="studentSummaryQuickLogBtn"></button><button id="studentSummaryCloseBtn"></button>
     <div id="studentSummaryPeriod"></div>
     <button data-ss-quick-type="sabaq"></button><button data-ss-quick-type="sabaqDhor"></button><button data-ss-quick-type="dhor"></button>
     <table><tbody id="studentSummaryTbody"></tbody></table></body>`, { runScripts: 'dangerously', url: 'https://x/' });

@@ -14,10 +14,10 @@ const html = read('index.html');
 const auth = read('js/auth.js');
 const css = read('css/admin.css');
 
-check('global rename: page heading is Student Management',
-  /id="screen-admin"[\s\S]{0,900}<h2>Student Management<\/h2>/.test(html) && !/<h2>Admin<\/h2>/.test(html));
-check('global rename: menu/home tile nav label is Student Management',
-  /const ADMIN_NAV_ITEM = \{ id: 'admin', label: 'Student Management', icon: 'admin' \};/.test(auth));
+check('global management label has advanced to User Management',
+  /id="screen-admin"[\s\S]{0,900}<h2>User Management<\/h2>/.test(html) && !/<h2>Admin<\/h2>/.test(html));
+check('menu/home tile nav label has advanced to User Management',
+  /const ADMIN_NAV_ITEM = \{ id: 'admin', label: 'User Management', icon: 'admin' \};/.test(auth));
 check('heading: later overlay copies the Attendance header styling on desktop and mobile',
   /id="screen-admin"[\s\S]{0,900}<div class="juz-tracker-header-row screen-cap admin-header-row">/.test(html)
   && /#screen-admin \.admin-header-row \{[\s\S]{0,240}display: flex;[\s\S]{0,240}background: var\(--color-surface\);[\s\S]{0,240}border-radius: var\(--radius-md\);/.test(css));

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.1 | js/api.js */
+/* Hifzhelper build 4.2.15.6 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -319,6 +319,11 @@ function apiGetAttendancePageFor(studentId, from, to){
   const parts = [`student_id=${encodeURIComponent(studentId)}`];
   if(from && to){ parts.push(`from=${from}`, `to=${to}`); }
   return apiFetch('/attendance/page?' + parts.join('&'));
+}
+function apiSaveAttendanceHaidhSettings(studentId, profile){
+  const body = Object.assign({}, profile || {});
+  if(studentId) body.student_id = studentId;
+  return apiFetch('/attendance/haidh-settings', { method: 'POST', body: JSON.stringify(body) });
 }
 function apiMarkHaidhRangeFor(studentId, startDate, endDate){
   const body = { student_id: studentId, startDate, endDate };

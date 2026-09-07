@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Hifzhelper build 4.2.15.5 | index.html -->
+<!-- Hifzhelper build 4.2.15.6 | index.html -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -22,20 +22,20 @@
      manifest's generic start_url. Other platforms still receive the full
      installable manifest. Runs in <head> before Add to Home Screen can read
      the page's installation metadata. -->
-<script src="js/pwaManifest.js?v=4.2.15.5"></script>
+<script src="js/pwaManifest.js?v=4.2.15.6"></script>
 
-<link rel="stylesheet" href="css/tokens.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/base.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/nav.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/journal-table.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/daily-report.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/components.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/detail-pages.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/settings.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/admin.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/haidh.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/juzTracker.css?v=4.2.15.5">
-<link rel="stylesheet" href="css/sih.css?v=4.2.15.5">
+<link rel="stylesheet" href="css/tokens.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/base.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/nav.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/journal-table.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/daily-report.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/components.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/detail-pages.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/settings.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/admin.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/haidh.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/juzTracker.css?v=4.2.15.6">
+<link rel="stylesheet" href="css/sih.css?v=4.2.15.6">
 </head>
 <body>
 
@@ -278,19 +278,20 @@
         <div class="student-summary-header-actions">
           <button type="button" class="icon-btn att-nav-btn" id="studentSummaryAttendanceBtn" aria-label="Quick attendance" title="Quick attendance"></button>
           <button type="button" class="maktab-cross-nav-btn" id="studentSummaryAjzaaBtn" aria-label="Open Ajzaa Completed" title="Ajzaa Completed"></button>
-          <button type="button" class="maktab-cross-nav-btn" id="studentSummaryMaktabSummaryBtn" aria-label="Return to Maktab Summary" title="Maktab Summary"></button>
         </div>
         <button type="button" class="screen-close-btn" id="studentSummaryCloseBtn" aria-label="Back to Maktab Summary"></button>
       </div>
       <div class="student-summary-period screen-cap" id="studentSummaryPeriod"></div>
-      <div class="journal-header-row">
+      <div class="journal-header-row student-summary-grid-header">
         <div class="journal-header-cell col-date">Date</div>
         <div class="journal-header-cell col-log ss-quick-log-head"><button type="button" class="ss-quick-log-btn" data-ss-quick-type="sabaq" aria-label="Quick Sabaq log" disabled>Sabaq</button></div>
         <div class="journal-header-cell col-log ss-quick-log-head"><button type="button" class="ss-quick-log-btn" data-ss-quick-type="sabaqDhor" aria-label="Quick Sabaq Dhor log" disabled>Sabaq Dhor</button></div>
         <div class="journal-header-cell col-log ss-quick-log-head"><button type="button" class="ss-quick-log-btn" data-ss-quick-type="dhor" aria-label="Quick Dhor log" disabled>Dhor</button></div>
+        <div class="journal-header-cell col-log student-summary-log-head"><button type="button" class="student-summary-log-btn" id="studentSummaryQuickLogBtn" aria-label="Open Log Quick Action" title="Log"></button></div>
       </div>
       <div class="journal-wrap">
-        <table class="journal-table">
+        <table class="journal-table student-summary-table">
+          <colgroup><col class="ss-col-date"><col class="ss-col-sabaq"><col class="ss-col-sabaq-dhor"><col class="ss-col-dhor"><col class="ss-col-log"></colgroup>
           <tbody id="studentSummaryTbody"></tbody>
         </table>
       </div>
@@ -963,6 +964,21 @@
            button now (same history style); the inline ranges list is gone. -->
       <button type="button" class="history-btn hidden" id="attHaidhHistoryBtn">Haidh history</button>
       </div><!-- /attHaidhBlock -->
+
+      <!-- V4.2.15.6: selected-student Attendance now also exposes the same
+           Haidh setup controls used by registration/User Management. The
+           card is populated/wired only in Maktab teacher/admin context. -->
+      <div id="attHaidhSettingsCard" class="att-card att-haidh-settings-card screen-cap hidden">
+        <div class="att-haidh-settings-head">
+          <div class="att-haidh-settings-title"><h3>Haidh Settings</h3><span id="attHaidhSettingsStudent"></span></div>
+          <div class="att-haidh-settings-actions">
+            <span class="save-status" id="attHaidhSettingsSaveStatus">saved ✓</span>
+            <button type="button" class="icon-btn att-haidh-settings-save" id="attHaidhSettingsSave" aria-label="Save Haidh settings" title="Save"></button>
+          </div>
+        </div>
+        <div id="attHaidhSettingsHost"></div>
+        <div class="form-error" id="attHaidhSettingsError"></div>
+      </div>
     </section>
 
     <!-- V3.40: Juz Tracker, Phase 1 (free play) -- the embedded
@@ -1089,7 +1105,7 @@
            capped white header row on desktop and mobile. -->
       <div class="juz-tracker-header-row screen-cap admin-header-row">
         <span class="card-header-icon" id="adminHeaderIcon"></span>
-        <h2>Student Management</h2>
+        <h2>User Management</h2>
         <button type="button" class="screen-close-btn" id="adminCloseBtn" aria-label="Close"></button>
       </div>
 
@@ -1373,40 +1389,40 @@
      on open), never auto-started. -->
 <session-timer id="dhorTimerHost" target="40" accent="#829672" class="hidden"></session-timer>
 
-<script src="shared/data.js?v=4.2.15.5"></script>
-<script src="shared/haidhRules.js?v=4.2.15.5"></script>
-<script src="js/icons.js?v=4.2.15.5"></script>
-<script src="js/customDate.js?v=4.2.15.5"></script>
-<script src="js/api.js?v=4.2.15.5"></script>
-<script src="js/logContext.js?v=4.2.15.5"></script>
-<script src="js/uiSwitch.js?v=4.2.15.5"></script>
-<script src="js/position.js?v=4.2.15.5"></script>
-<script src="js/auth.js?v=4.2.15.5"></script>
-<script src="js/home.js?v=4.2.15.5"></script>
-<script src="js/tajweed.js?v=4.2.15.5"></script>
-<script src="js/commentPrivacy.js?v=4.2.15.5"></script>
-<script src="js/session-timer.js?v=4.2.15.5"></script>
-<script src="js/journal.js?v=4.2.15.5"></script>
-<script src="js/maktabSummary.js?v=4.2.15.5"></script>
-<script src="js/maktabDailyReport.js?v=4.2.15.5"></script>
-<script src="js/maktabSettings.js?v=4.2.15.5"></script>
-<script src="js/maktabSetup.js?v=4.2.15.5"></script>
-<script src="js/maktabDay.js?v=4.2.15.5"></script>
-<script src="js/maktabJournal.js?v=4.2.15.5"></script>
-<script src="js/maktabCalendarPage.js?v=4.2.15.5"></script>
-<script src="js/maktabAttendancePage.js?v=4.2.15.5"></script>
-<script src="js/dhorPage.js?v=4.2.15.5"></script>
-<script src="js/sabaqPage.js?v=4.2.15.5"></script>
-<script src="js/sabaqDhorPage.js?v=4.2.15.5"></script>
-<script src="js/reflectionCard.js?v=4.2.15.5"></script>
-<script src="js/logDetailScreen.js?v=4.2.15.5"></script>
-<script src="js/haidhDetailScreen.js?v=4.2.15.5"></script>
-<script src="js/kaabaTracker.js?v=4.2.15.5"></script>
-<script src="js/juzTrackerScreen.js?v=4.2.15.5"></script>
-<script src="js/sihScreen.js?v=4.2.15.5"></script>
-<script src="js/settingsScreen.js?v=4.2.15.5"></script>
-<script src="js/adminPage.js?v=4.2.15.5"></script>
-<script src="js/versionStamp.js?v=4.2.15.5"></script>
-<script src="js/app.js?v=4.2.15.5"></script>
+<script src="shared/data.js?v=4.2.15.6"></script>
+<script src="shared/haidhRules.js?v=4.2.15.6"></script>
+<script src="js/icons.js?v=4.2.15.6"></script>
+<script src="js/customDate.js?v=4.2.15.6"></script>
+<script src="js/api.js?v=4.2.15.6"></script>
+<script src="js/logContext.js?v=4.2.15.6"></script>
+<script src="js/uiSwitch.js?v=4.2.15.6"></script>
+<script src="js/position.js?v=4.2.15.6"></script>
+<script src="js/auth.js?v=4.2.15.6"></script>
+<script src="js/home.js?v=4.2.15.6"></script>
+<script src="js/tajweed.js?v=4.2.15.6"></script>
+<script src="js/commentPrivacy.js?v=4.2.15.6"></script>
+<script src="js/session-timer.js?v=4.2.15.6"></script>
+<script src="js/journal.js?v=4.2.15.6"></script>
+<script src="js/maktabSummary.js?v=4.2.15.6"></script>
+<script src="js/maktabDailyReport.js?v=4.2.15.6"></script>
+<script src="js/maktabSettings.js?v=4.2.15.6"></script>
+<script src="js/maktabSetup.js?v=4.2.15.6"></script>
+<script src="js/maktabDay.js?v=4.2.15.6"></script>
+<script src="js/maktabJournal.js?v=4.2.15.6"></script>
+<script src="js/maktabCalendarPage.js?v=4.2.15.6"></script>
+<script src="js/maktabAttendancePage.js?v=4.2.15.6"></script>
+<script src="js/dhorPage.js?v=4.2.15.6"></script>
+<script src="js/sabaqPage.js?v=4.2.15.6"></script>
+<script src="js/sabaqDhorPage.js?v=4.2.15.6"></script>
+<script src="js/reflectionCard.js?v=4.2.15.6"></script>
+<script src="js/logDetailScreen.js?v=4.2.15.6"></script>
+<script src="js/haidhDetailScreen.js?v=4.2.15.6"></script>
+<script src="js/kaabaTracker.js?v=4.2.15.6"></script>
+<script src="js/juzTrackerScreen.js?v=4.2.15.6"></script>
+<script src="js/sihScreen.js?v=4.2.15.6"></script>
+<script src="js/settingsScreen.js?v=4.2.15.6"></script>
+<script src="js/adminPage.js?v=4.2.15.6"></script>
+<script src="js/versionStamp.js?v=4.2.15.6"></script>
+<script src="js/app.js?v=4.2.15.6"></script>
 </body>
 </html>

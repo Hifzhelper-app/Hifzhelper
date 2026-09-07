@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14 | worker/src/maktabAttendance.js */
+/* Hifzhelper build 4.2.15.6 | worker/src/maktabAttendance.js */
 // ============================================================
 // Hifzhelper -- derived maktab attendance (V3.67.0, delivery (f)).
 // The last of the six maktab deliveries. NOTHING IS STORED: every value
@@ -32,6 +32,7 @@ import { isTeacherOrAbove, isValidDate, maktabTodayISO } from './utils.js';
 import { termContainingToday } from './maktabCalendar.js';   // V3.87.0: terms drive attendance
 import { readMaktabSettings, teachingDaysOf, WEEKDAY_KEYS } from './maktabSettings.js';   // V3.98.0
 import { normalizeHaidhTimeline } from './haidhTimeline.js';
+import { haidhOfficialMaxDuration, haidhMinCycleFrequency, haidhAddDaysISO } from '../../shared/haidhRules.js';
 
 function daysBetweenISO(a, b) {
   return Math.round((new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000);
@@ -229,7 +230,7 @@ export async function handleAttendancePage(request, env, auth) {
   const studentId = isTeacherOrAbove(auth) && bodyStudentId ? String(bodyStudentId) : auth.id;
 
   const student = await env.DB.prepare(
-    "SELECT id, haidh_ruling, track_haidh FROM students WHERE id = ? AND role = 'student'"
+    "SELECT id, gender, haidh_ruling, track_haidh, haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students WHERE id = ? AND role = 'student'"
   ).bind(studentId).first();
   if (!student) return { error: 'Student not found', status: 404 };
 
@@ -311,8 +312,69 @@ export async function handleAttendancePage(request, env, auth) {
     maktab_day_min: settings.maktab_day_min,
     absent_dates, haidh_ranges, predicted_haidh_dates: derived.predictedHaidhDates,
     track_haidh: !!student.track_haidh,
+    gender: student.gender || null,
+    haidh_ruling: student.haidh_ruling || 'hanafi',
+    haidh_cycle_length: student.haidh_cycle_length == null ? null : Number(student.haidh_cycle_length),
+    haidh_period_length: student.haidh_period_length == null ? null : Number(student.haidh_period_length),
+    haidh_next_expected: student.haidh_next_expected || null,
     term_from: settings.term_from || null, term_to: settings.term_to || null,
   } };
+}
+
+// V4.2.15.6 — the selected Student Attendance page now carries the same
+// Haidh setup controls used by registration/User Management. This endpoint
+// is deliberately attendance-scoped so a teacher can save the student she
+// is already authorised to edit here; a student can only ever save herself.
+// Saving replaces the prediction set from the entered next-expected day,
+// exactly like the existing PJ/Admin setup flows.
+export async function handleAttendanceHaidhSettings(request, env, auth) {
+  if (!auth) return { error: 'Not authenticated', status: 401 };
+  let body;
+  try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
+
+  const requestedId = body.student_id == null ? null : String(body.student_id);
+  if (requestedId && !isTeacherOrAbove(auth) && requestedId !== auth.id) {
+    return { error: 'Not authorized to edit this student', status: 403 };
+  }
+  const studentId = isTeacherOrAbove(auth) && requestedId ? requestedId : auth.id;
+  const student = await env.DB.prepare(
+    "SELECT id FROM students WHERE id = ? AND role = 'student'"
+  ).bind(studentId).first();
+  if (!student) return { error: 'Student not found', status: 404 };
+
+  const ruling = String(body.haidh_ruling || 'hanafi');
+  const cycle = Number(body.haidh_cycle_length);
+  const period = Number(body.haidh_period_length);
+  const nextExpected = String(body.haidh_next_expected || '');
+  if (!['hanafi', 'shafii'].includes(ruling)) return { error: 'haidh_ruling must be hanafi or shafii', status: 400 };
+  if (!Number.isInteger(cycle) || cycle < 1 || !Number.isInteger(period) || period < 1 || !isValidDate(nextExpected)) {
+    return { error: 'Haidh cycle frequency, duration, and next expected day are required', status: 400 };
+  }
+  const maxDuration = haidhOfficialMaxDuration(ruling);
+  if (period > maxDuration) return { error: `Duration cannot exceed ${maxDuration} days for the selected ruling`, status: 400 };
+  const minFrequency = haidhMinCycleFrequency(period);
+  if (cycle < minFrequency) {
+    return { error: `Haidh cycle frequency must be at least ${minFrequency} days for a ${period}-day duration`, status: 400 };
+  }
+
+  const statements = [
+    env.DB.prepare(
+      "UPDATE students SET gender = 'F', track_haidh = 1, haidh_ruling = ?, haidh_cycle_length = ?, haidh_period_length = ?, haidh_next_expected = ? WHERE id = ?"
+    ).bind(ruling, cycle, period, nextExpected, studentId),
+    env.DB.prepare("DELETE FROM attendance WHERE student_id = ? AND status = 'predicted-haidh'").bind(studentId),
+  ];
+  const lastStart = haidhAddDaysISO(nextExpected, -cycle);
+  const effectivePeriod = Math.min(period, maxDuration);
+  for (let c = 0; c < 4; c++) {
+    for (let d = 0; d < effectivePeriod; d++) {
+      const date = haidhAddDaysISO(lastStart, c * cycle + d);
+      statements.push(env.DB.prepare(
+        "INSERT INTO attendance (student_id, date, status) VALUES (?, ?, 'predicted-haidh') ON CONFLICT(student_id, date) DO NOTHING"
+      ).bind(studentId, date));
+    }
+  }
+  await env.DB.batch(statements);
+  return { data: { saved: true, student_id: studentId, track_haidh: true, gender: 'F', haidh_ruling: ruling, haidh_cycle_length: cycle, haidh_period_length: period, haidh_next_expected: nextExpected } };
 }
 
 // ============================================================
