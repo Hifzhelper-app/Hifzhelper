@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.1 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.5 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -1044,4 +1044,74 @@
 @media (max-width: 767px) {
   .maktab-quick-attendance-card { padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom)); }
   .maktab-quick-attendance-actions { grid-template-columns: minmax(120px, 55%) auto; }
+}
+
+/* ============================================================
+   V4.2.15.5 — mobile Maktab Summary Log target + Sabaq Dhor checkbox grid. */
+.maktab-mobile-log-col { display: none; }
+@media (max-width: 767px) {
+  .maktab-summary-table tr:not(.maktab-group-gap) {
+    grid-template-columns: minmax(0, 1fr) 76px;
+  }
+  .maktab-summary-table .journal-cell {
+    grid-column: 1;
+  }
+  .maktab-summary-table td.maktab-mobile-log-col {
+    display: flex;
+    grid-column: 2;
+    grid-row: 2 / span 3;
+    width: auto;
+    padding: 0;
+    align-self: center;
+    justify-self: center;
+    border: 0;
+  }
+  .maktab-mobile-log-action {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    color: var(--palette-evergreen, #344C3D);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 3px;
+  }
+  .maktab-mobile-log-icon {
+    display: inline-flex;
+    width: 54px;
+    height: 54px;
+    align-items: center;
+    justify-content: center;
+  }
+  .maktab-mobile-log-icon svg { width: 52px; height: 52px; }
+  .maktab-mobile-log-skeleton { opacity: .35; cursor: default; }
+
+  /* components.css's later `.modal-card label {display:block}` used to
+     knock the Sabaq Dhor label rows out of their grid and drop checkboxes
+     beneath the pills. This higher-specificity rule keeps one shared RHS
+     checkbox column for quarter rows and the manual To row. */
+  .modal-card .maktab-quick-sd-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    margin: 0;
+  }
+  .maktab-quick-sd-row-pill {
+    width: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 12px;
+  }
+  .maktab-quick-sd-manual-line {
+    grid-template-columns: minmax(0, 1fr) 34px;
+  }
 }

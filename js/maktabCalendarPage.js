@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.4 | js/maktabCalendarPage.js */
+/* Hifzhelper build 4.2.15.5 | js/maktabCalendarPage.js */
 // ============================================================
 // maktabCalendarPage.js — V3.87.0: the MAKTAB CALENDAR page (user spec,
 // 2026-08-28). INFORMATION ONLY — nothing here feeds attendance (terms
@@ -19,7 +19,11 @@ async function ensureMaktabCalYear(year){
   if(MCAL_CACHE[year]) return MCAL_CACHE[year];
   try{
     const [entries, terms] = await Promise.all([apiGetMaktabCalendar(year), apiGetMaktabTerms()]);
-    MCAL_CACHE[year] = { entries: entries || [], terms: terms || [] };
+    // V4.2.15.5: normalize one-day rows defensively. Older/imported
+    // calendar rows can carry a blank date_to; they are still a real event
+    // on date_from and must not disappear (e.g. 24 Sep between two terms).
+    const normalizedEntries = (entries || []).map(e => Object.assign({}, e, { date_to: e.date_to || e.date_from }));
+    MCAL_CACHE[year] = { entries: normalizedEntries, terms: terms || [] };
   } catch(e){
     MCAL_CACHE[year] = { entries: [], terms: [] };
   }
@@ -34,7 +38,10 @@ function maktabCalInfoForDate(dateISO){
   const y = dateISO.slice(0, 4);
   const c = MCAL_CACHE[y];
   if(!c) return null;
-  const hits = c.entries.filter(e => e.date_from <= dateISO && e.date_to >= dateISO);
+  const hits = c.entries.filter(e => {
+    const to = e.date_to || e.date_from;
+    return e.date_from <= dateISO && to >= dateISO;
+  });
   const term = c.terms.find(t => t.term_from <= dateISO && t.term_to >= dateISO);
   if(!hits.length && !term) return null;
   const labels = [];
@@ -115,13 +122,18 @@ async function renderMaktabCalendarInto(opts){
   const c = MCAL_CACHE[yearStr] || { entries: [], terms: [] };
   const rows = [];
   const f = (d) => (typeof fmtDMY === 'function' ? fmtDMY(d) : d);
-  c.terms.filter(t => t.term_from <= monthTo && t.term_to >= monthFrom)
-    .forEach(t => rows.push(`<div class="mcal-list-row mcal-list-term"><span class="mcal-list-date">${f(t.term_from)} &ndash; ${f(t.term_to)}</span><span>${mcalEsc(t.name)}</span></div>`));
+  // On the Settings-embedded viewer the editable term cards immediately
+  // below already show every term/date range, so do not repeat them in the
+  // month list. The legacy read-only screen may still opt into term rows.
+  if(o.includeTermList !== false){
+    c.terms.filter(t => t.term_from <= monthTo && t.term_to >= monthFrom)
+      .forEach(t => rows.push(`<div class="mcal-list-row mcal-list-term"><span class="mcal-list-date">${f(t.term_from)} &ndash; ${f(t.term_to)}</span><span>${mcalEsc(t.name)}</span></div>`));
+  }
   const listText = (e) => {
     if(e.type !== 'islamic') return e.label || 'Public holiday';
     return (e.label && e.label.includes(' — ')) ? e.label.split(' — ')[1] : (e.label || '');
   };
-  c.entries.filter(e => e.date_from <= monthTo && e.date_to >= monthFrom)
+  c.entries.filter(e => e.date_from <= monthTo && (e.date_to || e.date_from) >= monthFrom)
     .forEach(e => rows.push(`<div class="mcal-list-row"><span class="mcal-list-date">${e.date_from === e.date_to ? f(e.date_from) : f(e.date_from) + ' &ndash; ' + f(e.date_to)}</span><span class="mcal-list-${e.type}">${mcalEsc(listText(e))}</span></div>`));
   list.innerHTML = rows.join('') || '<div class="form-hint">Nothing marked this month.</div>';
 }
@@ -145,7 +157,7 @@ async function renderMsetEmbeddedCalendar(){
     msetMcalMonth = `${selectedYear}-${today.slice(5,7)}`;
   }
   if(msetMcalMonth.slice(0,4) !== selectedYear) msetMcalMonth = `${selectedYear}-${msetMcalMonth.slice(5,7)}`;
-  await renderMaktabCalendarInto({ month:msetMcalMonth, gridId:'msetMcalGrid', labelId:'msetMcalMonthLabel', weekdaysId:'msetMcalWeekdays', listId:'msetMcalList' });
+  await renderMaktabCalendarInto({ month:msetMcalMonth, gridId:'msetMcalGrid', labelId:'msetMcalMonthLabel', weekdaysId:'msetMcalWeekdays', listId:'msetMcalList', includeTermList:false });
 }
 function setMsetEmbeddedCalendarYear(year){
   const y = String(year || '');

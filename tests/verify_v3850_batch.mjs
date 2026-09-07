@@ -327,10 +327,11 @@ check('v400: "Mark absent" is maktab-only and future-only, and routes through th
   && /client\.setDay\(d, 'predicted-absent'\)/.test(read('js/haidhDetailScreen.js'))
   && !/setDay:.*apiSetAttendance\(/.test(read('js/haidhDetailScreen.js')));
 
-check('v402: the student summary wires its +N pill like the maktab summary — retargeted badge, own listener, stopPropagation',
-  /data-entry-peek="\$\{type\}"/.test(read('js/maktabDay.js'))
-  && /td\._peekEntries = days\[date\]\[type\];/.test(read('js/maktabDay.js'))
-  && /e\.stopPropagation\(\);\s*\n\s*maktabOpenEntryPeek\(peekBtn, type, td\._peekEntries\);/.test(read('js/maktabDay.js')));
+check('v402 carried forward: Student Summary now shows every same-day entry inline instead of hiding extras behind +N',
+  /function studentSummaryEntryText\(type, entries\)/.test(read('js/maktabDay.js'))
+  && /journalCellShorthand\(type, \[entry\]\)/.test(read('js/maktabDay.js'))
+  && /\.filter\(Boolean\)\.join\(', '\)/.test(read('js/maktabDay.js'))
+  && !/data-entry-peek="\$\{type\}"/.test(read('js/maktabDay.js')));
 check('v402: the derivation takes today and explicit absents; today falls through unresolved',
   /if \(todayISO && date >= todayISO\) continue;/.test(read('worker/src/maktabAttendance.js'))
   && /explicitAbsent\.has\(date\)/.test(read('worker/src/maktabAttendance.js'))

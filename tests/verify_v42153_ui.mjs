@@ -28,7 +28,7 @@ check('report is explicitly activity-only across Sabaq, Sabaq Dhor and Dhor',
 check('preview keeps the Maktab Summary information columns and row numbering',
   /<th class="report-no">#<\/th><th class="report-student">Student<\/th><th>Sabaq<\/th><th>Sabaq Dhor<\/th><th>Dhor<\/th>/.test(src)
   && /num\.textContent = String\(index \+ 1\)/.test(src)
-  && /maktabCellHtml\(type, entries\)/.test(src));
+  && /td\.textContent = maktabDailyReportCellText\(type, entries\)/.test(src));
 
 check('shared report is a generated PNG File sent through the native Web Share API',
   /new File\(\[blob\], filename, \{ type:'image\/png' \}\)/.test(src)
@@ -62,9 +62,9 @@ const rows = vm.runInContext('maktabDailyReportRows(__sample)', Object.assign(co
 check('functional filter excludes no-log students and alphabetises the logged band',
   rows.length === 2 && rows[0].student.id === 'a' && rows[1].student.id === 'b');
 
-check('new assets carry V4.2.15.3 last-edit headers',
-  /^\/\* Hifzhelper build 4\.2\.15\.3 \| js\/maktabDailyReport\.js \*\//.test(src)
-  && /^\/\* Hifzhelper build 4\.2\.15\.3 \| css\/daily-report\.css \*\//.test(css));
+check('report assets carry their current last-edit headers after the multi-entry follow-up',
+  /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDailyReport\.js \*\//.test(src)
+  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| css\/daily-report\.css \*\//.test(css));
 
 const pageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];

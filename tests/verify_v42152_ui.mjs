@@ -115,9 +115,9 @@ const v42152PageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const v42152CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.15.2 behaviour survives later page/cache overlays and its touched files retain their last-edit headers',
   v42152PageVersions.length > 0 && !!v42152CacheVersion && v42152PageVersions.every(v => v === v42152CacheVersion)
-  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabDay\.js \*\//.test(day)
+  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
-  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/haidh\.css \*\//.test(haidhCss));
+  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| css\/haidh\.css \*\//.test(haidhCss));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

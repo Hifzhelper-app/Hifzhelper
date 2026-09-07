@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.3 | js/maktabDailyReport.js */
+/* Hifzhelper build 4.2.15.5 | js/maktabDailyReport.js */
 // ============================================================
 // V4.2.15.3 — Daily Maktab Report.
 //
@@ -63,11 +63,18 @@ function maktabDailyReportRows(data){
   }));
 }
 
+function maktabDailyReportSingleEntryText(type, entry){
+  const holder = document.createElement('div');
+  // Render one entry at a time so the Summary's +N compression can never
+  // hide additional activity in a report.
+  holder.innerHTML = maktabCellHtml(type, entry ? [entry] : []);
+  return (holder.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
 function maktabDailyReportCellText(type, entries){
   if(!entries || !entries.length) return '—';
-  const holder = document.createElement('div');
-  holder.innerHTML = maktabCellHtml(type, entries);
-  return (holder.textContent || '—').replace(/\s+/g, ' ').trim().replace(/(\S)(\+\d+)$/, '$1 $2') || '—';
+  const values = entries.map(entry => maktabDailyReportSingleEntryText(type, entry)).filter(Boolean);
+  return values.length ? values.join(', ') : '—';
 }
 
 function maktabDailyReportSetStatus(text, isError){
@@ -120,9 +127,10 @@ function maktabDailyReportRenderPreview(){
 
     [['sabaq', row.sabaq], ['sabaqDhor', row.sabaqDhor], ['dhor', row.dhor]].forEach(([type, entries]) => {
       const td = document.createElement('td');
-      // This is the same compact shorthand as Maktab Summary. The preview
-      // stays read-only: count badges are visual only and have no handler.
-      td.innerHTML = `<span class="maktab-summary-cell-value">${maktabCellHtml(type, entries)}</span>`;
+      td.className = 'maktab-daily-report-entry-list';
+      // Reports never collapse multiple entries behind a +N badge: every
+      // activity is shown, comma separated, in the cell itself.
+      td.textContent = maktabDailyReportCellText(type, entries);
       tr.appendChild(td);
     });
     body.appendChild(tr);
@@ -166,22 +174,74 @@ function maktabDailyReportFitText(ctx, text, maxWidth){
   return raw.slice(0, lo) + '…';
 }
 
+function maktabDailyReportBreakToken(ctx, token, maxWidth){
+  const out = [];
+  let rest = String(token || '');
+  while(rest && ctx.measureText(rest).width > maxWidth){
+    let lo = 1, hi = rest.length;
+    while(lo < hi){
+      const mid = Math.ceil((lo + hi) / 2);
+      if(ctx.measureText(rest.slice(0, mid)).width <= maxWidth) lo = mid;
+      else hi = mid - 1;
+    }
+    out.push(rest.slice(0, Math.max(1, lo)));
+    rest = rest.slice(Math.max(1, lo));
+  }
+  if(rest) out.push(rest);
+  return out;
+}
+
+function maktabDailyReportWrapText(ctx, text, maxWidth){
+  const raw = String(text == null ? '' : text).trim() || '—';
+  const tokens = raw.split(/\s+/).flatMap(token => maktabDailyReportBreakToken(ctx, token, maxWidth));
+  const lines = [];
+  let line = '';
+  tokens.forEach(token => {
+    const candidate = line ? `${line} ${token}` : token;
+    if(line && ctx.measureText(candidate).width > maxWidth){
+      lines.push(line);
+      line = token;
+    } else {
+      line = candidate;
+    }
+  });
+  if(line) lines.push(line);
+  return lines.length ? lines : ['—'];
+}
+
 function maktabDailyReportBuildCanvas(){
   const rows = maktabDailyReportState.rows;
   const width = 1500;
   const margin = 58;
   const topArea = 178;
   const headerHeight = 66;
-  const rowHeight = 70;
+  const minRowHeight = 70;
+  const activityLineHeight = 28;
   const footerHeight = 82;
   const contentWidth = width - margin * 2;
   const cols = [72, 360, 286, 372, 294]; // totals to the 1384px content width
-  const height = topArea + headerHeight + rowHeight * rows.length + footerHeight + margin;
   const canvas = document.createElement('canvas');
   canvas.width = width;
-  canvas.height = height;
   const ctx = canvas.getContext('2d');
   if(!ctx) throw new Error('This browser cannot create the report image.');
+
+  // Measure every activity cell before fixing canvas height. This keeps all
+  // comma-separated entries in the exported image instead of ellipsising
+  // the second/third entry.
+  ctx.font = '500 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
+  const preparedRows = rows.map(row => {
+    const texts = [
+      maktabDailyReportCellText('sabaq', row.sabaq),
+      maktabDailyReportCellText('sabaqDhor', row.sabaqDhor),
+      maktabDailyReportCellText('dhor', row.dhor)
+    ];
+    const lines = texts.map((text, i) => maktabDailyReportWrapText(ctx, text, cols[i + 2] - 28));
+    const maxLines = Math.max(1, ...lines.map(x => x.length));
+    return { row, lines, height: Math.max(minRowHeight, maxLines * activityLineHeight + 26) };
+  });
+  const rowsHeight = preparedRows.reduce((sum, item) => sum + item.height, 0);
+  const height = topArea + headerHeight + rowsHeight + footerHeight + margin;
+  canvas.height = height;
 
   const sage = maktabDailyReportCanvasColour('--palette-sage', '#829672');
   const rose = maktabDailyReportCanvasColour('--color-table-header-log', '#D8959B');
@@ -194,7 +254,6 @@ function maktabDailyReportBuildCanvas(){
   ctx.fillStyle = '#F3F3EF';
   ctx.fillRect(0, 0, width, height);
 
-  // White report card.
   maktabDailyReportRoundedRect(ctx, 28, 28, width - 56, height - 56, 24);
   ctx.fillStyle = '#FFFFFF';
   ctx.fill();
@@ -238,8 +297,10 @@ function maktabDailyReportBuildCanvas(){
     x += cols[i];
   });
 
-  rows.forEach((row, rowIndex) => {
-    const y = tableY + headerHeight + rowIndex * rowHeight;
+  let y = tableY + headerHeight;
+  preparedRows.forEach((item, rowIndex) => {
+    const row = item.row;
+    const rowHeight = item.height;
     x = margin;
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(x, y, contentWidth, rowHeight);
@@ -247,17 +308,15 @@ function maktabDailyReportBuildCanvas(){
     ctx.lineWidth = 1.5;
     ctx.strokeRect(x, y, contentWidth, rowHeight);
 
-    // Row number.
     ctx.fillStyle = inkSoft;
     ctx.font = '700 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     ctx.fillText(String(rowIndex + 1), x + 20, y + rowHeight / 2);
     x += cols[0];
 
-    // Student blue pill, matching Maktab Summary's visual language.
     const pillX = x + 14;
-    const pillY = y + 13;
+    const pillH = 44;
+    const pillY = y + (rowHeight - pillH) / 2;
     const pillW = cols[1] - 28;
-    const pillH = rowHeight - 26;
     maktabDailyReportRoundedRect(ctx, pillX, pillY, pillW, pillH, pillH / 2);
     ctx.fillStyle = sky;
     ctx.fill();
@@ -268,21 +327,22 @@ function maktabDailyReportBuildCanvas(){
 
     ctx.font = '500 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
     ctx.fillStyle = ink;
-    [
-      maktabDailyReportCellText('sabaq', row.sabaq),
-      maktabDailyReportCellText('sabaqDhor', row.sabaqDhor),
-      maktabDailyReportCellText('dhor', row.dhor)
-    ].forEach((text, i) => {
+    item.lines.forEach((lines, i) => {
       const w = cols[i + 2];
-      ctx.fillText(maktabDailyReportFitText(ctx, text, w - 28), x + 14, y + rowHeight / 2);
+      const textHeight = lines.length * activityLineHeight;
+      let lineY = y + (rowHeight - textHeight) / 2 + activityLineHeight / 2;
+      lines.forEach(line => {
+        ctx.fillText(line, x + 14, lineY);
+        lineY += activityLineHeight;
+      });
       x += w;
     });
+    y += rowHeight;
   });
 
-  const footerY = tableY + headerHeight + rows.length * rowHeight;
   ctx.fillStyle = inkSoft;
   ctx.font = '500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif';
-  ctx.fillText('Hifzhelper · Daily Maktab Summary', margin, footerY + 44);
+  ctx.fillText('Hifzhelper · Daily Maktab Summary', margin, y + 44);
   return canvas;
 }
 

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.1 | css/settings.css */
+/* Hifzhelper build 4.2.15.5 | css/settings.css */
 /* ============================================================
    Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0)
    REVISED from V3.7.x/V3.8.0's 2-card swipeable rail back to ONE
@@ -581,3 +581,26 @@
   .mcal-day-event { font-size:7px; }
   #msetCardCalendar .mset-mcal-list .mcal-list-row { font-size:12px; gap:5px; }
 }
+
+/* ============================================================
+   V4.2.15.5 — Calendar term editor clarity. Each configured term is its
+   own bordered card; the add-another control is a separate action beneath. */
+#msetCardCalendar .mset-terms { display: grid; gap: 10px; }
+#msetCardCalendar .mset-term-row {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface, #fff);
+}
+#msetCardCalendar #mset_term_add {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  padding: 9px 14px;
+  margin: 12px auto 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
+#msetCardCalendar #mset_term_add::after { content: ' Add another term'; }
+#msetCardCalendar #mset_term_add_big { margin-top: 12px; }
