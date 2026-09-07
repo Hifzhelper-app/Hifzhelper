@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.15.4 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.14).
 //
@@ -144,36 +144,44 @@ function mkregSortStudents(students, date, weeks, sortKey, sortDirection, termFr
   });
 }
 
-// V4.2.15.2: each sortable header is a 3-state control.
-// Name: default -> A-Z -> Z-A -> default.
-// Attendance: default -> term-wide high-to-low -> low-to-high -> default.
+// V4.2.15.4: the two header chevrons are deliberately TWO-WAY only.
+// Name toggles A-Z / Z-A. Attendance toggles the two directions of the
+// agreed TERM-WIDE sort. The separate small Sort pill in the page heading
+// is the one-tap return to the established default weekly ordering.
+function mkregReorderRows(host, sorted){
+  const tbody = host.querySelector('.mkregister-grid tbody');
+  if(!tbody) return;
+  const byId = new Map(Array.from(tbody.querySelectorAll('tr[data-student-id]')).map(tr => [tr.dataset.studentId, tr]));
+  sorted.forEach((student, index) => {
+    const tr = byId.get(String(student.id));
+    if(!tr) return;
+    const number = tr.querySelector('.mkregister-row-number');
+    if(number) number.textContent = String(index + 1);
+    tbody.appendChild(tr);
+  });
+}
+
 function mkregSetSort(host, data, key){
   const firstDirection = key === 'attendance' ? 'desc' : 'asc';
   const secondDirection = firstDirection === 'asc' ? 'desc' : 'asc';
   if(mkregisterSortKey !== key){
     mkregisterSortKey = key;
     mkregisterSortDirection = firstDirection;
-  } else if(mkregisterSortDirection === firstDirection){
-    mkregisterSortDirection = secondDirection;
   } else {
-    mkregisterSortKey = 'default';
-    mkregisterSortDirection = null;
+    mkregisterSortDirection = mkregisterSortDirection === firstDirection ? secondDirection : firstDirection;
   }
   const sorted = mkregSortStudents(
     data.students || [], data.today, data.weeks || [], mkregisterSortKey,
     mkregisterSortDirection, data.from, data.to
   );
-  const tbody = host.querySelector('.mkregister-grid tbody');
-  if(tbody){
-    const byId = new Map(Array.from(tbody.querySelectorAll('tr[data-student-id]')).map(tr => [tr.dataset.studentId, tr]));
-    sorted.forEach((student, index) => {
-      const tr = byId.get(String(student.id));
-      if(!tr) return;
-      const number = tr.querySelector('.mkregister-row-number');
-      if(number) number.textContent = String(index + 1);
-      tbody.appendChild(tr);
-    });
-  }
+  mkregReorderRows(host, sorted);
+  mkregUpdateSortButtons(host);
+}
+
+function mkregResetSort(host, data){
+  mkregisterSortKey = 'default';
+  mkregisterSortDirection = null;
+  mkregReorderRows(host, mkregSortStudents(data.students || [], data.today, data.weeks || [], 'default', null, data.from, data.to));
   mkregUpdateSortButtons(host);
 }
 
@@ -184,14 +192,20 @@ function mkregUpdateSortButtons(host){
     btn.classList.toggle('is-asc', active && mkregisterSortDirection === 'asc');
     btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     if(btn.dataset.sortKey === 'name'){
-      btn.setAttribute('aria-label', !active ? 'Sort students A to Z' : (mkregisterSortDirection === 'asc' ? 'Sort students Z to A' : 'Return to default student order'));
-      btn.title = !active ? 'A-Z' : (mkregisterSortDirection === 'asc' ? 'Z-A' : 'Default order');
+      btn.setAttribute('aria-label', active && mkregisterSortDirection === 'asc' ? 'Sort students Z to A' : 'Sort students A to Z');
+      btn.title = active && mkregisterSortDirection === 'asc' ? 'Z-A' : 'A-Z';
     }
     if(btn.dataset.sortKey === 'attendance'){
-      btn.setAttribute('aria-label', !active ? 'Sort Attendance highest first for the term' : (mkregisterSortDirection === 'desc' ? 'Sort Attendance lowest first for the term' : 'Return to default Attendance order'));
-      btn.title = !active ? 'Term: active days then Attendance %, highest first' : (mkregisterSortDirection === 'desc' ? 'Term: lowest first' : 'Default order');
+      btn.setAttribute('aria-label', active && mkregisterSortDirection === 'desc' ? 'Sort Attendance lowest first for the term' : 'Sort Attendance highest first for the term');
+      btn.title = active && mkregisterSortDirection === 'desc' ? 'Term: lowest first' : 'Term: active days then Attendance %, highest first';
     }
   });
+  const reset = document.getElementById('mkregisterDefaultSortBtn');
+  if(reset){
+    const manual = mkregisterSortKey !== 'default';
+    reset.classList.toggle('is-active', manual);
+    reset.setAttribute('aria-pressed', manual ? 'false' : 'true');
+  }
 }
 
 // V4.2.11.1+: a term register can span many weeks. Put the current Maktab
@@ -296,7 +310,7 @@ async function mkregisterPaint(){
 
   host.innerHTML = `<div class="mkregister-scroll"><table class="mkregister-grid" id="mkregisterGrid">
     <thead>
-      <tr><th class="mkregister-student-head" rowspan="2"><span class="mkregister-student-head-inner"><button type="button" class="mkregister-sort-btn mkregister-student-head-label" data-sort-key="name" aria-pressed="false" aria-label="Sort students A to Z"><span>Student</span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button><button type="button" class="mkregister-percent-toggle" aria-expanded="false" aria-controls="mkregisterGrid" aria-label="Show Attendance percentage" title="Show Attendance %">%</button></span></th><th class="mkregister-percent-head" rowspan="2"><button type="button" class="mkregister-sort-btn" data-sort-key="attendance" aria-pressed="false" aria-label="Sort Attendance highest first"><span>Attendance %</span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button></th>${weekHead}</tr>
+      <tr><th class="mkregister-student-head" rowspan="2"><span class="mkregister-student-head-inner"><button type="button" class="mkregister-sort-btn mkregister-student-head-label" data-sort-key="name" aria-pressed="false" aria-label="Sort students A to Z"><span>Student</span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button></span></th><th class="mkregister-percent-head" rowspan="2"><span class="mkregister-attendance-head-inner"><button type="button" class="mkregister-sort-btn" data-sort-key="attendance" aria-pressed="false" aria-label="Sort Attendance highest first"><span class="mkregister-attendance-label"><span class="mkregister-attendance-label-desktop">Attendance %</span><span class="mkregister-attendance-label-mobile">Attendance</span></span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button><button type="button" class="mkregister-percent-toggle" aria-expanded="false" aria-controls="mkregisterGrid" aria-label="Show Attendance percentage" title="Show Attendance percentage">${iconHtml('attendance')}</button></span></th>${weekHead}</tr>
       <tr>${dayHead}</tr>
     </thead>
     <tbody>${body || `<tr><td colspan="${colCount + 2}" class="form-hint">No active students.</td></tr>`}</tbody>
@@ -324,6 +338,10 @@ async function mkregisterPaint(){
   host.querySelectorAll('.mkregister-sort-btn').forEach(btn => {
     btn.addEventListener('click', () => mkregSetSort(host, data, btn.dataset.sortKey));
   });
+  const resetSort = document.getElementById('mkregisterDefaultSortBtn');
+  if(resetSort){
+    resetSort.onclick = () => mkregResetSort(host, data);
+  }
   mkregUpdateSortButtons(host);
 
   host.querySelectorAll('.mkregister-student').forEach(btn => {
@@ -335,12 +353,3 @@ async function mkregisterPaint(){
   });
 }
 
-
-// V4.2.15.1: explicit rectangular green button back to Maktab Summary.
-if(typeof document !== 'undefined'){
-  const mkweekMaktabSummaryBtn = document.getElementById('mkweekMaktabSummaryBtn');
-  if(mkweekMaktabSummaryBtn){
-    mkweekMaktabSummaryBtn.innerHTML = iconHtml('maktab') + '<span>Maktab Summary</span>';
-    mkweekMaktabSummaryBtn.addEventListener('click', () => showScreen('maktabSummary'));
-  }
-}

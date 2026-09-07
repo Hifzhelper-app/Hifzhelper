@@ -227,9 +227,9 @@ const pageSrc = read('js/maktabCalendarPage.js');
 const html = read('index.html');
 check('page: the screen + script + SW asset exist', /id="screen-maktabCalendar"/.test(html)
   && /js\/maktabCalendarPage\.js\?v=/.test(html) && /maktabCalendarPage\.js\?v=/.test(read('js/sw.js')));
-check('nav: the Calendar item rides g3 for everyone (students read-only by construction — the page has no edit UI)',
+check('nav: the legacy Calendar route remains defined but V4.2.15.4 removes it from menu/Home assembly',
   /const MAKTAB_CALENDAR_NAV_ITEM = \{ id: 'maktabCalendar', label: 'Calendar'/.test(read('js/auth.js'))
-  && /g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\);/.test(read('js/auth.js')));
+  && !/g1\.push\(MAKTAB_CALENDAR_NAV_ITEM\)|g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)|out\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(read('js/auth.js')));
 const settingsSrc = read('js/maktabSettings.js');
 check('settings: the Calendar card is year-picker + Terms + the TWO green popup buttons (V3.88.0)',
   /id="msetCardCalendar"/.test(html) && /id="msetTermsList"/.test(settingsSrc)

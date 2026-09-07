@@ -87,15 +87,15 @@ check('6: but the id is still RENDERED, so copy and search still have it',
 
   const a = groups('admin');
   check('7: admin group 1 follows V4.2.11.2 primary order',
-    JSON.stringify(a[0]) === JSON.stringify(['home', 'maktabSummary', 'maktabAttendance', 'admin', 'maktabSettings', 'maktabCalendar']), JSON.stringify(a[0]));
+    JSON.stringify(a[0]) === JSON.stringify(['home', 'maktabSummary', 'maktabAttendance', 'admin', 'maktabSettings']), JSON.stringify(a[0]));
   check('7: group 2 leads with Surahs, Juz Tracker, Timer',
     JSON.stringify(a[1].slice(0, 3)) === JSON.stringify(['sih', 'juzTracker', 'timer']), JSON.stringify(a[1]));
   check('7: the last group is Refresh, Switch account, Log out (Switch account added V3.77.0 (j))',
     JSON.stringify(a[a.length - 1]) === JSON.stringify(['refresh', 'switchAccount', 'logout']));
 
   const s = groups('student');
-  check('7: a student primary group is Home, Attendance, Calendar — no empty groups emitted',
-    JSON.stringify(s[0]) === JSON.stringify(['home', 'attendancePage', 'maktabCalendar']) && s.every(g => g.length > 0), JSON.stringify(s));
+  check('7: a student primary group is Home, Attendance — standalone Calendar retired in V4.2.15.4',
+    JSON.stringify(s[0]) === JSON.stringify(['home', 'attendancePage']) && s.every(g => g.length > 0), JSON.stringify(s));
   check('7: and keeps her own screens among the personal tools', s[1].includes('journal') && s[1].includes('maktabJournal'));
   check('7: dividers go BETWEEN groups, never trailing',
     /visibleNavGroups\(\)\.map\(g => g\.map\(btn\)\.join\(''\)\)\.join\('<div class="dropdown-divider"><\/div>'\)/.test(auth));

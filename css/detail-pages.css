@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.4 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2285,11 +2285,17 @@
    one; Mon/Tue/... sit on row two with a strong rule beneath the complete
    header. Present is a bold lime text tick; Haidh reuses the former thin
    green Present check. Blank active cells remain absent/unresolved. */
-/* V4.2.15.1: Attendance header cross-navigation. The shared button style
-   lives in journal-table.css; only placement belongs to this screen. */
+/* V4.2.15.4: the Attendance header no longer duplicates the X-to-Summary
+   navigation. A compact reset pill sits directly beside the title and is
+   the one-tap way back from either manual two-way sort to default order. */
 #screen-maktabAttendance .juz-tracker-header-row { position: relative; }
-#screen-maktabAttendance .mkregister-summary-link {
-  position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap;
+#screen-maktabAttendance .mkregister-default-sort-pill {
+  margin-left: 4px; padding: 4px 10px; border: 1px solid var(--color-table-border);
+  border-radius: 999px; background: var(--color-surface, #fff); color: var(--color-ink-soft);
+  font: inherit; font-size: 11px; font-weight: 700; line-height: 1.2; cursor: pointer; white-space: nowrap;
+}
+#screen-maktabAttendance .mkregister-default-sort-pill.is-active {
+  background: var(--color-accent-soft, #D0DBE7); color: var(--color-ink);
 }
 
 .mkregister-host { min-width: 0; }
@@ -2353,6 +2359,8 @@
 .mkregister-sort-btn.is-active .mkregister-sort-chevron { opacity: 1; }
 .mkregister-sort-btn.is-active.is-asc .mkregister-sort-chevron { transform: rotate(180deg); }
 .mkregister-percent-head .mkregister-sort-btn { justify-content: center; width: 100%; }
+.mkregister-attendance-label-mobile { display: none; }
+.mkregister-attendance-head-inner { display: block; }
 .mkregister-percent-cell {
   position: sticky; left: 180px; z-index: 3; width: 92px; min-width: 92px; max-width: 92px;
   padding: 4px 6px; background: var(--color-surface, #fff); text-align: center;
@@ -2393,11 +2401,8 @@
      other screens' framing. */
   #screen-maktabAttendance { padding-left: 4px; padding-right: 4px; }
   #screen-maktabAttendance .juz-tracker-header-row { margin-left: 0; margin-right: 0; }
-  #screen-maktabAttendance .mkregister-summary-link {
-    position: static; transform: none; margin-left: auto; padding: 5px 8px; font-size: 11px;
-  }
-  #screen-maktabAttendance .mkregister-summary-link svg { width: 15px; height: 15px; }
-  #screen-maktabAttendance .juz-tracker-header-row .screen-close-btn { margin-left: 0; }
+  #screen-maktabAttendance .mkregister-default-sort-pill { margin-left: 2px; padding: 4px 8px; font-size: 10px; }
+  #screen-maktabAttendance .juz-tracker-header-row .screen-close-btn { margin-left: auto; }
   .mkregister-scroll {
     max-height: calc(100vh - var(--auth-band-height, 60px) - 115px);
     border-left-width: 1px; border-right-width: 1px;
@@ -2409,26 +2414,34 @@
     padding: 6px 7px;
   }
   .mkregister-student-head-inner {
-    display: flex; align-items: center; justify-content: space-between; gap: 4px;
+    display: flex; align-items: center; justify-content: flex-start; gap: 4px;
     min-width: 0;
   }
   .mkregister-student-head-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* V4.2.15.4 mobile: Attendance owns its own small header cell. The word
+     may wrap, the literal percent sign is omitted, and the reveal control
+     is the Attendance icon centred directly beneath the word. */
+  .mkregister-percent-head {
+    display: table-cell; left: 128px; width: 68px; min-width: 68px; max-width: 68px;
+    padding: 5px 3px; white-space: normal;
+  }
+  .mkregister-attendance-head-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+  .mkregister-percent-head .mkregister-sort-btn { width: auto; max-width: 100%; align-items: flex-start; gap: 2px; }
+  .mkregister-attendance-label-desktop { display: none; }
+  .mkregister-attendance-label-mobile { display: inline; white-space: normal; overflow-wrap: anywhere; line-height: 1.05; text-align: center; }
   .mkregister-percent-toggle {
     display: inline-flex; align-items: center; justify-content: center;
-    flex: 0 0 28px; width: 28px; height: 28px; padding: 0;
+    flex: 0 0 28px; width: 28px; height: 28px; padding: 4px;
     border: 1px solid rgba(255,255,255,.65); border-radius: 999px;
-    background: rgba(255,255,255,.18); color: inherit; font: inherit;
-    font-weight: 800; line-height: 1; cursor: pointer;
+    background: rgba(255,255,255,.22); color: inherit; cursor: pointer;
   }
+  .mkregister-percent-toggle svg { width: 18px; height: 18px; display: block; }
   .mkregister-percent-toggle[aria-expanded="true"] { background: var(--color-surface, #fff); }
-  /* Rolled up by default. The header/cells still exist semantically and are
-     restored on demand, but consume zero layout width while collapsed. */
-  .mkregister-percent-head, .mkregister-percent-cell { display: none; }
-  .mkregister-grid.mkregister-percent-open .mkregister-percent-head,
-  .mkregister-grid.mkregister-percent-open .mkregister-percent-cell { display: table-cell; }
-  .mkregister-grid.mkregister-percent-open .mkregister-percent-head,
+  /* Percentage VALUES remain rolled up by default; the small Attendance
+     header/control stays visible so the user always has a way to reveal it. */
+  .mkregister-percent-cell { display: none; }
   .mkregister-grid.mkregister-percent-open .mkregister-percent-cell {
-    left: 128px; width: 68px; min-width: 68px; max-width: 68px;
+    display: table-cell; left: 128px; width: 68px; min-width: 68px; max-width: 68px;
   }
   .mkregister-row-number { flex-basis: 20px; width: 20px; font-size: 10px; }
   .mkregister-student { padding-left: 4px; padding-right: 6px; }

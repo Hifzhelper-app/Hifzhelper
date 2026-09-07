@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.2 | js/auth.js */
+/* Hifzhelper build 4.2.15.4 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -63,7 +63,7 @@ const MAKTAB_SUMMARY_NAV_ITEM = { id: 'maktabSummary', label: 'Maktab', icon: 'm
 // never sees the maktab settings, though their cards read the mushaf.
 const MAKTAB_SETTINGS_NAV_ITEM = { id: 'maktabSettings', label: 'Maktab Settings', icon: 'settings' };
 const MAKTAB_JOURNAL_NAV_ITEM = { id: 'maktabJournal', label: 'Maktab Journal', icon: 'journal' };
-const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'calendar' };   // V3.87.0: everyone; students read-only. V3.98.1: its own glyph — the check-calendar now means attendance alone.
+const MAKTAB_CALENDAR_NAV_ITEM = { id: 'maktabCalendar', label: 'Calendar', icon: 'calendar' };   // Legacy direct route only. V4.2.15.4 removes it from menu/Home; the viewer now lives inside Maktab Settings > Calendar.
 
 // V3.70.0: the personal journal is hidden FOR TEACHING PROFILES ONLY.
 // Confirmed in chat 2026-08-17: "those items are only hidden for teacher
@@ -106,8 +106,9 @@ function isTeachingProfile(){
 }
 
 // V4.2.11.2: primary menu order is now explicit and role-aware:
-// Home → Maktab → Attendance → Student Management → Maktab Settings →
-// Calendar. Items a role cannot use are simply omitted; every other item
+// Home → Maktab → Attendance → Student Management → Maktab Settings.
+// V4.2.15.4 removes the standalone Calendar nav item because its viewer now
+// lives inside Maktab Settings > Calendar. Items a role cannot use are omitted; every other item
 // keeps its existing relative order in the personal-tools/session groups.
 function visibleNavGroups(){
   const hidePJ = isTeachingProfile();
@@ -119,14 +120,13 @@ function visibleNavGroups(){
   if(isTeachingProfile()) g1.push(MAKTAB_ATTENDANCE_NAV_ITEM);
   else g1.push(ATTENDANCE_NAV_ITEM);
   if(currentUser.role === 'admin') g1.push(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM);
-  g1.push(MAKTAB_CALENDAR_NAV_ITEM);
 
   const g2 = [byId('sih'), byId('juzTracker')].filter(keep)
     .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
   g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
 
   // Personal journal destinations keep their established order. Attendance
-  // and Calendar moved to the primary group above and must not be duplicated.
+  // remains in the primary group above and must not be duplicated.
   const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker', 'attendancePage'].includes(x.id));
   if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
 
@@ -154,7 +154,6 @@ function visibleNavItems(){
   if(!hidePJ) out.push(MAKTAB_JOURNAL_NAV_ITEM);
   if(isTeachingProfile()) out.push(MAKTAB_ATTENDANCE_NAV_ITEM);
   else out.push(ATTENDANCE_NAV_ITEM);
-  out.push(MAKTAB_CALENDAR_NAV_ITEM);
   return out;
 }
 

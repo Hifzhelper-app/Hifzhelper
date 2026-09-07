@@ -67,11 +67,11 @@ check('new assets carry V4.2.15.3 last-edit headers',
   && /^\/\* Hifzhelper build 4\.2\.15\.3 \| css\/daily-report\.css \*\//.test(css));
 
 const pageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page/cache are V4.2.15.3 and service-worker precache includes both new report assets',
-  pageVersions.length > 0 && pageVersions.every(v => v === '4.2.15.3')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.3'/.test(sw)
-  && /daily-report\.css\?v=4\.2\.15\.3/.test(sw)
-  && /maktabDailyReport\.js\?v=4\.2\.15\.3/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('later page/cache overlays stay aligned and service-worker precache still includes both V4.2.15.3 report assets',
+  pageVersions.length > 0 && !!cacheVersion && pageVersions.every(v => v === cacheVersion)
+  && new RegExp('daily-report\\.css\\?v=' + cacheVersion.replace(/\./g,'\\.')).test(sw)
+  && new RegExp('maktabDailyReport\\.js\\?v=' + cacheVersion.replace(/\./g,'\\.')).test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

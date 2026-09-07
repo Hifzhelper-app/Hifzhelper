@@ -54,12 +54,12 @@ const v42111Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('page/cache keys have advanced together beyond the V4.2.11.1 patch',
   !!v42111Page && v42111Page === v42111Cache && v42111Page !== '4.2.11.1');
 check('V4.2.11.1 pins still identify untouched files while later-edited files carry their current last-edit headers',
-  /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/admin\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/detail-pages\.css \*\//.test(detailCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/adminPage\.js \*\//.test(admin)
+  /^\/\* Hifzhelper build 4\.2\.15\.4 \| css\/admin\.css \*\//.test(css)
+  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| css\/detail-pages\.css \*\//.test(detailCss)
+  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/haidhDetailScreen\.js \*\//.test(haidh)
-  && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(register)
-  && /^\/\* Hifzhelper build 4\.2\.15\.3 \| js\/sw\.js \*\//.test(sw));
+  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(register)
+  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/sw\.js \*\//.test(sw));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

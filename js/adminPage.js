@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | js/adminPage.js */
+/* Hifzhelper build 4.2.15.4 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -115,7 +115,7 @@ function adminOpenHaidhSettings(user){
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay admin-haidh-settings-modal';
   overlay.innerHTML = `<div class="modal-card admin-haidh-settings-card" role="dialog" aria-modal="true" aria-label="Haidh settings for ${String(user.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">
-    <div class="admin-haidh-settings-head"><strong>Haaidha</strong><span class="maktab-name-pill">${String(user.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span><button type="button" class="icon-btn admin-haidh-settings-save" id="adminEditHaidhSave" aria-label="Save Haidh settings" title="Save">${iconHtml('save')}</button><button type="button" class="close-btn" id="adminEditHaidhClose" aria-label="Close">&times;</button></div>
+    <div class="admin-haidh-settings-head"><span class="admin-haidh-settings-titles"><strong>Haaidha</strong><strong class="admin-haidh-settings-student">${String(user.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</strong></span><span class="admin-haidh-settings-actions"><button type="button" class="icon-btn admin-haidh-settings-save" id="adminEditHaidhSave" aria-label="Save Haidh settings" title="Save">${iconHtml('save')}</button><button type="button" class="close-btn admin-haidh-settings-close" id="adminEditHaidhClose" aria-label="Close">&times;</button></span></div>
     ${adminRegistrationHaidhSetupMarkup('admin_edit', { open:true, showTitle:false, cycle:user.haidh_cycle_length || '', period:user.haidh_period_length || '', next:user.haidh_next_expected || '' })}
     <div class="form-error" id="adminEditHaidhError"></div>
   </div>`;

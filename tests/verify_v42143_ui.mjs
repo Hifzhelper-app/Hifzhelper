@@ -37,7 +37,7 @@ check('Haidh-only students remain above absent/unresolved-only students', ids.in
 check('predicted Haidh is a Haidh-only weekly state when there are no current-week ticks', ctx.mkregStudentWeekBand({cells:{'2026-09-01':'predicted-haidh'}}, ['2026-09-01']) === 1);
 check('cell data directly drives the current-week activity/Haidh bands', ctx.mkregStudentWeekBand({cells:{'2026-09-01':'present'}}, ['2026-09-01']) === 0 && ctx.mkregStudentWeekBand({cells:{}}, ['2026-09-01']) === 2);
 check('Attendance ordering remains independent of Maktab Summary ordering helpers', !/maktabSummarySortBand|maktabSummaryCompareName|maktabSummaryHasLog/.test(attendance));
-check('served Attendance file carries its current last-edit header', /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
+check('served Attendance file carries its current last-edit header', /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('page and service-worker cache keys carry forward together after later overlays', versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));

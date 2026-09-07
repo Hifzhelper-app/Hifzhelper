@@ -36,7 +36,7 @@ check('Haidh uses plain grey H / h text with no icon pill',
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\);[^}]*font-weight: 400/.test(css)
   && !/iconHtml\('haidh'\)/.test(page));
 check('Attendance % is the second column and is returned per student',
-  /mkregister-student-head" rowspan="2">[\s\S]{0,650}Student[\s\S]{0,650}<\/th><th class="mkregister-percent-head" rowspan="2">[\s\S]{0,350}Attendance %[\s\S]{0,350}<\/th>/.test(page)
+  /mkregister-student-head" rowspan="2">[\s\S]{0,1200}Student[\s\S]{0,1200}<\/th><th class="mkregister-percent-head" rowspan="2">[\s\S]{0,1200}Attendance %[\s\S]{0,1200}<\/th>/.test(page)
   && /attendance_percent: summary\.percent/.test(worker));
 check('Attendance % and the individual page share one attendance-period summary helper',
   /export function summarizeAttendancePeriod\(/.test(worker)
@@ -50,11 +50,13 @@ check('individual Attendance removes the separate page title and puts Attendance
   && /`Attendance — \$\{logCtxStudentName\(\)\}`/.test(haidh));
 check('individual Attendance header is capped to the same desktop width as its cards',
   /#screen-attendancePage > \.juz-tracker-header-row[\s\S]*@media \(min-width: 768px\)[\s\S]*width: 50%/.test(css));
-check('admin primary menu order is Home, Maktab, Attendance, Student Management, Maktab Settings, Calendar',
-  /if\(isTeachingProfile\(\)\) g1\.push\(MAKTAB_SUMMARY_NAV_ITEM\);[\s\S]*g1\.push\(MAKTAB_ATTENDANCE_NAV_ITEM\);[\s\S]*g1\.push\(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM\);[\s\S]*g1\.push\(MAKTAB_CALENDAR_NAV_ITEM\);/.test(auth));
-check('Attendance and Calendar are not duplicated in the later personal-tools group',
+check('admin primary menu order remains Home, Maktab, Attendance, Student Management, Maktab Settings; standalone Calendar is retired in V4.2.15.4',
+  /if\(isTeachingProfile\(\)\) g1\.push\(MAKTAB_SUMMARY_NAV_ITEM\);[\s\S]*g1\.push\(MAKTAB_ATTENDANCE_NAV_ITEM\);[\s\S]*g1\.push\(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM\);/.test(auth)
+  && !/g1\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
+check('Attendance is not duplicated later and Calendar is absent from menu/Home assembly',
   /!\['home', 'sih', 'juzTracker', 'attendancePage'\]\.includes\(x\.id\)/.test(auth)
-  && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
+  && !/g3\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth)
+  && !/out\.push\(MAKTAB_CALENDAR_NAV_ITEM\)/.test(auth));
 const v42112Page = (html.match(/js\/app\.js\?v=([0-9.]+)/) || [])[1];
 const v42112Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.11.2 page/cache contract remains valid on later overlays',
