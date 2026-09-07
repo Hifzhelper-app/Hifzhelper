@@ -57,9 +57,9 @@ check('existing Attendance calendar retains start/end selection plus Haidh and A
   && /client\.setDay\(d, 'predicted-absent'\)/.test(haidh));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('V4.2.15 functionality remains on the later V4.2.15.2 page/cache overlay',
-  versions.length > 0 && versions.every(v => v === '4.2.15.2')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.2'/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.15 functionality remains on later page/cache overlays',
+  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

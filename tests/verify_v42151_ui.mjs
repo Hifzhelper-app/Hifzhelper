@@ -107,9 +107,10 @@ check('registration API carries the full Haidh setup and backend stores it with 
   && /INSERT INTO students \(id, name, role, created_date, active, whatsapp_number, gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected\)/.test(worker)
   && /INSERT INTO attendance \(student_id, date, status\) VALUES \(\?, \?, 'predicted-haidh'\)/.test(worker));
 
-check('later V4.2.15.2 overlay keeps page/cache aligned and bumps only re-edited files',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.2')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.2'/.test(sw)
+const v42151PageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
+const v42151CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('later overlays keep page/cache aligned while V4.2.15.2 re-edited files retain their last-edit headers',
+  v42151PageVersions.length > 0 && !!v42151CacheVersion && v42151PageVersions.every(v => v === v42151CacheVersion)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/admin\.css \*\//.test(adminCss));

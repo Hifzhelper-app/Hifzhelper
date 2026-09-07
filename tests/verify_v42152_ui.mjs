@@ -110,9 +110,10 @@ check('Student Summary copies the Attendance header style and adds Maktab Summar
   && /summaryBtn\.onclick = \(\) => showScreen\('maktabSummary'\)/.test(day)
   && /ajzaaBtn\.onclick = \(\) => openMaktabStudentSetup\(\{ id: logCtxStudentId\(\), name: logCtxStudentName\(\) \}\)/.test(day));
 
-check('V4.2.15.2 page/service-worker cache versions are aligned and touched files carry current headers',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.2')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.2'/.test(sw)
+const v42152PageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
+const v42152CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.15.2 behaviour survives later page/cache overlays and its touched files retain their last-edit headers',
+  v42152PageVersions.length > 0 && !!v42152CacheVersion && v42152PageVersions.every(v => v === v42152CacheVersion)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
   && /^\/\* Hifzhelper build 4\.2\.15\.2 \| css\/haidh\.css \*\//.test(haidhCss));
