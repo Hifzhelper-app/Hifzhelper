@@ -21,13 +21,14 @@ check('Student Summary no longer uses a separate journal/activity icon quick act
   !/id="studentSummaryActivityBtn"/.test(html)
   && !/document\.getElementById\('studentSummaryActivityBtn'\)/.test(day));
 
-check('Student Summary exposes Sabaq, Sabaq Dhor and Dhor labels as quick-action buttons',
-  /data-ss-quick-type="sabaq"[^>]*>Sabaq<\/button>/.test(html)
-  && /data-ss-quick-type="sabaqDhor"[^>]*>Sabaq Dhor<\/button>/.test(html)
-  && /data-ss-quick-type="dhor"[^>]*>Dhor<\/button>/.test(html));
+check('Student Summary activity headings are display-only after the unified Log action supersedes per-type header actions',
+  !/data-ss-quick-type/.test(html)
+  && /<div class="journal-header-cell col-log"><span>Sabaq<\/span><\/div>/.test(html)
+  && /<div class="journal-header-cell col-log"><span>Sabaq Dhor<\/span><\/div>/.test(html)
+  && /<div class="journal-header-cell col-log"><span>Dhor<\/span><\/div>/.test(html));
 
-check('Student Summary activity labels call the exact shared Maktab Summary Quick Log function',
-  /btn\.onclick = \(\) => maktabOpenQuickLog\([\s\S]{0,260}student, quickDate, type, entriesByType\[type\] \|\| \[\], entriesByType/.test(day));
+check('Student Summary dedicated circle-plus calls the exact shared Maktab Summary Quick Log function in combined mode',
+  /quickOpenBtn\.onclick = \(\) => maktabOpenQuickLog\([\s\S]{0,260}student, quickDate, 'sabaq', entriesByType\.sabaq \|\| \[\], entriesByType,[\s\S]{0,120}combined: true/.test(day));
 
 check('Student Summary quick log uses the carried date and refreshes the Student Summary after Save',
   /const quickDate = logCtxDate\(\) \|\| maktabTodayISO\(\)/.test(day)
