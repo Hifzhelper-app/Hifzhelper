@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.4 | js/maktabSettings.js */
+/* Hifzhelper build 4.2.15.7 | js/maktabSettings.js */
 // ============================================================
 // Hifzhelper -- Maktab settings screen (V3.65.0, delivery (g);
 // restructured V3.79.0 into a THREE-CARD RAIL like the day view —
@@ -68,6 +68,13 @@ async function renderMaktabSettingsScreen(){
     <div class="mset-row mset-name-row">
       <span class="mset-row-label">Maktab Name</span>
       <input type="text" id="mset_name" maxlength="60" value="${esc(s.name)}">
+    </div>
+
+    <!-- V4.2.15.7: one shared Hifz-class Zoom link. The auth band surfaces
+         it only on Maktab Journal + Personal Journal. -->
+    <div class="mset-row mset-zoom-row">
+      <span class="mset-row-label">Hifz class Zoom link</span>
+      <input type="url" id="mset_zoom_link" inputmode="url" autocomplete="url" placeholder="https://…" maxlength="2048" value="${esc(s.zoom_link || '')}">
     </div>
 
     <input type="hidden" id="mset_timezone" value="${esc(s.timezone || '')}">
@@ -463,6 +470,7 @@ async function saveMaktabSettingsScreen(){
     absence_flag_days: Number(document.getElementById('mset_absence').value),
     timezone: document.getElementById('mset_timezone').value,   // the STAGED value; '' clears (V3.78.0/V3.79.0)
     teaching_days: msetTeachingDays.slice(),   // V3.98.0
+    zoom_link: document.getElementById('mset_zoom_link').value.trim(),   // V4.2.15.7
     // V3.88.0: term fields no longer sent — terms live in maktab_terms
   };
   status.textContent = 'Saving\u2026';
@@ -479,6 +487,7 @@ async function saveMaktabSettingsScreen(){
   // V3.78.0: the timezone applies to this session immediately, without a
   // reload — appTodayISO reads this.
   MAKTAB_TIMEZONE = payload.timezone || null;
+  if(typeof setMaktabZoomLink === 'function') setMaktabZoomLink(payload.zoom_link || null);
   status.textContent = 'Saved \u2713';
 }
 

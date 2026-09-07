@@ -21,7 +21,7 @@ check('current term register focuses the current Maktab week after paint',
 check('historical or future terms are not forcibly repositioned',
   /if\(data\.today < data\.from \|\| data\.today > data\.to\) return;/.test(page));
 check('attendance page source header reflects the current later overlay',
-  /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(page));
+  /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(page));
 
 const iso = d => d.toISOString().slice(0, 10);
 const shift = (base, n) => { const d = new Date(base + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return iso(d); };
@@ -31,7 +31,7 @@ const tue = shift(thisMon, 1);
 
 const db = new DatabaseSync(':memory:');
 db.exec(`
-  CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT, role TEXT, active INTEGER DEFAULT 1, track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi');
+  CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT, role TEXT, active INTEGER DEFAULT 1, gender TEXT, track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi', haidh_cycle_length INTEGER, haidh_period_length INTEGER, haidh_next_expected TEXT);
   CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT, maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT, timezone TEXT, term_from TEXT, term_to TEXT, teaching_days TEXT);
   CREATE TABLE attendance (student_id TEXT, date TEXT, status TEXT, PRIMARY KEY (student_id, date));
   CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);

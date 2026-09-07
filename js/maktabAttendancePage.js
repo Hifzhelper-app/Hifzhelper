@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.4 | js/maktabAttendancePage.js */
+/* Hifzhelper build 4.2.15.7 | js/maktabAttendancePage.js */
 // ============================================================
 // Hifzhelper — Maktab Attendance register (V4.2.14).
 //
@@ -310,7 +310,7 @@ async function mkregisterPaint(){
 
   host.innerHTML = `<div class="mkregister-scroll"><table class="mkregister-grid" id="mkregisterGrid">
     <thead>
-      <tr><th class="mkregister-student-head" rowspan="2"><span class="mkregister-student-head-inner"><button type="button" class="mkregister-sort-btn mkregister-student-head-label" data-sort-key="name" aria-pressed="false" aria-label="Sort students A to Z"><span>Student</span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button></span></th><th class="mkregister-percent-head" rowspan="2"><span class="mkregister-attendance-head-inner"><button type="button" class="mkregister-sort-btn" data-sort-key="attendance" aria-pressed="false" aria-label="Sort Attendance highest first"><span class="mkregister-attendance-label"><span class="mkregister-attendance-label-desktop">Attendance %</span><span class="mkregister-attendance-label-mobile">Attendance</span></span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button><button type="button" class="mkregister-percent-toggle" aria-expanded="false" aria-controls="mkregisterGrid" aria-label="Show Attendance percentage" title="Show Attendance percentage">${iconHtml('attendance')}</button></span></th>${weekHead}</tr>
+      <tr><th class="mkregister-student-head" rowspan="2"><span class="mkregister-student-head-inner"><button type="button" class="mkregister-sort-btn mkregister-student-head-label" data-sort-key="name" aria-pressed="false" aria-label="Sort students A to Z"><span>Student</span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button><button type="button" class="mkregister-percent-toggle mkregister-percent-toggle-collapsed" aria-expanded="false" aria-controls="mkregisterGrid" aria-label="Show Attendance percentage" title="Show Attendance percentage">${iconHtml('attendance')}</button></span></th><th class="mkregister-percent-head" rowspan="2"><span class="mkregister-attendance-head-inner"><button type="button" class="mkregister-sort-btn" data-sort-key="attendance" aria-pressed="false" aria-label="Sort Attendance highest first"><span class="mkregister-attendance-label"><span class="mkregister-attendance-label-desktop">Attendance %</span><span class="mkregister-attendance-label-mobile">Attendance</span></span><span class="mkregister-sort-chevron" aria-hidden="true">${iconHtml('chevronDown')}</span></button><button type="button" class="mkregister-percent-toggle mkregister-percent-toggle-expanded" aria-expanded="true" aria-controls="mkregisterGrid" aria-label="Hide Attendance percentage" title="Hide Attendance percentage">${iconHtml('attendance')}</button></span></th>${weekHead}</tr>
       <tr>${dayHead}</tr>
     </thead>
     <tbody>${body || `<tr><td colspan="${colCount + 2}" class="form-hint">No active students.</td></tr>`}</tbody>
@@ -323,16 +323,29 @@ async function mkregisterPaint(){
   // V4.2.13.1: phones default to a rolled-up Attendance % column so 4–5
   // teaching days can remain visible beside the sticky Student column. The
   // percentage values themselves are unchanged; this is presentation only.
-  const percentToggle = host.querySelector('.mkregister-percent-toggle');
+  // V4.2.15.7: a real structural roll-up. On mobile the collapsed state
+  // removes the Attendance <th>/<td> column from table layout entirely;
+  // the reveal control lives inside the Student header instead. Safari can
+  // no longer reserve a ghost 38px table column for a "collapsed" header.
+  const percentToggles = Array.from(host.querySelectorAll('.mkregister-percent-toggle'));
   const grid = host.querySelector('.mkregister-grid');
-  if(percentToggle && grid){
-    percentToggle.addEventListener('click', () => {
-      const open = !grid.classList.contains('mkregister-percent-open');
-      grid.classList.toggle('mkregister-percent-open', open);
-      percentToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-      percentToggle.setAttribute('aria-label', open ? 'Hide Attendance percentage' : 'Show Attendance percentage');
-      percentToggle.title = open ? 'Hide Attendance %' : 'Show Attendance %';
+  const setPercentOpen = (open) => {
+    if(!grid) return;
+    grid.classList.toggle('mkregister-percent-open', open);
+    percentToggles.forEach(toggle => {
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggle.setAttribute('aria-label', open ? 'Hide Attendance percentage' : 'Show Attendance percentage');
+      toggle.title = open ? 'Hide Attendance %' : 'Show Attendance %';
     });
+    // Keep the current week beside the sticky identity area after its width
+    // changes; this also keeps past/future horizontal swiping predictable.
+    if(typeof requestAnimationFrame === 'function') requestAnimationFrame(focusCurrentWeek);
+    else focusCurrentWeek();
+  };
+  if(grid){
+    percentToggles.forEach(toggle => toggle.addEventListener('click', () => {
+      setPercentOpen(!grid.classList.contains('mkregister-percent-open'));
+    }));
   }
 
   host.querySelectorAll('.mkregister-sort-btn').forEach(btn => {

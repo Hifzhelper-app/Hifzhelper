@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | css/settings.css */
+/* Hifzhelper build 4.2.15.7 | css/settings.css */
 /* ============================================================
    Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0)
    REVISED from V3.7.x/V3.8.0's 2-card swipeable rail back to ONE
@@ -418,7 +418,7 @@
    control-right rows; one Time Zone field; small numeric inputs. */
 .mset-row { display: flex; align-items: center; gap: var(--space-sm); margin: var(--space-md) 0; }
 .mset-row-label { flex: 0 0 28%; font-weight: 600; }   /* V3.86.0 (user): wider inputs — the label column shrinks */
-.mset-row > input[type="text"], .mset-row .mset-tz-field { flex: 1 1 auto; min-width: 0; }
+.mset-row > input[type="text"], .mset-row > input[type="url"], .mset-row .mset-tz-field { flex: 1 1 auto; min-width: 0; }
 .mset-row-top { align-items: flex-start; }
 .mset-row .mset-mushaf { flex: 1 1 auto; margin: 0; }
 .mset-row-narrow .mset-row-label { flex: 1 1 auto; font-weight: 500; }

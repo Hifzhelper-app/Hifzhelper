@@ -72,15 +72,16 @@ const v4211Cache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
 check('V4.2.11-or-later page/cache keys agree',
   !!v4211Page && v4211Page === v4211Cache);
 check('V4.2.11 pins remain on untouched files while later-edited files carry their current last-edit header',
-  /^\/\* Hifzhelper build 4\.2\.15\.4 \| css\/admin\.css \*\//.test(adminCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| css\/detail-pages\.css \*\//.test(css)
+  /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/admin\.css \*\//.test(adminCss)
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/detail-pages\.css \*\//.test(css)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/haidhDetailScreen\.js \*\//.test(haidhPage)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(page)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/sw\.js \*\//.test(sw));
-check('no new migration was introduced for gender/track_haidh',
-  fs.readdirSync(path.join(ROOT, 'worker/migrations')).sort().at(-1).startsWith('0029_'));
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(page)
+  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/sw\.js \*\//.test(sw));
+check('later migrations do not reintroduce the old gender/track_haidh schema change',
+  !read('worker/migrations/0030_hifz_class_zoom_link.sql').includes('track_haidh')
+  && !read('worker/migrations/0030_hifz_class_zoom_link.sql').includes('ADD COLUMN gender'));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

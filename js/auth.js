@@ -1,9 +1,11 @@
-/* Hifzhelper build 4.2.15.6 | js/auth.js */
+/* Hifzhelper build 4.2.15.7 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
 
 let currentUser = { name: '', role: 'student', trackHaidh: false };
+// V4.2.15.7: boot supplies the admin-configured shared Hifz class Zoom link.
+let MAKTAB_ZOOM_LINK = null;
 
 // Nav destinations — the same set drives both the dropdown menu and the
 // Home page tiles (per the "similar icons/tiles" decision). Screens not
@@ -115,27 +117,38 @@ function visibleNavGroups(){
   const byId = (id) => NAV_ITEMS.find(x => x.id === id);
   const keep = (item) => item && !(hidePJ && HIDDEN_PJ_NAV_IDS.has(item.id));
 
-  const g1 = [{ id: 'home', label: 'Home', icon: 'home', raw: 'homeDropdownBtn' }];
-  if(isTeachingProfile()) g1.push(MAKTAB_SUMMARY_NAV_ITEM);
-  if(isTeachingProfile()) g1.push(MAKTAB_ATTENDANCE_NAV_ITEM);
-  else g1.push(ATTENDANCE_NAV_ITEM);
-  if(currentUser.role === 'admin') g1.push(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM);
+  // V4.2.15.7: the Personal Journal menu order is explicit:
+  // Home → Summary → Detail → Attendance → Settings → Maktab Journal.
+  // Other personal tools follow as a separate group. Teaching profiles keep
+  // their established maktab-first workflow.
+  let g1 = [];
+  let g2 = [];
+  if(!hidePJ){
+    g1 = [
+      { id: 'home', label: 'Home', icon: 'home', raw: 'homeDropdownBtn' },
+      byId('journal'),
+      byId('logDetail'),
+      ATTENDANCE_NAV_ITEM,
+      byId('settings'),
+      MAKTAB_JOURNAL_NAV_ITEM,
+    ].filter(Boolean);
+    g2 = [byId('reflections'), byId('sih'), byId('juzTracker')].filter(keep)
+      .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
+    g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
+  } else {
+    g1 = [{ id: 'home', label: 'Home', icon: 'home', raw: 'homeDropdownBtn' }, MAKTAB_SUMMARY_NAV_ITEM, MAKTAB_ATTENDANCE_NAV_ITEM];
+    if(currentUser.role === 'admin') g1.push(ADMIN_NAV_ITEM, MAKTAB_SETTINGS_NAV_ITEM);
+    g2 = [byId('sih'), byId('juzTracker')].filter(keep)
+      .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
+    g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
+  }
 
-  const g2 = [byId('sih'), byId('juzTracker')].filter(keep)
-    .map(x => x.id === 'juzTracker' ? Object.assign({}, x, { label: juzTrackerLabel() }) : x);
-  g2.push({ id: 'timer', label: 'Timer', icon: 'timer', raw: 'timerDropdownBtn' });
-
-  // Personal journal destinations keep their established order. Attendance
-  // remains in the primary group above and must not be duplicated.
-  const g3 = NAV_ITEMS.filter(x => keep(x) && !['home', 'sih', 'juzTracker', 'attendancePage'].includes(x.id));
-  if(!hidePJ) g3.push(MAKTAB_JOURNAL_NAV_ITEM);
-
-  const g4 = [
+  const g3 = [
     { id: 'refresh', label: 'Refresh', icon: 'refresh', raw: 'refreshBtn' },
     { id: 'switchAccount', label: 'Switch account', icon: 'switchAccount', raw: 'switchAccountBtn' },
     { id: 'logout', label: 'Log out', icon: 'logout', raw: 'logoutBtn' },
   ];
-  return [g1.filter(Boolean), g2.concat(g3), g4].filter(g => g.length);
+  return [g1.filter(Boolean), g2.filter(Boolean), g3].filter(g => g.length);
 }
 
 // Flat screen list for the Home tile grid. V4.2.11.2 changes the HAMBURGER
@@ -186,8 +199,22 @@ function renderNavItemsInto(containerId, extraItemsHtml){
   });
 }
 
+function setMaktabZoomLink(value){
+  const raw = String(value || '').trim();
+  MAKTAB_ZOOM_LINK = /^https:\/\//i.test(raw) ? raw : null;
+}
+function updateAuthBandZoom(screenId){
+  const el = document.getElementById('authBandZoom');
+  if(!el) return;
+  const allowedScreen = screenId === 'journal' || screenId === 'maktabJournal';
+  const show = !!(allowedScreen && MAKTAB_ZOOM_LINK);
+  el.classList.toggle('hidden', !show);
+  if(show) el.href = MAKTAB_ZOOM_LINK;
+  else el.removeAttribute('href');
+}
 function renderAuthBand(){
   document.querySelector('#authBand .user-name').textContent = currentUser.name || 'Hifzhelper';
+  updateAuthBandZoom(null);
 }
 
 // 2026-08-03: #authDropdown is now position:fixed (css/nav.css) so it

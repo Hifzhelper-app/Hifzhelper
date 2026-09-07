@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/app.js */
+/* Hifzhelper build 4.2.15.7 | js/app.js */
 // ============================================================
 // Hifzhelper — app bootstrap and screen routing
 // ============================================================
@@ -43,6 +43,9 @@ const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
+  // V4.2.15.7: the shared class Zoom action belongs only to the two
+  // journal landing screens. Hide/show it synchronously with navigation.
+  if(typeof updateAuthBandZoom === 'function') updateAuthBandZoom(id);
   const target = document.getElementById('screen-' + id) || document.getElementById('screen-placeholder');
 
   if(!SCREENS_BUILT[id]){
@@ -174,6 +177,7 @@ async function bootApp(){
     // free on the profile; the vocabulary is one small fetch, awaited so no
     // card can render its picker before the names exist.
     MAKTAB_TIMEZONE = profile.maktab_timezone || null;
+    if(typeof setMaktabZoomLink === 'function') setMaktabZoomLink(profile.maktab_zoom_link || null);
     await loadTajweedVocabulary();
     // V3.77.0 (j): this account is now one the device knows, for the switcher.
     rememberKnownAccount({ id: profile.id, name: profile.name, role: profile.role });

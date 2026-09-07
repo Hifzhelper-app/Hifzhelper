@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | css/nav.css */
+/* Hifzhelper build 4.2.15.7 | css/nav.css */
 /* ============================================================
    Hifzhelper — navigation: auth band, dropdown menu, home tiles
    ============================================================ */
@@ -27,6 +27,30 @@
   font-weight: 600;
   font-size: 15px;
 }
+/* V4.2.15.7: true centre of the authenticated band, independent of the
+   user-name/menu widths. Only journal screens unhide it in js/auth.js. */
+.auth-band-zoom {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 34px;
+  padding: 6px 16px;
+  box-sizing: border-box;
+  border-radius: var(--radius-sm, 8px);
+  background: #0B5CFF;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-decoration: none;
+  z-index: 1;
+}
+.auth-band-zoom:hover, .auth-band-zoom:focus-visible { filter: brightness(.96); color: #fff; }
+.auth-band-zoom.hidden { display: none; }
 #authBandToggle {
   color: var(--color-banner-text);
   display: flex;
