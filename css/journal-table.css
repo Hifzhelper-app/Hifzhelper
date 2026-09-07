@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.14.4 | css/journal-table.css */
+/* Hifzhelper build 4.2.15 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -329,12 +329,30 @@
    inert, so the structural fix is enough on its own. */
 .screen-top-close-row.maktab-summary-toprow {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
 }
 .maktab-summary-toprow .screen-close-btn { justify-self: end; }
 .maktab-summary-date-input { font: inherit; font-weight: 600; }
+.maktab-summary-attendance-link {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-table-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.maktab-summary-attendance-link svg { width: 18px; height: 18px; }
+.maktab-summary-attendance-link:hover { background: var(--surface-track); }
 
 /* V4.2.11.4: the leading attendance icon is a neutral navigation
    control. Confirmed Haidh is already stated by the small pink Haidh text
@@ -342,6 +360,10 @@
 .maktab-haidh-col { padding: 0 2px; text-align: center; }
 .maktab-haidh-check { font: inherit; padding: 3px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.15); background: #fff; line-height: 0; cursor: pointer; }
 .maktab-haidh-check svg { width: 16px; height: 16px; }
+/* V4.2.15: visible row index + attendance icon share the existing narrow
+   leading summary cell, so no journal column widths need to move. */
+.maktab-row-meta { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+.maktab-row-number { min-width: 1.35em; text-align: right; font-size: 12px; font-weight: 700; color: var(--color-ink-soft); line-height: 1; }
 
 /* V3.64.0: the maktab day view IS the PJ day view (js/logContext.js), so
    there is no maktab card layout to style any more — every V3.60.0–
@@ -548,6 +570,10 @@
     align-self: center;
     justify-self: start;
   }
+  .maktab-row-meta { gap: 3px; }
+  .maktab-row-number { font-size: 11px; }
+  .maktab-summary-attendance-link { padding: 5px 9px; font-size: 12px; }
+  .maktab-summary-attendance-link svg { width: 16px; height: 16px; }
   .maktab-summary-table .maktab-student-name {
     grid-column: 1;
     grid-row: 1;
@@ -616,8 +642,38 @@
 .maktab-quick-date-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0 0 12px;
 }
+.maktab-quick-detail-action {
+  margin-left: auto;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.05;
+  cursor: pointer;
+  padding: 0;
+}
+.maktab-quick-detail-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-table-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+.maktab-quick-detail-icon svg { width: 24px; height: 24px; }
+.maktab-quick-detail-action:hover .maktab-quick-detail-icon { background: var(--surface-track); }
 .maktab-quick-date {
   display: inline-flex;
   align-items: center;
@@ -630,7 +686,7 @@
   font-weight: 600;
   white-space: nowrap;
 }
-/* V4.2.14.4: the date pill on both Quick Log and Quick Attendance is
+/* V4.2.14.4: the Quick Log date pill (Quick Attendance was retired in V4.2.15) is
    now selectable. Keep the native input as the real iOS-safe tap target while
    wireCustomDateDisplay supplies the same formatted pill used elsewhere. */
 .maktab-quick-date-control {
@@ -712,6 +768,77 @@
   padding-bottom: 0;
 }
 
+.maktab-quick-sd-layout { display: grid; gap: 12px; }
+.maktab-quick-sd-quarters { display: grid; gap: 7px; }
+.maktab-quick-sd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  cursor: pointer;
+}
+.maktab-quick-sd-row-pill {
+  display: block;
+  min-width: 0;
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: var(--color-accent-soft, #D0DBE7);
+  color: var(--color-ink-soft);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.modal-card .maktab-quick-sd-row input,
+.modal-card .maktab-quick-sd-manual-line > input,
+.modal-card .maktab-quick-sd-picker-row > input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--palette-evergreen, #344C3D);
+  justify-self: center;
+}
+.maktab-quick-sd-manual { display: grid; gap: 8px; }
+.maktab-quick-sd-manual-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: end;
+}
+.maktab-quick-sd-manual-line .maktab-quick-range-row { grid-template-columns: 64px minmax(0, 1fr); }
+.maktab-quick-sd-check-spacer { width: 22px; }
+.maktab-quick-sd-empty { display: grid; gap: 7px; }
+.maktab-quick-sd-picker-row {
+  display: grid;
+  grid-template-columns: minmax(92px, 30%) minmax(0, 1fr) 34px;
+  gap: 8px;
+  align-items: center;
+}
+.modal-card .maktab-quick-sd-picker-row select {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  margin: 0;
+  border-radius: 999px;
+}
+.maktab-quick-log-card .maktab-quick-sd-quarter-pill {
+  position: static;
+  right: auto;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  box-sizing: border-box;
+}
+.maktab-quick-log-card .maktab-quick-sd-quarter-pill button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+}
+.maktab-quick-sd-preview { min-height: 16px; font-size: 11px; color: var(--color-ink-soft); text-align: center; }
+
 .maktab-quick-dhor-grid { display: grid; gap: 10px; }
 .maktab-quick-dhor-primary-row {
   display: grid;
@@ -788,12 +915,15 @@
 }
 .maktab-quick-actions {
   display: grid;
-  grid-template-columns: minmax(86px, .8fr) minmax(120px, 1.35fr) auto;
+  grid-template-columns: minmax(110px, .9fr) minmax(120px, 1.35fr);
   justify-content: start;
   gap: 10px;
   align-items: center;
   margin-top: 12px;
 }
+.maktab-quick-confirm-slot { min-width: 0; }
+.maktab-quick-actions.no-confirm { grid-template-columns: minmax(120px, 220px); }
+.maktab-quick-actions.no-confirm .maktab-quick-confirm-slot { display: none; }
 .maktab-quick-actions .maktab-quick-save {
   width: 100%;
   height: 42px;
@@ -831,13 +961,14 @@
   .maktab-quick-range-row { grid-template-columns: 74px minmax(0, 1fr); }
   .maktab-quick-dhor-primary-row { grid-template-columns: minmax(94px, 30%) minmax(0, 1fr); }
   .maktab-quick-dhor-position-row { grid-template-columns: 96px minmax(0, 1fr); }
-  .maktab-quick-actions { grid-template-columns: minmax(82px, .8fr) minmax(112px, 1.25fr) auto; }
+  .maktab-quick-actions { grid-template-columns: minmax(96px, .9fr) minmax(112px, 1.25fr); }
+  .maktab-quick-actions.no-confirm { grid-template-columns: minmax(112px, 58%); }
 }
 
 /* ============================================================
-   V4.2.14.1 — shared Quick Attendance sheet.
-   Summary and Student Summary use the same card; Detail remains the route to
-   the full Attendance page. All tap controls share the same 42px height.
+   V4.2.14.1 legacy Quick Attendance sheet styles.
+   V4.2.15 routes the icons directly to the existing Attendance calendar;
+   retained only so a stale open modal is harmless across a service-worker swap.
    ============================================================ */
 .maktab-quick-attendance-card { max-width: 520px; }
 .maktab-quick-attendance-card .maktab-quick-heading { grid-template-columns: minmax(0, 1fr); padding-right: 28px; }

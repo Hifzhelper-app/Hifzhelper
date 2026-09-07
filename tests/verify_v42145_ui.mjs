@@ -72,9 +72,9 @@ check('render path passes the week model into the sort',
 check('Maktab Attendance served file carries the V4.2.14.5 last-edit header',
   /^\/\* Hifzhelper build 4\.2\.14\.5 \| js\/maktabAttendancePage\.js \*\//.test(attendance));
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page and service-worker cache versions agree at V4.2.14.5',
-  versions.length > 0 && versions.every(v => v === '4.2.14.5')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('page and service-worker cache versions agree after later overlays',
+  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

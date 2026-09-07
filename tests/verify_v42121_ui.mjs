@@ -29,11 +29,12 @@ check('Dhor Juz selector and Juz Portion switch share one non-overlapping row',
   && /data-unit="half"[^>]*>Half</.test(js)
   && /data-unit="full"[^>]*>Juz</.test(js)
   && /maktab-quick-log-card \.maktab-quick-unit-pill[\s\S]{0,220}position: static/.test(css));
-check('Dhor Portion number has its own row and confirmation moves beside Save + Detail',
+check('Dhor Portion number keeps its own row; Confirm + Save stay together after Detail moves beside the date',
   /maktab-quick-dhor-position-row/.test(js)
   && /id="mql_dhor_position"/.test(js)
   && /maktabQuickConfirmControl\(\)/.test(js)
-  && /grid-template-columns: minmax\(86px, \.8fr\) minmax\(120px, 1\.35fr\) auto/.test(css));
+  && /id="maktabQuickLogDetails"/.test(js)
+  && /grid-template-columns: minmax\(110px, \.9fr\) minmax\(120px, 1\.35fr\)/.test(css));
 check('Confirm, Save and Detail share the same 42px action height',
   /maktab-quick-confirm-action[\s\S]{0,160}height: 42px/.test(css)
   && /maktab-quick-actions \.maktab-quick-save[\s\S]{0,160}height: 42px/.test(css)
@@ -47,7 +48,7 @@ check('phone uses one combined Quick Log card with a three-type selector',
 check('phone row whitespace opens combined Quick Log instead of requiring a narrow cell tap',
   /if\(maktabQuickIsMobile\(\)\)[\s\S]{0,430}maktabOpenQuickLog\(student, date, 'sabaq'/.test(js));
 check('mobile type switches keep independent drafts for all three log types',
-  /drafts:\s*\{[\s\S]{0,220}sabaq:\s*\{ from:null, to:null \}[\s\S]{0,120}sabaqDhor:\s*\{ from:null, to:null \}[\s\S]{0,120}dhor:\s*\{ juz:null, unit:'quarter', position:1 \}/.test(js));
+  /drafts:\s*\{[\s\S]{0,320}sabaq:\s*\{ from:maktabQuickCloneVerse\(sabaqDefaults\.from\), to:maktabQuickCloneVerse\(sabaqDefaults\.to\) \}[\s\S]{0,140}sabaqDhor:\s*\{ from:null, to:null \}[\s\S]{0,140}dhor:\s*\{ juz:null, unit:'quarter', position:1 \}/.test(js));
 
 // Execute the actual shipped sort helpers without evaluating the UI file.
 const sortStart = js.indexOf('function maktabSummaryNameKey');
@@ -80,7 +81,7 @@ check('Haidh, prediction and Group do not create special Summary bands',
   && /Attendance %, Haidh state[\s\S]{0,80}Group do not participate/.test(js));
 check('render uses the independent logged/unlogged sorted roster with no Group separator pass',
   /const sortedStudents = maktabSummarySortedStudents/.test(js)
-  && /sortedStudents\.forEach\(\(stu\) =>/.test(js)
+  && /sortedStudents\.forEach\(\(stu(?:, rowIndex)?\) =>/.test(js)
   && !/band === 0 && prevBand === 0 && groupKey !== prevGroup/.test(js)
   && /wireMaktabSummarySearch\(sortedStudents, date\)/.test(js));
 

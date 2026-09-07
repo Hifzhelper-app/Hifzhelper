@@ -45,7 +45,8 @@ check('4.2.8.2: all three mobile log cells span underneath both top-line columns
   /\.maktab-summary-table \.journal-cell \{[\s\S]*grid-column: 1 \/ -1;/.test(journalCss));
 check('4.2.8.2: instant-name paint wraps attendance SVG in the same sizing class (no giant naked SVG flash)',
   /attendanceGhost\.className = 'maktab-haidh-check maktab-summary-skeleton-attendance';/.test(summaryJs)
-  && /haidhTd\.appendChild\(attendanceGhost\);/.test(summaryJs)
+  && /rowMeta\.appendChild\(attendanceGhost\);/.test(summaryJs)
+  && /haidhTd\.appendChild\(rowMeta\);/.test(summaryJs)
   && !/haidhTd\.innerHTML = typeof iconHtml/.test(summaryJs));
 check('4.2.8.2/V4.2.14.1: summary targets remain distinct with Quick Log and Quick Attendance',
   /nameTd\.addEventListener\('click',[\s\S]{0,220}openStudentSummaryPage/.test(summaryJs)

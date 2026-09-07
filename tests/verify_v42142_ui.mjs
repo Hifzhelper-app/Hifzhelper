@@ -79,9 +79,9 @@ check('Attendance H/h stays about 25 percent smaller and uses the agreed grey, n
   && /mkregister-status-haidh-predicted \{ color: var\(--color-ink-soft\); font-size: 14px/.test(css));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('current page assets and service-worker cache key agree at V4.2.14.5',
-  versions.length > 0 && versions.every(v => v === '4.2.14.5')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.14\.5'/.test(sw));
+const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('current page assets and service-worker cache key still agree after later overlays',
+  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
