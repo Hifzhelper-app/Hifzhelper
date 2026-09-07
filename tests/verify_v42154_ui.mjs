@@ -12,9 +12,10 @@ const html=read('index.html'), att=read('js/maktabAttendancePage.js'), css=read(
 const admin=read('js/adminPage.js'), adminCss=read('css/admin.css'), auth=read('js/auth.js');
 const settings=read('js/maktabSettings.js'), settingsCss=read('css/settings.css'), cal=read('js/maktabCalendarPage.js'), sw=read('js/sw.js');
 
-check('page and service-worker cache keys are V4.2.15.4',
-  [...html.matchAll(/\?v=([0-9.]+)/g)].every(m=>m[1]==='4.2.15.4')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.4'/.test(sw));
+const carriedVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m=>m[1]);
+const carriedCache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
+check('V4.2.15.4 behaviour survives later page/cache overlays with aligned keys',
+  carriedVersions.length > 0 && !!carriedCache && carriedVersions.every(v => v === carriedCache));
 
 check('Attendance title has a small reset Sort pill and no redundant Maktab Summary button',
   /<h2>Attendance<\/h2>[\s\S]{0,260}id="mkregisterDefaultSortBtn"[^>]*>Sort<\/button>/.test(html)
@@ -92,12 +93,12 @@ check('calendar and term edits invalidate cache and refresh the embedded viewer 
 check('V4.2.15.4 is frontend-only: latest migration remains 0029',
   fs.readdirSync(path.join(ROOT,'worker/migrations')).sort().at(-1).startsWith('0029_'));
 
-check('only files edited in this revision carry V4.2.15.4 top build headers',
+check('V4.2.15.4 untouched files retain their last-edit headers while Calendar carries its later fix header',
   /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabAttendancePage\.js \*\//.test(att)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/auth\.js \*\//.test(auth)
   && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabSettings\.js \*\//.test(settings)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/maktabCalendarPage\.js \*\//.test(cal));
+  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(cal));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail?1:0);

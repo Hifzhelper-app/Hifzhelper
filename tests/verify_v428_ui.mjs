@@ -18,10 +18,10 @@ const journalCss = read('css/journal-table.css');
 const sdJs = read('js/sabaqDhorPage.js');
 const detailCss = read('css/detail-pages.css');
 
-check('68: mobile summary values use a 96px + remaining-space GRID, not the old flex line',
-  /grid-template-columns: 96px minmax\(0, 1fr\);/.test(journalCss)
-  && /\.maktab-summary-table \.journal-cell \{[\s\S]*display: grid;/.test(journalCss)
-  && !/\.maktab-summary-table \.journal-cell \{[\s\S]{0,180}display: flex;/.test(journalCss));
+check('68: mobile summary values keep the original 96px + remaining-space inner GRID while V4.2.15.5 reserves a separate Log column',
+  /\.maktab-summary-table \.journal-cell \{[\s\S]{0,220}display: grid;[\s\S]{0,120}grid-template-columns: 96px minmax\(0, 1fr\);/.test(journalCss)
+  && /\.maktab-summary-table tr:not\(\.maktab-group-gap\) \{\s*grid-template-columns: minmax\(0, 1fr\) 76px;/.test(journalCss)
+  && /\.maktab-summary-table \.journal-cell \{\s*grid-column: 1;/.test(journalCss));
 check('68: value track is shrink-safe and normal wrapping is restored',
   /\.maktab-summary-table \.journal-cell \{[\s\S]*min-width: 0;[\s\S]*white-space: normal;/.test(journalCss));
 check('68 mobile correction: stacked cells override the higher-specificity desktop 7/21/24% column widths',

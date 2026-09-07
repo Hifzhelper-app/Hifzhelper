@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.15.5 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -1038,6 +1038,29 @@ async function renderMaktabSummaryScreen(){
       tr.appendChild(td);
     });
 
+    // V4.2.15.5: a dedicated large mobile Log target. The whole phone
+    // card still opens Quick Log, but this explicit circle-plus makes the
+    // primary action obvious and easy to hit. Hidden on desktop/tablet.
+    const mobileLogTd = document.createElement('td');
+    mobileLogTd.className = 'maktab-mobile-log-col';
+    const mobileLogBtn = document.createElement('button');
+    mobileLogBtn.type = 'button';
+    mobileLogBtn.className = 'maktab-mobile-log-action';
+    mobileLogBtn.setAttribute('aria-label', 'Log activity for ' + stu.name);
+    mobileLogBtn.innerHTML = `<span class="maktab-mobile-log-icon">${iconHtml('circlePlus')}</span><span>Log</span>`;
+    mobileLogBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const student = { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh };
+      const entriesByType = {
+        sabaq: byStudent.sabaq[stu.id] || [],
+        sabaqDhor: byStudent.sabaqDhor[stu.id] || [],
+        dhor: byStudent.dhor[stu.id] || []
+      };
+      maktabOpenQuickLog(student, date, 'sabaq', entriesByType.sabaq, entriesByType);
+    });
+    mobileLogTd.appendChild(mobileLogBtn);
+    tr.appendChild(mobileLogTd);
+
     // attention flag: the row is tinted when a student has gone
     // absence_flag_days consecutive MAKTAB DAYS without an entry.
     if(derived[stu.id] && derived[stu.id].flagged) tr.classList.add('maktab-row-flagged');
@@ -1126,6 +1149,10 @@ function maktabSummaryPaintSkeleton(host, roster){
       td.innerHTML = '<span class="journal-cell-skeleton"></span>';
       tr.appendChild(td);
     });
+    const mobileLogTd = document.createElement('td');
+    mobileLogTd.className = 'maktab-mobile-log-col';
+    mobileLogTd.innerHTML = `<span class="maktab-mobile-log-action maktab-mobile-log-skeleton" aria-hidden="true"><span class="maktab-mobile-log-icon">${typeof iconHtml === 'function' ? iconHtml('circlePlus') : ''}</span><span>Log</span></span>`;
+    tr.appendChild(mobileLogTd);
     host.appendChild(tr);
   });
 }

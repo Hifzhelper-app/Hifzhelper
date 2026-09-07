@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | css/haidh.css */
+/* Hifzhelper build 4.2.15.5 | css/haidh.css */
 /* ============================================================
    Hifzhelper — Haidh calendar (V3.39)
    ============================================================ */
@@ -181,4 +181,53 @@
    existing quick-detail treatment, instead of living below the actions. */
 .maktab-quick-attendance-tools {
   display: flex; justify-content: flex-end; align-items: center; min-height: 48px;
+}
+
+/* ============================================================
+   V4.2.15.5 — Attendance Quick Action controls are one explicit group:
+   Detail, Save, Close. No absolute close button or stacked tool row. */
+.maktab-quick-attendance-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
+}
+.maktab-quick-attendance-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex: 1 1 340px;
+  min-width: 0;
+}
+.maktab-quick-attendance-identity strong { white-space: nowrap; }
+.maktab-quick-attendance-identity .maktab-name-pill { flex: 1 1 auto; min-width: 0; }
+.maktab-quick-attendance-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-left: auto;
+}
+.maktab-quick-attendance-head .maktab-quick-attendance-save { margin-left: 0; }
+.maktab-quick-attendance-detail { min-width: 48px; }
+.maktab-quick-attendance-save { width: 50px; height: 50px; }
+.maktab-quick-attendance-save svg { width: 36px; height: 36px; }
+.maktab-quick-attendance-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+}
+.maktab-quick-attendance-close svg { width: 28px; height: 28px; }
+.maktab-quick-attendance-tools { display: none; }
+@media (max-width: 767px) {
+  .maktab-quick-attendance-identity { flex-basis: 100%; }
+  .maktab-quick-attendance-controls { width: 100%; margin-left: 0; justify-content: flex-end; }
 }

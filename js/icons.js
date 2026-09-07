@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/icons.js */
+/* Hifzhelper build 4.2.15.5 | js/icons.js */
 // ============================================================
 // Hifzhelper — shared icon set
 // Simple inline SVGs (line-style, currentColor) so nav items stay
@@ -45,6 +45,8 @@ const ICONS = {
   menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>',
   copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h10a1 1 0 011 1v1"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  // V4.2.15.5: user-supplied Lucide circle-plus for the mobile Maktab Summary Log target.
+  circlePlus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>',
   share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 13v6a1 1 0 001 1h12a1 1 0 001-1v-6"/></svg>',
   // V3.19.0: xclose (exit the log-detail screen), and the two Sabaq Dhor
   // rollup icons (replacing the plain ▲/▼ text glyphs) -- all three from

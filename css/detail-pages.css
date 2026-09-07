@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.4 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.5 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2450,4 +2450,18 @@
   }
   .mkregister-day-head { padding-left: 1px; padding-right: 1px; letter-spacing: 0; }
   .mkregister-cell { padding-left: 2px; padding-right: 2px; }
+}
+
+/* V4.2.15.5: the per-student Maktab Summary is the current calendar month. */
+#screen-studentSummary .student-summary-period {
+  margin: 8px auto;
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+#screen-studentSummary td.student-summary-entry-list {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }

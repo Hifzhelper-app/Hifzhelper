@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | js/maktabDay.js */
+/* Hifzhelper build 4.2.15.5 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -147,13 +147,15 @@ async function maktabOpenQuickAttendance(student, date){
   overlay.id = 'maktabQuickAttendanceSheet';
   overlay.innerHTML = `<div class="modal-card maktab-quick-attendance-card" role="dialog" aria-modal="true" aria-label="Attendance quick action for ${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">
     <div class="maktab-quick-attendance-head">
-      <strong>Attendance :</strong>
-      <span class="maktab-name-pill" title="${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}</span>
+      <div class="maktab-quick-attendance-identity">
+        <strong>Attendance :</strong>
+        <span class="maktab-name-pill" title="${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}">${typeof maktabQuickEscape === 'function' ? maktabQuickEscape(student.name) : String(student.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}</span>
+      </div>
+      <div class="maktab-quick-attendance-controls">
+        <button type="button" class="maktab-quick-attendance-detail" id="maktabQuickAttendanceDetail" aria-label="Open full Student Attendance page" title="Detail"><span>${iconHtml('detail')}</span><span>Detail</span></button>
         <button type="button" class="maktab-quick-attendance-save" id="maktabQuickAttendanceSave" aria-label="Save attendance" title="Save">${iconHtml('save')}</button>
-      <button type="button" class="close-btn" id="maktabQuickAttendanceClose" aria-label="Close">&times;</button>
-    </div>
-    <div class="maktab-quick-attendance-tools">
-      <button type="button" class="maktab-quick-attendance-detail" id="maktabQuickAttendanceDetail" aria-label="Open full Student Attendance page" title="Detail"><span>${iconHtml('detail')}</span><span>Detail</span></button>
+        <button type="button" class="maktab-quick-attendance-close" id="maktabQuickAttendanceClose" aria-label="Close" title="Close">${iconHtml('close')}</button>
+      </div>
     </div>
     <div id="maktabQuickAttendanceCalendarHost"></div>
     <p class="maktab-quick-attendance-help">Select one date, or select a start and end date.</p>
@@ -300,24 +302,37 @@ function exitMaktabDay(){
 // ============================================================
 // V3.85.0: the STUDENT SUMMARY as a STANDALONE PAGE (the user's V3.82
 // revision, confirmed 2026-08-28: "the maktab only sees maktab data").
-// "Copied from the student's PJ" = the PJ Journal PAGE's layout —
-// expanded recent days, weekly rollup rows, Load more — reusing the
-// journal's own row/rollup renderers, but over the MAKTAB'S entries for
-// this student ONLY, read-only. Rows tap through to that day's log
+// V4.2.15.5 narrows the standalone summary to the CURRENT CALENDAR MONTH
+// for this student only. Every same-day activity entry is displayed inline
+// (comma separated) rather than collapsing extras behind +N. Rows still tap
+// through to that day's log
 // cards; the Sabaq / Sabaq Dhor / Dhor header labels open the SAME Quick
 // Log sheet used by Maktab Summary, preselected to that activity, while the
 // attendance icon opens the existing Student Attendance calendar directly.
 // Data: the three maktab GETs (student_id in teacher mode; her own
 // read-only path calls without one).
 // ============================================================
-const SS_EXPANDED_DAYS = 10;
-const SS_DEFAULT_DAYS = 90;
-const SS_LOAD_MORE_DAYS = 28;
-let ssTotalDays = SS_DEFAULT_DAYS;
+function studentSummaryMonthBounds(){
+  const today = maktabTodayISO();
+  const month = today.slice(0, 7);
+  const first = `${month}-01`;
+  const [y, m] = month.split('-').map(Number);
+  const last = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+  const label = new Date(`${first}T00:00:00Z`).toLocaleDateString(undefined, { month:'long', year:'numeric', timeZone:'UTC' });
+  return { month, first, last, label };
+}
+
+function studentSummaryEntryText(type, entries){
+  if(!entries || !entries.length) return '—';
+  return entries.map(entry => {
+    const holder = document.createElement('div');
+    holder.innerHTML = journalCellShorthand(type, [entry]);
+    return (holder.textContent || '').replace(/\s+/g, ' ').trim();
+  }).filter(Boolean).join(', ') || '—';
+}
 
 async function openStudentSummaryPage(student, date){
   setMaktabLogContext(student, date || maktabTodayISO());
-  ssTotalDays = SS_DEFAULT_DAYS;
   await showScreen('studentSummary');
 }
 
@@ -329,6 +344,9 @@ async function renderStudentSummaryScreen(){
   if(headerIcon) headerIcon.innerHTML = iconHtml('maktab');
   const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
   const quickDate = logCtxDate() || maktabTodayISO();
+  const monthBounds = studentSummaryMonthBounds();
+  const period = document.getElementById('studentSummaryPeriod');
+  if(period) period.textContent = monthBounds.label;
   const quickLogButtons = Array.from(document.querySelectorAll('#screen-studentSummary [data-ss-quick-type]'));
   // Disable while the three activity feeds load; the exact Maktab Summary
   // Quick Log action is wired below once we have the carried-date entries.
@@ -353,7 +371,7 @@ async function renderStudentSummaryScreen(){
   const closeBtn = document.getElementById('studentSummaryCloseBtn');
   if(closeBtn) closeBtn.onclick = () => showScreen('maktabSummary');
 
-  const since = (() => { const d = new Date(); d.setDate(d.getDate() - ssTotalDays); return d.toISOString().slice(0,10); })();
+  const since = monthBounds.first;
   const id = logCtxStudentId();
   const own = (typeof currentUser !== 'undefined' && currentUser && currentUser.id === id);
   if(typeof ensureMaktabCalYear === 'function'){   // V3.87.0: markers on the summary's date cells
@@ -373,6 +391,7 @@ async function renderStudentSummaryScreen(){
   }
   const days = {};
   const bucket = (rows, key) => (Array.isArray(rows) ? rows : []).forEach(r => {
+    if(!r.date || r.date < monthBounds.first || r.date > monthBounds.last) return;
     (days[r.date] = days[r.date] || { sabaq: [], sabaqDhor: [], dhor: [] })[key].push(r);
   });
   bucket(sabaq, 'sabaq'); bucket(sabaqDhor, 'sabaqDhor'); bucket(dhor, 'dhor');
@@ -408,24 +427,10 @@ async function renderStudentSummaryScreen(){
     ['sabaq', 'sabaqDhor', 'dhor'].forEach(type => {
       const td = document.createElement('td');
       td.className = 'journal-cell';
-      // V4.0.2 (user): the +N pill was RENDERED here but inert — only the
-      // row's own click was wired, so tapping the pill just opened the
-      // day. Same fix the maktab summary already carries: retarget the
-      // badge and give it its own listener that stops propagation, so
-      // the pill peeks at the cell's entries while the rest of the row
-      // still opens the day.
-      td.innerHTML = journalCellShorthand(type, days[date][type]).replace(
-        /<button type="button" class="entry-count-badge" data-count-badge>(\+\d+)<\/button>/,
-        `<button type="button" class="entry-count-badge" data-entry-peek="${type}">$1</button>`
-      );
-      td._peekEntries = days[date][type];
-      const peekBtn = td.querySelector('[data-entry-peek]');
-      if(peekBtn){
-        peekBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          maktabOpenEntryPeek(peekBtn, type, td._peekEntries);
-        });
-      }
+      // V4.2.15.5: this is now a current-month report view. Every activity
+      // logged on the same date is visible inline, comma separated.
+      td.classList.add('student-summary-entry-list');
+      td.textContent = studentSummaryEntryText(type, days[date][type]);
       tr.appendChild(td);
     });
     tr.addEventListener('click', () => {
@@ -434,35 +439,5 @@ async function renderStudentSummaryScreen(){
     });
     return tr;
   };
-  const expanded = allDates.slice(0, SS_EXPANDED_DAYS);
-  const rest = allDates.slice(SS_EXPANDED_DAYS);
-  expanded.forEach(date => tbody.appendChild(rowFor(date)));
-  // the PJ journal's own rolling-7-day buckets, verbatim shape
-  if(rest.length){
-    let bucketStart = null, bucketDates = [];
-    const flush = () => {
-      if(bucketDates.length) tbody.appendChild(renderJournalRollupRow(bucketDates[bucketDates.length - 1], bucketDates[0]));
-      bucketDates = [];
-    };
-    const oldestExpanded = expanded.length ? new Date(expanded[expanded.length - 1] + 'T00:00:00') : new Date();
-    rest.forEach(date => {
-      const d = new Date(date + 'T00:00:00');
-      const daysFromBoundary = Math.floor((oldestExpanded - d) / 86400000);
-      const idx = Math.floor((daysFromBoundary - 1) / 7);
-      if(bucketStart !== idx){ flush(); bucketStart = idx; }
-      bucketDates.push(date);
-    });
-    flush();
-  }
-  const more = document.createElement('tr');
-  const moreTd = document.createElement('td');
-  moreTd.colSpan = 4;
-  moreTd.className = 'journal-load-more-cell';
-  moreTd.innerHTML = '<button type="button" id="studentSummaryLoadMore">Load more</button>';
-  more.appendChild(moreTd);
-  tbody.appendChild(more);
-  document.getElementById('studentSummaryLoadMore').addEventListener('click', async () => {
-    ssTotalDays += SS_LOAD_MORE_DAYS;
-    await renderStudentSummaryScreen();
-  });
+  allDates.forEach(date => tbody.appendChild(rowFor(date)));
 }

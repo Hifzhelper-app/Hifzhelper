@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.3 | css/daily-report.css */
+/* Hifzhelper build 4.2.15.5 | css/daily-report.css */
 /* ============================================================
    V4.2.15.3 — Daily Maktab Report.
    A read-only, date-selectable filtered copy of Maktab Summary, presented
@@ -168,4 +168,14 @@
   }
   .maktab-daily-report-share { min-width: 86px; padding-left: 10px; padding-right: 10px; }
   .maktab-daily-report-preview { max-height: 60vh; }
+}
+
+/* V4.2.15.5: report activity cells show the complete comma-separated list,
+   never the Summary's +N shorthand, and are allowed to wrap. */
+.maktab-daily-report-table td.maktab-daily-report-entry-list {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
 }
