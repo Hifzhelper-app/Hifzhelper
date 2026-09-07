@@ -48,10 +48,11 @@ check('4.2.8.2: instant-name paint wraps attendance SVG in the same sizing class
   && /rowMeta\.appendChild\(attendanceGhost\);/.test(summaryJs)
   && /haidhTd\.appendChild\(rowMeta\);/.test(summaryJs)
   && !/haidhTd\.innerHTML = typeof iconHtml/.test(summaryJs));
-check('4.2.8.2/V4.2.14.1: summary targets remain distinct with Quick Log and Quick Attendance',
+check('4.2.8.2/current: summary targets remain distinct with dedicated Log and Quick Attendance',
   /nameTd\.addEventListener\('click',[\s\S]{0,220}openStudentSummaryPage/.test(summaryJs)
   && /btn\.addEventListener\('click',[\s\S]{0,260}maktabOpenQuickAttendance/.test(summaryJs)
-  && /td\.addEventListener\('click',[\s\S]{0,360}maktabOpenQuickLog/.test(summaryJs)
+  && /mobileLogBtn\.addEventListener\('click',[\s\S]{0,520}maktabOpenQuickLog/.test(summaryJs)
+  && !/td\.addEventListener\('click',[\s\S]{0,360}maktabOpenQuickLog/.test(summaryJs)
   && /maktabQuickLogDetails[\s\S]{0,500}openMaktabDay/.test(summaryJs));
 
 check('72: old quarter select and Use button are gone',

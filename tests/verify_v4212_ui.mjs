@@ -15,8 +15,9 @@ const css = read('css/journal-table.css');
 const html = read('index.html');
 const sw = read('js/sw.js');
 
-check('cell taps open Quick Log rather than navigating directly to a detail card',
-  /td\.addEventListener\('click',[\s\S]{0,420}maktabOpenQuickLog/.test(js));
+check('activity cells are display-only and the dedicated Log action opens Quick Log',
+  !/td\.addEventListener\('click',[\s\S]{0,420}maktabOpenQuickLog/.test(js)
+  && /mobileLogBtn\.addEventListener\('click',[\s\S]{0,520}maktabOpenQuickLog\(student, date, 'sabaq', entriesByType\.sabaq, entriesByType, \{ combined: true \}\)/.test(js));
 check('the +N entry peek remains a separate stop-propagating target',
   /peekBtn\.addEventListener\('click',[\s\S]{0,180}e\.stopPropagation\(\)/.test(js));
 check('full detail cards remain reachable from the Quick Log sheet',

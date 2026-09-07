@@ -30,9 +30,9 @@ const workerCalendar = read('worker/src/maktabCalendar.js');
 const migration = read('worker/migrations/0030_hifz_class_zoom_link.sql');
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('served assets and service-worker cache are aligned on V4.2.15.7',
-  versions.length > 0 && versions.every(v => v === '4.2.15.7')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.7'/.test(sw));
+check('served assets and service-worker cache are aligned after the V4.2.15.8 overlay',
+  versions.length > 0 && versions.every(v => v === '4.2.15.8')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.8'/.test(sw));
 
 check('0030 adds only the nullable Hifz class Zoom link setting',
   /ALTER TABLE maktab_settings ADD COLUMN zoom_link TEXT;/.test(migration)
@@ -60,9 +60,10 @@ check('auth band contains a centred blue ZOOM action with the required styling',
   && /background: #0B5CFF/.test(navCss)
   && /color: #fff/.test(navCss));
 
-check('ZOOM is shown only on Personal Journal and Maktab Journal screens',
-  /allowedScreen = screenId === 'journal' \|\| screenId === 'maktabJournal'/.test(auth)
-  && /updateAuthBandZoom\(id\)/.test(app)
+check('ZOOM follows the authenticated band on every app screen when configured',
+  /const show = !!MAKTAB_ZOOM_LINK/.test(auth)
+  && !/allowedScreen/.test(auth)
+  && /updateAuthBandZoom\(\)/.test(app)
   && /setMaktabZoomLink\(profile\.maktab_zoom_link \|\| null\)/.test(app));
 
 const personalStart = auth.indexOf('if(!hidePJ){');
@@ -77,8 +78,8 @@ check('Register a user is now a solid green User Management button',
   /id="adminRegisterOpenBtn">\+ Register a user<\/button>/.test(html)
   && /#adminRegisterOpenBtn \{[\s\S]{0,240}background: var\(--palette-evergreen\)[\s\S]{0,180}color: #fff/.test(adminCss));
 
-check('term-break public holidays use date_from when legacy date_to is NULL',
-  /COALESCE\(date_to, date_from\) >= \?2/.test(workerCalendar));
+check('term-break public holidays use date_from when legacy date_to is NULL or blank',
+  /COALESCE\(NULLIF\(TRIM\(date_to\), ''\), date_from\) >= \?2/.test(workerCalendar));
 
 check('collapsed mobile Attendance removes the percentage th/td from table layout',
   /mkregister-grid:not\(\.mkregister-percent-open\) \.mkregister-percent-head,[\s\S]{0,180}\.mkregister-percent-cell[\s\S]{0,180}display: none !important/.test(detailCss)
@@ -112,7 +113,9 @@ db.exec(`
     label TEXT, type TEXT, source TEXT
   );
   INSERT INTO maktab_calendar (date_from,date_to,label,type,source)
-  VALUES ('2026-09-24',NULL,'Heritage Day','holiday','seed');
+  VALUES ('2026-09-23',NULL,'Null End Holiday','holiday','seed');
+  INSERT INTO maktab_calendar (date_from,date_to,label,type,source)
+  VALUES ('2026-09-24','','Heritage Day','holiday','seed');
 `);
 const stmt = (sql,args=[]) => {
   const normalized = sql.replace(/\?[0-9]+/g, '?');
@@ -133,13 +136,14 @@ check('Zoom setting behaviour rejects http and round-trips https for teacher-rea
   bad.status === 400 && saved.data?.zoom_link === 'https://zoom.us/j/123456' && fetched.data?.zoom_link === 'https://zoom.us/j/123456');
 
 const calendar = await handleGetCalendar({url:'https://x/maktab/calendar?year=2026'},env,{id:'S1',role:'student'});
-check('24 Sep single-day public holiday is returned even with NULL date_to (term-break regression)',
-  calendar.data?.some(r => r.date_from === '2026-09-24' && r.type === 'holiday'));
+check('single-day public holidays are returned with NULL or blank date_to during a term break',
+  calendar.data?.some(r => r.date_from === '2026-09-23' && r.type === 'holiday')
+  && calendar.data?.some(r => r.date_from === '2026-09-24' && r.type === 'holiday'));
 
-check('only files actually edited for V4.2.15.7 carry its last-edit header',
-  /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/auth\.js \*\//.test(auth)
+check('last-edit headers reflect V4.2.15.8 only where later changes actually touched files',
+  /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/auth\.js \*\//.test(auth)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(att)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/journal-table\.css \*\//.test(journalCss)
+  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| css\/journal-table\.css \*\//.test(journalCss)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(read('js/maktabDay.js')));
 
 console.log(`${pass} passed, ${fail} failed`);

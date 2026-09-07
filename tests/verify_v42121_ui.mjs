@@ -45,8 +45,10 @@ check('phone uses one combined Quick Log card with a three-type selector',
   && /data-mql-type="sabaq"[^>]*>Sabaq</.test(js)
   && /data-mql-type="sabaqDhor"[^>]*>Sabaq Dhor</.test(js)
   && /data-mql-type="dhor"[^>]*>Dhor</.test(js));
-check('phone row whitespace opens combined Quick Log instead of requiring a narrow cell tap',
-  /if\(maktabQuickIsMobile\(\)\)[\s\S]{0,430}maktabOpenQuickLog\(student, date, 'sabaq'/.test(js));
+check('dedicated Log control opens the combined Quick Log selector; row whitespace is inert',
+  /mobileLogBtn\.className = 'maktab-mobile-log-action'/.test(js)
+  && /maktabOpenQuickLog\(student, date, 'sabaq', entriesByType\.sabaq, entriesByType, \{ combined: true \}\)/.test(js)
+  && !/tr\.addEventListener\('click',[\s\S]{0,430}maktabOpenQuickLog/.test(js));
 check('mobile type switches keep independent drafts for all three log types',
   /drafts:\s*\{[\s\S]{0,320}sabaq:\s*\{ from:maktabQuickCloneVerse\(sabaqDefaults\.from\), to:maktabQuickCloneVerse\(sabaqDefaults\.to\) \}[\s\S]{0,140}sabaqDhor:\s*\{ from:null, to:null \}[\s\S]{0,140}dhor:\s*\{ juz:null, unit:'quarter', position:1 \}/.test(js));
 

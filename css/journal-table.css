@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.7 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.8 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -251,8 +251,7 @@
    to the classes they extend beats a one-rule file. Maktab
    deployment only, like everything since V3.56.0.
    ============================================================ */
-.maktab-summary-row { cursor: pointer; }
-.maktab-summary-row:active { background: rgba(130, 150, 114, 0.12); }
+.maktab-summary-row { cursor: default; }
 /* V4.2.0 (user): the names ARE buttons — tapping one opens her day — so
    they now look like it: the app's light blue in a pill. The pill wraps
    the NAME only; the cell also carries the attendance icon. */
@@ -275,25 +274,29 @@
    The PJ journal's header is a flex row and its body is a <table> --
    they line up only because .journal-header-row's nth-child(1..4)
    percentages happen to match a 4-column auto-layout table. The maktab
-   grid has FIVE columns, so those inherited rules mis-assigned every
-   width (the date column's 20% landed on the narrow haidh column, and
-   the 5th got no rule at all) -- that's the misalignment reported from
+   grid historically had five columns, so those inherited rules mis-assigned
+   every width (the date column's 20% landed on the narrow haidh column, and
+   the last column got no rule at all) -- that's the misalignment reported from
    the device. Fixed properly rather than nudged: ONE set of widths
    below drives both the header cells and the table columns, and the
    table is table-layout:fixed so it obeys them exactly instead of
    auto-sizing to content. Percentages sum to 100 -- no fixed px, which
    would overflow a 100% table by that many pixels. */
+/* V4.2.15.8: six columns — Attendance/index, Student, 3 activity columns,
+   then one narrow Log action. Percentages sum to 100 and drive header/body. */
 .maktab-summary-headers > *:nth-child(1) { flex: 0 0 7%; }
-.maktab-summary-headers > *:nth-child(2) { flex: 0 0 21%; }
-.maktab-summary-headers > *:nth-child(3) { flex: 0 0 24%; }
-.maktab-summary-headers > *:nth-child(4) { flex: 0 0 24%; }
-.maktab-summary-headers > *:nth-child(5) { flex: 0 0 24%; }
+.maktab-summary-headers > *:nth-child(2) { flex: 0 0 20%; }
+.maktab-summary-headers > *:nth-child(3) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(4) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(5) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(6) { flex: 0 0 10%; }
 .maktab-summary-table { table-layout: fixed; }
 .maktab-summary-table td:nth-child(1) { width: 7%; }
-.maktab-summary-table td:nth-child(2) { width: 21%; }
-.maktab-summary-table td:nth-child(3) { width: 24%; }
-.maktab-summary-table td:nth-child(4) { width: 24%; }
-.maktab-summary-table td:nth-child(5) { width: 24%; }
+.maktab-summary-table td:nth-child(2) { width: 20%; }
+.maktab-summary-table td:nth-child(3) { width: 21%; }
+.maktab-summary-table td:nth-child(4) { width: 21%; }
+.maktab-summary-table td:nth-child(5) { width: 21%; }
+.maktab-summary-table td:nth-child(6) { width: 10%; }
 
 /* Date pill (V3.63.0 — corrected). The PJ never overrides the pill's
    own width: .card-date-row is `display: grid; grid-template-columns:
@@ -965,10 +968,9 @@
 .maktab-quick-surah-modal { z-index: 320; }
 
 @media (max-width: 767px) {
-  /* The whole mobile row is a Quick Log affordance now. The explicit name
-     and attendance controls still stop propagation and keep their original
-     destinations. Give the three visible log rows a little more tap depth. */
-  .maktab-summary-table .journal-cell { min-height: 38px; align-content: center; cursor: pointer; }
+  /* V4.2.15.8: data rows are no longer Quick Log targets; only the dedicated
+     Log action opens the unified card. */
+  .maktab-summary-table .journal-cell { min-height: 38px; align-content: center; cursor: default; }
 
   .maktab-quick-log-card { padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom)); }
   .maktab-quick-heading.is-combined {
@@ -1064,7 +1066,33 @@
 
 /* ============================================================
    V4.2.15.5 — mobile Maktab Summary Log target + Sabaq Dhor checkbox grid. */
-.maktab-mobile-log-col { display: none; }
+/* V4.2.15.8: the Log column is no longer mobile-only despite the legacy
+   class name. Desktop/tablet use a compact action; mobile enlarges it below. */
+.maktab-summary-table td.maktab-mobile-log-col {
+  display: table-cell;
+  padding: 4px;
+  text-align: center;
+  vertical-align: middle;
+}
+.maktab-mobile-log-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--palette-evergreen, #344C3D);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px;
+}
+.maktab-mobile-log-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; }
+.maktab-mobile-log-icon svg { width: 36px; height: 36px; }
+.maktab-mobile-log-skeleton { opacity: .35; cursor: default; }
+.maktab-log-head { justify-content: center; }
 @media (max-width: 767px) {
   .maktab-summary-table tr:not(.maktab-group-gap) {
     grid-template-columns: minmax(0, 1fr) 76px;

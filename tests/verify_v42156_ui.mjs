@@ -84,15 +84,15 @@ check('visible Student Management wording is renamed to User Management',
   && !/<h2>Student Management<\/h2>/.test(html));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page asset keys and service-worker cache are aligned on V4.2.15.7',
-  versions.length > 0 && versions.every(v => v === '4.2.15.7')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.7'/.test(sw));
+check('page asset keys and service-worker cache are aligned after later overlays',
+  versions.length > 0 && versions.every(v => v === '4.2.15.8')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.8'/.test(sw));
 
 check('only actually edited representative files carry the V4.2.15.6 last-edit header',
   /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/api\.js \*\//.test(api)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/haidhDetailScreen\.js \*\//.test(haidh)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/auth\.js \*\//.test(auth)
+  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/auth\.js \*\//.test(auth)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/detail-pages\.css \*\//.test(css)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(read('js/maktabAttendancePage.js')));
 

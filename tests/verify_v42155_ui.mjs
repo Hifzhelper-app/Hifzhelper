@@ -24,10 +24,10 @@ const summary = read('js/maktabSummary.js');
 const journalCss = read('css/journal-table.css');
 const haidhCss = read('css/haidh.css');
 
-check('page assets and service-worker cache remain aligned after the later V4.2.15.7 overlay',
+check('page assets and service-worker cache remain aligned after later overlays',
   [...html.matchAll(/\?v=([0-9.]+)/g)].length > 0
-  && [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.7')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.7'/.test(sw));
+  && [...html.matchAll(/\?v=([0-9.]+)/g)].every(m => m[1] === '4.2.15.8')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.8'/.test(sw));
 
 check('Daily Report converts each entry separately and joins every same-activity entry with commas',
   /function maktabDailyReportSingleEntryText\(type, entry\)/.test(report)
@@ -132,7 +132,7 @@ check('mobile Maktab Summary has a large circle-plus Log target wired to the exi
   && /mobileLogBtn\.className = 'maktab-mobile-log-action'/.test(summary)
   && /iconHtml\('circlePlus'\)/.test(summary)
   && /<span>Log<\/span>/.test(summary)
-  && /maktabOpenQuickLog\(student, date, 'sabaq', entriesByType\.sabaq, entriesByType\)/.test(summary)
+  && /maktabOpenQuickLog\(student, date, 'sabaq', entriesByType\.sabaq, entriesByType, \{ combined: true \}\)/.test(summary)
   && /\.maktab-mobile-log-icon svg \{ width: 52px; height: 52px; \}/.test(journalCss));
 
 check('V4.2.15.5 remains frontend-only; the later V4.2.15.7 migration is separately identified',
@@ -143,7 +143,7 @@ check('only edited product files carry V4.2.15.5 last-edit headers while represe
   /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDailyReport\.js \*\//.test(report)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(cal)
-  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabSummary\.js \*\//.test(summary)
+  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/maktabSummary\.js \*\//.test(summary)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(read('js/maktabAttendancePage.js'))
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabSettings\.js \*\//.test(read('js/maktabSettings.js')));
 

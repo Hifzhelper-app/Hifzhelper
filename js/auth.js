@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.7 | js/auth.js */
+/* Hifzhelper build 4.2.15.8 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -203,18 +203,19 @@ function setMaktabZoomLink(value){
   const raw = String(value || '').trim();
   MAKTAB_ZOOM_LINK = /^https:\/\//i.test(raw) ? raw : null;
 }
-function updateAuthBandZoom(screenId){
+function updateAuthBandZoom(){
   const el = document.getElementById('authBandZoom');
   if(!el) return;
-  const allowedScreen = screenId === 'journal' || screenId === 'maktabJournal';
-  const show = !!(allowedScreen && MAKTAB_ZOOM_LINK);
+  // V4.2.15.8: the authenticated band is the scope. If the band is on
+  // screen, the class link is useful; do not special-case individual pages.
+  const show = !!MAKTAB_ZOOM_LINK;
   el.classList.toggle('hidden', !show);
   if(show) el.href = MAKTAB_ZOOM_LINK;
   else el.removeAttribute('href');
 }
 function renderAuthBand(){
   document.querySelector('#authBand .user-name').textContent = currentUser.name || 'Hifzhelper';
-  updateAuthBandZoom(null);
+  updateAuthBandZoom();
 }
 
 // 2026-08-03: #authDropdown is now position:fixed (css/nav.css) so it

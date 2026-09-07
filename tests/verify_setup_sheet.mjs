@@ -141,8 +141,8 @@ check('setup never reaches for an own-only profile call',
   check('bootApp sends a teaching profile to its own home — the maktab summary, via homeScreenFor()',
     /isTeachingProfile\(\)[\s\S]{0,80}showScreen\(homeScreenFor\(\)\)/.test(bootBody)
     && /return \(typeof isTeachingProfile === 'function' && isTeachingProfile\(\)\) \? 'maktabSummary' : 'home';/.test(read('js/app.js')));
-  check('and a student still lands on home / settings',
-    /showScreen\(profile\.setup_complete \? 'home' : 'settings'\)/.test(bootBody));
+  check('and a student now lands on Summary / Settings',
+    /showScreen\(profile\.setup_complete \? 'journal' : 'settings'\)/.test(bootBody));
   check('the setup_complete branch is skipped for teaching profiles — Settings is hidden from them',
     /if\(typeof isTeachingProfile === 'function' && isTeachingProfile\(\)\)\{[\s\S]{0,90}homeScreenFor\(\)[\s\S]{0,40}\} else \{/.test(bootBody));
 }
