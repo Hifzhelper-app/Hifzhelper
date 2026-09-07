@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.7 | js/app.js */
+/* Hifzhelper build 4.2.15.8 | js/app.js */
 // ============================================================
 // Hifzhelper — app bootstrap and screen routing
 // ============================================================
@@ -43,9 +43,9 @@ const SCREEN_LABELS = { progress: 'Progress' };
 
 async function showScreen(id, param){
   document.querySelectorAll('#appContent > .screen').forEach(s => s.classList.add('hidden'));
-  // V4.2.15.7: the shared class Zoom action belongs only to the two
-  // journal landing screens. Hide/show it synchronously with navigation.
-  if(typeof updateAuthBandZoom === 'function') updateAuthBandZoom(id);
+  // V4.2.15.8: the configured class Zoom action follows the authenticated
+  // band itself, so every routed app screen keeps the same centred action.
+  if(typeof updateAuthBandZoom === 'function') updateAuthBandZoom();
   const target = document.getElementById('screen-' + id) || document.getElementById('screen-placeholder');
 
   if(!SCREENS_BUILT[id]){
@@ -187,10 +187,9 @@ async function bootApp(){
     showWelcome(currentUser.name || 'back');
     armBackGuard();
     // V3.7.0: a new user (setup_complete still 0) lands on Setup first —
-    // returning users go straight to Home as of V3.41.1 (was Journal
-    // before, confirmed changed in chat). Setup itself is also reachable
-    // any time afterward via the "Settings" nav item; Journal remains
-    // fully reachable as its own nav item too, just no longer the default.
+    // V4.2.15.8: returning Personal Journal users now go straight to
+    // Summary. Setup itself remains reachable any time afterward via the
+    // Settings nav item; Home remains an explicit Personal Journal menu item.
     // V3.74.0: a teaching profile LANDS on the maktab summary — the screen
     // it actually works from. V3.71.0 claimed this and got it wrong: it
     // changed the Home DROPDOWN BUTTON instead, which is not the landing
@@ -204,7 +203,9 @@ async function bootApp(){
     if(typeof isTeachingProfile === 'function' && isTeachingProfile()){
       showScreen(homeScreenFor());
     } else {
-      showScreen(profile.setup_complete ? 'home' : 'settings');
+      // V4.2.15.8: a Personal Journal opens on Summary. Home remains an
+      // explicit menu destination; incomplete setup still opens Settings.
+      showScreen(profile.setup_complete ? 'journal' : 'settings');
     }
   } catch(e){
     showBanner("Couldn't load your profile: " + e.message);

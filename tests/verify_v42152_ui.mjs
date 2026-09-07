@@ -116,7 +116,7 @@ check('V4.2.15.2 behaviour survives later page/cache overlays and its touched fi
   v42152PageVersions.length > 0 && !!v42152CacheVersion && v42152PageVersions.every(v => v === v42152CacheVersion)
   && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/maktabDay\.js \*\//.test(day)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/haidh\.css \*\//.test(haidhCss));
+  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| css\/haidh\.css \*\//.test(haidhCss));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

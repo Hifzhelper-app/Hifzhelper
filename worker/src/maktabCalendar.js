@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.7 | worker/src/maktabCalendar.js */
+/* Hifzhelper build 4.2.15.8 | worker/src/maktabCalendar.js */
 // ============================================================
 // maktabCalendar.js — V3.87.0: the MAKTAB CALENDAR (user spec,
 // 2026-08-28, recorded in TODO).
@@ -127,11 +127,13 @@ export async function handleGetCalendar(request, env, auth) {
   const url = new URL(request.url);
   const year = url.searchParams.get('year');
   if (year && !/^\d{4}$/.test(year)) return { error: 'year must be YYYY', status: 400 };
-  // V4.2.15.7: older/seeded one-day rows may have NULL date_to.
-  // Treat them as date_from on READ so a public holiday in a term break
-  // (e.g. 24 Sep) cannot disappear from the month calendar.
+  // V4.2.15.8: older/imported one-day rows exist with BOTH NULL and blank
+  // date_to values. COALESCE alone does not catch '', which is why a saved
+  // 24 Sep holiday could appear in the editor yet vanish from the calendar.
+  // Normalize blank/whitespace to NULL in the read predicate, then fall back
+  // to date_from. Term membership is deliberately irrelevant here.
   const r = year
-    ? await env.DB.prepare("SELECT * FROM maktab_calendar WHERE date_from <= ?1 AND COALESCE(date_to, date_from) >= ?2 ORDER BY date_from")
+    ? await env.DB.prepare("SELECT * FROM maktab_calendar WHERE date_from <= ?1 AND COALESCE(NULLIF(TRIM(date_to), ''), date_from) >= ?2 ORDER BY date_from")
         .bind(`${year}-12-31`, `${year}-01-01`).all()
     : await env.DB.prepare('SELECT * FROM maktab_calendar ORDER BY date_from').bind().all();
   return { data: r.results };

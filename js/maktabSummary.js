@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.15.8 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -604,7 +604,7 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType, o
   let settings = null;
   try{ settings = typeof loadMaktabSettings === 'function' ? await loadMaktabSettings() : await apiGetMaktabSettings(); } catch(e){ settings = null; }
   if(openToken !== maktabQuickLogOpenToken) return;
-  const combined = maktabQuickIsMobile();
+  const combined = !!(opts && opts.combined) || maktabQuickIsMobile();
   const entryMap = entriesByType || { sabaq: [], sabaqDhor: [], dhor: [] };
   if(!entriesByType) entryMap[type] = (entries || []).slice();
   const ref = maktabQuickRefForMushaf(settings && settings.mushaf);
@@ -863,7 +863,7 @@ async function renderMaktabSummaryScreen(){
   if(maktabRosterCache && maktabRosterCache.length){
     maktabSummaryPaintSkeleton(host, maktabRosterCache);
   } else {
-    host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
+    host.innerHTML = '<tr><td colspan="6" class="journal-cell journal-cell-empty">Loading\u2026</td></tr>';
   }
   maktabSummarySetLoading(true);
 
@@ -881,7 +881,7 @@ async function renderMaktabSummaryScreen(){
     // V3.75.0 (item 6): carry the worker's message rather than a fixed
     // line. Set via textContent, so a message containing markup is text.
     const td = document.createElement('td');
-    td.colSpan = 5;
+    td.colSpan = 6;
     td.className = 'journal-cell journal-cell-empty';
     td.textContent = 'Could not load the maktab summary: ' + ((loadErr && loadErr.message) || 'unexpected response');
     maktabSummarySetLoading(false);   // V4.2.5
@@ -966,8 +966,8 @@ async function renderMaktabSummaryScreen(){
     nameSpan.title = stu.name;
     nameTd.appendChild(nameSpan);
     // V3.85.0 (was V3.82.0's rail card): tapping the NAME opens her
-    // STANDALONE student summary page; the rest of the row keeps opening
-    // the day view, and each log cell routes to its own card (below).
+    // STANDALONE student summary page. In V4.2.15.8 the rest of the row
+    // is display-only; logging is isolated in the dedicated Log column.
     nameTd.addEventListener('click', (e) => {
       e.stopPropagation();
       openStudentSummaryPage({ id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh }, date);
@@ -1014,33 +1014,18 @@ async function renderMaktabSummaryScreen(){
         const peekBtn = td.querySelector('[data-entry-peek]');
         if(peekBtn){
           peekBtn.addEventListener('click', (e) => {
-            e.stopPropagation();   // must NOT reach the row's day-view nav
+            e.stopPropagation();   // keep the +N peek isolated from other controls
             maktabOpenEntryPeek(peekBtn, type, td._peekEntries);
           });
         }
       }
-      // V4.2.12: a log cell is now the Quick Log trigger. The full detail
-      // card is still available from inside the sheet; the +N peek keeps
-      // stopping propagation above, so inspecting existing entries never
-      // accidentally opens a new-entry sheet.
-      td.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const entriesByType = {
-          sabaq: byStudent.sabaq[stu.id] || [],
-          sabaqDhor: byStudent.sabaqDhor[stu.id] || [],
-          dhor: byStudent.dhor[stu.id] || []
-        };
-        maktabOpenQuickLog(
-          { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh },
-          date, type, entriesByType[type], entriesByType
-        );
-      });
+      // V4.2.15.8: activity cells are display/peek only. Logging is entered
+      // through the dedicated Log column, which opens one unified selector.
       tr.appendChild(td);
     });
 
-    // V4.2.15.5: a dedicated large mobile Log target. The whole phone
-    // card still opens Quick Log, but this explicit circle-plus makes the
-    // primary action obvious and easy to hit. Hidden on desktop/tablet.
+    // V4.2.15.8: one dedicated Log target on phone, tablet and desktop.
+    // It always opens the unified selector card (Sabaq / Sabaq Dhor / Dhor).
     const mobileLogTd = document.createElement('td');
     mobileLogTd.className = 'maktab-mobile-log-col';
     const mobileLogBtn = document.createElement('button');
@@ -1056,7 +1041,7 @@ async function renderMaktabSummaryScreen(){
         sabaqDhor: byStudent.sabaqDhor[stu.id] || [],
         dhor: byStudent.dhor[stu.id] || []
       };
-      maktabOpenQuickLog(student, date, 'sabaq', entriesByType.sabaq, entriesByType);
+      maktabOpenQuickLog(student, date, 'sabaq', entriesByType.sabaq, entriesByType, { combined: true });
     });
     mobileLogTd.appendChild(mobileLogBtn);
     tr.appendChild(mobileLogTd);
@@ -1065,23 +1050,9 @@ async function renderMaktabSummaryScreen(){
     // absence_flag_days consecutive MAKTAB DAYS without an entry.
     if(derived[stu.id] && derived[stu.id].flagged) tr.classList.add('maktab-row-flagged');
 
-    // whole row = one tap target (confirmed); carries the PICKED date
-    // so past-day rows open the day view for that day (confirmed).
-    // V3.64.0: opens the PJ's OWN day view with a maktab context — not a
-    // maktab copy of it. See js/logContext.js.
-    tr.addEventListener('click', () => {
-      const student = { id: stu.id, name: stu.name, mushaf: stu.mushaf || null, track_haidh: !!stu.track_haidh };
-      if(maktabQuickIsMobile()){
-        const entriesByType = {
-          sabaq: byStudent.sabaq[stu.id] || [],
-          sabaqDhor: byStudent.sabaqDhor[stu.id] || [],
-          dhor: byStudent.dhor[stu.id] || []
-        };
-        maktabOpenQuickLog(student, date, 'sabaq', entriesByType.sabaq, entriesByType);
-      } else {
-        openMaktabDay(student, date);
-      }
-    });
+    // V4.2.15.8: the row itself is deliberately inert. Name → Student
+    // Summary, Attendance → Quick Attendance, +N → peek, Log → unified
+    // Quick Log. No whitespace/data-cell tap can open an individual card.
     host.appendChild(tr);
   });
   // Search follows the visible ordering for predictable results, while its
@@ -1089,7 +1060,7 @@ async function renderMaktabSummaryScreen(){
   wireMaktabSummarySearch(sortedStudents, date);
 
   if (!(data.students || []).length) {
-    host.innerHTML = '<tr><td colspan="5" class="journal-cell journal-cell-empty">No active students.</td></tr>';
+    host.innerHTML = '<tr><td colspan="6" class="journal-cell journal-cell-empty">No active students.</td></tr>';
   }
 }
 
@@ -1105,9 +1076,8 @@ function maktabSummarySetLoading(on){
 }
 
 // The cached paint: real names in real pills with the attendance icon, and
-// EMPTY log cells — never stale ones. Deliberately not wired for taps: the
-// row's handlers are attached by the real render a moment later, and a tap
-// on a half-drawn row would open a card whose data has not arrived.
+// EMPTY log cells — never stale ones. The cached Log control is intentionally
+// non-interactive until the real render arrives, so no action runs on stale data.
 function maktabSummaryPaintSkeleton(host, roster){
   host.innerHTML = '';
   roster.forEach((stu, rowIndex) => {
