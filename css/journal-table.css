@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.9 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.11 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -792,19 +792,35 @@
   padding-bottom: 0;
 }
 
-.maktab-quick-sd-layout { display: grid; gap: 12px; }
-.maktab-quick-sd-quarters { display: grid; gap: 7px; }
-.maktab-quick-sd-row {
+/* V4.2.15.10: Sabaq Dhor's confirmation controls are a real shared
+   right-hand grid track on EVERY viewport size. components.css is loaded
+   after this file and its `.modal-card label { display:block }` used to win
+   on tablet/desktop, letting each quarter pill consume the full row and
+   dropping its checkbox underneath. The more-specific label selector below
+   owns the layout structurally, while the manual To checkbox uses the exact
+   same fixed track. */
+.maktab-quick-sd-layout {
+  --maktab-quick-sd-check-col: 44px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 12px;
+  width: 100%;
+}
+.maktab-quick-sd-quarters { display: grid; gap: 7px; width: 100%; min-width: 0; }
+.modal-card label.maktab-quick-sd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
   gap: 8px;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   margin: 0;
   cursor: pointer;
 }
 .maktab-quick-sd-row-pill {
   display: block;
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   padding: 9px 13px;
   border-radius: 999px;
   background: var(--color-accent-soft, #D0DBE7);
@@ -812,7 +828,7 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
-.modal-card .maktab-quick-sd-row input,
+.modal-card .maktab-quick-sd-row > input,
 .modal-card .maktab-quick-sd-manual-line > input,
 .modal-card .maktab-quick-sd-picker-row > input {
   width: 22px;
@@ -821,16 +837,29 @@
   padding: 0;
   accent-color: var(--palette-evergreen, #344C3D);
   justify-self: center;
+  align-self: center;
 }
-.maktab-quick-sd-manual { display: grid; gap: 8px; }
+.modal-card .maktab-quick-sd-row > input { grid-column: 2; }
+.maktab-quick-sd-manual { display: grid; gap: 8px; width: 100%; min-width: 0; }
 .maktab-quick-sd-manual-line {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
   gap: 8px;
-  align-items: end;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
-.maktab-quick-sd-manual-line .maktab-quick-range-row { grid-template-columns: 64px minmax(0, 1fr); }
-.maktab-quick-sd-check-spacer { width: 22px; }
+.maktab-quick-sd-manual-line .maktab-quick-range-row {
+  grid-column: 1;
+  grid-template-columns: 64px minmax(0, 1fr);
+  min-width: 0;
+}
+.maktab-quick-sd-manual-line > input { grid-column: 2; }
+.maktab-quick-sd-check-spacer {
+  grid-column: 2;
+  width: 22px;
+  justify-self: center;
+}
 .maktab-quick-sd-empty { display: grid; gap: 7px; }
 .maktab-quick-sd-picker-row {
   display: grid;
@@ -866,7 +895,7 @@
 .maktab-quick-dhor-grid { display: grid; gap: 10px; }
 .maktab-quick-dhor-primary-row {
   display: grid;
-  grid-template-columns: minmax(100px, 30%) minmax(0, 1fr);
+  grid-template-columns: 128px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
 }
@@ -908,7 +937,9 @@
   height: 42px;
   margin: 0;
   padding: 0 34px 0 12px;
-  border-radius: 999px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-canvas);
   box-sizing: border-box;
 }
 .maktab-quick-confirm {
@@ -982,7 +1013,7 @@
   .maktab-quick-date-row { margin-bottom: 10px; }
   .maktab-quick-date-control { flex-basis: 142px; width: 142px; }
   .maktab-quick-range-row { grid-template-columns: 74px minmax(0, 1fr); }
-  .maktab-quick-dhor-primary-row { grid-template-columns: minmax(94px, 30%) minmax(0, 1fr); }
+  .maktab-quick-dhor-primary-row { grid-template-columns: 128px minmax(0, 1fr); }
   .maktab-quick-dhor-position-row { grid-template-columns: 96px minmax(0, 1fr); }
   .maktab-quick-actions { grid-template-columns: minmax(96px, .9fr) minmax(112px, 1.25fr); }
   .maktab-quick-actions.no-confirm { grid-template-columns: minmax(112px, 58%); }
@@ -1091,7 +1122,7 @@
   padding: 2px;
 }
 .maktab-mobile-log-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; }
-.maktab-mobile-log-icon svg { width: 36px; height: 36px; }
+.maktab-mobile-log-icon svg { width: 29px; height: 29px; }
 .maktab-mobile-log-skeleton { opacity: .35; cursor: default; }
 .maktab-log-head { justify-content: center; }
 @media (max-width: 767px) {
@@ -1133,7 +1164,7 @@
     align-items: center;
     justify-content: center;
   }
-  .maktab-mobile-log-icon svg { width: 52px; height: 52px; }
+  .maktab-mobile-log-icon svg { width: 42px; height: 42px; }
   .maktab-mobile-log-skeleton { opacity: .35; cursor: default; }
 
   /* components.css's later `.modal-card label {display:block}` used to
@@ -1224,4 +1255,98 @@
   background: var(--palette-evergreen, #344C3D);
   color: #fff;
   font-weight: 700;
+}
+
+
+/* ============================================================
+   V4.2.15.11 — Maktab roster search + Quick Log selector ergonomics. */
+.maktab-summary-mobile-search-row { display: none; }
+
+/* Quick Log From/To: make the custom Ayah stepper a larger target and
+   anchor it toward the LEFT of its own track, away from the pill edge. */
+.maktab-quick-log-card .maktab-quick-verse-field {
+  grid-template-columns: 38px minmax(0, 1fr) minmax(72px, 30%) 52px;
+  gap: 4px;
+  padding-right: 12px;
+}
+.maktab-quick-log-card .maktab-quick-verse-field .verse-ref-ayah-stepper {
+  justify-self: start;
+  width: 40px;
+}
+.maktab-quick-log-card .maktab-quick-verse-field .verse-ref-ayah-stepper button {
+  width: 40px;
+  min-height: 18px;
+  padding: 3px 8px;
+}
+
+/* Desktop Safari/Chromium otherwise show the native number spinner beside
+   the app's explicit Ayah stepper. Keep only the deliberate custom chevrons
+   on large screens. */
+@media (min-width: 768px) {
+  .maktab-quick-log-card .maktab-quick-verse-field input[type=number] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  .maktab-quick-log-card .maktab-quick-verse-field input[type=number]::-webkit-inner-spin-button,
+  .maktab-quick-log-card .maktab-quick-verse-field input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/* Searchable Surah picker used by Ayah From / Ayah To in unified Quick Log. */
+.maktab-quick-surah-search {
+  width: 100%;
+  min-height: 42px;
+  box-sizing: border-box;
+  margin: 8px 0 2px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-table-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font: inherit;
+}
+.maktab-quick-surah-modal .surah-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.maktab-quick-surah-ayah-count {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--color-ink-faint);
+  white-space: nowrap;
+}
+.maktab-quick-surah-empty {
+  padding: 12px;
+  color: var(--color-ink-faint);
+  font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  .maktab-summary-mobile-search-row {
+    display: block;
+    position: relative;
+    margin: -2px 0 var(--space-sm);
+  }
+  .maktab-summary-mobile-search-row input[type=search] {
+    width: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+    padding: 8px 13px;
+    border: 1px solid var(--color-table-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font: inherit;
+  }
+  .maktab-summary-mobile-search-empty {
+    margin-top: 5px;
+    padding: 0 4px;
+    font-size: 12px;
+    color: var(--color-ink-faint);
+  }
+  #maktabSummaryBody tr.maktab-mobile-search-hidden { display: none !important; }
 }

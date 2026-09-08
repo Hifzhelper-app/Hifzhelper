@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.8 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.15.11 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -279,17 +279,36 @@ function maktabQuickOpenSurahPicker(side){
   overlay.innerHTML = `<div class="modal-card">
     <button type="button" class="close-btn" aria-label="Close">&times;</button>
     <h2>Choose Surah</h2>
+    <input type="search" class="maktab-quick-surah-search" placeholder="Search Surah" autocomplete="off" aria-label="Search Surahs">
     <div class="surah-picker-list"></div>
   </div>`;
   document.body.appendChild(overlay);
   const list = overlay.querySelector('.surah-picker-list');
-  list.innerHTML = SURAHS.map(([num, name]) => `<button type="button" class="tajweed-tag surah-picker-row" data-surah="${num}">${num}. ${name}</button>`).join('');
-  list.querySelectorAll('[data-surah]').forEach(btn => btn.addEventListener('click', () => {
+  const search = overlay.querySelector('.maktab-quick-surah-search');
+
+  // V4.2.15.11: the unified Quick Log Surah picker is searchable and gives
+  // the teacher the Surah's total Ayah count before selection. The count is
+  // derived from the same Quran reference data that already clamps Ayah From/To.
+  const renderList = () => {
+    const q = String(search && search.value || '').trim().toLowerCase();
+    const rows = SURAHS.filter(([num, name]) => !q || String(num).includes(q) || name.toLowerCase().includes(q));
+    list.innerHTML = rows.length
+      ? rows.map(([num, name]) => `<button type="button" class="tajweed-tag surah-picker-row" data-surah="${num}"><span>${num}. ${name}</span><span class="maktab-quick-surah-ayah-count">${maxAyahForSurah(num)} ayahs</span></button>`).join('')
+      : '<div class="maktab-quick-surah-empty">No matching Surah.</div>';
+  };
+  renderList();
+  if(search){
+    search.addEventListener('input', renderList);
+    setTimeout(() => search.focus(), 0);
+  }
+  list.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('[data-surah]');
+    if(!btn) return;
     const surah = parseInt(btn.dataset.surah, 10);
     draft[side] = { surah, ayah: 1 };
     maktabQuickRenderVerse(side);
     overlay.remove();
-  }));
+  });
   overlay.querySelector('.close-btn').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => { if(e.target === overlay) overlay.remove(); });
 }
@@ -713,6 +732,35 @@ function maktabOpenEntryPeek(btn, type, entries){
   }
 }
 
+// V4.2.15.11: phone-only roster filter. Unlike the desktop Student-header
+// search (which is navigation to a student's day), this field simply filters
+// the cards already on the selected Maktab day. It lives directly below the
+// date row and never changes the selected date or destination.
+let maktabMobileSearchWired = false;
+function maktabSummaryApplyMobileSearch(){
+  const input = document.getElementById('maktabSummaryMobileSearch');
+  const empty = document.getElementById('maktabSummaryMobileSearchEmpty');
+  const isMobile = !!(window.matchMedia && window.matchMedia('(max-width: 767px)').matches);
+  const q = isMobile && input ? input.value.trim().toLocaleLowerCase() : '';
+  let visible = 0;
+  document.querySelectorAll('#maktabSummaryBody tr[data-maktab-student-name]').forEach(row => {
+    const show = !q || String(row.dataset.maktabStudentName || '').includes(q);
+    row.classList.toggle('maktab-mobile-search-hidden', !show);
+    if(show) visible++;
+  });
+  if(empty) empty.classList.toggle('hidden', !isMobile || !q || visible > 0);
+}
+function wireMaktabSummaryMobileSearch(){
+  const input = document.getElementById('maktabSummaryMobileSearch');
+  if(!input) return;
+  if(!maktabMobileSearchWired){
+    maktabMobileSearchWired = true;
+    input.addEventListener('input', maktabSummaryApplyMobileSearch);
+    window.addEventListener('resize', maktabSummaryApplyMobileSearch);
+  }
+  maktabSummaryApplyMobileSearch();
+}
+
 // V3.78.0 (item 9): search-to-student. Rebuilt each render with that
 // render's roster and picked date, so a result always opens the day the
 // summary is showing. The input keeps its text across renders (the render
@@ -842,6 +890,7 @@ async function renderMaktabSummaryScreen(){
   if(!maktabSummarySelectedDate) maktabSummarySelectedDate = maktabTodayISO();
   const date = maktabSummarySelectedDate;
   maktabSummaryWireDate();
+  wireMaktabSummaryMobileSearch();
   const input = document.getElementById('maktabSummaryDatePicker');
   // programmatic sets keep the display pill in sync automatically --
   // wireCustomDateDisplay intercepts the value setter (the 2026-08-04
@@ -918,6 +967,7 @@ async function renderMaktabSummaryScreen(){
   sortedStudents.forEach((stu, rowIndex) => {
     const tr = document.createElement('tr');
     tr.className = 'maktab-summary-row';
+    tr.dataset.maktabStudentName = String(stu.name || '').toLocaleLowerCase();
 
     // V3.61.0: leading narrow haidh column -- small haidh icon, ONLY for
     // haidh-tracking students (empty cell otherwise so the grid stays
@@ -1058,6 +1108,7 @@ async function renderMaktabSummaryScreen(){
   // Search follows the visible ordering for predictable results, while its
   // destination remains the student's full day view on the selected date.
   wireMaktabSummarySearch(sortedStudents, date);
+  maktabSummaryApplyMobileSearch();
 
   if (!(data.students || []).length) {
     host.innerHTML = '<tr><td colspan="6" class="journal-cell journal-cell-empty">No active students.</td></tr>';
@@ -1083,6 +1134,7 @@ function maktabSummaryPaintSkeleton(host, roster){
   roster.forEach((stu, rowIndex) => {
     const tr = document.createElement('tr');
     tr.className = 'journal-row maktab-summary-skeleton-row';
+    tr.dataset.maktabStudentName = String(stu.name || '').toLocaleLowerCase();
     const haidhTd = document.createElement('td');
     haidhTd.className = 'maktab-haidh-col';
     const rowMeta = document.createElement('div');

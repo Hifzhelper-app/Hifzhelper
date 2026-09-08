@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// V4.2.15.9 — transparent Maktab Log action rail + unified selector polish +
+// V4.2.15.11 — transparent Maktab Log action rail + unified selector polish +
 // Attendance Save label + Student Summary unified Log Quick Action.
 import fs from 'fs';
 import path from 'path';
@@ -18,9 +18,9 @@ const journalCss = read('css/journal-table.css');
 const haidhCss = read('css/haidh.css');
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('served asset versions and service-worker cache are aligned on V4.2.15.9',
-  versions.length > 0 && versions.every(v => v === '4.2.15.9')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.9'/.test(sw));
+check('served asset versions and service-worker cache are aligned on V4.2.15.11',
+  versions.length > 0 && versions.every(v => v === '4.2.15.11')
+  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.11'/.test(sw));
 
 check('Maktab Summary has no visible Log header cell',
   !/maktab-log-head/.test(html)
@@ -52,13 +52,13 @@ check('Student Summary activity headings are display-only and no longer individu
 check('Student Summary circle-plus forces the single unified selector on desktop/tablet too',
   /quickOpenBtn\.onclick = \(\) => maktabOpenQuickLog\([\s\S]{0,260}\{ combined: true, afterSave: \(\) => renderStudentSummaryScreen\(\) \}/.test(day));
 
-check('last-edit headers changed only in product files actually edited for V4.2.15.9',
-  /^<!-- Hifzhelper build 4\.2\.15\.9 \| index\.html -->/m.test(html)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/sw\.js \*\//.test(sw)
+check('last-edit headers changed only in product files actually edited for V4.2.15.11',
+  /^<!-- Hifzhelper build 4\.2\.15\.11 \| index\.html -->/m.test(html)
+  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/sw\.js \*\//.test(sw)
   && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| css\/journal-table\.css \*\//.test(journalCss)
+  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| css\/journal-table\.css \*\//.test(journalCss)
   && /^\/\* Hifzhelper build 4\.2\.15\.9 \| css\/haidh\.css \*\//.test(haidhCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/maktabSummary\.js \*\//.test(summary)
+  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/maktabSummary\.js \*\//.test(summary)
   && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/detail-pages\.css \*\//.test(read('css/detail-pages.css'))
   && /^\/\* Hifzhelper build 4\.2\.15\.8 \| worker\/src\/maktabCalendar\.js \*\//.test(read('worker/src/maktabCalendar.js')));
 
