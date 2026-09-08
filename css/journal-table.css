@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.9 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.10 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -792,19 +792,35 @@
   padding-bottom: 0;
 }
 
-.maktab-quick-sd-layout { display: grid; gap: 12px; }
-.maktab-quick-sd-quarters { display: grid; gap: 7px; }
-.maktab-quick-sd-row {
+/* V4.2.15.10: Sabaq Dhor's confirmation controls are a real shared
+   right-hand grid track on EVERY viewport size. components.css is loaded
+   after this file and its `.modal-card label { display:block }` used to win
+   on tablet/desktop, letting each quarter pill consume the full row and
+   dropping its checkbox underneath. The more-specific label selector below
+   owns the layout structurally, while the manual To checkbox uses the exact
+   same fixed track. */
+.maktab-quick-sd-layout {
+  --maktab-quick-sd-check-col: 44px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 12px;
+  width: 100%;
+}
+.maktab-quick-sd-quarters { display: grid; gap: 7px; width: 100%; min-width: 0; }
+.modal-card label.maktab-quick-sd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
   gap: 8px;
   align-items: center;
+  width: 100%;
+  min-width: 0;
   margin: 0;
   cursor: pointer;
 }
 .maktab-quick-sd-row-pill {
   display: block;
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   padding: 9px 13px;
   border-radius: 999px;
   background: var(--color-accent-soft, #D0DBE7);
@@ -812,7 +828,7 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
-.modal-card .maktab-quick-sd-row input,
+.modal-card .maktab-quick-sd-row > input,
 .modal-card .maktab-quick-sd-manual-line > input,
 .modal-card .maktab-quick-sd-picker-row > input {
   width: 22px;
@@ -821,16 +837,29 @@
   padding: 0;
   accent-color: var(--palette-evergreen, #344C3D);
   justify-self: center;
+  align-self: center;
 }
-.maktab-quick-sd-manual { display: grid; gap: 8px; }
+.modal-card .maktab-quick-sd-row > input { grid-column: 2; }
+.maktab-quick-sd-manual { display: grid; gap: 8px; width: 100%; min-width: 0; }
 .maktab-quick-sd-manual-line {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 34px;
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
   gap: 8px;
-  align-items: end;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 }
-.maktab-quick-sd-manual-line .maktab-quick-range-row { grid-template-columns: 64px minmax(0, 1fr); }
-.maktab-quick-sd-check-spacer { width: 22px; }
+.maktab-quick-sd-manual-line .maktab-quick-range-row {
+  grid-column: 1;
+  grid-template-columns: 64px minmax(0, 1fr);
+  min-width: 0;
+}
+.maktab-quick-sd-manual-line > input { grid-column: 2; }
+.maktab-quick-sd-check-spacer {
+  grid-column: 2;
+  width: 22px;
+  justify-self: center;
+}
 .maktab-quick-sd-empty { display: grid; gap: 7px; }
 .maktab-quick-sd-picker-row {
   display: grid;
