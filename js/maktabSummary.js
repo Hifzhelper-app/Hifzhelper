@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.12 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.15.15 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -1137,7 +1137,7 @@ async function renderMaktabSummaryScreen(){
       maktabOpenQuickLog(student, date, 'sabaq', entriesByType.sabaq, entriesByType, { combined: true });
     });
     mobileLogTd.appendChild(mobileLogBtn);
-    tr.appendChild(mobileLogTd);
+    tr.insertBefore(mobileLogTd, nameTd.nextSibling);
 
     // attention flag: the row is tinted when a student has gone
     // absence_flag_days consecutive MAKTAB DAYS without an entry.
@@ -1217,7 +1217,7 @@ function maktabSummaryPaintSkeleton(host, roster){
     const mobileLogTd = document.createElement('td');
     mobileLogTd.className = 'maktab-mobile-log-col';
     mobileLogTd.innerHTML = `<span class="maktab-mobile-log-action maktab-mobile-log-skeleton" aria-hidden="true"><span class="maktab-mobile-log-icon">${typeof iconHtml === 'function' ? iconHtml('circlePlus') : ''}</span><span>Log</span></span>`;
-    tr.appendChild(mobileLogTd);
+    tr.insertBefore(mobileLogTd, nameTd.nextSibling);
     host.appendChild(tr);
   });
 }

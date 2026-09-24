@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.11 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.15 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -282,22 +282,21 @@
    table is table-layout:fixed so it obeys them exactly instead of
    auto-sizing to content. Percentages sum to 100 -- no fixed px, which
    would overflow a 100% table by that many pixels. */
-/* V4.2.15.9: the body still has six aligned tracks — Attendance/index,
-   Student, 3 activity columns, then one narrow Log action rail. The visible
-   header deliberately stops after Dhor at 90%, leaving the final 10%
-   transparent so Log reads as an outside-table action. */
+/* V4.2.15.15: Attendance, Name, blank Log action, then activity columns.
+   Mobile uses its existing explicit grid placement below. */
 .maktab-summary-headers > *:nth-child(1) { flex: 0 0 7%; }
 .maktab-summary-headers > *:nth-child(2) { flex: 0 0 20%; }
-.maktab-summary-headers > *:nth-child(3) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(3) { flex: 0 0 10%; }
 .maktab-summary-headers > *:nth-child(4) { flex: 0 0 21%; }
 .maktab-summary-headers > *:nth-child(5) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(6) { flex: 0 0 21%; }
 .maktab-summary-table { table-layout: fixed; }
 .maktab-summary-table td:nth-child(1) { width: 7%; }
 .maktab-summary-table td:nth-child(2) { width: 20%; }
-.maktab-summary-table td:nth-child(3) { width: 21%; }
+.maktab-summary-table td:nth-child(3) { width: 10%; }
 .maktab-summary-table td:nth-child(4) { width: 21%; }
 .maktab-summary-table td:nth-child(5) { width: 21%; }
-.maktab-summary-table td:nth-child(6) { width: 10%; }
+.maktab-summary-table td:nth-child(6) { width: 21%; }
 
 /* Date pill (V3.63.0 — corrected). The PJ never overrides the pill's
    own width: .card-date-row is `display: grid; grid-template-columns:
@@ -1193,48 +1192,24 @@
 }
 
 
-/* ============================================================
-   V4.2.15.9 — Maktab Summary Log is an action rail, not a data column.
-   Desktop/tablet keeps the sixth table track for row alignment, but removes
-   table chrome behind it. The header stops at Dhor and the circle-plus sits
-   over the page canvas so it visually floats outside the white data table.
-   Mobile keeps the existing card treatment unchanged. */
+/* V4.2.15.15: desktop Log sits inside the white table beside Name.
+   Compact horizontal icon/label fits the existing row height. */
 @media (min-width: 768px) {
-  #screen-maktabSummary .journal-wrap {
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-  }
-  #screen-maktabSummary .maktab-summary-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    background: transparent;
-  }
-  #screen-maktabSummary .maktab-summary-table td:nth-child(-n+5) {
-    background: var(--color-surface);
-  }
-  #screen-maktabSummary .maktab-summary-table td:nth-child(1) {
-    border-left: 1px solid var(--color-table-border);
-  }
-  #screen-maktabSummary .maktab-summary-table td:nth-child(5) {
-    border-right: 1px solid var(--color-table-border);
-  }
+  #screen-maktabSummary .maktab-log-head,
   #screen-maktabSummary .maktab-summary-table td.maktab-mobile-log-col {
-    background: transparent;
-    border-bottom: 0;
+    background: var(--color-surface, #fff);
   }
-  #screen-maktabSummary .maktab-summary-table tr.maktab-row-flagged td:nth-child(-n+5) {
-    background: rgba(255, 212, 0, 0.18);
+  #screen-maktabSummary .maktab-mobile-log-action {
+    flex-direction: row;
+    gap: 3px;
+    padding: 2px;
+    font-size: 11px;
+    line-height: 1;
+    min-height: 0;
+    white-space: nowrap;
   }
-  #screen-maktabSummary .maktab-summary-table tr:last-child td:nth-child(-n+5) {
-    border-bottom: 1px solid var(--color-table-border);
-  }
-  #screen-maktabSummary .maktab-summary-table tr:last-child td:first-child {
-    border-bottom-left-radius: var(--radius-md);
-  }
-  #screen-maktabSummary .maktab-summary-table tr:last-child td:nth-child(5) {
-    border-bottom-right-radius: var(--radius-md);
-  }
+  #screen-maktabSummary .maktab-mobile-log-icon { width: 24px; height: 24px; }
+  #screen-maktabSummary .maktab-mobile-log-icon svg { width: 22px; height: 22px; }
 }
 
 /* V4.2.15.9 — one unified Quick Log selector: a dark evergreen outline

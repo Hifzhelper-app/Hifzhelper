@@ -1,3 +1,15 @@
+## Maktab Summary Log column — V4.2.15.15
+
+Automated: 76 harnesses / 1,621 checks pass.
+
+At desktop/tablet widths, verify + Log follows Name, its heading is blank, the
+column is white, and the compact action fits the existing row height. Check
+header alignment, cached loading rows, and opening/saving Quick Log. At phone
+widths, confirm the existing card layout and large Log action remain unchanged.
+Visual browser verification remains pending.
+
+---
+
 ## User Management columns — V4.2.15.14
 
 Automated: `npm test` — 76 harnesses, 1,621 checks pass. The new

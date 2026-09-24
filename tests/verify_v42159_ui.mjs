@@ -21,13 +21,12 @@ const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 // Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('Maktab Summary has no visible Log header cell',
-  !/maktab-log-head/.test(html)
+  /class="journal-header-cell maktab-log-head" aria-hidden="true"><\/div>/.test(html)
   && !/<span>Log<\/span>/.test(html.slice(html.indexOf('maktab-summary-headers'), html.indexOf('maktabSummaryBody'))));
 
-check('Maktab Summary desktop Log rail is transparent and outside the white data table chrome',
-  /#screen-maktabSummary \.journal-wrap \{[\s\S]{0,180}background: transparent;[\s\S]{0,100}border: 0;/.test(journalCss)
-  && /td\.maktab-mobile-log-col \{[\s\S]{0,120}background: transparent;[\s\S]{0,80}border-bottom: 0;/.test(journalCss)
-  && !/\.maktab-summary-headers > \*:nth-child\(6\)/.test(journalCss));
+check('Maktab Summary desktop Log column is white with a compact horizontal action',
+  /@media \(min-width: 768px\) \{[\s\S]*td\.maktab-mobile-log-col \{\s*background: var\(--color-surface, #fff\);/.test(journalCss)
+  && /#screen-maktabSummary \.maktab-mobile-log-action \{\s*flex-direction: row;/.test(journalCss));
 
 check('row Log action remains circle-plus + Log and always opens unified Quick Log',
   /mobileLogBtn\.innerHTML = `<span class="maktab-mobile-log-icon">\$\{iconHtml\('circlePlus'\)\}<\/span><span>Log<\/span>`/.test(summary)

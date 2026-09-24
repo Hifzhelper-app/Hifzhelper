@@ -5,6 +5,16 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.15 — Maktab Summary Log beside Name (2026-09-24)
+
+On larger screens, the blank-headed + Log column now follows Name inside the
+white table. Its compact horizontal icon and label fit the existing row height.
+Live and loading rows use the same column order; mobile keeps its explicit card
+grid and larger Log action. Quick Log behaviour is unchanged.
+Frontend: `js/maktabSummary.js`, `css/journal-table.css`, `index.html`, `js/sw.js`.
+No Worker or database changes. All 76 harnesses / 1,621 checks pass, including
+updated column-order and interaction checks. Visual check remains pending.
+
 ## V4.2.15.14 — User Management column order (2026-09-24)
 
 Desktop columns now read Name, WhatsApp, Role, Group, Status, Haidh, Unique ID,

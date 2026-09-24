@@ -72,11 +72,10 @@ check('Attendance Quick Action gives Detail, Save and Close identical 50px icon 
   && /\.maktab-quick-attendance-detail > span:first-child \{[\s\S]{0,180}width: 50px;[\s\S]{0,80}height: 50px;/.test(haidhCss)
   && /\.maktab-quick-attendance-save,[\s\S]{0,80}\.maktab-quick-attendance-close \{ width: 50px; height: 50px; \}/.test(haidhCss));
 
-check('Maktab Summary retains a dedicated sixth Log action track while later UI makes its header/rail transparent',
-  !/maktab-log-head/.test(html)
-  && !/\.maktab-summary-headers > \*:nth-child\(6\)/.test(journalCss)
-  && /\.maktab-summary-table td:nth-child\(6\) \{ width: 10%; \}/.test(journalCss)
-  && /td\.maktab-mobile-log-col \{[\s\S]{0,120}background: transparent;/.test(journalCss));
+check('Maktab Summary Log occupies the third track beside Name',
+  /tr.insertBefore\(mobileLogTd, nameTd.nextSibling\)/.test(summary)
+  && /\.maktab-summary-table td:nth-child\(3\) \{ width: 10%; \}/.test(journalCss)
+  && /\.maktab-summary-headers > \*:nth-child\(3\) \{ flex: 0 0 10%; \}/.test(journalCss));
 
 check('each Maktab Summary row has circle-plus + Log as the unified Quick Log target',
   /mobileLogBtn\.className = 'maktab-mobile-log-action'/.test(summary)

@@ -133,15 +133,15 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   const zayd = rowFor('Zayd'), amina = rowFor('Amina');
   check('summary: logged students are alphabetical', rows[0] === amina && rows[1] === zayd);
   check('summary: every student has independent name, attendance and Log actions',
-    [...rows].every(r => r.querySelector('.maktab-name-pill') && r.querySelector('.maktab-haidh-check') && r.querySelector('.maktab-mobile-log-action')));
-  check('summary: Sabaq and Dhor keep the shared shorthand', zayd.cells[2].textContent.includes('2:1–2:5') && amina.cells[4].textContent.includes('J1-J2'));
-  check('summary: empty cells show em-dash', amina.cells[2].textContent.includes('—'));
+    [...rows].every(r => r.querySelector('.maktab-name-pill') && r.querySelector('.maktab-haidh-check') && r.querySelector('.maktab-mobile-log-action') && r.cells[2].classList.contains('maktab-mobile-log-col')));
+  check('summary: Sabaq and Dhor keep the shared shorthand', zayd.querySelector('[data-label="Sabaq"]').textContent.includes('2:1–2:5') && amina.querySelector('[data-label="Dhor"]').textContent.includes('J1-J2'));
+  check('summary: empty cells show em-dash', amina.querySelector('[data-label="Sabaq"]').textContent.includes('—'));
   const badge = zayd.querySelector('[data-entry-peek]');
   check('summary: multi-entry badge is an independent button', badge?.tagName === 'BUTTON' && badge.textContent === '+1');
   badge.click();
   check('summary: badge opens read-only entries without navigation', w.eval('openedWith') === null && w.document.querySelectorAll('.maktab-entry-peek-row').length === 2);
   w.document.body.click();
-  zayd.cells[2].click();
+  zayd.querySelector('[data-label="Sabaq"]').click();
   check('summary: activity cell stays display-only', w.eval('openedWith') === null);
   let logAction = null, attendanceAction = null;
   w.maktabOpenQuickLog = (...args) => { logAction = args; };
