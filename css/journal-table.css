@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.19 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.20 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -1349,7 +1349,7 @@
 /* V4.2.15.19: pin confirmation beside the range, even outside SD layout. */
 .maktab-quick-sd-manual-line > .maktab-quick-confirm { grid-column: 2; grid-row: 1; }
 @media (min-width: 768px) {
-  #screen-maktabSummary .maktab-summary-headers .journal-header-cell:nth-child(-n+4) {
+  #screen-maktabSummary .maktab-summary-headers .journal-header-cell:nth-child(-n+3) {
     background: var(--color-table-header-date);
   }
 }

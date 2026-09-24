@@ -5,6 +5,29 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.20 — Attendance reports (2026-09-24)
+
+Attendance now has a Report button. Reports offer Monday-to-today, first-of-month
+to today, or custom From/To dates (up to 366 days), including ranges across terms.
+The read-only grid includes all active students and the register's teaching-day
+columns, normalized attendance/Haidh marks and period percentages. Alphabetical
+and decreasing attendance use the existing screen comparator: active-day count,
+percentage, then alphabetical ties. Share generates PNG pages (up to 20 date
+columns and 30 students each); unsupported native sharing falls back to download.
+Long names wrap in image exports. Loading, invalid/empty ranges and late responses
+cannot share stale reports. Sabaq's Maktab header is pink again; the three columns
+before it remain olive.
+
+Deploy the updated Worker along with the frontend: the existing read-only
+`/maktab/attendance-register` endpoint now accepts validated `from`/`to` parameters.
+No migrations or database writes. Older endpoints are detected by response bounds
+so the frontend does not silently export the wrong period.
+Files: `worker/src/maktabAttendance.js`, `js/api.js`, new
+`js/maktabAttendanceReport.js`, `css/daily-report.css`, `css/journal-table.css`,
+`index.html`, `js/sw.js`. Validation: 78 harnesses passed (1,664 checks), plus
+two additional image/share checks passed. Device sharing and visual verification
+remain pending.
+
 ## V4.2.15.19 — Confirmation alignment and header colours (2026-09-24)
 
 Fix Sabaq Quick Action confirmation dropping below To: its shared grid used a

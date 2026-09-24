@@ -1,3 +1,23 @@
+## Attendance report — V4.2.15.20
+
+Validation: 78 harnesses passed (1,664 checks); the report harness then passed
+all 22 checks after adding image drawing and download-fallback coverage.
+
+`verify_attendance_report.mjs` exercises the migrated test database and actual
+register handler for cross-term ranges, invalid/oversized ranges, teacher-only
+access and attendance-percentage parity. Browser-model checks cover presets,
+sorting, status marks, pagination, opening, native sharing, stale export disabling
+and closing during a pending request.
+
+Device checks: open Report on Attendance, try week/month/custom dates and both
+sort orders. Compare marks and percentages with Attendance for the same range.
+Share a one-page and multi-page report; test download fallback and long names.
+Confirm Sabaq is pink while the preceding headers remain olive. Updated Worker
+must be deployed for date-range reports. No database migration is needed.
+Visual device verification remains pending.
+
+---
+
 ## Quick Action alignment — V4.2.15.19
 
 Check Sabaq confirmation remains beside To at phone and desktop widths. Check

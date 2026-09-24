@@ -115,3 +115,10 @@ with synthetic Sabaq history. It covers Juz labels, always-visible portion picke
 historical edit prepopulation, empty history, Juz 30, and date changes. It performs
 no live database writes. Former empty-state-only picker assertions now reflect
 the always-available picker; release headers remain centrally validated.
+
+### Attendance reporting (V4.2.15.20)
+
+`verify_attendance_report.mjs` uses migrated in-memory fixtures for the read-only
+register's custom ranges, plus the real report UI in jsdom with canvas/share
+boundaries stubbed. Live database writes are not used. Manual image export and
+device sharing checks are listed in TESTING.md.

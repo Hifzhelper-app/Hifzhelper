@@ -17,7 +17,7 @@ const carriedCache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1]
 // Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('Attendance title has a small reset Sort pill and no redundant Maktab Summary button',
-  /<h2>Attendance<\/h2>[\s\S]{0,260}id="mkregisterDefaultSortBtn"[^>]*>Sort<\/button>/.test(html)
+  /<h2>Attendance<\/h2>[\s\S]{0,500}id="mkregisterDefaultSortBtn"[^>]*>Sort<\/button>/.test(html)
   && !/id="mkweekMaktabSummaryBtn"/.test(html)
   && /id="mkweekCloseBtn"[^>]*aria-label="Return to Maktab Summary"/.test(html));
 

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.5 | css/daily-report.css */
+/* Hifzhelper build 4.2.15.20 | css/daily-report.css */
 /* ============================================================
    V4.2.15.3 — Daily Maktab Report.
    A read-only, date-selectable filtered copy of Maktab Summary, presented
@@ -179,3 +179,13 @@
   overflow-wrap: anywhere;
   line-height: 1.35;
 }
+
+/* Attendance report keeps long ranges scrollable; image export paginates. */
+.attendance-report-controls { display: flex; flex-wrap: wrap; gap: 12px; }
+.attendance-report-controls label { display: grid; gap: 4px; flex: 1 1 150px; }
+.attendance-report-controls input, .attendance-report-controls select { width: 100%; min-width: 0; }
+.attendance-report-scroll { overflow: auto; max-height: 60vh; }
+.attendance-report-table { border-collapse: collapse; white-space: nowrap; font-size: 13px; width: 100%; }
+.attendance-report-table th, .attendance-report-table td { padding: 8px; border: 1px solid var(--color-table-border); text-align: center; }
+.attendance-report-table thead { background: var(--palette-sage); }
+.attendance-report-table th:first-child { text-align: left; }
