@@ -5,6 +5,24 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.21 — Weekly attendance grid and PDF export (2026-09-24)
+
+Attendance Report defaults to week-to-date. Share (with icon) is beside the title;
+Period/Order stack beside From/To date pills, all controls 44px high. Fixed-width
+columns group configured teaching days into whole Maktab weeks, with Monday's
+`dd mmm` heading, thick week borders and thin day borders. Four Monday–Thursday
+weeks fit each page; wider teaching schedules keep each page at most 21 days.
+Boundary weeks have grey out-of-period cells that never add activity or counts.
+Rows paginate at 20 students, preserving the same ordering on every date block.
+Attendance percentage is blank if confirmed or predicted Haidh occurs anywhere
+in the selected period; sorting retains the established attendance logic.
+
+Share now produces one multipage PDF, with a single-download fallback. Native
+share destinations depend on the device; a downloaded PDF can be attached in
+WhatsApp. PDF images are generated locally, with no new package dependencies.
+Frontend only: `js/maktabAttendanceReport.js`, `css/daily-report.css`,
+`index.html`, `js/sw.js`. No Worker, lockfile or migration changes.
+
 ## Worker build fix — dependency lockfile (2026-09-24)
 
 Cloudflare's automatic clean dependency install failed before compilation because

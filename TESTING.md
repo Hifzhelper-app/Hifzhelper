@@ -1,3 +1,19 @@
+## Attendance PDF — V4.2.15.21
+
+Automated report checks cover whole-week pagination, 21-column maximum,
+partial-week padding, confirmed/predicted Haidh percentage suppression, sorting,
+and single-file native share/download. A synthetic four-page PDF was generated
+using the real canvas renderer, parsed with pypdf and rendered with Poppler for
+visual inspection (week headings, borders, wrapping and blank percentages).
+Live browser control layout and device share destinations still need checking.
+
+Manual: open Report and confirm week-to-date default; inspect stacked controls
+and date pills. Export more than four weeks and more than 20 names, and confirm
+all pages arrive in one PDF. Download and attach the PDF to WhatsApp on desktop.
+This release is frontend only; no Worker deployment or migration is needed.
+
+---
+
 ## Worker clean build — 2026-09-24
 
 The Worker directory now includes its own package-lock.json. Verified `npm ci`
