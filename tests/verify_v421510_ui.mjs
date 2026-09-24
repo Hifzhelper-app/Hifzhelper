@@ -21,7 +21,7 @@ check('Sabaq Dhor quarter markup keeps pill and checkbox as siblings in one row'
   /<label class="maktab-quick-sd-row"[\s\S]{0,260}<span class="maktab-quick-sd-row-pill">[\s\S]{0,260}<input type="checkbox" class="mql-sd-row-cb"/.test(summary));
 
 check('global modal quarter row overrides later generic modal label display block',
-  /\.modal-card label\.maktab-quick-sd-row \{[\s\S]{0,220}display: grid;[\s\S]{0,180}grid-template-columns: minmax\(0, 1fr\) var\(--maktab-quick-sd-check-col\)/.test(css)
+  /\.modal-card label\.maktab-quick-sd-row \{[\s\S]{0,220}display: grid;[\s\S]{0,180}grid-template-columns: minmax\(0, 1fr\) var\(--maktab-quick-sd-check-col, 44px\)/.test(css)
   && /\.modal-card label \{\s*display: block;/.test(components));
 
 check('quarter pills cannot consume the checkbox track',
@@ -32,7 +32,7 @@ check('quarter checkboxes are pinned to grid column 2',
   && /justify-self: center;[\s\S]{0,80}align-self: center;/.test(css));
 
 check('manual To checkbox uses the same fixed RHS grid track',
-  /\.maktab-quick-sd-manual-line \{[\s\S]{0,180}grid-template-columns: minmax\(0, 1fr\) var\(--maktab-quick-sd-check-col\)/.test(css)
+  /\.maktab-quick-sd-manual-line \{[\s\S]{0,180}grid-template-columns: minmax\(0, 1fr\) var\(--maktab-quick-sd-check-col, 44px\)/.test(css)
   && /\.maktab-quick-sd-manual-line > input \{ grid-column: 2; \}/.test(css)
   && /\.maktab-quick-sd-check-spacer \{[\s\S]{0,120}grid-column: 2;[\s\S]{0,80}justify-self: center;/.test(css));
 

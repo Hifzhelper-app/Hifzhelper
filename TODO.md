@@ -8,7 +8,7 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Current release — V4.2.15.18 (2026-09-24)
+## Current release — V4.2.15.19 (2026-09-24)
 
 Quick Action has field-side confirmation and a Tajweed pill beside Save for all
 three types. Sabaq Dhor puts the portion picker last. Device checks are pending.

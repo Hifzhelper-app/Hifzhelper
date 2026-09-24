@@ -1,3 +1,12 @@
+## Quick Action alignment — V4.2.15.19
+
+Check Sabaq confirmation remains beside To at phone and desktop widths. Check
+Tajweed is half-width with centred dark-green text and border. On desktop Maktab,
+attendance, Name, blank Log and Sabaq headers are olive; the last two remain pink.
+Visual device verification remains pending.
+
+---
+
 ## Quick Action layout and Tajweed — V4.2.15.18
 
 Automated: 77 harnesses / 1,643 checks pass.

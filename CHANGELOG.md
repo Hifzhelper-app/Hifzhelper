@@ -5,6 +5,16 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.19 — Confirmation alignment and header colours (2026-09-24)
+
+Fix Sabaq Quick Action confirmation dropping below To: its shared grid used a
+column-width variable defined only inside Sabaq Dhor. Add a fallback width and
+explicitly place confirmation in the right-hand column. Tajweed is half its
+previous width with centred evergreen text and border. Desktop Maktab headers
+from attendance through Sabaq inclusive are olive; Sabaq Dhor and Dhor stay pink.
+Frontend only: `css/journal-table.css`, `index.html`, `js/sw.js`.
+Visual device verification remains pending.
+
 ## V4.2.15.18 — Quick Action layout and Tajweed (2026-09-24)
 
 Sabaq Dhor puts the Juz portion picker last, below From/To, with the prompt

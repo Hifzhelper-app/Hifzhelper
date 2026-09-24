@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.18 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.19 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -807,7 +807,7 @@
 .maktab-quick-sd-quarters { display: grid; gap: 7px; width: 100%; min-width: 0; }
 .modal-card label.maktab-quick-sd-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col, 44px);
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -842,7 +842,7 @@
 .maktab-quick-sd-manual { display: grid; gap: 8px; width: 100%; min-width: 0; }
 .maktab-quick-sd-manual-line {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col, 44px);
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -1335,5 +1335,21 @@
 }
 .maktab-quick-dhor-primary-row { grid-template-columns: minmax(70px, .75fr) minmax(0, 1.5fr) 34px; }
 .maktab-quick-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-#maktabQuickTajweed .tajweed-trigger-btn { border-radius: 999px; width: 100%; min-height: 42px; }
+#maktabQuickTajweed .tajweed-trigger-btn {
+  border-radius: 999px;
+  width: 50%;
+  min-height: 42px;
+  color: var(--palette-evergreen, #344C3D);
+  border: 1px solid var(--palette-evergreen, #344C3D);
+  text-align: center;
+  justify-content: center;
+}
 .tajweed-popup-modal { z-index: 1001; }
+
+/* V4.2.15.19: pin confirmation beside the range, even outside SD layout. */
+.maktab-quick-sd-manual-line > .maktab-quick-confirm { grid-column: 2; grid-row: 1; }
+@media (min-width: 768px) {
+  #screen-maktabSummary .maktab-summary-headers .journal-header-cell:nth-child(-n+4) {
+    background: var(--color-table-header-date);
+  }
+}
