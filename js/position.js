@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/position.js */
+/* Hifzhelper build 4.2.15.17 | js/position.js */
 // ============================================================
 // Hifzhelper — client-side position tracking (V3.12.0, rebuilt V3.14.0)
 // Current as of V3.45.5
@@ -569,4 +569,27 @@ function computeSabaqDhorSections(position, ref){
     });
   }
   return sections;
+}
+
+// Date-scoped planning never includes later Sabaq entries.
+function sabaqDhorPositionAtDate(position, history, ref, date){
+  const eligible = (history || []).filter(e => !date || (e.date && e.date <= date));
+  const frontier = computeActualSabaqFrontier(eligible, ref);
+  const activeJuz = frontier ? getJuzForPosition(frontier.surah, frontier.ayah, ref) : null;
+  let previousJuz = position.previousJuz || null;
+  if(date && (history || []).some(e => e.date > date)){
+    // The stored lingering juz may belong to a later stage of learning.
+    const previous = computeActualSabaqFrontier(eligible.filter(e => {
+      const end = computeActualSabaqFrontier([e], ref);
+      return end && getJuzForPosition(end.surah, end.ayah, ref) !== activeJuz;
+    }), ref);
+    previousJuz = previous ? getJuzForPosition(previous.surah, previous.ayah, ref) : null;
+  }
+  return Object.assign({}, position, { sabaqTo: frontier, activeJuz, previousJuz });
+}
+
+function sabaqDhorRowLabel(row, ref){
+  if(/^Juz\s+\d+/.test(row.label)) return row.label;
+  const juz = row.lingeringJuz || getJuzForPosition(row.fromSurah, row.fromAyah, ref);
+  return `Juz ${juz} ${row.label}`;
 }

@@ -25,8 +25,9 @@ const detailCss = read('css/detail-pages.css');
 
 // ---------- the rail remains three cards ----------
 {
-  const rail = html.slice(html.indexOf('id="logDetailRail"'), html.indexOf('</section>', html.indexOf('id="logDetailRail"')));
-  check('rail: exactly THREE log cards — Student Summary is not a rail card', (rail.match(/log-detail-card/g) || []).length === 3 && !/card-studentSummary/.test(rail));
+  const doc = new JSDOM(html).window.document;
+  check('rail: exactly three log cards; Summary stays separate', doc.querySelectorAll('#logDetailRail > .log-detail-card').length === 3 && !doc.querySelector('#logDetailRail #card-studentSummary'));
+
 }
 check('rail: the fourth summary dot is absent', !/logDetailSummaryDot/.test(html));
 check('rail: card order remains Sabaq, Sabaq Dhor, Dhor', /const LOG_DETAIL_CARD_ORDER = \['sabaq', 'sabaqDhor', 'dhor'\];/.test(detailSrc));
@@ -39,12 +40,9 @@ check('page: Student Summary uses the Attendance-style header with Attendance, A
   && !/id="studentSummaryMaktabSummaryBtn"/.test(html)
   && /id="studentSummaryQuickLogBtn"/.test(html)
   && /id="studentSummaryCloseBtn"/.test(html));
-check('page: current month label and four-column journal table exist',
-  /id="studentSummaryPeriod"/.test(html)
-  && /id="studentSummaryTbody"/.test(html)
-  && /data-ss-quick-type="sabaq"/.test(html)
-  && /data-ss-quick-type="sabaqDhor"/.test(html)
-  && /data-ss-quick-type="dhor"/.test(html));
+check('page: current month table has display-only activity headings and one Log action',
+  /id="studentSummaryPeriod"/.test(html) && /id="studentSummaryTbody"/.test(html)
+  && !/data-ss-quick-type/.test(html) && /id="studentSummaryQuickLogBtn"/.test(html));
 check('page: registered as a built screen that keeps Maktab context',
   /studentSummary: true/.test(appSrc)
   && /id === 'studentSummary'/.test(appSrc.match(/const keepsMaktabCtx =[^\n]*/)[0])

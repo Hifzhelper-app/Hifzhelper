@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.6 | js/api.js */
+/* Hifzhelper build 4.2.15.20 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -370,3 +370,5 @@ function apiDeleteMaktabCalEntry(id){ return apiFetch('/maktab/calendar/' + id, 
 function apiGetHolidayProposal(year){ return apiFetch('/maktab/calendar/holiday-proposal?year=' + year); }
 function apiGetIslamicProposal(year){ return apiFetch('/maktab/calendar/islamic-proposal?year=' + year); }
 function apiConfirmCalList(year, type, entries){ return apiFetch('/maktab/calendar/confirm', { method: 'POST', body: JSON.stringify({ year, type, entries }) }); }
+
+function apiGetMaktabAttendanceReport(from, to){ return apiFetch('/maktab/attendance-register?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to)); }

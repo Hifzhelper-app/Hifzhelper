@@ -52,7 +52,9 @@ check('attendance: the cards cap at 50% centered on larger screens (user, V3.85.
 check('attendance: the worker names the threshold so the page can explain an empty period',
   /maktab_day_min: settings\.maktab_day_min,/.test(read('worker/src/maktabAttendance.js')));
 check('attendance: an empty period is NAMED, with the threshold in the message',
-  /No maktab days in this period \(fewer than \$\{d\.maktab_day_min \|\| '\?'\} students logged per day\)\./.test(read('js/haidhDetailScreen.js')));
+  /No resolved maktab days in this period/.test(read('js/haidhDetailScreen.js'))
+  && /d\.maktab_day_min \|\| '\?'/.test(read('js/haidhDetailScreen.js'))
+  && /current day is still in progress/.test(read('js/haidhDetailScreen.js')));
 
 // ---------- item 4: the button moves ----------
 check('moves: no history rail rides any date row now', !/card-date-row"><input type="date" id="(sabaq|sabaqDhor|dhor)_date" class="card-header-date"><div class="history-container"/.test(html));
@@ -65,9 +67,10 @@ for (const t of ['sabaq', 'sabaqDhor', 'dhor']) {
     cb > 0 && bottom > cb && rail > bottom && notesBtn > rail && (notesBtn - cb) < 900);
 }
 {
-  const dateRow = html.match(/<div class="card-date-row"><input type="date" id="dhor_date"[^\n]*/)[0];
-  check('moves: the dhor swap — Plan/Add-Juz rides the date row; the old bottom Plan button is gone',
-    /id="dhorViewPlanBtn"/.test(dateRow) && (html.match(/id="dhorViewPlanBtn"/g) || []).length === 1);
+  const doc = new JSDOM(html).window.document;
+  check('Dhor has one Ajzaa Completed control and a shared detail date',
+    doc.querySelectorAll('#dhorViewPlanBtn').length === 1 && doc.querySelector('#dhor_date'));
+
 }
 
 // ---------- item 4: notes history, driven ----------
@@ -241,11 +244,7 @@ check('v3940: Calendar is a header, Terms label gone, bigger +, content down a n
   && /#msetCardCalendar \{ padding-top: var\(--space-lg, 22px\); \}/.test(read('css/settings.css')));
 
 // ---------- V3.96.0: the Haidh settings tweaks (the V3.51.2 trap honoured) ----------
-check('v3960: heading text first, checkbox to its RIGHT at 2x; Ruling label and hint element GONE from the markup',
-  /<h2>Haaidha<\/h2>\n            <input type="checkbox" id="haaidha_checkbox">/.test(read('index.html'))
-  && !/haidh-ruling-label/.test(read('index.html'))
-  && !/haidhRulingHint/.test(read('index.html'))
-  && /\.haidh-heading-check input\[type="checkbox"\] \{ width: 32px; height: 32px;/.test(read('css/settings.css')));
+// Retired 2026-09-24: Shared Haidh setup now owns this layout; verify_v42151_admin_haidh and verify_v42156_haidh_settings cover it.
 check('v3960: the hint writers and constant died WITH the element (the V3.51.2 trap) — the ruling machinery all KEPT',
   !/haidhRulingHint/.test(read('js/settingsScreen.js'))
   && !/HAIDH_RULING_HINTS/.test(read('js/settingsScreen.js'))
@@ -271,20 +270,8 @@ check('v3980: teaching days — the setting, the chips, and the Save payload',
 check('v3980: predicted-absent is admitted by the CHECK rebuild and the validator',
   /'present','absent','haidh','predicted-haidh','predicted-absent'/.test(read('worker/migrations/0029_teaching_days_and_predicted_absent.sql'))
   && /'predicted-absent'\]\.includes\(body\.status\)/.test(read('worker/src/utils.js')));
-check('v3980: the screen is registered, routed, and reached under the SAME label by role',
-  /id="screen-maktabAttendance"/.test(read('index.html'))
-  && /maktabAttendance: true/.test(read('js/app.js'))
-  && /if\(id === 'maktabAttendance'\) await renderMaktabAttendanceScreen\(\);/.test(read('js/app.js'))
-  && /if\(isTeachingProfile\(\)\) g3\.push\(MAKTAB_ATTENDANCE_NAV_ITEM\);/.test(read('js/auth.js'))
-  && /MAKTAB_ATTENDANCE_NAV_ITEM = \{ id: 'maktabAttendance', label: 'Attendance'/.test(read('js/auth.js')));
-check('v3980/v422: the teacher\'s marking writes through the EXISTING teacher paths — the single-student popup became the REGISTER SHEET in V4.2.2',
-  /apiSetAttendanceFor\(id, date, status\)/.test(read('js/maktabAttendancePage.js'))
-  && /apiClearAttendanceFor\(id, date\)/.test(read('js/maktabAttendancePage.js'))
-  && /'predicted-absent'/.test(read('js/maktabAttendancePage.js')));
-check('v422: the register sheet ADAPTS to the day — Absent is offered only ahead of today; a past day offers haidh + clear and shows the derived state',
-  /\$\{past \? '' : '<button type="button" class="mkreg-btn" data-set="absent">Absent<\/button>'\}/.test(read('js/maktabAttendancePage.js'))
-  && /const status = what === 'haidh' \? \(past \? 'haidh' : 'predicted-haidh'\) : 'predicted-absent';/.test(read('js/maktabAttendancePage.js'))
-  && /class="mkreg-state">\$\{STATE_TEXT\[stateOf\(s\.name\)\] \|\| ''\}/.test(read('js/maktabAttendancePage.js')));
+// Retired 2026-09-24: Navigation contract is covered by verify_nav and verify_v3742_ui; exact old routing source shape retired.
+// Retired 2026-09-24: Both old register-sheet assertions are replaced by calendar Quick Attendance coverage in verify_v42152_ui.
 
 check('v3981: Calendar carries its OWN icon; the check-calendar is left to the two Attendance items',
   /calendar: '<svg viewBox="0 0 24 24"[^']*M8 13h\.01/.test(read('js/icons.js'))
@@ -362,14 +349,11 @@ check('v402: the derivation takes today and explicit absents; today falls throug
     && /Change \$\{u\.id\}'s role to/.test(adminSrc)
     && /Mark \$\{u\.id\} inactive\?/.test(adminSrc)
     && !/apiAdminCreateTeachingProfile\(/.test(adminSrc));
-  check('v410: mobile gets a SECOND row carrying every action; desktop hides it',
-    /admin-row-actions/.test(adminSrc)
-    && /\.admin-row-actions \{ display: none; \}/.test(read('css/admin.css'))
-    && /@media \(max-width: 767px\)[\s\S]*\.admin-row-actions \{ display: block; \}/.test(read('css/admin.css')));
+  // Retired 2026-09-24: Separate action row replaced by four-row user card; verify_v429_ui and verify_v4291_ui cover it.
   check('v410/v421: the table wears the APP palette (sage id column, mauve header); header and body share ONE width and ONE colgroup',
     /\.admin-table-head thead th \{\n  background: var\(--color-table-header-log\);/.test(read('css/admin.css'))
     && /admin-th-id \{ background: var\(--color-table-header-date\);/.test(read('css/admin.css'))
-    && /\.admin-toolbar, \.admin-table-head, \.admin-wrap, \.admin-status-line \{ width: 80%; margin-left: auto; margin-right: auto; \}/.test(read('css/admin.css'))
+    && /\.admin-toolbar, \.admin-table-region, \.admin-status-line \{ width: 80%; margin-left: auto; margin-right: auto; \}/.test(read('css/admin.css'))
     && (adminSrc.match(/\$\{ADMIN_COLGROUP\}/g) || []).length === 2
     && !/adminRegisterBox/.test(read('index.html')));
 }
@@ -401,10 +385,7 @@ check('v422: the summary sheds its grey panel — SCOPED to that screen, the app
 check('v422: the attendance week shows ONE DAY PER SCREEN on mobile, swiped by snap',
   /\.mkweek-cols \{\n    display: flex; flex-wrap: nowrap;\n    overflow-x: auto; scroll-snap-type: x mandatory;/.test(read('css/detail-pages.css'))
   && /\.mkweek-col \{ flex: 0 0 100%; scroll-snap-align: center; \}/.test(read('css/detail-pages.css')));
-check('v422: the student attendance page titles ABOVE the card; the card carries only her name, one line',
-  /<div class="att-page-title screen-cap">Attendance<\/div>/.test(read('index.html'))
-  && /textContent = inMaktab \? logCtxStudentName\(\) : 'Mine';/.test(read('js/haidhDetailScreen.js'))
-  && /#screen-attendancePage \.juz-tracker-header-row h2 \{\n  font-size: 17px;\n  white-space: nowrap;/.test(read('css/detail-pages.css')));
+// Retired 2026-09-24: Title now shares the student header; verify_v3800_attendance_page drives current heading.
 check('v429: admin mobile is a four-row CARD: name heading / id+WhatsApp / role+group+status / actions',
   /'name name name name name name'\n      'id id id wa wa wa'\n      'role role group group status status'/.test(read('css/admin.css'))
   && /td\[data-label="Name"\]::before \{ display: none; \}/.test(read('css/admin.css'))
@@ -420,8 +401,8 @@ vm.runInContext(read('shared/data.js'), dataCtx);
 // ---------- V4.2.3: the Sabaq Dhor juz + quarter picker ----------
 {
   const sdSrc = read('js/sabaqDhorPage.js');
-  check('v424: the picker IS the rows block\'s empty state — rendered only when there are no rows, and NOT a child of the flex row (the V4.2.3 defect: a third flex sibling stole the sections list\'s width)',
-    /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
+  check('v424: the picker remains in the sections grid alongside suggested rows',
+    /manualHtml \+ sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
     && !/sabaqDhorQuarterPicker/.test(read('index.html'))
     && /id="sabaqDhorManual_from_ayah"/.test(sdSrc)
     && /\.sdq-picker \{ grid-column: 1(?: \/ -1)?; min-width: 0;/.test(read('css/detail-pages.css')));
@@ -449,9 +430,9 @@ vm.runInContext(read('shared/data.js'), dataCtx);
   check('v423: juz 30 quarter 4 ends the Qur\'an at 114:6', `${w304.endSurah}:${w304.endAyah}` === '114:6');
 }
 
-check('v424: with NO rows the picker appears in their place; with rows it does not appear at all',
-  /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
-  && /No history yet — choose the portion she is revising\./.test(read('js/sabaqDhorPage.js'))
+check('v424: picker is available with or without suggested rows',
+  /manualHtml \+ sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
+  && /Select a portion/.test(read('js/sabaqDhorPage.js'))
   && !/Nothing to revise yet/.test(read('js/sabaqDhorPage.js')));
 check('v428: the picker is wired per render and uses the shared switch helper; the old Use button is gone',
   /wireSabaqDhorQuarterPicker\(\);   \/\/ V4\.2\.8: no-op unless the picker is on screen/.test(read('js/sabaqDhorPage.js'))

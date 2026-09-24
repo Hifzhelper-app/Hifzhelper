@@ -8,6 +8,41 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
+## Current release — V4.2.15.25 (2026-09-24)
+
+Attendance Report shares PNGs containing all students per week group and downloads a single multipage PDF, with
+stacked controls, portrait pages, direct Download PDF and Haidh-aware percentages. Export rendering verified;
+live browser/device share checks remain pending. This update is frontend only.
+
+
+Attendance reporting is implemented with date presets, custom ranges, shared
+attendance ordering and PNG sharing/download. Deploy the updated Worker and
+frontend together; no migration required. Device/share checks remain pending.
+
+
+Quick Action has field-side confirmation and a Tajweed pill beside Save for all
+three types. Sabaq Dhor puts the portion picker last. Device checks are pending.
+
+
+Sabaq Dhor detail and Quick Action now show Juz numbers, always offer the portion
+picker, and derive suggestions from the selected date's Sabaq history. Edit date
+changes update From/To; initial editing preserves the saved entry. Device checks
+remain pending (see TESTING.md).
+
+Maktab Summary now places a compact + Log column next to Name on larger screens,
+with a blank heading and white body background. The whole header is pink and Log
+sits below the plus icon. Device verification remains pending.
+
+User Management now shows Name first and Unique ID after the shortened Haidh heading
+on larger screens with reserved width and
+shared horizontal scrolling. Frontend implementation and automated tests are
+complete. Device-check Name visibility and registration at tablet/desktop widths,
+header/body alignment while scrolling, and unchanged mobile cards. Browser preview
+could not run because browser policy verification was unavailable.
+V4.2.15.12 multi-entry Quick Log behaviour is retained.
+No Worker or migration is required. The user confirmed migrations through 0030
+completed; older migration instructions below are historical, not pending work.
+
 ## LIVE ITEMS — the whole action list, in priority order (2026-08-17, rebuilt)
 
 **If it is not in this table it is not outstanding.** Rebuilt because the

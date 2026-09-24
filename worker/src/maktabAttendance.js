@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.6 | worker/src/maktabAttendance.js */
+/* Hifzhelper build 4.2.15.20 | worker/src/maktabAttendance.js */
 // ============================================================
 // Hifzhelper -- derived maktab attendance (V3.67.0, delivery (f)).
 // The last of the six maktab deliveries. NOTHING IS STORED: every value
@@ -514,6 +514,16 @@ function registerMondayOf(iso) {
 export async function handleMaktabRegister(request, env, auth) {
   if (!isTeacherOrAbove(auth)) return { error: 'Not authorized', status: 403 };
   const url = new URL(request.url);
+  const rangeFrom = url.searchParams.get('from');
+  const rangeTo = url.searchParams.get('to');
+  const customRange = rangeFrom !== null || rangeTo !== null;
+  if(customRange){
+    const valid = value => isValidDate(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value;
+    if(!valid(rangeFrom) || !valid(rangeTo) || rangeFrom > rangeTo)
+      return { error: 'Choose valid From and To dates in order.', status: 400 };
+    if((Date.parse(rangeTo) - Date.parse(rangeFrom)) / 86400000 > 365)
+      return { error: 'Choose a range of at most 366 days.', status: 400 };
+  }
   const settings = await readMaktabSettings(env);
   const today = await maktabTodayISO(env);
   const teaching = teachingDaysOf(settings);
@@ -549,6 +559,11 @@ export async function handleMaktabRegister(request, env, auth) {
     from = registerAddDays(thisMon, -21);
     to = registerAddDays(thisMon, 6);
     periodName = 'Last 4 weeks';
+  }
+
+  if(customRange){
+    from = rangeFrom; to = rangeTo; periodName = 'Attendance report';
+    term = null; prevTermId = null; nextTermId = null;
   }
 
   const [students, marks, maktabDays, loggedByStudent] = await Promise.all([

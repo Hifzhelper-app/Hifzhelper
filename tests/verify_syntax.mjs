@@ -35,5 +35,5 @@ for (const f of files) {
 
 if (files.length < 10) { fail++; console.log('FAIL: suspiciously few files found — the walker is broken, not the code'); }
 
-console.log(`${pass} passed, ${fail} failed (${files.length} scripts parsed)`);
+console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

@@ -18,7 +18,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { JSDOM } from 'jsdom';
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database, seedStudent } from './helpers/database.mjs';
 import { handleMarkHaidhRange } from '../worker/src/attendance.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -36,24 +36,9 @@ const workerSrc = read('worker/src/attendance.js');
 
 // ---------- 1: worker — mark-range for a named student ----------
 {
-  const db = new DatabaseSync(':memory:');
-  db.exec(`
-    CREATE TABLE students (id TEXT PRIMARY KEY, role TEXT NOT NULL, haidh_ruling TEXT NOT NULL DEFAULT 'hanafi');
-    CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL,
-      status TEXT NOT NULL CHECK (status IN ('present','absent','haidh','predicted-haidh')),
-      PRIMARY KEY (student_id, date));
-    INSERT INTO students (id, role) VALUES ('STU1','student'), ('STU2','student'), ('TCH1','teacher');
-  `);
-  const stmt = (sql, args) => ({
-    async run() { db.prepare(sql).run(...args); return { meta: {} }; },
-    async first() { return db.prepare(sql).get(...args) ?? null; },
-    async all() { return { results: db.prepare(sql).all(...args) }; },
-  });
-  const DB = {
-    prepare(sql) { return { bind(...args) { return Object.assign(stmt(sql, args), { _sql: sql, _args: args }); } }; },
-    async batch(list) { for (const s of list) db.prepare(s._sql).run(...s._args); return []; },
-  };
-  const env = { DB };
+  const db = createDatabase();
+  seedStudent(db, 'STU1'); seedStudent(db, 'STU2'); seedStudent(db, 'TCH1', {role:'teacher'});
+  const env = {DB:d1Database(db)};
   const req = (body) => ({ json: async () => body, url: 'https://x/' });
   const rows = (id) => db.prepare('SELECT date, status FROM attendance WHERE student_id = ? ORDER BY date').all(id);
 
@@ -113,13 +98,7 @@ function calDom() {
 const tick = () => new Promise(r => setTimeout(r, 0));
 const dayBtn = (w, iso) => [...w.document.querySelectorAll('.haidh-cal-day')].find(b => !b.classList.contains('haidh-cal-day-muted') && b.textContent === String(parseInt(iso.slice(8), 10)));
 
-{
-  // count CODE only — a historical comment still names apiGetAttendance()
-  const code = calSrc.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
-  check('cal: every attendance touch goes through haidhCalClient() — no direct call survives outside it',
-    (code.match(/apiGetAttendance\(\)|apiDeleteAttendance\(|apiMarkHaidhRange\(/g) || []).length === 3
-    && (code.match(/haidhCalClient\(\)\./g) || []).length === 4);   // 4 since V3.76.2: haidhDecide() is the fourth caller
-}
+// Endpoint routing is exercised below in both real calendar contexts.
 
 { // PJ path — unchanged
   const w = calDom();
@@ -176,9 +155,9 @@ const dayBtn = (w, iso) => [...w.document.querySelectorAll('.haidh-cal-day')].fi
 }
 
 // ---------- 3: summary icon, opener, routing ----------
-check('summary: the icon opens the ATTENDANCE PAGE with the student and the PICKED date (V3.80.0 — the calendar lives inside it)', /openMaktabAttendancePage\(stu, date\);/.test(summarySrc));
+check('summary: the icon opens Quick Attendance with the student and picked date (V4.2.15)', /maktabOpenQuickAttendance\(stu, date\);/.test(summarySrc));
 check('summary: no toggle wiring survives', !/maktabToggleHaidh|aria-pressed/.test(summarySrc));
-check('summary: the tap still does not reach the row', /e\.stopPropagation\(\);\n\s*openMaktabAttendancePage/.test(summarySrc));
+check('summary: the tap still does not reach the row', /e\.stopPropagation\(\);\n\s*maktabOpenQuickAttendance/.test(summarySrc));
 // V3.80.0: the opener is openMaktabAttendancePage; the old calendar
 // opener delegates to it, so "open the calendar" still routes correctly.
 check('day: the opener sets the maktab context and passes { maktab: true, date }',
@@ -188,7 +167,7 @@ check('day: the toggle flow is deleted, not left dangling', !/function maktabTog
 check('app: showScreen keeps the context for the maktab-opened page and drops it otherwise (attendancePage since V3.80.0)',
   /const keepsMaktabCtx = id === 'logDetail' \|\| id === 'studentSummary' \|\| !!\(id === 'attendancePage' && param && typeof param === 'object' && param\.maktab === true\);/.test(appSrc)
   && /if\(!keepsMaktabCtx && typeof exitMaktabDay === 'function'\) exitMaktabDay\(\);/.test(appSrc));
-check('api: apiMarkHaidhRangeFor posts student_id with the range', /function apiMarkHaidhRangeFor\(studentId, startDate, endDate, opts\)\{[\s\S]{0,200}student_id: studentId, startDate, endDate/.test(apiSrc));   // opts since V3.76.2
+check('api: apiMarkHaidhRangeFor posts student_id with the range', /function apiMarkHaidhRangeFor\(studentId, startDate, endDate\)\{[\s\S]{0,200}student_id: studentId, startDate, endDate/.test(apiSrc));   // the retired purity-gap override is no longer an API option
 check('html: the heading is id\'d for the name (an h3 inside the attendance page since V3.80.0)', /<h3 class="att-haidh-title" id="haidhDetailTitle">Haidh<\/h3>/.test(html));
 
 // showScreen's keep/drop, driven: simulate the exit hook and call the real predicate line

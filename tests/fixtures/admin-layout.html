@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>User Management layout fixture</title>
+<link rel="stylesheet" href="../../css/tokens.css"><link rel="stylesheet" href="../../css/base.css"><link rel="stylesheet" href="../../css/components.css"><link rel="stylesheet" href="../../css/detail-pages.css"><link rel="stylesheet" href="../../css/admin.css">
+</head><body><section id="screen-admin"><div class="juz-tracker-header-row screen-cap admin-header-row"><h2>User Management</h2></div><div class="admin-screen-body"><div class="admin-toolbar"><input id="admin_search" placeholder="Search"><button id="adminRegisterOpenBtn" onclick="adminShowAddRow(true)">+ Register a user</button></div><div id="adminUsersList"></div></div></section>
+<script>
+// Synthetic users only; all API calls stay in-memory. No live account access.
+const fixtureUsers = [{id:'TEST01',name:'Test Student Name',role:'student',active:1,whatsapp_number:'12345',track_haidh:0},{id:'TEST02',name:'Test Teacher Name',role:'teacher',active:0}];
+function apiAdminListUsers(){ return Promise.resolve(fixtureUsers); }
+function apiGetMaktabGroups(){ return Promise.resolve([]); }
+function apiAdminUpdateUser(){ return Promise.resolve({}); }
+function apiAdminChangeRole(){ return Promise.resolve({}); }
+function showBanner(){}
+</script><script src="../../js/icons.js"></script><script src="../../js/uiSwitch.js"></script><script src="../../js/adminPage.js"></script><script>loadAdminUsers();</script></body></html>

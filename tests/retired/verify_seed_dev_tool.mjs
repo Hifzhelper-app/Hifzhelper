@@ -2,8 +2,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const root = fileURLToPath(new URL('../../', import.meta.url));
 const script = fs.readFileSync(path.join(root, 'worker/tools/seed-dev-from-prod-once.sh'), 'utf8');
 const readme = fs.readFileSync(path.join(root, 'worker/tools/SEED-DEV-README.md'), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'worker/package.json'), 'utf8'));

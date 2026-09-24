@@ -1,3 +1,176 @@
+## Maktab row order and student heading — V4.2.15.25
+
+All 78 harnesses passed: 1,680 checks, zero failures. Updated the existing
+row-order check to expect the newly requested icon-before-number order.
+
+Verify Maktab's loaded and loading rows show calendar then number. On the
+student activity screen, check calendar, name, Ajzaa Completed, and close in
+that order; calendar retains its quick attendance action. Header and table
+must align at mobile and desktop widths. Live visual verification is pending.
+
+---
+
+## All-student PNGs — V4.2.15.24
+
+All 78 harnesses passed: 1,680 checks, zero failures. A real 22-student PNG
+was generated and visually checked, including its final rows.
+Checks verify that all 41 fixture students appear in order in every PNG week
+group, four weeks need just one PNG, and nine weeks share three PNGs while PDF
+pagination remains nine pages. Live receiving-app attachment delivery remains
+unverified.
+
+---
+
+## PNG sharing and PDF download — V4.2.15.23
+
+All 78 harnesses passed: 1,678 checks, zero failures.
+Report checks cover PNG MIME types and filenames, sending all nine pages of a
+large fixture in one share call, explicit PDF download, unsupported sharing,
+and removal of the requested text. Mobile button placement is defined below
+767px; live device layout and receiving-app attachment delivery remain to be
+checked on devices. Both exports are invalidated when report controls change.
+
+---
+
+## Portrait attendance PDF — V4.2.15.22
+
+All 78 harnesses passed: 1,674 checks, zero failures.
+The report harness now checks portrait A4 page dimensions, explicit download
+when native sharing is available, and invalidation of both export buttons.
+A synthetic four-page PDF using the real renderer was rendered with Poppler;
+the first page was visually checked for portrait layout, complete four-week
+columns, wrapped names and readable marks. Live device share targets remain
+unverified: test Download PDF, then attach the saved file in the intended app.
+
+---
+
+## Attendance PDF — V4.2.15.21
+
+Automated report checks cover whole-week pagination, 21-column maximum,
+partial-week padding, confirmed/predicted Haidh percentage suppression, sorting,
+and single-file native share/download. A synthetic four-page PDF was generated
+using the real canvas renderer, parsed with pypdf and rendered with Poppler for
+visual inspection (week headings, borders, wrapping and blank percentages).
+Live browser control layout and device share destinations still need checking.
+
+Manual: open Report and confirm week-to-date default; inspect stacked controls
+and date pills. Export more than four weeks and more than 20 names, and confirm
+all pages arrive in one PDF. Download and attach the PDF to WhatsApp on desktop.
+This release is frontend only; no Worker deployment or migration is needed.
+
+---
+
+## Worker clean build — 2026-09-24
+
+The Worker directory now includes its own package-lock.json. Verified `npm ci`
+in `worker/`, then `wrangler deploy --env development --dry-run`. Cloudflare
+Worker Builds should use root directory `worker` and deploy command
+`npm run deploy:dev` for dev. Retry against the latest dev commit, not the failed
+older revision. This fix does not deploy the Worker or apply migrations.
+
+---
+
+## Attendance report — V4.2.15.20
+
+Validation: 78 harnesses passed (1,664 checks); the report harness then passed
+all 22 checks after adding image drawing and download-fallback coverage.
+
+`verify_attendance_report.mjs` exercises the migrated test database and actual
+register handler for cross-term ranges, invalid/oversized ranges, teacher-only
+access and attendance-percentage parity. Browser-model checks cover presets,
+sorting, status marks, pagination, opening, native sharing, stale export disabling
+and closing during a pending request.
+
+Device checks: open Report on Attendance, try week/month/custom dates and both
+sort orders. Compare marks and percentages with Attendance for the same range.
+Share a one-page and multi-page report; test download fallback and long names.
+Confirm Sabaq is pink while the preceding headers remain olive. Updated Worker
+must be deployed for date-range reports. No database migration is needed.
+Visual device verification remains pending.
+
+---
+
+## Quick Action alignment — V4.2.15.19
+
+Check Sabaq confirmation remains beside To at phone and desktop widths. Check
+Tajweed is half-width with centred dark-green text and border. On desktop Maktab,
+attendance, Name, blank Log and Sabaq headers are olive; the last two remain pink.
+Visual device verification remains pending.
+
+---
+
+## Quick Action layout and Tajweed — V4.2.15.18
+
+Automated: 77 harnesses / 1,643 checks pass.
+
+Check on phone and desktop: Sabaq Dhor picker follows From/To, prompt reads
+“Select a portion”, and From/To labels put ayah on the next line. Check Sabaq
+and Dhor confirmation beside the fields, including whole-Juz Dhor. Open Tajweed
+beside Save in all three activity types; select tags, save, and confirm they
+appear on the entry and reset for the next entry. Existing session regression
+checks drive the shared picker and verify tag payloads/reset for each activity.
+Visual device verification remains pending.
+
+---
+
+## Sabaq Dhor planning — V4.2.15.17
+
+Automated: 77 harnesses / 1,637 checks pass.
+
+Automated coverage in `verify_sabaq_dhor_planning.mjs`: Juz labels, picker with
+history and in edit, saved edit range preservation, past-date cutoff including
+the selected day, dates before history, reverse Juz 30 progression, picker-applied
+edit ranges, Quick Action date refresh, and restoration after edit closes.
+
+Device checks: inspect long Juz/Quarter labels on phone and desktop; confirm the
+picker and suggested rows remain usable in detail, Quick Action and edit. Change
+an edit date, check the suggested From/To, then Confirm changes and Save. Verify
+Quick Action still supports repeated saves. Visual verification remains pending.
+
+---
+
+## Maktab Summary Log column — V4.2.15.16
+
+Automated: 76 harnesses / 1,621 checks pass.
+
+At desktop/tablet widths, verify + Log follows Name, its heading is blank, the
+body column is white, and Log sits below the compact plus icon within the existing
+row height. Confirm the entire header is pink, including the blank Log heading. Check
+header alignment, cached loading rows, and opening/saving Quick Log. At phone
+widths, confirm the existing card layout and large Log action remain unchanged.
+Visual browser verification remains pending.
+
+---
+
+## User Management columns — V4.2.15.14
+
+Automated: `npm test` — 76 harnesses, 1,621 checks pass. The new
+`verify_admin_name_column.mjs` covers Name-first rendering/registration,
+autosave, matching headers, reserved width, and mobile structure. Confirm desktop
+order: Name, WhatsApp, Role, Group, Status, Haidh, Unique ID, Actions.
+
+Visual check remains pending because browser policy verification blocked the
+preview. Serve the repository locally and open `tests/fixtures/admin-layout.html`
+(synthetic users; no live API). At 768, 1024 and 1440px confirm Name is first,
+readable and editable, and header/body scroll together. At 390px confirm the
+existing mobile cards and registration layout. Check a long list vertically too.
+
+---
+
+## Current Quick Log regression — V4.2.15.12
+
+Run `npm ci` and `npm test` from the repository root (see `tests/README.md`).
+Current result: 75 harnesses, 1,610 checks passed. `verify_quick_log_session.mjs`
+drives repeated Sabaq/Sabaq Dhor/Dhor saves, refreshed entries, confirmation reset,
+duplicate cancellation/force, failed writes, failed refreshes, in-flight locking,
+close/reopen isolation, and Student Summary callbacks.
+
+Device check: save several entries for one student, switching activity types;
+verify the sheet stays open, the date/student remain correct, and Close dismisses
+it. Repeat on phone/desktop and from both Summary entry points.
+
+---
+
 # Hifzhelper — Testing Guide
 
 A repeatable checklist for confirming the backend actually works, not just

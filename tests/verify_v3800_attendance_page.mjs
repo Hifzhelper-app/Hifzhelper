@@ -15,7 +15,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { JSDOM } from 'jsdom';
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database, seedStudent, seedLog } from './helpers/database.mjs';
 import { handleAttendancePage } from '../worker/src/maktabAttendance.js';
 import { handleSaveMaktabSettings, handleGetMaktabSettings } from '../worker/src/maktabSettings.js';
 
@@ -28,30 +28,16 @@ const day = (n) => { const d = new Date(TODAY + 'T00:00:00Z'); d.setUTCDate(d.ge
 
 // ---------- fixture ----------
 function makeEnv() {
-  const db = new DatabaseSync(':memory:');
-  db.exec(`
-    CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT DEFAULT '', role TEXT NOT NULL, haidh_ruling TEXT DEFAULT 'hanafi', track_haidh INTEGER DEFAULT 0, active INTEGER DEFAULT 1);
-    CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
-    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 2, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT, teaching_days TEXT);
-    CREATE TABLE maktab_terms (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, term_from TEXT NOT NULL, term_to TEXT NOT NULL, created_at TEXT DEFAULT '');   -- V3.87.0: terms drive attendance
-    INSERT INTO maktab_settings (id) VALUES (1);
-    CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
-    CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
-    CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
-    INSERT INTO students (id, role, track_haidh) VALUES ('STU1','student',1), ('STU2','student',0), ('TCH1','teacher',0);
-  `);
-  db.exec(read('worker/migrations/0025_term_dates.sql'));
-  const stmt = (sql, args) => ({
-    async run() { const i = db.prepare(sql).run(...args); return { meta: { last_row_id: Number(i.lastInsertRowid) } }; },
-    async first() { return db.prepare(sql).get(...args) ?? null; },
-    async all() { return { results: db.prepare(sql).all(...args) }; },
-  });
-  const DB = {
-    prepare(sql) { return Object.assign(stmt(sql, []), { _sql: sql, _args: [], bind(...args) { return Object.assign(stmt(sql, args), { _sql: sql, _args: args }); } }); },
-    async batch(list) { for (const s of list) db.prepare(s._sql).run(...s._args); return []; },
+  const db = createDatabase();
+  seedStudent(db, 'STU1', {track_haidh:1}); seedStudent(db, 'STU2');
+  seedStudent(db, 'TCH1', {role:'teacher'}); seedStudent(db,'T',{role:'teacher'});
+  // All seven teaching days make relative-date scenarios independent of weekday.
+  db.exec("UPDATE maktab_settings SET maktab_day_min=2, teaching_days='[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\",\"sat\",\"sun\"]'");
+  const DB = d1Database(db);
+  const log = (id, d) => {
+    if (!db.prepare('SELECT id FROM students WHERE id=?').get(id)) seedStudent(db,id);
+    seedLog(db,id,d);
   };
-  // maktab days need >= 2 distinct students logging: STU2 logs every day
-  const log = (id, d) => db.prepare('INSERT INTO maktab_sabaq_log (student_id, date) VALUES (?, ?)').run(id, d);
   const haidh = (d, status) => db.prepare('INSERT INTO attendance (student_id, date, status) VALUES (?, ?, ?)').run('STU1', d, status || 'haidh');
   return { db, env: { DB }, log, haidh };
 }
@@ -171,15 +157,15 @@ function pageDom(payloads) {
   return w;
 }
 const tick = () => new Promise(r => setTimeout(r, 0));
-const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source: 'term', maktab_days: 20, present_days: 18, percent: 90,
+const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source: 'term', maktab_days: 20, present_days: 18, active_days: 15, haidh_days: 3, percent: 90,
   absent_dates: ['2026-08-05', '2026-08-12'], haidh_ranges: [{ from: '2026-08-20', to: '2026-08-24' }], track_haidh: true, term_from: '2026-08-01', term_to: '2026-12-15' };
 
 {
-  const w = pageDom({ 'default': BASE, '2026-08-10|2026-08-14': Object.assign({}, BASE, { from: '2026-08-10', to: '2026-08-14', source: 'custom', percent: 50, maktab_days: 4, present_days: 2, absent_dates: ['2026-08-11', '2026-08-13'] }) });
+  const w = pageDom({ 'default': BASE, '2026-08-10|2026-08-14': Object.assign({}, BASE, { from: '2026-08-10', to: '2026-08-14', source: 'custom', percent: 50, maktab_days: 4, present_days: 2, active_days: 1, haidh_days: 1, absent_dates: ['2026-08-11', '2026-08-13'] }) });
   await w.eval("renderAttendancePage('2026-08-28')");
   await tick(); await tick(); await tick();
-  check('page: the stats read as ONE sentence with the % at the end (V3.88.0)',
-    w.document.getElementById('attSentence').textContent === 'Present on 18 of 20 maktab days : 90%');
+  check('page: report separates activity, excused Haidh and absences (V4.2.14)',
+    w.document.getElementById('attSentence').textContent === '15 active days · 3 Haidh days · 2 absent · 90% attendance');
   check('page: the card heading names the period kind', w.document.getElementById('attCardTitle').textContent === 'Attendance this Term'
     || w.document.getElementById('attCardTitle').textContent === 'Attendance');
   check('page: the period line names the source', /2026-08-01 – 2026-08-28 \(current term\)/.test(w.document.getElementById('attPeriod').textContent.replace('\u2013', '–')));
@@ -201,12 +187,12 @@ const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source:
   w.document.getElementById('attTo').value = '2026-08-14';
   w.document.getElementById('attApply').click();
   await tick(); await tick();
-  check('page: Apply refetches over the custom period and shows reset', /: 50%$/.test(w.document.getElementById('attSentence').textContent)
+  check('page: Apply refetches over the custom period and shows reset', /50% attendance$/.test(w.document.getElementById('attSentence').textContent)
     && !w.document.getElementById('attReset').classList.contains('hidden')
     && /\(custom\)/.test(w.document.getElementById('attPeriod').textContent));
   w.document.getElementById('attReset').click();
   await tick(); await tick();
-  check('page: reset returns to the default period', /: 90%$/.test(w.document.getElementById('attSentence').textContent)
+  check('page: reset returns to the default period', /90% attendance$/.test(w.document.getElementById('attSentence').textContent)
     && w.document.getElementById('attReset').classList.contains('hidden'));
   check('page: PJ mode used the own endpoint, no student_id', w.eval('pageCalls[0]')[0] === 'own');
 }
@@ -218,15 +204,18 @@ const BASE = { student_id: 'STU1', from: '2026-08-01', to: '2026-08-28', source:
   await tick(); await tick(); await tick();
   // V4.2.2: "Attendance" moved ABOVE the card as the page title, so the
   // card carries only WHOSE attendance it is — the name alone, one line.
-  check('page: the card names the student (title is above it since V4.2.2) and uses the For endpoint',
-    w.document.getElementById('attendanceTitle').textContent === 'Umme'
+  check('page: the header names Attendance and the student and uses the For endpoint',
+    w.document.getElementById('attendanceTitle').textContent === 'Attendance — Umme'
     && w.eval('pageCalls[0]')[0] === 'for' && w.eval('pageCalls[0]')[1] === 'STU2');
-  check('page: no haidh block for a non-haa\'idah', w.document.getElementById('attHaidhBlock').classList.contains('hidden'));
+  check('page: teacher can record first Haidh before track_haidh is set (V4.2.11)', !w.document.getElementById('attHaidhBlock').classList.contains('hidden'));
+  w.eval("MODE = 'pj'");
+  await w.renderAttendancePage('2026-08-28');
+  check('page: non-Haaidha student own page hides Haidh calendar', w.document.getElementById('attHaidhBlock').classList.contains('hidden'));
 }
 
 // ---------- rewiring assertions ----------
-check('summary: the icon is the attendance icon on EVERY student and opens the page',
-  /btn\.innerHTML = iconHtml\('attendance'\);/.test(read('js/maktabSummary.js')) && /openMaktabAttendancePage\(stu, date\);/.test(read('js/maktabSummary.js')));
+check('summary: the icon is the attendance icon on EVERY student and opens Quick Attendance',
+  /btn\.innerHTML = iconHtml\('attendance'\);/.test(read('js/maktabSummary.js')) && /maktabOpenQuickAttendance\(stu, date\);/.test(read('js/maktabSummary.js')));
 check('nav: the item is Attendance for every student; trackHaidh no longer gates the nav',
   /const ATTENDANCE_NAV_ITEM = \{ id: 'attendancePage', label: 'Attendance', icon: 'attendance' \};/.test(read('js/auth.js')));
 check('app: the screen key renamed whole (no haidhDetail route survives)',

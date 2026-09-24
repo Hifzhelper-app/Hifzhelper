@@ -18,18 +18,16 @@ const journalCss = read('css/journal-table.css');
 const haidhCss = read('css/haidh.css');
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('served asset versions and service-worker cache are aligned on V4.2.15.11',
-  versions.length > 0 && versions.every(v => v === '4.2.15.11')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.11'/.test(sw));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('Maktab Summary has no visible Log header cell',
-  !/maktab-log-head/.test(html)
+  /class="journal-header-cell maktab-log-head" aria-hidden="true"><\/div>/.test(html)
   && !/<span>Log<\/span>/.test(html.slice(html.indexOf('maktab-summary-headers'), html.indexOf('maktabSummaryBody'))));
 
-check('Maktab Summary desktop Log rail is transparent and outside the white data table chrome',
-  /#screen-maktabSummary \.journal-wrap \{[\s\S]{0,180}background: transparent;[\s\S]{0,100}border: 0;/.test(journalCss)
-  && /td\.maktab-mobile-log-col \{[\s\S]{0,120}background: transparent;[\s\S]{0,80}border-bottom: 0;/.test(journalCss)
-  && !/\.maktab-summary-headers > \*:nth-child\(6\)/.test(journalCss));
+check('Maktab Summary desktop Log column is white below a pink header with Log below the icon',
+  /@media \(min-width: 768px\) \{[\s\S]*td\.maktab-mobile-log-col \{\s*background: var\(--color-surface, #fff\);/.test(journalCss)
+  && /#screen-maktabSummary \.maktab-mobile-log-action \{\s*flex-direction: column;/.test(journalCss)
+  && /#screen-maktabSummary \.maktab-summary-headers \.journal-header-cell \{\s*background: var\(--color-table-header-log\);/.test(journalCss));
 
 check('row Log action remains circle-plus + Log and always opens unified Quick Log',
   /mobileLogBtn\.innerHTML = `<span class="maktab-mobile-log-icon">\$\{iconHtml\('circlePlus'\)\}<\/span><span>Log<\/span>`/.test(summary)
@@ -52,15 +50,7 @@ check('Student Summary activity headings are display-only and no longer individu
 check('Student Summary circle-plus forces the single unified selector on desktop/tablet too',
   /quickOpenBtn\.onclick = \(\) => maktabOpenQuickLog\([\s\S]{0,260}\{ combined: true, afterSave: \(\) => renderStudentSummaryScreen\(\) \}/.test(day));
 
-check('last-edit headers changed only in product files actually edited for V4.2.15.11',
-  /^<!-- Hifzhelper build 4\.2\.15\.11 \| index\.html -->/m.test(html)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/sw\.js \*\//.test(sw)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| css\/journal-table\.css \*\//.test(journalCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| css\/haidh\.css \*\//.test(haidhCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/detail-pages\.css \*\//.test(read('css/detail-pages.css'))
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| worker\/src\/maktabCalendar\.js \*\//.test(read('worker/src/maktabCalendar.js')));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

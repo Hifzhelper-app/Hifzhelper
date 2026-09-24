@@ -30,9 +30,7 @@ const workerCalendar = read('worker/src/maktabCalendar.js');
 const migration = read('worker/migrations/0030_hifz_class_zoom_link.sql');
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('served assets and service-worker cache are aligned after later overlays',
-  versions.length > 0 && versions.every(v => v === '4.2.15.11')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.11'/.test(sw));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('0030 adds only the nullable Hifz class Zoom link setting',
   /ALTER TABLE maktab_settings ADD COLUMN zoom_link TEXT;/.test(migration)
@@ -140,11 +138,7 @@ check('single-day public holidays are returned with NULL or blank date_to during
   calendar.data?.some(r => r.date_from === '2026-09-23' && r.type === 'holiday')
   && calendar.data?.some(r => r.date_from === '2026-09-24' && r.type === 'holiday'));
 
-check('last-edit headers reflect the latest later edits only where those files were touched',
-  /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/auth\.js \*\//.test(auth)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(att)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| css\/journal-table\.css \*\//.test(journalCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(read('js/maktabDay.js')));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

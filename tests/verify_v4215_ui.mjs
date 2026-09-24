@@ -17,10 +17,10 @@ const css = read('css/journal-table.css');
 const haidh = read('js/haidhDetailScreen.js');
 const sw = read('js/sw.js');
 
-check('Maktab Summary renders a sequential row number beside each attendance icon',
+check('Maktab Summary renders each attendance icon before its sequential row number',
   /sortedStudents\.forEach\(\(stu, rowIndex\) =>/.test(summary)
   && /rowNumber\.textContent = String\(rowIndex \+ 1\)/.test(summary)
-  && /rowMeta\.appendChild\(rowNumber\)[\s\S]{0,1100}rowMeta\.appendChild\(btn\)/.test(summary));
+  && /rowMeta\.appendChild\(btn\)[\s\S]{0,100}rowMeta\.appendChild\(rowNumber\)/.test(summary));
 
 check('Maktab Summary top row has an Attendance button that opens the Attendance summary',
   /id="maktabSummaryAttendanceBtn"/.test(html)
@@ -58,8 +58,7 @@ check('existing Attendance calendar retains start/end selection plus Haidh and A
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
-check('V4.2.15 functionality remains on later page/cache overlays',
-  versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

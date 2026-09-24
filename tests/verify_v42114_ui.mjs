@@ -3,7 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, seedStudent, seedLog, d1Database } from './helpers/database.mjs';
 import { handleAttendancePage, handleMaktabRegister } from '../worker/src/maktabAttendance.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -48,27 +48,14 @@ check('V4.2.14 page/cache contract remains synchronized on later overlays',
 
 // Dynamic proof: explicit prediction is exact-date state; a confirmed day does
 // not propagate. A log on the predicted date wins in the register.
-const db = new DatabaseSync(':memory:');
-db.exec(`
-  CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT, role TEXT, active INTEGER DEFAULT 1, track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi');
-  CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT, maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT, timezone TEXT, term_from TEXT, term_to TEXT, teaching_days TEXT);
-  CREATE TABLE attendance (student_id TEXT, date TEXT, status TEXT, PRIMARY KEY (student_id, date));
-  CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
-  CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
-  CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT);
-  CREATE TABLE maktab_terms (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, term_from TEXT NOT NULL, term_to TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP);
-`);
-db.exec(`INSERT INTO maktab_settings (id,maktab_day_min,absence_flag_days,teaching_days,timezone) VALUES (1,1,30,'["mon","tue","wed","thu"]','UTC')`);
-db.exec(`INSERT INTO maktab_terms (name,term_from,term_to) VALUES ('Term','2026-08-31','2026-09-03')`);
-db.exec(`INSERT INTO students (id,name,role,active,track_haidh,haidh_ruling) VALUES ('S1','Logger','student',1,0,'hanafi'),('S2','Tasneem V','student',1,1,'hanafi'),('S3','Activity','student',1,1,'hanafi')`);
-db.exec(`INSERT INTO maktab_sabaq_log (student_id,date) VALUES ('S1','2026-08-31'),('S1','2026-09-01'),('S1','2026-09-02'),('S3','2026-09-01')`);
-db.exec(`INSERT INTO attendance (student_id,date,status) VALUES ('S2','2026-08-31','haidh'),('S2','2026-09-01','predicted-haidh'),('S3','2026-09-01','predicted-haidh')`);
-const stmt = (sql, args) => ({
-  async run(){ const r=db.prepare(sql).run(...args); return {meta:{last_row_id:Number(r.lastInsertRowid)}}; },
-  async first(){ return db.prepare(sql).get(...args) ?? null; },
-  async all(){ return {results:db.prepare(sql).all(...args)}; },
-});
-const env={ DB:{ prepare(sql){ return Object.assign(stmt(sql,[]),{bind(...args){return stmt(sql,args);}}); } } };
+const db = createDatabase();
+seedStudent(db, 'T', {role:'teacher'});
+for (const [id, name, track_haidh] of [['S1','Logger',0],['S2','Tasneem V',1],['S3','Activity',1]]) seedStudent(db,id,{name,track_haidh});
+db.exec(`UPDATE maktab_settings SET maktab_day_min=1, timezone='UTC';
+INSERT INTO maktab_terms (name,term_from,term_to) VALUES ('Term','2026-08-31','2026-09-03');
+INSERT INTO attendance (student_id,date,status) VALUES ('S2','2026-08-31','haidh'),('S2','2026-09-01','predicted-haidh'),('S3','2026-09-01','predicted-haidh');`);
+for (const [id,date] of [['S1','2026-08-31'],['S1','2026-09-01'],['S1','2026-09-02'],['S3','2026-09-01']]) seedLog(db,id,date);
+const env = {DB:d1Database(db)};
 const auth={id:'T1',role:'teacher'};
 const page=(await handleAttendancePage({url:'https://x/attendance/page?student_id=S2&from=2026-08-31&to=2026-09-03'},env,auth)).data;
 const registerData=(await handleMaktabRegister({url:'https://x/maktab/attendance-register'},env,auth)).data;

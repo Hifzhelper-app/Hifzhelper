@@ -46,7 +46,7 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
 {
   check('1: .card-header-row-left is gone — no rule, no class attribute (comments may still name it)',
     !/^\.card-header-row-left/m.test(dp) && !/class="[^"]*card-header-row-left/.test(html));
-  check('1: the Admin header no longer carries the dead class', /id="screen-admin">[\s\S]{0,700}<div class="card-header-row">/.test(html));
+  check('1: User Management uses the shared header', /id="screen-admin">[\s\S]{0,700}<div class="juz-tracker-header-row screen-cap admin-header-row">/.test(html));
   check('1: Admin has an id-scoped three-column rule',
     /#screen-admin \.card-header-row \{ grid-template-columns: auto 1fr auto; \}/.test(adminCss));
   check('1: the base :has() rule no longer forces columns on every card-screen header',
@@ -100,6 +100,7 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
       { juz: 1, label: 'Juz 1', enabled: false, completeQuarters: 2, units: [1,2,3,4] },
       { juz: 3, label: 'Juz 3', enabled: true,  completeQuarters: 4, units: [9,10,11,12] },
     ];
+    function sabaqDhorRowLabel(r){ return r.label; }
     var sabaqDhorRollupLevel = 'quarter', sabaqDhorPosition = {}, sabaqDhorRef = 'waterval', sabaqDhorBaselineSelection = [];
     var sabaqDhorEditingId = null;
     function readSabaqDhorManualField(){ return null; }
@@ -193,7 +194,7 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
   const cellText = w.document.querySelector('#maktabSummaryBody .journal-cell-text');
   cellText.dispatchEvent(new w.Event('click', { bubbles: true }));
   const o = w.eval('openedWith');
-  check('4: driven — tapping the row (not the badge) still opens the day view', !!o && o.student.id === 'STU1');
+  check('4: activity cells are display-only since unified Log actions (V4.2.15.8)', o === null);
 }
 
 // ---------- 6: the worker's real error is shown ----------

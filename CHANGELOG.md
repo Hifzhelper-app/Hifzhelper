@@ -5,6 +5,214 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.25 — Maktab row order and student heading (2026-09-24)
+
+Maktab rows place the attendance icon before the row number, with the icon
+left aligned and number right aligned in the leading cell. Loading rows use
+the same order. On Student Summary (the screenshot's activity table), the
+existing calendar attendance button replaces the book icon before the name;
+Ajzaa Completed follows the name. The heading matches the table width: full
+width on mobile and 70% on larger screens.
+
+Files: `js/maktabSummary.js`, `js/maktabDay.js`, `css/journal-table.css`,
+`css/detail-pages.css`, `index.html`, `js/sw.js`, `CHANGELOG.md`, `TESTING.md`,
+`TODO.md`, `tests/verify_v4215_ui.mjs`. No Worker or database changes.
+
+## V4.2.15.24 — All students in attendance PNGs (2026-09-24)
+
+Each shared attendance PNG now includes every student in the selected order.
+Long date ranges still produce one image per group of complete Maktab weeks.
+PDF downloads and the preview retain their existing 20-student pagination.
+
+Files: `js/maktabAttendanceReport.js`, `index.html`, `js/sw.js`,
+`tests/verify_attendance_report.mjs`, `CHANGELOG.md`, `TESTING.md`, `TODO.md`.
+No Worker or database changes.
+
+## V4.2.15.23 — PNG sharing and simpler report controls (2026-09-24)
+
+Share sends all report pages together as PNG files; Download PDF still saves
+one portrait multipage PDF. If image sharing is unavailable, the report directs
+users to Download PDF rather than triggering multiple automatic downloads.
+Mobile export buttons occupy a row below the heading. Removed the date-range
+limit hint, download attachment instructions, and duplicate date-range heading
+above the preview. Exported pages retain their date range for context.
+
+Files: `js/maktabAttendanceReport.js`, `css/daily-report.css`, `index.html`,
+`js/sw.js`, `tests/verify_attendance_report.mjs`, `CHANGELOG.md`, `TESTING.md`,
+`TODO.md`. No Worker or database changes.
+
+## V4.2.15.22 — Portrait attendance PDF and direct download (2026-09-24)
+
+Attendance PDFs use portrait A4 with narrower name, percentage and day columns.
+Long names wrap. Complete-week grouping and the 21-day maximum are preserved.
+A separate Download PDF button saves the same complete multipage file without
+invoking the system share sheet. Both export buttons disable while dates/order
+are updating. Share destinations may still discard attachments; downloading
+and attaching the saved PDF manually is the available workaround.
+
+Files: `js/maktabAttendanceReport.js`, `css/daily-report.css`, `index.html`,
+`js/sw.js`, `tests/verify_attendance_report.mjs`, `CHANGELOG.md`, `TESTING.md`,
+`TODO.md`. Frontend only; no Worker, dependency or database changes.
+
+## V4.2.15.21 — Weekly attendance grid and PDF export (2026-09-24)
+
+Attendance Report defaults to week-to-date. Share (with icon) is beside the title;
+Period/Order stack beside From/To date pills, all controls 44px high. Fixed-width
+columns group configured teaching days into whole Maktab weeks, with Monday's
+`dd mmm` heading, thick week borders and thin day borders. Four Monday–Thursday
+weeks fit each page; wider teaching schedules keep each page at most 21 days.
+Boundary weeks have grey out-of-period cells that never add activity or counts.
+Rows paginate at 20 students, preserving the same ordering on every date block.
+Attendance percentage is blank if confirmed or predicted Haidh occurs anywhere
+in the selected period; sorting retains the established attendance logic.
+
+Share now produces one multipage PDF, with a single-download fallback. Native
+share destinations depend on the device; a downloaded PDF can be attached in
+WhatsApp. PDF images are generated locally, with no new package dependencies.
+Frontend only: `js/maktabAttendanceReport.js`, `css/daily-report.css`,
+`index.html`, `js/sw.js`. No Worker, lockfile or migration changes.
+
+## Worker build fix — dependency lockfile (2026-09-24)
+
+Cloudflare's automatic clean dependency install failed before compilation because
+`worker/package.json` had no adjacent committed lockfile. Add
+`worker/package-lock.json`, resolving the existing Wrangler dependency range.
+Verified clean `npm ci` in worker and a development Wrangler deploy dry run.
+No application, database or environment-binding changes; frontend remains V4.2.15.20.
+
+## V4.2.15.20 — Attendance reports (2026-09-24)
+
+Attendance now has a Report button. Reports offer Monday-to-today, first-of-month
+to today, or custom From/To dates (up to 366 days), including ranges across terms.
+The read-only grid includes all active students and the register's teaching-day
+columns, normalized attendance/Haidh marks and period percentages. Alphabetical
+and decreasing attendance use the existing screen comparator: active-day count,
+percentage, then alphabetical ties. Share generates PNG pages (up to 20 date
+columns and 30 students each); unsupported native sharing falls back to download.
+Long names wrap in image exports. Loading, invalid/empty ranges and late responses
+cannot share stale reports. Sabaq's Maktab header is pink again; the three columns
+before it remain olive.
+
+Deploy the updated Worker along with the frontend: the existing read-only
+`/maktab/attendance-register` endpoint now accepts validated `from`/`to` parameters.
+No migrations or database writes. Older endpoints are detected by response bounds
+so the frontend does not silently export the wrong period.
+Files: `worker/src/maktabAttendance.js`, `js/api.js`, new
+`js/maktabAttendanceReport.js`, `css/daily-report.css`, `css/journal-table.css`,
+`index.html`, `js/sw.js`. Validation: 78 harnesses passed (1,664 checks), plus
+two additional image/share checks passed. Device sharing and visual verification
+remain pending.
+
+## V4.2.15.19 — Confirmation alignment and header colours (2026-09-24)
+
+Fix Sabaq Quick Action confirmation dropping below To: its shared grid used a
+column-width variable defined only inside Sabaq Dhor. Add a fallback width and
+explicitly place confirmation in the right-hand column. Tajweed is half its
+previous width with centred evergreen text and border. Desktop Maktab headers
+from attendance through Sabaq inclusive are olive; Sabaq Dhor and Dhor stay pink.
+Frontend only: `css/journal-table.css`, `index.html`, `js/sw.js`.
+Visual device verification remains pending.
+
+## V4.2.15.18 — Quick Action layout and Tajweed (2026-09-24)
+
+Sabaq Dhor puts the Juz portion picker last, below From/To, with the prompt
+“Select a portion” in both detail and Quick Action. From/To labels put “ayah”
+on the next line. Quick Action Sabaq confirmation sits beside To; Dhor confirmation
+sits beside its portion controls and remains visible for whole-Juz selection.
+All three Quick Action types offer a Tajweed pill beside Save using the shared
+tag picker. Tags are kept separately per activity, sent as `tajweed_tag_ids`,
+and cleared after successful saves; failed saves preserve them for retry.
+No Worker or database changes. All 77 harnesses / 1,643 checks pass.
+Visual device verification remains pending.
+
+## V4.2.15.17 — Sabaq Dhor labels, picker and historical suggestions (2026-09-24)
+
+Detail and Quick Action now prefix suggested portions with Juz number, retaining
+mushaf-specific Quarter/Ru'b/Maqra terminology. The Juz portion picker remains
+available alongside history-derived suggestions and in the edit card.
+Opening an edit preserves its saved range. Changing the date rebuilds suggestions
+from Sabaq entries on or before that date and prepopulates the current portion's
+From/To; a date before history clears the range. Suggested rows and the portion
+picker can set the edit range, with the existing Confirm changes/Save flow retained.
+Quick Action also refreshes suggestions when its date changes. Closing edit
+restores the normal detail date. No Worker or database changes.
+
+Frontend: `js/position.js`, `js/sabaqDhorPage.js`, `js/maktabSummary.js`,
+`css/detail-pages.css`, `index.html`, `js/sw.js`.
+New behavioural coverage: `tests/verify_sabaq_dhor_planning.mjs`; historical
+picker tests updated and redundant old release pins removed.
+Validation: 77 harnesses / 1,637 checks pass. Visual device check pending.
+
+## V4.2.15.16 — Pink Maktab header and stacked Log label (2026-09-24)
+
+On larger screens, the entire Maktab Summary header uses the existing pink,
+including Student, attendance and the blank Log heading. Log now appears below
+a compact 20px plus icon. The body Log column stays white; mobile is unchanged.
+Frontend: `css/journal-table.css`, `index.html`, `js/sw.js`. No database changes.
+
+## V4.2.15.15 — Maktab Summary Log beside Name (2026-09-24)
+
+On larger screens, the blank-headed + Log column now follows Name inside the
+white table. Its compact horizontal icon and label fit the existing row height.
+Live and loading rows use the same column order; mobile keeps its explicit card
+grid and larger Log action. Quick Log behaviour is unchanged.
+Frontend: `js/maktabSummary.js`, `css/journal-table.css`, `index.html`, `js/sw.js`.
+No Worker or database changes. All 76 harnesses / 1,621 checks pass, including
+updated column-order and interaction checks. Visual check remains pending.
+
+## V4.2.15.14 — User Management column order (2026-09-24)
+
+Desktop columns now read Name, WhatsApp, Role, Group, Status, Haidh, Unique ID,
+Actions. The heading is shortened to Haidh. Existing users and desktop registration
+share the same order and column widths; mobile named-grid cards remain unchanged.
+Frontend files: `js/adminPage.js`, `index.html`, `js/sw.js`. No database changes.
+The existing column regression checks now cover this order.
+
+## V4.2.15.13 — User Management Name column (2026-09-24)
+
+On tablet/desktop, Name is the first column for existing users and the inline
+registration row. The Name column previously received only leftover width after
+950px of fixed columns; the 80% table container could leave it no usable space.
+A 1200px desktop layout minimum now reserves name space, with one horizontal
+scroll container shared by the header and body. Mobile named-grid cards and
+mobile registration retain their layout.
+
+Frontend only: `js/adminPage.js`, `css/admin.css`, `index.html`, `js/sw.js`.
+No Worker or database migration. Name autosave, roles and actions are unchanged.
+Page/cache keys advance together; only edited product files get new headers.
+
+Validation: 11 Name-column checks, including existing/registration order, name
+editing, matching column definitions, scroll wrapper and mobile structure;
+76 harnesses / 1,621 checks pass. Browser preview was blocked by a browser policy
+verification error, so visual device verification remains pending.
+Use `tests/fixtures/admin-layout.html` served locally for synthetic-user review.
+
+---
+
+## V4.2.15.12 — Quick Log Save and Close separated (2026-09-24)
+
+Saving Sabaq, Sabaq Dhor or Dhor now leaves the same student's Quick Log
+window open. Saved entries refresh, confirmation clears, and the user can
+switch activity type or add another entry before using Close. Sabaq planning
+refreshes after a save; Dhor retains its selected portion.
+
+Duplicate confirmation is retained. Save/date/type controls are locked while
+saving, and a late response cannot alter a replacement student's window.
+A successful write followed by a failed refresh is reported as saved, rather
+than inviting a duplicate retry. Caller Summary views still refresh.
+
+Frontend only: `js/maktabSummary.js`, `index.html`, `js/sw.js`; no Worker deployment
+or migration. Page/cache keys are 4.2.15.12; untouched file headers retain their
+last-edit versions.
+
+Validation: 18 driven Quick Log session checks; full suite 75/75 harnesses,
+1,610 checks passed. Repeated historical release pins are consolidated under
+`verify_build_stamp.mjs`, which checks page/cache identity and last-edit headers.
+Device follow-up: add multiple entries of each type, switch types, then close on
+phone and desktop; repeat from Student Summary. Native layout was not re-tested.
+
+---
+
 ## MIGRATION STATUS — hifzhelper-maktab1 (confirmed 2026-08-17)
 
 **All delivered migrations are RUN. Nothing is pending. Do not re-run.**

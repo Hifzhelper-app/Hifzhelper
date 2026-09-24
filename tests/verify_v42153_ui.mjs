@@ -62,16 +62,11 @@ const rows = vm.runInContext('maktabDailyReportRows(__sample)', Object.assign(co
 check('functional filter excludes no-log students and alphabetises the logged band',
   rows.length === 2 && rows[0].student.id === 'a' && rows[1].student.id === 'b');
 
-check('report assets carry their current last-edit headers after the multi-entry follow-up',
-  /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabDailyReport\.js \*\//.test(src)
-  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| css\/daily-report\.css \*\//.test(css));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 const pageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
-check('later page/cache overlays stay aligned and service-worker precache still includes both V4.2.15.3 report assets',
-  pageVersions.length > 0 && !!cacheVersion && pageVersions.every(v => v === cacheVersion)
-  && new RegExp('daily-report\\.css\\?v=' + cacheVersion.replace(/\./g,'\\.')).test(sw)
-  && new RegExp('maktabDailyReport\\.js\\?v=' + cacheVersion.replace(/\./g,'\\.')).test(sw));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

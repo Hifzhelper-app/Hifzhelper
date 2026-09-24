@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.11 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.25 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -282,22 +282,21 @@
    table is table-layout:fixed so it obeys them exactly instead of
    auto-sizing to content. Percentages sum to 100 -- no fixed px, which
    would overflow a 100% table by that many pixels. */
-/* V4.2.15.9: the body still has six aligned tracks — Attendance/index,
-   Student, 3 activity columns, then one narrow Log action rail. The visible
-   header deliberately stops after Dhor at 90%, leaving the final 10%
-   transparent so Log reads as an outside-table action. */
+/* V4.2.15.15: Attendance, Name, blank Log action, then activity columns.
+   Mobile uses its existing explicit grid placement below. */
 .maktab-summary-headers > *:nth-child(1) { flex: 0 0 7%; }
 .maktab-summary-headers > *:nth-child(2) { flex: 0 0 20%; }
-.maktab-summary-headers > *:nth-child(3) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(3) { flex: 0 0 10%; }
 .maktab-summary-headers > *:nth-child(4) { flex: 0 0 21%; }
 .maktab-summary-headers > *:nth-child(5) { flex: 0 0 21%; }
+.maktab-summary-headers > *:nth-child(6) { flex: 0 0 21%; }
 .maktab-summary-table { table-layout: fixed; }
 .maktab-summary-table td:nth-child(1) { width: 7%; }
 .maktab-summary-table td:nth-child(2) { width: 20%; }
-.maktab-summary-table td:nth-child(3) { width: 21%; }
+.maktab-summary-table td:nth-child(3) { width: 10%; }
 .maktab-summary-table td:nth-child(4) { width: 21%; }
 .maktab-summary-table td:nth-child(5) { width: 21%; }
-.maktab-summary-table td:nth-child(6) { width: 10%; }
+.maktab-summary-table td:nth-child(6) { width: 21%; }
 
 /* Date pill (V3.63.0 — corrected). The PJ never overrides the pill's
    own width: .card-date-row is `display: grid; grid-template-columns:
@@ -370,7 +369,7 @@
 .maktab-haidh-check svg { width: 16px; height: 16px; }
 /* V4.2.15: visible row index + attendance icon share the existing narrow
    leading summary cell, so no journal column widths need to move. */
-.maktab-row-meta { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+.maktab-row-meta { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
 .maktab-row-number { min-width: 1.35em; text-align: right; font-size: 12px; font-weight: 700; color: var(--color-ink-soft); line-height: 1; }
 
 /* V3.64.0: the maktab day view IS the PJ day view (js/logContext.js), so
@@ -808,7 +807,7 @@
 .maktab-quick-sd-quarters { display: grid; gap: 7px; width: 100%; min-width: 0; }
 .modal-card label.maktab-quick-sd-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col, 44px);
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -843,7 +842,7 @@
 .maktab-quick-sd-manual { display: grid; gap: 8px; width: 100%; min-width: 0; }
 .maktab-quick-sd-manual-line {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col);
+  grid-template-columns: minmax(0, 1fr) var(--maktab-quick-sd-check-col, 44px);
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -1193,48 +1192,25 @@
 }
 
 
-/* ============================================================
-   V4.2.15.9 — Maktab Summary Log is an action rail, not a data column.
-   Desktop/tablet keeps the sixth table track for row alignment, but removes
-   table chrome behind it. The header stops at Dhor and the circle-plus sits
-   over the page canvas so it visually floats outside the white data table.
-   Mobile keeps the existing card treatment unchanged. */
+/* V4.2.15.16: continuous pink desktop header; compact Log label below +. */
 @media (min-width: 768px) {
-  #screen-maktabSummary .journal-wrap {
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-  }
-  #screen-maktabSummary .maktab-summary-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    background: transparent;
-  }
-  #screen-maktabSummary .maktab-summary-table td:nth-child(-n+5) {
-    background: var(--color-surface);
-  }
-  #screen-maktabSummary .maktab-summary-table td:nth-child(1) {
-    border-left: 1px solid var(--color-table-border);
-  }
-  #screen-maktabSummary .maktab-summary-table td:nth-child(5) {
-    border-right: 1px solid var(--color-table-border);
+  #screen-maktabSummary .maktab-summary-headers .journal-header-cell {
+    background: var(--color-table-header-log);
   }
   #screen-maktabSummary .maktab-summary-table td.maktab-mobile-log-col {
-    background: transparent;
-    border-bottom: 0;
+    background: var(--color-surface, #fff);
   }
-  #screen-maktabSummary .maktab-summary-table tr.maktab-row-flagged td:nth-child(-n+5) {
-    background: rgba(255, 212, 0, 0.18);
+  #screen-maktabSummary .maktab-mobile-log-action {
+    flex-direction: column;
+    gap: 1px;
+    padding: 2px;
+    font-size: 11px;
+    line-height: 1;
+    min-height: 0;
+    white-space: nowrap;
   }
-  #screen-maktabSummary .maktab-summary-table tr:last-child td:nth-child(-n+5) {
-    border-bottom: 1px solid var(--color-table-border);
-  }
-  #screen-maktabSummary .maktab-summary-table tr:last-child td:first-child {
-    border-bottom-left-radius: var(--radius-md);
-  }
-  #screen-maktabSummary .maktab-summary-table tr:last-child td:nth-child(5) {
-    border-bottom-right-radius: var(--radius-md);
-  }
+  #screen-maktabSummary .maktab-mobile-log-icon { width: 20px; height: 20px; }
+  #screen-maktabSummary .maktab-mobile-log-icon svg { width: 20px; height: 20px; }
 }
 
 /* V4.2.15.9 — one unified Quick Log selector: a dark evergreen outline
@@ -1349,4 +1325,31 @@
     color: var(--color-ink-faint);
   }
   #maktabSummaryBody tr.maktab-mobile-search-hidden { display: none !important; }
+}
+
+/* V4.2.15.18 — field-side confirmation and shared Tajweed picker. */
+.maktab-quick-sd-manual-line > .maktab-quick-confirm,
+.maktab-quick-dhor-primary-row > .maktab-quick-confirm {
+  width: auto; min-height: 0; height: auto; padding: 0; border: 0;
+  background: transparent; justify-content: center;
+}
+.maktab-quick-dhor-primary-row { grid-template-columns: minmax(70px, .75fr) minmax(0, 1.5fr) 34px; }
+.maktab-quick-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#maktabQuickTajweed .tajweed-trigger-btn {
+  border-radius: 999px;
+  width: 50%;
+  min-height: 42px;
+  color: var(--palette-evergreen, #344C3D);
+  border: 1px solid var(--palette-evergreen, #344C3D);
+  text-align: center;
+  justify-content: center;
+}
+.tajweed-popup-modal { z-index: 1001; }
+
+/* V4.2.15.19: pin confirmation beside the range, even outside SD layout. */
+.maktab-quick-sd-manual-line > .maktab-quick-confirm { grid-column: 2; grid-row: 1; }
+@media (min-width: 768px) {
+  #screen-maktabSummary .maktab-summary-headers .journal-header-cell:nth-child(-n+3) {
+    background: var(--color-table-header-date);
+  }
 }
