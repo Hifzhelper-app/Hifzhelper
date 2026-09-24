@@ -24,9 +24,10 @@ check('Maktab Summary has no visible Log header cell',
   /class="journal-header-cell maktab-log-head" aria-hidden="true"><\/div>/.test(html)
   && !/<span>Log<\/span>/.test(html.slice(html.indexOf('maktab-summary-headers'), html.indexOf('maktabSummaryBody'))));
 
-check('Maktab Summary desktop Log column is white with a compact horizontal action',
+check('Maktab Summary desktop Log column is white below a pink header with Log below the icon',
   /@media \(min-width: 768px\) \{[\s\S]*td\.maktab-mobile-log-col \{\s*background: var\(--color-surface, #fff\);/.test(journalCss)
-  && /#screen-maktabSummary \.maktab-mobile-log-action \{\s*flex-direction: row;/.test(journalCss));
+  && /#screen-maktabSummary \.maktab-mobile-log-action \{\s*flex-direction: column;/.test(journalCss)
+  && /#screen-maktabSummary \.maktab-summary-headers \.journal-header-cell \{\s*background: var\(--color-table-header-log\);/.test(journalCss));
 
 check('row Log action remains circle-plus + Log and always opens unified Quick Log',
   /mobileLogBtn\.innerHTML = `<span class="maktab-mobile-log-icon">\$\{iconHtml\('circlePlus'\)\}<\/span><span>Log<\/span>`/.test(summary)

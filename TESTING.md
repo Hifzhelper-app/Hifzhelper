@@ -1,9 +1,10 @@
-## Maktab Summary Log column — V4.2.15.15
+## Maktab Summary Log column — V4.2.15.16
 
 Automated: 76 harnesses / 1,621 checks pass.
 
 At desktop/tablet widths, verify + Log follows Name, its heading is blank, the
-column is white, and the compact action fits the existing row height. Check
+body column is white, and Log sits below the compact plus icon within the existing
+row height. Confirm the entire header is pink, including the blank Log heading. Check
 header alignment, cached loading rows, and opening/saving Quick Log. At phone
 widths, confirm the existing card layout and large Log action remain unchanged.
 Visual browser verification remains pending.

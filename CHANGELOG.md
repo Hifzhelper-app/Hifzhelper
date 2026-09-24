@@ -5,6 +5,13 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.16 — Pink Maktab header and stacked Log label (2026-09-24)
+
+On larger screens, the entire Maktab Summary header uses the existing pink,
+including Student, attendance and the blank Log heading. Log now appears below
+a compact 20px plus icon. The body Log column stays white; mobile is unchanged.
+Frontend: `css/journal-table.css`, `index.html`, `js/sw.js`. No database changes.
+
 ## V4.2.15.15 — Maktab Summary Log beside Name (2026-09-24)
 
 On larger screens, the blank-headed + Log column now follows Name inside the

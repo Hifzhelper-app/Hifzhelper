@@ -8,10 +8,11 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Current release — V4.2.15.15 (2026-09-24)
+## Current release — V4.2.15.16 (2026-09-24)
 
 Maktab Summary now places a compact + Log column next to Name on larger screens,
-with a blank heading and white background. Device verification remains pending.
+with a blank heading and white body background. The whole header is pink and Log
+sits below the plus icon. Device verification remains pending.
 
 User Management now shows Name first and Unique ID after the shortened Haidh heading
 on larger screens with reserved width and
