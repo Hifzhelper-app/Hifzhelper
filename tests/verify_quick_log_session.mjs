@@ -10,6 +10,7 @@ function check(name, condition) {
 const dom = new JSDOM('<!doctype html><body></body>', { runScripts:'dangerously', url:'https://test.local/' });
 const w = dom.window;
 w.eval(read('shared/data.js'));
+w.eval(read('js/tajweed.js'));
 w.eval(`
 function iconHtml(){ return ''; }
 function journalCellShorthand(type, rows){ return rows.map(r => r.id).join(','); }
@@ -43,7 +44,17 @@ const sheet = () => w.document.getElementById('maktabQuickLogSheet');
 try {
   await open();
   const first = sheet();
+  w.apiGetTajweedTags=async()=>[{id:7,name:'Madd'}];
+  await w.loadTajweedVocabulary();
+  const selectTag=()=>{
+    w.document.querySelector('#maktabQuickTajweed button').click();
+    const cb=w.document.querySelector('.tajweed-cb');cb.checked=true;cb.dispatchEvent(new w.Event('change'));
+    w.document.getElementById('tajweedPopupCloseBtn').click();
+  };
+  check('Sabaq confirmation is beside To and labels have a line break', !!w.document.getElementById('maktabQuickLogConfirm').closest('.maktab-quick-sd-manual-line') && !!w.document.querySelector('.maktab-quick-range-row label br'));
+  selectTag();
   confirm(); await w.maktabSaveQuickLog();
+  check('Sabaq tag saves and resets',posts[0].payload.tajweed_tag_ids==='7' && w.testState().tajweed.sabaq.length===0);
   check('Sabaq save keeps the same window, student and date', sheet()===first && w.testState().student.id==='A' && w.testState().date==='2026-09-24');
   check('successful save refreshes caller and shows saved status', refreshes===1 && /Sabaq saved/.test(w.document.getElementById('maktabQuickLogStatus').textContent));
   check('saved entries refresh in the open window', /Already logged/.test(w.document.getElementById('maktabQuickExisting').textContent));
@@ -53,12 +64,19 @@ try {
   confirm(); await w.maktabSaveQuickLog();
   check('multiple Sabaq entries save in one session', posts.length===2 && sheet()===first);
   w.document.querySelector('[data-mql-type="sabaqDhor"]').click();
+  check('Sabaq Dhor portion picker is last', w.document.querySelector('.maktab-quick-sd-layout').lastElementChild.classList.contains('maktab-quick-sd-empty'));
+  selectTag();
   w.document.getElementById('mql_sd_picker_confirm').checked=true;
   await w.maktabSaveQuickLog();
+  check('Sabaq Dhor tag saves and resets',posts.at(-1).payload.tajweed_tag_ids==='7' && w.testState().tajweed.sabaqDhor.length===0);
   check('Sabaq Dhor saves without closing and clears its selection', posts.at(-1).path==='/maktab/sabaq-dhor' && sheet()===first && !w.document.getElementById('mql_sd_picker_confirm').checked);
   w.document.querySelector('[data-mql-type="dhor"]').click();
+  selectTag();
+  w.document.querySelector('[data-unit="full"]').click();
+  check('Dhor confirmation remains available for whole Juz', !w.document.getElementById('maktabQuickLogConfirm').closest('.hidden'));
   const juz=w.document.getElementById('mql_dhor_juz');juz.value='2';juz.dispatchEvent(new w.Event('change'));
   confirm(); await w.maktabSaveQuickLog();
+  check('Dhor tag saves and resets',posts.at(-1).payload.tajweed_tag_ids==='7' && w.testState().tajweed.dhor.length===0);
   check('Dhor saves without closing and retains the selected Juz', posts.at(-1).path==='/maktab/dhor' && sheet()===first && w.document.getElementById('mql_dhor_juz').value==='2');
   check('all entries retain student and selected date', posts.every(p=>p.payload.student_id==='A' && p.payload.date==='2026-09-24'));
   postError=true;confirm();await w.maktabSaveQuickLog();

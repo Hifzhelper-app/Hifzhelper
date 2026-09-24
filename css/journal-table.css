@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.16 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.18 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -1326,3 +1326,14 @@
   }
   #maktabSummaryBody tr.maktab-mobile-search-hidden { display: none !important; }
 }
+
+/* V4.2.15.18 — field-side confirmation and shared Tajweed picker. */
+.maktab-quick-sd-manual-line > .maktab-quick-confirm,
+.maktab-quick-dhor-primary-row > .maktab-quick-confirm {
+  width: auto; min-height: 0; height: auto; padding: 0; border: 0;
+  background: transparent; justify-content: center;
+}
+.maktab-quick-dhor-primary-row { grid-template-columns: minmax(70px, .75fr) minmax(0, 1.5fr) 34px; }
+.maktab-quick-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+#maktabQuickTajweed .tajweed-trigger-btn { border-radius: 999px; width: 100%; min-height: 42px; }
+.tajweed-popup-modal { z-index: 1001; }

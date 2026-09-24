@@ -402,7 +402,7 @@ vm.runInContext(read('shared/data.js'), dataCtx);
 {
   const sdSrc = read('js/sabaqDhorPage.js');
   check('v424: the picker remains in the sections grid alongside suggested rows',
-    /\.join\(''\) \+ sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
+    /manualHtml \+ sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
     && !/sabaqDhorQuarterPicker/.test(read('index.html'))
     && /id="sabaqDhorManual_from_ayah"/.test(sdSrc)
     && /\.sdq-picker \{ grid-column: 1(?: \/ -1)?; min-width: 0;/.test(read('css/detail-pages.css')));
@@ -431,8 +431,8 @@ vm.runInContext(read('shared/data.js'), dataCtx);
 }
 
 check('v424: picker is available with or without suggested rows',
-  /\.join\(''\) \+ sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
-  && /Choose a Juz portion to revise\./.test(read('js/sabaqDhorPage.js'))
+  /manualHtml \+ sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
+  && /Select a portion/.test(read('js/sabaqDhorPage.js'))
   && !/Nothing to revise yet/.test(read('js/sabaqDhorPage.js')));
 check('v428: the picker is wired per render and uses the shared switch helper; the old Use button is gone',
   /wireSabaqDhorQuarterPicker\(\);   \/\/ V4\.2\.8: no-op unless the picker is on screen/.test(read('js/sabaqDhorPage.js'))

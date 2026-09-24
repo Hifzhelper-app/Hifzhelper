@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/tajweed.js */
+/* Hifzhelper build 4.2.15.18 | js/tajweed.js */
 // ============================================================
 // Hifzhelper -- shared tajweed tag picker
 // Used on all detail-view cards (Sabaq / Sabaq Dhor / Dhor), PJ and maktab.
@@ -40,7 +40,8 @@ function tajweedNamesFor(selectedIds){
 // array of tag-ID strings -- the caller reads it back at save time.
 function renderTajweedPicker(containerId, selected){
   const el = document.getElementById(containerId);
-  const summary = selected.length ? tajweedNamesFor(selected).join(', ') : 'Select tags';   // V3.94.0 (user): the label above already says Tajweed
+  if(!el) return;
+  const summary = el.dataset.triggerLabel ? el.dataset.triggerLabel + (selected.length ? ` (${selected.length})` : '') : selected.length ? tajweedNamesFor(selected).join(', ') : 'Select tags';   // V3.94.0 (user): the label above already says Tajweed
   el.innerHTML = `<button type="button" class="tajweed-trigger-btn"></button>`;
   const btn = el.querySelector('.tajweed-trigger-btn');
   btn.textContent = summary;   // names are admin-entered text — never innerHTML

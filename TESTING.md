@@ -1,3 +1,17 @@
+## Quick Action layout and Tajweed — V4.2.15.18
+
+Automated: 77 harnesses / 1,643 checks pass.
+
+Check on phone and desktop: Sabaq Dhor picker follows From/To, prompt reads
+“Select a portion”, and From/To labels put ayah on the next line. Check Sabaq
+and Dhor confirmation beside the fields, including whole-Juz Dhor. Open Tajweed
+beside Save in all three activity types; select tags, save, and confirm they
+appear on the entry and reset for the next entry. Existing session regression
+checks drive the shared picker and verify tag payloads/reset for each activity.
+Visual device verification remains pending.
+
+---
+
 ## Sabaq Dhor planning — V4.2.15.17
 
 Automated: 77 harnesses / 1,637 checks pass.

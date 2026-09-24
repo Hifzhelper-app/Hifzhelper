@@ -5,6 +5,18 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.18 — Quick Action layout and Tajweed (2026-09-24)
+
+Sabaq Dhor puts the Juz portion picker last, below From/To, with the prompt
+“Select a portion” in both detail and Quick Action. From/To labels put “ayah”
+on the next line. Quick Action Sabaq confirmation sits beside To; Dhor confirmation
+sits beside its portion controls and remains visible for whole-Juz selection.
+All three Quick Action types offer a Tajweed pill beside Save using the shared
+tag picker. Tags are kept separately per activity, sent as `tajweed_tag_ids`,
+and cleared after successful saves; failed saves preserve them for retry.
+No Worker or database changes. All 77 harnesses / 1,643 checks pass.
+Visual device verification remains pending.
+
 ## V4.2.15.17 — Sabaq Dhor labels, picker and historical suggestions (2026-09-24)
 
 Detail and Quick Action now prefix suggested portions with Juz number, retaining

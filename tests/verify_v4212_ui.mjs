@@ -23,10 +23,10 @@ check('the +N entry peek remains a separate stop-propagating target',
 check('full detail cards remain reachable from the Quick Log sheet',
   /id="maktabQuickLogDetails"/.test(js) && /maktabQuickLogDetails[\s\S]{0,500}openMaktabDay/.test(js));
 
-check('Sabaq and Sabaq Dhor expose only Ayah From / Ayah To range controls',
-  /maktabQuickVerseField\('from', 'Ayah From'\)/.test(js)
-  && /maktabQuickVerseField\('to', 'Ayah To'\)/.test(js)
-  && !/maktab-quick-[\s\S]{0,200}tajweed/i.test(js));
+check('Sabaq and Sabaq Dhor expose From/To range controls with a Tajweed picker',
+  /maktabQuickVerseField\('from', 'From'\)/.test(js)
+  && /maktabQuickVerseField\('to', 'To'\)/.test(js)
+  && /id="maktabQuickTajweed"/.test(js));
 check('Sabaq Quick Log posts the existing minimal maktab fields',
   /path = '\/maktab\/sabaq';[\s\S]{0,280}sabaq_from:[\s\S]{0,120}sabaq_to:/.test(js));
 check('Sabaq Dhor Quick Log posts the existing minimal maktab fields',

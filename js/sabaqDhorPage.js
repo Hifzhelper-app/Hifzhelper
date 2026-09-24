@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.17 | js/sabaqDhorPage.js */
+/* Hifzhelper build 4.2.15.18 | js/sabaqDhorPage.js */
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
 // Current as of V3.45.13
@@ -100,7 +100,7 @@ function renderSabaqDhorRows(){
     <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${sabaqDhorRowLabel(r, sabaqDhorRef)}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
     <span></span>
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
-  `).join('') + sabaqDhorQuarterPickerHtml();
+  `).join('');
 
   // V3.74.3: ONE move option per juz, on its own row, rendered from the
   // juz rather than from any row — so roll-up state cannot make it appear
@@ -129,7 +129,7 @@ function renderSabaqDhorRows(){
   // (below) reads both sides into a genuine 2-point range now, not the
   // zero-length single-point range it used to fold in.
   const manualHtml = `
-    <label class="sabaq-dhor-sections-header">From</label>
+    <label class="sabaq-dhor-sections-header">From<br>ayah</label>
     <div class="verse-ref-field">
       <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_from_chevron">&#x25B2;&#x25BC;</button>
       <span class="verse-ref-surah-label" id="sabaqDhorManual_from_surah_label">—</span>
@@ -144,7 +144,7 @@ function renderSabaqDhorRows(){
     </div>
     <span></span>
     <span></span>
-    <label class="sabaq-dhor-sections-header">To</label>
+    <label class="sabaq-dhor-sections-header">To<br>ayah</label>
     <div class="verse-ref-field">
       <button type="button" class="verse-ref-chevron" id="sabaqDhorManual_to_chevron">&#x25B2;&#x25BC;</button>
       <span class="verse-ref-surah-label" id="sabaqDhorManual_to_surah_label">—</span>
@@ -161,7 +161,7 @@ function renderSabaqDhorRows(){
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhorManual_cb"></span>
   `;
 
-  el.innerHTML = rowsHtml + (sabaqDhorEditingId ? '' : moveHtml) + manualHtml;
+  el.innerHTML = rowsHtml + (sabaqDhorEditingId ? '' : moveHtml) + manualHtml + sabaqDhorQuarterPickerHtml();
   el.querySelectorAll('.sabaqDhor-row-cb').forEach(cb => cb.addEventListener('change', () => {
     if(!sabaqDhorEditingId) return;
     const selected = sabaqDhorRows.filter(r => document.getElementById(`sabaqDhor_cb_${r.id}`)?.checked);
@@ -712,7 +712,7 @@ function sabaqDhorQuarterPickerHtml(){
   // control itself is position 1|2|3|4 for every mushaf.
   const qButtons = Array.from({ length: 4 }, (_, i) =>
     `<button type="button" class="switch-option" data-value="${i + 1}">${i + 1}</button>`).join('');
-  return `<p class="form-hint sdq-hint">Choose a Juz portion to revise.</p>
+  return `<p class="form-hint sdq-hint">Select a portion</p>
       <div class="sdq-picker" id="sabaqDhorQuarterPicker">
         <div class="sdq-row">
           <span class="sdq-field"><label class="dhor-sel-label">Juz</label><select id="sdq_juz">${juzOpts}</select></span>
