@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.7 | css/admin.css */
+/* Hifzhelper build 4.2.15.13 | css/admin.css */
 /* ============================================================
    Hifzhelper — admin screen
    ============================================================ */
@@ -202,7 +202,8 @@ button.secondary.danger {
   text-transform: uppercase; letter-spacing: .04em; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
-.admin-table-head thead th.admin-th-id { background: var(--color-table-header-date); border-top-left-radius: var(--radius-md); }
+.admin-table-head thead th.admin-th-id { background: var(--color-table-header-date); }
+.admin-table-head thead th:first-child { border-top-left-radius: var(--radius-md); }
 .admin-table-head thead th.admin-th-actions { border-top-right-radius: var(--radius-md); }
 .admin-wrap {
   background: var(--color-surface);
@@ -230,17 +231,15 @@ button.secondary.admin-register-btn {
 .admin-row-just-created td { background: var(--palette-lavender, #E3DADE); }
 /* action buttons hug their content so the delete icon always fits */
 .admin-actions-cell .secondary, .admin-actions-strip .secondary { width: auto; display: inline-block; }
-/* the eight columns need room: on wide screens the pair is capped and
-   centred like the summary's 70%, at 80% for the extra columns; below
-   that the region scrolls sideways rather than crushing the cells */
+/* V4.2.15.13: reserve at least 220px for Name plus 950px for the other
+   columns. One horizontal scroll surface keeps header and body aligned;
+   limiting this to larger screens preserves the mobile named-grid cards. */
 @media (min-width: 768px) {
-  .admin-toolbar, .admin-table-head, .admin-wrap, .admin-status-line { width: 80%; margin-left: auto; margin-right: auto; }
-}
-/* below ~1000px the fixed columns (845px) outgrow 80% — let the pair
-   scroll sideways together rather than crush */
-@media (max-width: 1100px) and (min-width: 768px) {
-  .admin-table-head, .admin-wrap { overflow-x: auto; }
-  .admin-table { min-width: 960px; }
+  .admin-toolbar, .admin-table-region, .admin-status-line { width: 80%; margin-left: auto; margin-right: auto; }
+  .admin-table-region { overflow-x: auto; }
+  .admin-table-layout { min-width: 1200px; }
+  .admin-table-head, .admin-wrap { width: 100%; }
+  .admin-wrap { overflow-x: hidden; }
 }
 .admin-table td { padding: 8px; border-bottom: 1px solid var(--color-table-border); vertical-align: middle; }
 .admin-cell-id { font-size: 12px; opacity: .75; white-space: nowrap; }

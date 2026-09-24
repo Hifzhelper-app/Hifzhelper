@@ -88,6 +88,15 @@ write versus refresh failures, save locking and replacement-window isolation.
 Redundant historical release pins now defer to `verify_build_stamp.mjs`.
 Current suite: **75 harnesses, 1,610 checks passed**.
 
+## User Management follow-up — V4.2.15.13
+
+`verify_admin_name_column.mjs` adds 11 checks for desktop Name-first order,
+registration, name autosave, column alignment structure, minimum usable width,
+and preserved mobile card structure. Current suite: **76 harnesses, 1,621 checks**.
+`fixtures/admin-layout.html` renders synthetic users with the real application
+assets for local browser review; it never loads live users. Serve the repository
+locally before opening it. Browser visual verification remains pending.
+
 ## Device checks before a release
 
 1. On phone and desktop, check Log, Attendance, Name and +N have independent targets.

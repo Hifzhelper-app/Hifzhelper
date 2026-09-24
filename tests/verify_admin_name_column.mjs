@@ -1,0 +1,42 @@
+import { JSDOM } from 'jsdom';
+import { readFileSync } from 'node:fs';
+const read = file => readFileSync(new URL('../' + file, import.meta.url), 'utf8');
+let pass=0, fail=0;
+const check=(name,condition)=>{if(condition)pass++;else{fail++;console.log('FAIL:',name);}};
+const dom = new JSDOM('<body><input id="admin_search"><div id="adminUsersList"></div></body>', {runScripts:'dangerously',url:'https://test.local'});
+const w=dom.window;
+let mobile=false, updates=[];
+w.matchMedia=()=>({matches:mobile});
+w.iconHtml=()=>'';w.showBanner=()=>{};
+w.apiAdminListUsers=async()=>[{id:'A',name:'Visible Student Name',role:'student',active:1}];
+w.apiGetMaktabGroups=async()=>[];
+w.apiAdminUpdateUser=async (id,fields)=>{updates.push({id,...fields});return {};};
+w.eval(read('js/uiSwitch.js'));w.eval(read('js/adminPage.js'));
+try {
+  await w.loadAdminUsers();
+  const header=w.document.querySelector('.admin-table-head');
+  const body=w.document.querySelector('.admin-table-body');
+  const row=body.querySelector('.admin-row-fields');
+  check('desktop header starts Name then Unique ID', [...header.querySelectorAll('th')].slice(0,2).map(x=>x.textContent).join(',')==='Name,Unique ID');
+  check('existing user name is in first cell with original editable value', row.cells[0].dataset.label==='Name' && row.cells[0].querySelector('input').value==='Visible Student Name');
+  check('ID remains visible in second cell', row.cells[1].dataset.label==='Unique ID' && row.cells[1].textContent==='A');
+  check('header and body share identical eight-column definitions', header.querySelector('colgroup').outerHTML===body.querySelector('colgroup').outerHTML && header.querySelectorAll('col').length===8);
+  check('header and body share one horizontal scroll container', header.closest('.admin-table-region')===body.closest('.admin-table-region') && !!header.closest('.admin-table-region'));
+  const name=row.cells[0].querySelector('input');name.value='Updated Name';name.dispatchEvent(new w.Event('change'));
+  await new Promise(r=>setTimeout(r,0));
+  check('name edit still autosaves for the correct account', updates.length===1 && updates[0].id==='A' && updates[0].name==='Updated Name');
+  w.adminShowAddRow(true);
+  check('desktop registration also places Name first', w.document.querySelector('.admin-row-new').cells[0].querySelector('#admin_new_name')!==null);
+  const css=read('css/admin.css');
+  const rule=css.match(/@media \(min-width: 768px\) \{[^}]*\}[\s\S]*?\.admin-table-layout \{ min-width: (\d+)px; \}/);
+  const fixed=[...header.querySelectorAll('col')].reduce((n,c)=>n+(parseInt(c.style.width,10)||0),0);
+  check('desktop minimum leaves at least 220px for Name after fixed columns', !!rule && Number(rule[1])-fixed-2>=220);
+  check('minimum layout width only applies above mobile breakpoint', (css.match(/\.admin-table-layout/g)||[]).length===1 && /@media \(min-width: 768px\) \{[^@]*\.admin-table-region \{ overflow-x: auto; \}/.test(css));
+  mobile=true;w.adminShowAddRow(false);await w.loadAdminUsers();
+  check('mobile retains Name grid area and ID/WhatsApp row', /td\[data-label="Name"\] \{ grid-area: name; \}/.test(css) && /'id id id wa wa wa'/.test(css) && /@media \(max-width: 767px\)[\s\S]*\.admin-table\.admin-table-head \{ display: none; \}/.test(css));
+  w.adminShowAddRow(true);
+  check('mobile retains its separate registration card', !w.document.querySelector('.admin-row-new') && !!w.document.getElementById('admin_new_name'));
+} catch(e){fail++;console.log('FAIL:',e.stack);}
+finally {w.close();}
+console.log(`${pass} passed, ${fail} failed`);
+process.exitCode=fail?1:0;

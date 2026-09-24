@@ -5,6 +5,27 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.13 — User Management Name column (2026-09-24)
+
+On tablet/desktop, Name is the first column for existing users and the inline
+registration row. The Name column previously received only leftover width after
+950px of fixed columns; the 80% table container could leave it no usable space.
+A 1200px desktop layout minimum now reserves name space, with one horizontal
+scroll container shared by the header and body. Mobile named-grid cards and
+mobile registration retain their layout.
+
+Frontend only: `js/adminPage.js`, `css/admin.css`, `index.html`, `js/sw.js`.
+No Worker or database migration. Name autosave, roles and actions are unchanged.
+Page/cache keys advance together; only edited product files get new headers.
+
+Validation: 11 Name-column checks, including existing/registration order, name
+editing, matching column definitions, scroll wrapper and mobile structure;
+76 harnesses / 1,621 checks pass. Browser preview was blocked by a browser policy
+verification error, so visual device verification remains pending.
+Use `tests/fixtures/admin-layout.html` served locally for synthetic-user review.
+
+---
+
 ## V4.2.15.12 — Quick Log Save and Close separated (2026-09-24)
 
 Saving Sabaq, Sabaq Dhor or Dhor now leaves the same student's Quick Log

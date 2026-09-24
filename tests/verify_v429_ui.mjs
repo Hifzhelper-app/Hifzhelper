@@ -44,7 +44,7 @@ check('mobile row 4: Reset PIN is green and actions order reset/delete/copy/shar
   && /\[data-share-url\] \{ order: 4; \}/.test(css));
 check('desktop table remains: table header markup and 80% desktop width rule still exist',
   /class="admin-table admin-table-head"/.test(read('js/adminPage.js'))
-  && /@media \(min-width: 768px\)[\s\S]*\.admin-toolbar, \.admin-table-head, \.admin-wrap, \.admin-status-line \{ width: 80%;/.test(css));
+  && /@media \(min-width: 768px\)[\s\S]*\.admin-toolbar, \.admin-table-region, \.admin-status-line \{ width: 80%;/.test(css));
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

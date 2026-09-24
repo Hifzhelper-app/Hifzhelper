@@ -1,3 +1,17 @@
+## User Management Name column — V4.2.15.13
+
+Automated: `npm test` — 76 harnesses, 1,621 checks pass. The new
+`verify_admin_name_column.mjs` covers Name-first rendering/registration,
+autosave, matching headers, reserved width, and mobile structure.
+
+Visual check remains pending because browser policy verification blocked the
+preview. Serve the repository locally and open `tests/fixtures/admin-layout.html`
+(synthetic users; no live API). At 768, 1024 and 1440px confirm Name is first,
+readable and editable, and header/body scroll together. At 390px confirm the
+existing mobile cards and registration layout. Check a long list vertically too.
+
+---
+
 ## Current Quick Log regression — V4.2.15.12
 
 Run `npm ci` and `npm test` from the repository root (see `tests/README.md`).

@@ -353,7 +353,7 @@ check('v402: the derivation takes today and explicit absents; today falls throug
   check('v410/v421: the table wears the APP palette (sage id column, mauve header); header and body share ONE width and ONE colgroup',
     /\.admin-table-head thead th \{\n  background: var\(--color-table-header-log\);/.test(read('css/admin.css'))
     && /admin-th-id \{ background: var\(--color-table-header-date\);/.test(read('css/admin.css'))
-    && /\.admin-toolbar, \.admin-table-head, \.admin-wrap, \.admin-status-line \{ width: 80%; margin-left: auto; margin-right: auto; \}/.test(read('css/admin.css'))
+    && /\.admin-toolbar, \.admin-table-region, \.admin-status-line \{ width: 80%; margin-left: auto; margin-right: auto; \}/.test(read('css/admin.css'))
     && (adminSrc.match(/\$\{ADMIN_COLGROUP\}/g) || []).length === 2
     && !/adminRegisterBox/.test(read('index.html')));
 }

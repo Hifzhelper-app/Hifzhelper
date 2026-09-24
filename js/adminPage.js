@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.4 | js/adminPage.js */
+/* Hifzhelper build 4.2.15.13 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -89,12 +89,12 @@ async function adminSaveField(user, fields, describe){
 // V4.2.1: one shared <colgroup> on BOTH the header table and the body
 // table — two tables with identical column widths align exactly, which a
 // flex header over a fixed-layout table never reliably did (V4.2.0's
-// misaligned "TEACHER PROF"). Name takes the leftover width; the rest are
+// misaligned "TEACHER PROF"). Name is first and gets at least 220px via the desktop layout minimum; the rest are
 // honest fixed widths, so nothing truncates and delete stays visible.
 // The Teacher-profile column is GONE (user, 2026-09-01: the Role select
 // already promotes directly; the second-account path was redundant).
 const ADMIN_COLGROUP = `<colgroup>
-  <col style="width:110px"><col><col style="width:130px"><col style="width:125px">
+  <col><col style="width:110px"><col style="width:130px"><col style="width:125px">
   <col style="width:140px"><col style="width:110px"><col style="width:105px"><col style="width:230px">
 </colgroup>`;
 let adminAdding = false;   // the "Register a user" row is open
@@ -191,11 +191,13 @@ function renderAdminUsersList(){
       <div class="form-error" id="adminRegisterRowError"></div>
     </div>` : '';
   list.innerHTML = `${mobileRegister}
+    <div class="admin-table-region"><div class="admin-table-layout">
     <table class="admin-table admin-table-head">${ADMIN_COLGROUP}<thead><tr>
-      <th class="admin-th-id">Unique ID</th><th>Name</th><th>WhatsApp</th><th>Role</th>
+      <th>Name</th><th class="admin-th-id">Unique ID</th><th>WhatsApp</th><th>Role</th>
       <th>Group</th><th>Status</th><th>Haidh Settings</th><th class="admin-th-actions">Actions</th>
     </tr></thead></table>
-    <div class="admin-wrap"><table class="admin-table admin-table-body">${ADMIN_COLGROUP}<tbody></tbody></table></div>`;
+    <div class="admin-wrap"><table class="admin-table admin-table-body">${ADMIN_COLGROUP}<tbody></tbody></table></div>
+    </div></div>`;
   const tbody = list.querySelector('tbody');
 
   // ---- registration: purpose-built card on mobile; original row on desktop ----
@@ -204,8 +206,8 @@ function renderAdminUsersList(){
       const tr = document.createElement('tr');
       tr.className = 'admin-row admin-row-fields admin-row-new';
       tr.innerHTML = `
-        <td class="mono admin-cell-id admin-dash" data-label="Unique ID">new</td>
         <td data-label="Name"><input type="text" class="admin-inline" id="admin_new_name" placeholder="Name"></td>
+        <td class="mono admin-cell-id admin-dash" data-label="Unique ID">new</td>
         <td data-label="WhatsApp"><input type="text" class="admin-inline" id="admin_new_whatsapp" placeholder="WhatsApp"></td>
         <td data-label="Role"><select class="admin-inline" id="admin_new_role">
           <option value="student" selected>Student</option><option value="teacher">Teacher</option><option value="admin">Admin</option>
@@ -265,8 +267,8 @@ function renderAdminUsersList(){
     const tr = document.createElement('tr');
     tr.className = 'admin-row admin-row-fields' + (u.id === adminJustCreatedId ? ' admin-row-just-created' : '');
     tr.innerHTML = `
-      <td class="mono admin-cell-id" data-label="Unique ID">${u.id}</td>
       <td data-label="Name"><input type="text" class="admin-inline" data-f="name" value="${esc(u.name)}"></td>
+      <td class="mono admin-cell-id" data-label="Unique ID">${u.id}</td>
       <td data-label="WhatsApp"><input type="text" class="admin-inline" data-f="whatsapp_number" value="${esc(u.whatsapp_number)}"></td>
       <td data-label="Role"><select class="admin-inline" data-f="role">
         <option value="student"${u.role === 'student' ? ' selected' : ''}>Student</option>

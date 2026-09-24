@@ -8,13 +8,16 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Current release — V4.2.15.12 (2026-09-24)
+## Current release — V4.2.15.13 (2026-09-24)
 
-Quick Log Save and Close are separated; implementation and automated tests are
-complete. Deploy the frontend and device-check repeated saves on phone/desktop,
-from both Maktab Summary and Student Summary. No Worker or migration is required.
-The user confirmed all migrations through 0030 were completed. Older deployment
-instructions below are historical; do not rerun migrations from those entries.
+User Management now shows Name first on larger screens with reserved width and
+shared horizontal scrolling. Frontend implementation and automated tests are
+complete. Device-check Name visibility and registration at tablet/desktop widths,
+header/body alignment while scrolling, and unchanged mobile cards. Browser preview
+could not run because browser policy verification was unavailable.
+V4.2.15.12 multi-entry Quick Log behaviour is retained.
+No Worker or migration is required. The user confirmed migrations through 0030
+completed; older migration instructions below are historical, not pending work.
 
 ## LIVE ITEMS — the whole action list, in priority order (2026-08-17, rebuilt)
 
