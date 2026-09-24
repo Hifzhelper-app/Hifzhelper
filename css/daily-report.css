@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.21 | css/daily-report.css */
+/* Hifzhelper build 4.2.15.22 | css/daily-report.css */
 /* ============================================================
    V4.2.15.3 — Daily Maktab Report.
    A read-only, date-selectable filtered copy of Maktab Summary, presented
@@ -186,12 +186,12 @@
 .attendance-report-controls input, .attendance-report-controls select { width: 100%; min-width: 0; }
 .attendance-report-scroll { overflow: auto; max-height: 60vh; }
 .attendance-report-table { border-collapse: collapse; white-space: nowrap; font-size: 13px; width: 100%; }
-.attendance-report-table th, .attendance-report-table td { padding: 8px; border: 1px solid var(--color-table-border); text-align: center; }
+.attendance-report-table th, .attendance-report-table td { padding: 6px 3px; border: 1px solid var(--color-table-border); text-align: center; }
 .attendance-report-table thead { background: var(--palette-sage); }
 .attendance-report-table th:first-child { text-align: left; }
 
-/* V4.2.15.21: paired control stacks and fixed weekly report grids. */
-.attendance-report-heading { display:flex; align-items:center; gap:16px; padding-right:36px; margin-bottom:16px; }
+/* V4.2.15.22: paired control stacks and fixed weekly report grids. */
+.attendance-report-heading { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding-right:36px; margin-bottom:16px; }
 .attendance-report-heading h2 { margin:0; }
 .attendance-report-controls { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); max-width:650px; gap:16px; }
 .attendance-report-control-stack { display:grid; gap:12px; min-width:0; }
@@ -199,9 +199,9 @@
 .attendance-report-controls select, .attendance-report-controls .custom-date-wrap, .attendance-report-controls .mar-date-pill { height:44px; min-height:44px; box-sizing:border-box; }
 .attendance-report-controls .mar-date-pill { border-radius:999px; display:flex; align-items:center; justify-content:center; width:100%; border:1px solid var(--color-table-border); background:var(--color-surface); }
 .attendance-report-table { table-layout:fixed; width:max-content; }
-.attendance-report-table .mar-name-col { width:220px; }
-.attendance-report-table .mar-percent-col { width:110px; }
-.attendance-report-table .mar-day-col { width:48px; }
+.attendance-report-table .mar-name-col { width:180px; }
+.attendance-report-table .mar-percent-col { width:60px; }
+.attendance-report-table .mar-day-col { width:34px; }
 .attendance-report-table th:first-child { white-space:normal; overflow-wrap:anywhere; }
 .attendance-report-table .mar-week-start { border-left:3px solid #67735e; }
 .attendance-report-table { border-right:3px solid #67735e; }

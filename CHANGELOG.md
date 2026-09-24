@@ -5,6 +5,19 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.22 — Portrait attendance PDF and direct download (2026-09-24)
+
+Attendance PDFs use portrait A4 with narrower name, percentage and day columns.
+Long names wrap. Complete-week grouping and the 21-day maximum are preserved.
+A separate Download PDF button saves the same complete multipage file without
+invoking the system share sheet. Both export buttons disable while dates/order
+are updating. Share destinations may still discard attachments; downloading
+and attaching the saved PDF manually is the available workaround.
+
+Files: `js/maktabAttendanceReport.js`, `css/daily-report.css`, `index.html`,
+`js/sw.js`, `tests/verify_attendance_report.mjs`, `CHANGELOG.md`, `TESTING.md`,
+`TODO.md`. Frontend only; no Worker, dependency or database changes.
+
 ## V4.2.15.21 — Weekly attendance grid and PDF export (2026-09-24)
 
 Attendance Report defaults to week-to-date. Share (with icon) is beside the title;

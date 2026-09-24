@@ -1,3 +1,15 @@
+## Portrait attendance PDF — V4.2.15.22
+
+All 78 harnesses passed: 1,674 checks, zero failures.
+The report harness now checks portrait A4 page dimensions, explicit download
+when native sharing is available, and invalidation of both export buttons.
+A synthetic four-page PDF using the real renderer was rendered with Poppler;
+the first page was visually checked for portrait layout, complete four-week
+columns, wrapped names and readable marks. Live device share targets remain
+unverified: test Download PDF, then attach the saved file in the intended app.
+
+---
+
 ## Attendance PDF — V4.2.15.21
 
 Automated report checks cover whole-week pagination, 21-column maximum,

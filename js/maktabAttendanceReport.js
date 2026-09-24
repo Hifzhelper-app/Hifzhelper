@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.21 | js/maktabAttendanceReport.js */
+/* Hifzhelper build 4.2.15.22 | js/maktabAttendanceReport.js */
 // Read-only report: uses the register's normalized cells, percentages and sort.
 let mkAttendanceReport = null;
 function mkAttendanceReportPreset(mode, today){
@@ -56,12 +56,12 @@ function mkAttendanceReportPdf(images){
   append('%PDF-1.4\n');
   object(1,'<< /Type /Catalog /Pages 2 0 R >>');
   object(2,`<< /Type /Pages /Count ${images.length} /Kids [${images.map((_,i)=>`${3+i*3} 0 R`).join(' ')}] >>`);
-  const scale=Math.min(806/Math.max(...images.map(i=>i.width)),559/Math.max(...images.map(i=>i.height)));
+  const scale=Math.min(559/Math.max(...images.map(i=>i.width)),806/Math.max(...images.map(i=>i.height)));
   images.forEach((image,i)=>{
     const id=3+i*3,width=image.width*scale,height=image.height*scale;
-    object(id,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im ${id+1} 0 R >> >> /Contents ${id+2} 0 R >>`);
+    object(id,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im ${id+1} 0 R >> >> /Contents ${id+2} 0 R >>`);
     offsets[id+1]=length;append(`${id+1} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`);append(image.bytes);append('\nendstream\nendobj\n');
-    const commands=`q ${width.toFixed(3)} 0 0 ${height.toFixed(3)} 18 ${(577-height).toFixed(3)} cm /Im Do Q`;
+    const commands=`q ${width.toFixed(3)} 0 0 ${height.toFixed(3)} 18 ${(824-height).toFixed(3)} cm /Im Do Q`;
     object(id+2,`<< /Length ${commands.length} >>\nstream\n${commands}\nendstream`);
   });
   const xref=length;append(`xref\n0 ${offsets.length}\n0000000000 65535 f \n`);
@@ -71,9 +71,9 @@ function mkAttendanceReportPdf(images){
 }
 function mkAttendanceReportCanvas(data,page,index,total){
   const canvas=document.createElement('canvas');
-  const cell=54,nameWidth=300,pctWidth=90,left=24,top=160;
+  const cell=34,nameWidth=180,pctWidth=60,left=24,top=160;
   let rowHeight=36;
-  canvas.width=Math.max(860,left*2+nameWidth+pctWidth+page.columns.length*cell);
+  canvas.width=Math.max(650,left*2+nameWidth+pctWidth+page.columns.length*cell);
   const ctx=canvas.getContext('2d');
   if(!ctx) throw Error('Image export is unavailable in this browser.');
   ctx.font='16px sans-serif';
@@ -94,7 +94,7 @@ function mkAttendanceReportCanvas(data,page,index,total){
       ctx.strokeStyle='#ddd';ctx.strokeRect(x,y,widths[i],rowHeight);
       ctx.save();ctx.beginPath();ctx.rect(x+5,y,widths[i]-10,rowHeight);ctx.clip();
       ctx.fillStyle=student && col ? mkAttendanceReportMark(student,col).color : '#30352e';
-      ctx.font=header ? 'bold 14px sans-serif':'16px sans-serif';
+      ctx.font=header ? 'bold 12px sans-serif':'16px sans-serif';
       ctx.textAlign=i===0 ? 'left':'center';
       if(i===0 && student){
         maktabDailyReportWrapText(ctx,value,widths[i]-16).forEach((line,j)=>ctx.fillText(line,x+8,y+22+j*20));
@@ -102,7 +102,7 @@ function mkAttendanceReportCanvas(data,page,index,total){
       ctx.restore();x+=widths[i];
     });
   };
-  drawRow(['Student','Attendance',...page.columns.map(c=>c.weekday.slice(0,1).toUpperCase()+c.weekday.slice(1))],top,true);
+  drawRow(['Student','Att. %',...page.columns.map(c=>c.weekday.slice(0,1).toUpperCase()+c.weekday.slice(1))],top,true);
   let weekX=left+nameWidth+pctWidth;
   page.weeks.forEach(week=>{
     ctx.fillStyle='#829672';ctx.fillRect(weekX,top-32,week.columns.length*cell,32);
@@ -123,13 +123,13 @@ function mkAttendanceReportCanvas(data,page,index,total){
 }
 async function mkAttendanceReportRender(state){
   const token=++state.token;
-  const host=document.getElementById('marPreview'), share=document.getElementById('marShare'), status=document.getElementById('marStatus');
-  state.files=[];share.disabled=true;
+  const host=document.getElementById('marPreview'), share=document.getElementById('marShare'), download=document.getElementById('marDownload'), status=document.getElementById('marStatus');
+  state.files=[];share.disabled=download.disabled=true;
   const data=state.data;
   const columns=data.weeks.flatMap(w=>w.columns), rows=mkAttendanceReportRows(data,state.sort);
   if(!columns.length || !rows.length){host.textContent='No students or teaching days in this period.';status.textContent='';return;}
   const pages=mkAttendanceReportPages(data,state.sort);
-  host.innerHTML=`<h3>${mkregEsc(data.from)} to ${mkregEsc(data.to)}</h3>`+pages.map((page,index)=>`<section class="attendance-report-page"><p>Page ${index+1} of ${pages.length}</p><div class="attendance-report-scroll"><table class="attendance-report-table" style="width:${330+page.columns.length*48}px"><colgroup><col class="mar-name-col"><col class="mar-percent-col">${page.columns.map(()=>'<col class="mar-day-col">').join('')}</colgroup><thead><tr><th rowspan="2">Student</th><th rowspan="2">Attendance %</th>${page.weeks.map(w=>`<th class="mar-week-start" colspan="${w.columns.length}">${mkAttendanceReportWeekLabel(w.monday)}</th>`).join('')}</tr><tr>${page.columns.map(c=>`<th class="${c.weekStart?'mar-week-start':''}" title="${c.date}">${c.weekday.slice(0,1).toUpperCase()+c.weekday.slice(1)}</th>`).join('')}</tr></thead><tbody>${page.students.map(s=>`<tr><th scope="row">${mkregEsc(s.name)}</th><td>${mkAttendanceReportPercent(s,data)}</td>${page.columns.map(c=>{const mark=mkAttendanceReportMark(s,c);return `<td class="${c.weekStart?'mar-week-start':''}" style="color:${mark.color};${c.no_maktab_day||c.outside?'background:#eeeeea':''}" title="${mkregEsc(c.date+': '+mark.label)}">${mark.text}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div></section>`).join('')+`<p class="form-hint">✓ Present/logged · H Confirmed Haidh · h Predicted Haidh<br>Grey: no Maktab day/outside period · Blank: absent or not yet recorded<br>Attendance % is omitted where the selected period includes Haidh.</p>`;
+  host.innerHTML=`<h3>${mkregEsc(data.from)} to ${mkregEsc(data.to)}</h3>`+pages.map((page,index)=>`<section class="attendance-report-page"><p>Page ${index+1} of ${pages.length}</p><div class="attendance-report-scroll"><table class="attendance-report-table" style="width:${240+page.columns.length*34}px"><colgroup><col class="mar-name-col"><col class="mar-percent-col">${page.columns.map(()=>'<col class="mar-day-col">').join('')}</colgroup><thead><tr><th rowspan="2">Student</th><th rowspan="2" title="Attendance percentage">Att. %</th>${page.weeks.map(w=>`<th class="mar-week-start" colspan="${w.columns.length}">${mkAttendanceReportWeekLabel(w.monday)}</th>`).join('')}</tr><tr>${page.columns.map(c=>`<th class="${c.weekStart?'mar-week-start':''}" title="${c.date}">${c.weekday.slice(0,1).toUpperCase()+c.weekday.slice(1)}</th>`).join('')}</tr></thead><tbody>${page.students.map(s=>`<tr><th scope="row">${mkregEsc(s.name)}</th><td>${mkAttendanceReportPercent(s,data)}</td>${page.columns.map(c=>{const mark=mkAttendanceReportMark(s,c);return `<td class="${c.weekStart?'mar-week-start':''}" style="color:${mark.color};${c.no_maktab_day||c.outside?'background:#eeeeea':''}" title="${mkregEsc(c.date+': '+mark.label)}">${mark.text}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div></section>`).join('')+`<p class="form-hint">✓ Present/logged · H Confirmed Haidh · h Predicted Haidh<br>Grey: no Maktab day/outside period · Blank: absent or not yet recorded<br>Attendance % is omitted where the selected period includes Haidh.</p>`;
   status.textContent='Preparing PDF…';
   try{
     const images=[];
@@ -142,7 +142,7 @@ async function mkAttendanceReportRender(state){
     }
     const pdf=mkAttendanceReportPdf(images);
     state.files=[new File([pdf],`Attendance-${data.from}-${data.to}.pdf`,{type:'application/pdf'})];
-    share.disabled=false;status.textContent=`${pages.length} report page${pages.length===1?'':'s'} ready in one PDF.`;
+    share.disabled=download.disabled=false;status.textContent=`${pages.length} report page${pages.length===1?'':'s'} ready in one PDF.`;
   }catch(e){if(mkAttendanceReport===state && token===state.token)status.textContent=e.message;}
 }
 
@@ -152,6 +152,7 @@ async function mkAttendanceReportLoad(state){
   const from=document.getElementById('marFrom').value,to=document.getElementById('marTo').value;
   const status=document.getElementById('marStatus');
   document.getElementById('marShare').disabled=true;
+  document.getElementById('marDownload').disabled=true;
   document.getElementById('marPreview').textContent='';
   if(!from || !to || from>to){status.textContent='Choose From and To dates in order.';return;}
   status.textContent='Loading…';
@@ -161,6 +162,12 @@ async function mkAttendanceReportLoad(state){
     if(data.from!==from || data.to!==to || !Array.isArray(data.weeks) || !Array.isArray(data.students))throw Error('The attendance report service needs updating.');
     state.data=data;await mkAttendanceReportRender(state);
   }catch(e){if(mkAttendanceReport===state && token===state.token)status.textContent=e.message;}
+}
+function mkAttendanceReportDownload(){
+  const file=mkAttendanceReport?.files[0];
+  if(!file)return;
+  maktabDailyReportDownload(file,file.name);
+  document.getElementById('marStatus').textContent='PDF downloaded. Attach the saved file in WhatsApp or your chosen app.';
 }
 async function mkAttendanceReportShare(){
   const state=mkAttendanceReport;
@@ -181,7 +188,7 @@ function maktabOpenAttendanceReport(){
   const today=(typeof mkregisterData!=='undefined' && mkregisterData?.today) || maktabTodayISO();
   const range=mkAttendanceReportPreset('week',today);
   const overlay=document.createElement('div');overlay.id='maktabAttendanceReport';overlay.className='modal-overlay maktab-daily-report-overlay';
-  overlay.innerHTML=`<div class="modal-card maktab-daily-report-card" role="dialog" aria-modal="true" aria-label="Attendance report"><button type="button" class="close-btn" id="marClose" aria-label="Close">×</button><div class="attendance-report-heading"><h2>Attendance Report</h2><button type="button" class="maktab-cross-nav-btn maktab-daily-report-share" id="marShare" disabled>${iconHtml('share')}<span>Share</span></button></div><div class="attendance-report-controls"><div class="attendance-report-control-stack"><label>Period<select id="marPeriod"><option value="week">Week to date</option><option value="month">Month to date</option><option value="custom">Date range</option></select></label><label>Order<select id="marSort"><option value="name">Alphabetical</option><option value="attendance">Decreasing attendance</option></select></label></div><div class="attendance-report-control-stack"><label>From<input type="date" id="marFrom" class="mar-date-pill" value="${range.from}"></label><label>To<input type="date" id="marTo" class="mar-date-pill" value="${range.to}"></label></div></div><p class="form-hint">Date ranges may span up to 366 days.</p><p id="marStatus" role="status"></p><div id="marPreview"></div></div>`;
+  overlay.innerHTML=`<div class="modal-card maktab-daily-report-card" role="dialog" aria-modal="true" aria-label="Attendance report"><button type="button" class="close-btn" id="marClose" aria-label="Close">×</button><div class="attendance-report-heading"><h2>Attendance Report</h2><button type="button" class="maktab-cross-nav-btn maktab-daily-report-share" id="marShare" disabled>${iconHtml('share')}<span>Share</span></button><button type="button" class="maktab-cross-nav-btn" id="marDownload" disabled>Download PDF</button></div><div class="attendance-report-controls"><div class="attendance-report-control-stack"><label>Period<select id="marPeriod"><option value="week">Week to date</option><option value="month">Month to date</option><option value="custom">Date range</option></select></label><label>Order<select id="marSort"><option value="name">Alphabetical</option><option value="attendance">Decreasing attendance</option></select></label></div><div class="attendance-report-control-stack"><label>From<input type="date" id="marFrom" class="mar-date-pill" value="${range.from}"></label><label>To<input type="date" id="marTo" class="mar-date-pill" value="${range.to}"></label></div></div><p class="form-hint">Date ranges may span up to 366 days.</p><p id="marStatus" role="status"></p><div id="marPreview"></div></div>`;
   document.body.appendChild(overlay);
   ['marFrom','marTo'].forEach(id=>{if(typeof wireCustomDateDisplay==='function')wireCustomDateDisplay(id);});
   const close=()=>{state.token++;if(mkAttendanceReport===state)mkAttendanceReport=null;overlay.remove();};
@@ -196,6 +203,7 @@ function maktabOpenAttendanceReport(){
   ['marFrom','marTo'].forEach(id=>document.getElementById(id).onchange=()=>{document.getElementById('marPeriod').value='custom';mkAttendanceReportLoad(state);});
   document.getElementById('marSort').onchange=e=>{state.sort=e.target.value;if(state.data)mkAttendanceReportRender(state);};
   document.getElementById('marShare').onclick=mkAttendanceReportShare;
+  document.getElementById('marDownload').onclick=mkAttendanceReportDownload;
   mkAttendanceReportLoad(state);
 }
 document.getElementById('maktabAttendanceReportBtn')?.addEventListener('click',maktabOpenAttendanceReport);

@@ -49,11 +49,17 @@ try{
  check('share enabled only after images ready',drawn>0 && !w.document.getElementById('marShare').disabled);
  let shared=0;w.navigator.share=async({files})=>{shared=files.length;check('share uses one PDF file',files[0].type==='application/pdf' && files[0].name.endsWith('.pdf'));};await w.mkAttendanceReportShare();check('native share receives one report file',shared===1);
  let downloads=0;w.navigator.canShare=()=>false;w.maktabDailyReportDownload=()=>{downloads++;};await w.mkAttendanceReportShare();check('unsupported sharing downloads one PDF',downloads===1);
+ w.navigator.canShare=()=>true;
+ w.document.getElementById('marDownload').click();
+ check('explicit download saves a PDF even with native sharing available',downloads===2 && !w.document.getElementById('marDownload').disabled);
+ const pdf=w.mkAttendanceReportPdf([{width:100,height:100,bytes:new w.Uint8Array([255,216,255,217])}]);
+ const pdfText=await new Promise(resolve=>{const reader=new w.FileReader();reader.onload=()=>resolve(reader.result);reader.readAsText(pdf);});
+ check('PDF uses portrait A4 pages',pdfText.includes('/MediaBox [0 0 595 842]'));
  const sort=w.document.getElementById('marSort');sort.value='attendance';sort.dispatchEvent(new w.Event('change'));await new Promise(r=>setTimeout(r,25));
  check('changing sort reorders visible report',w.document.querySelector('.attendance-report-table tbody th').textContent==='Zara');
  let release;w.apiGetMaktabAttendanceReport=()=>new Promise(resolve=>{release=resolve;});
  const from=w.document.getElementById('marFrom');from.value='2026-09-01';from.dispatchEvent(new w.Event('change'));
- check('changing dates disables stale export',w.document.getElementById('marShare').disabled);
+ check('changing dates disables stale exports',w.document.getElementById('marShare').disabled && w.document.getElementById('marDownload').disabled);
  w.document.getElementById('marClose').click();release({...data,from:'2026-09-01',to:'2026-09-24'});await new Promise(r=>setTimeout(r,25));
  check('late request cannot reopen closed report',!w.document.getElementById('maktabAttendanceReport'));
 }catch(e){fail++;console.log('FAIL:',e.stack);}finally{db.close();w.close();}
