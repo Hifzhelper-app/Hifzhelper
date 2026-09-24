@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.9 | js/maktabDay.js */
+/* Hifzhelper build 4.2.15.25 | js/maktabDay.js */
 // ============================================================
 // Hifzhelper -- maktab day entry (V3.64.0).
 //
@@ -340,8 +340,6 @@ async function renderStudentSummaryScreen(){
   const tbody = document.getElementById('studentSummaryTbody');
   if(!tbody) return;
   document.getElementById('studentSummaryTitle').textContent = logCtxStudentName() || 'Summary';
-  const headerIcon = document.getElementById('studentSummaryHeaderIcon');
-  if(headerIcon) headerIcon.innerHTML = iconHtml('maktab');
   const student = { id: logCtxStudentId(), name: logCtxStudentName(), track_haidh: logCtxTrackHaidh() };
   const quickDate = logCtxDate() || maktabTodayISO();
   const monthBounds = studentSummaryMonthBounds();

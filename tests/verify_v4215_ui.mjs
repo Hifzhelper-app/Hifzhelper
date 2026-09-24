@@ -17,10 +17,10 @@ const css = read('css/journal-table.css');
 const haidh = read('js/haidhDetailScreen.js');
 const sw = read('js/sw.js');
 
-check('Maktab Summary renders a sequential row number beside each attendance icon',
+check('Maktab Summary renders each attendance icon before its sequential row number',
   /sortedStudents\.forEach\(\(stu, rowIndex\) =>/.test(summary)
   && /rowNumber\.textContent = String\(rowIndex \+ 1\)/.test(summary)
-  && /rowMeta\.appendChild\(rowNumber\)[\s\S]{0,1100}rowMeta\.appendChild\(btn\)/.test(summary));
+  && /rowMeta\.appendChild\(btn\)[\s\S]{0,100}rowMeta\.appendChild\(rowNumber\)/.test(summary));
 
 check('Maktab Summary top row has an Attendance button that opens the Attendance summary',
   /id="maktabSummaryAttendanceBtn"/.test(html)

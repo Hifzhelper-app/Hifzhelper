@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.17 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.25 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2311,7 +2311,7 @@
    actions in the header. */
 #screen-studentSummary .student-summary-header-row { position: relative; gap: var(--space-sm); }
 #screen-studentSummary .student-summary-header-row h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#screen-studentSummary .student-summary-header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); }
+#screen-studentSummary .student-summary-header-actions { margin-left: 0; flex-shrink: 0; display: flex; align-items: center; gap: var(--space-sm); }
 #screen-studentSummary .student-summary-header-actions .maktab-cross-nav-btn { white-space: nowrap; }
 @media (max-width: 767px) {
   #screen-studentSummary .student-summary-header-row { padding-left: var(--space-sm); padding-right: var(--space-sm); }
@@ -2565,3 +2565,10 @@
    is still handled by the existing Confirm changes control. */
 .editing-active #sabaqDhor_sections .checkbox-box:has(.sabaqDhor-row-cb),
 .editing-active #sabaqDhor_sections .sdq-confirm-box { display: flex; }
+
+/* Match the student heading to its journal table at both layout sizes. */
+#screen-studentSummary .student-summary-header-row { width:100%; max-width:none; box-sizing:border-box; }
+#screen-studentSummary #studentSummaryAttendanceBtn { flex-shrink:0; }
+@media (min-width:768px) {
+  #screen-studentSummary .student-summary-header-row { width:70%; }
+}

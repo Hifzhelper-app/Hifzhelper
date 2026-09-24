@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.18 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.15.25 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -1038,7 +1038,6 @@ async function renderMaktabSummaryScreen(){
     rowNumber.className = 'maktab-row-number';
     rowNumber.textContent = String(rowIndex + 1);
     rowNumber.setAttribute('aria-hidden', 'true');
-    rowMeta.appendChild(rowNumber);
     const btn = document.createElement('button');
     btn.type = 'button';
     // V4.2.15: the attendance icon opens the existing Student Attendance
@@ -1052,6 +1051,7 @@ async function renderMaktabSummaryScreen(){
       maktabOpenQuickAttendance(stu, date);
     });
     rowMeta.appendChild(btn);
+    rowMeta.appendChild(rowNumber);
     haidhTd.appendChild(rowMeta);
     tr.appendChild(haidhTd);
 
@@ -1192,7 +1192,6 @@ function maktabSummaryPaintSkeleton(host, roster){
     rowNumber.className = 'maktab-row-number';
     rowNumber.textContent = String(rowIndex + 1);
     rowNumber.setAttribute('aria-hidden', 'true');
-    rowMeta.appendChild(rowNumber);
     // V4.2.8.2: never paint iconHtml('attendance') naked. The real row
     // sizes that SVG through .maktab-haidh-check; the cached instant-name
     // paint used to omit the wrapper, so Safari briefly rendered the SVG at
@@ -1203,6 +1202,7 @@ function maktabSummaryPaintSkeleton(host, roster){
     attendanceGhost.setAttribute('aria-hidden', 'true');
     attendanceGhost.innerHTML = typeof iconHtml === 'function' ? iconHtml('attendance') : '';
     rowMeta.appendChild(attendanceGhost);
+    rowMeta.appendChild(rowNumber);
     haidhTd.appendChild(rowMeta);
     tr.appendChild(haidhTd);
     const nameTd = document.createElement('td');

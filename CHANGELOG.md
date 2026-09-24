@@ -5,6 +5,19 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.25 — Maktab row order and student heading (2026-09-24)
+
+Maktab rows place the attendance icon before the row number, with the icon
+left aligned and number right aligned in the leading cell. Loading rows use
+the same order. On Student Summary (the screenshot's activity table), the
+existing calendar attendance button replaces the book icon before the name;
+Ajzaa Completed follows the name. The heading matches the table width: full
+width on mobile and 70% on larger screens.
+
+Files: `js/maktabSummary.js`, `js/maktabDay.js`, `css/journal-table.css`,
+`css/detail-pages.css`, `index.html`, `js/sw.js`, `CHANGELOG.md`, `TESTING.md`,
+`TODO.md`, `tests/verify_v4215_ui.mjs`. No Worker or database changes.
+
 ## V4.2.15.24 — All students in attendance PNGs (2026-09-24)
 
 Each shared attendance PNG now includes every student in the selected order.

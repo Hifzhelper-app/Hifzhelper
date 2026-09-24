@@ -8,7 +8,7 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Current release — V4.2.15.24 (2026-09-24)
+## Current release — V4.2.15.25 (2026-09-24)
 
 Attendance Report shares PNGs containing all students per week group and downloads a single multipage PDF, with
 stacked controls, portrait pages, direct Download PDF and Haidh-aware percentages. Export rendering verified;

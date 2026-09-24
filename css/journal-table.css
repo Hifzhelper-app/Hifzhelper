@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.20 | css/journal-table.css */
+/* Hifzhelper build 4.2.15.25 | css/journal-table.css */
 /* ============================================================
    Hifzhelper — journal landing table
    2026-08-05, confirmed in chat -- complete rebuild alongside js/
@@ -369,7 +369,7 @@
 .maktab-haidh-check svg { width: 16px; height: 16px; }
 /* V4.2.15: visible row index + attendance icon share the existing narrow
    leading summary cell, so no journal column widths need to move. */
-.maktab-row-meta { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; }
+.maktab-row-meta { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
 .maktab-row-number { min-width: 1.35em; text-align: right; font-size: 12px; font-weight: 700; color: var(--color-ink-soft); line-height: 1; }
 
 /* V3.64.0: the maktab day view IS the PJ day view (js/logContext.js), so

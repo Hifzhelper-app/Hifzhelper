@@ -1,3 +1,15 @@
+## Maktab row order and student heading — V4.2.15.25
+
+All 78 harnesses passed: 1,680 checks, zero failures. Updated the existing
+row-order check to expect the newly requested icon-before-number order.
+
+Verify Maktab's loaded and loading rows show calendar then number. On the
+student activity screen, check calendar, name, Ajzaa Completed, and close in
+that order; calendar retains its quick attendance action. Header and table
+must align at mobile and desktop widths. Live visual verification is pending.
+
+---
+
 ## All-student PNGs — V4.2.15.24
 
 All 78 harnesses passed: 1,680 checks, zero failures. A real 22-student PNG
