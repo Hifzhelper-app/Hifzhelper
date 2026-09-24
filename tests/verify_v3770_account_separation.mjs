@@ -14,7 +14,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { JSDOM } from 'jsdom';
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database } from './helpers/database.mjs';
 import { handleCreateTeachingProfile, handleListUsers, teachingIdFor } from '../worker/src/admin.js';
 import { handleMaktabSummary } from '../worker/src/maktabLog.js';
 import { handleMaktabAttendance } from '../worker/src/maktabAttendance.js';
@@ -28,19 +28,8 @@ const TODAY = new Date().toISOString().slice(0, 10);
 
 // ---------- worker ----------
 function makeDb() {
-  const db = new DatabaseSync(':memory:');
+  const db = createDatabase();
   db.exec(`
-    CREATE TABLE maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '');
-  CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('student','teacher','admin')),
-      pin_hash TEXT, created_date TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, whatsapp_number TEXT, gender TEXT,
-      setup_complete INTEGER DEFAULT 0, mushaf TEXT DEFAULT '13line', track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT DEFAULT 'hanafi', group_id INTEGER);
-    CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
-    CREATE TABLE maktab_settings (id INTEGER PRIMARY KEY, mushaf TEXT DEFAULT '13line', maktab_day_min INTEGER DEFAULT 1, absence_flag_days INTEGER DEFAULT 30, name TEXT DEFAULT '', updated_at TEXT, timezone TEXT, term_from TEXT, term_to TEXT, teaching_days TEXT);
-    INSERT INTO maktab_settings (id) VALUES (1);
-    CREATE TABLE maktab_sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, sabaq_from TEXT, sabaq_to TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, line_count INTEGER, page_count INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-    CREATE TABLE maktab_sabaq_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, zone TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, from_surah INTEGER, from_ayah INTEGER, to_surah INTEGER, to_ayah INTEGER, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-    CREATE TABLE maktab_dhor_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT, date TEXT, entered_by TEXT, teacher_id TEXT, teacher_name TEXT, segment_from INTEGER, segment_to INTEGER, ref TEXT, tajweed_tags TEXT, tajweed_tag_ids TEXT, mistakes INTEGER, duration_seconds INTEGER, lap_times TEXT, teacher_feedback TEXT, teacher_feedback_by TEXT, teacher_feedback_at TEXT, teacher_feedback_visibility TEXT, is_duplicate INTEGER DEFAULT 0, created_at TEXT);
-    CREATE TABLE sabaq_log (id INTEGER PRIMARY KEY AUTOINCREMENT, student_id TEXT NOT NULL, date TEXT NOT NULL, entered_by TEXT, sabaq_from TEXT, sabaq_to TEXT, created_at TEXT);
     INSERT INTO students (id, name, role, created_date, active) VALUES
       ('K7M2QX','Umme','student','2026-01-01',1),
       ('ABCDEF','Zaynab','student','2026-01-01',1),
@@ -49,17 +38,7 @@ function makeDb() {
       ('TCH001','Ustadha Maryam','teacher','2026-01-01',1);
     INSERT INTO sabaq_log (id, student_id, date, entered_by, sabaq_from, sabaq_to, created_at) VALUES (1, 'K7M2QX', '2026-08-01', 'K7M2QX', '2:1', '2:5', '2026-08-01T00:00:00Z');
   `);
-  const stmt = (sql, args) => ({
-    async run() { const info = db.prepare(sql).run(...args); return { meta: { last_row_id: Number(info.lastInsertRowid) } }; },
-    async first() { return db.prepare(sql).get(...args) ?? null; },
-    async all() { return { results: db.prepare(sql).all(...args) }; },
-  });
-  // prepare(sql) must work both bound and unbound (some handlers call .all()
-  // straight off prepare with no parameters).
-  const DB = {
-    prepare(sql) { return Object.assign(stmt(sql, []), { _sql: sql, _args: [], bind(...args) { return Object.assign(stmt(sql, args), { _sql: sql, _args: args }); } }); },
-    async batch(list) { for (const s of list) db.prepare(s._sql).run(...s._args); return []; },
-  };
+  const DB = d1Database(db);
   return { env: { DB }, db };
 }
 const ADMIN = { id: 'ABCDEFG', role: 'admin' };
@@ -133,6 +112,7 @@ function adminDom(users) {
     function apiAdminRegisterStudent(){ return Promise.resolve({}); }
     function apiGetMaktabGroups(){ return Promise.resolve([]); }   // V3.78.0: the card's group select
   `);
+  w.eval(read('js/uiSwitch.js'));
   w.eval(adminSrc);
   return w;
 }

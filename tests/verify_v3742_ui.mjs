@@ -94,9 +94,9 @@ check('6: but the id is still RENDERED, so copy and search still have it',
     JSON.stringify(a[a.length - 1]) === JSON.stringify(['refresh', 'switchAccount', 'logout']));
 
   const s = groups('student');
-  check('7: a student primary group is Home, Attendance — standalone Calendar retired in V4.2.15.4',
-    JSON.stringify(s[0]) === JSON.stringify(['home', 'attendancePage']) && s.every(g => g.length > 0), JSON.stringify(s));
-  check('7: and keeps her own screens among the personal tools', s[1].includes('journal') && s[1].includes('maktabJournal'));
+  check('7: student primary menu follows the V4.2.15.7 journal order',
+    JSON.stringify(s[0]) === JSON.stringify(['home','journal','logDetail','attendancePage','settings','maktabJournal']) && s.every(g => g.length > 0), JSON.stringify(s));
+  check('7: and keeps reflections and Surahs among personal tools', s[1].includes('reflections') && s[1].includes('sih'));
   check('7: dividers go BETWEEN groups, never trailing',
     /visibleNavGroups\(\)\.map\(g => g\.map\(btn\)\.join\(''\)\)\.join\('<div class="dropdown-divider"><\/div>'\)/.test(auth));
   check('7: the Home tile grid takes screens only, not Timer or Log out',

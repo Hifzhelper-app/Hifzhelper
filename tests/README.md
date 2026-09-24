@@ -1,106 +1,92 @@
-# tests/ — verification harnesses
+# Hifz Helper tests
 
-These drive the **real** application code, not copies of it. That is the
-whole point: this project's recurring lesson is that bugs get found by
-running actual code through actual scenarios, and get missed by reading
-it carefully. Several of the checks in here exist because a plausible
-assumption turned out to be wrong.
+Run from the repository root with Node 24.15+ (24.x) or Node 26+:
 
-## Running them
-
-```bash
-npm install jsdom          # once per environment; node:sqlite is built in
-node tests/run-all.mjs     # every harness, one total
-node tests/verify_e2.mjs   # or any single one
+```sh
+npm ci
+npm test
 ```
 
-Requires Node 22+ (for `node:sqlite`). Everything resolves paths
-relative to this folder, so the repo can live anywhere.
+The root package is test tooling only. `worker/package.json` remains the separate
+Worker deployment package. The locked `jsdom` dependency supports DOM interaction
+tests; Node supplies the in-memory SQLite implementation. Tests do not connect to
+production/development databases, deploy anything, or run the seed tool.
 
-Two techniques are used throughout:
+Run an individual harness with `node tests/verify_context.mjs`, for example.
+The runner discovers only top-level `tests/verify_*.mjs` and `.js` files.
+`tests/retired/` is deliberately excluded.
 
-- **Worker code** runs against a `node:sqlite` in-memory DB shaped by the
-  real migration files, with a small stub mirroring D1's
-  `prepare().bind().first()/all()/run()` — including the *bindless*
-  `prepare().first()` form the worker legitimately uses for
-  no-parameter queries.
-- **Frontend code** runs in jsdom with the real module `eval`'d and its
-  dependencies stubbed, so the assertions are against the shipped
-  functions.
+## Interpreting results
 
-## What each one covers
+Every active harness must finish successfully and print exactly one line:
 
-| Harness | Covers |
+```text
+123 passed, 0 failed
+```
+
+Failed checks, crashes, missing or duplicate summaries, contradictory failure
+output, and timeouts all fail the overall run. Child processes use the same Node
+executable as the runner and have a 30-second timeout. The final summary names
+unsuccessful harnesses separately from reported check totals, so a crash cannot
+be mistaken for “zero failures.” `verify_runner.mjs` exercises these failure modes.
+
+## Coverage and maintenance
+
+Keep a test because it protects current behaviour, not because a release once
+added it. Versioned filenames are historical origins, not a requirement to retain
+superseded expectations. Update a valid contract when the user changes it; retire
+a check only with the reason and replacement coverage documented.
+
+| Area | Principal harnesses |
 | --- | --- |
-| `verify_routing.mjs` | **The "whose data?" guard.** Classifies every API client by whether the call names a student or lets the auth token decide, then fails on any token-deciding call reachable in maktab mode. See below. |
-| `verify_context.mjs` | The log context: PJ mode unchanged, maktab mode swapping to student-scoped clients, and the leakage round trip (maktab → PJ → maktab for a *different* student). |
-| `verify_timer.js` | Dhor timer: wake lock lifecycle, lap list, ring sizing. |
-| `verify_attendance.mjs` | PJ attendance sync when a log's date is edited or the log deleted. |
-| `verify_roles.mjs` | `isTeacherOrAbove` across every gated endpoint, all three roles. |
-| `verify_notes.mjs` | The fresh-save note fix and private-by-default. |
-| `verify_migration.mjs` | Migration 0019's tables against the PJ tables, built by replaying the real migration history. |
-| `verify_maktab.mjs` | The maktab log endpoints: gating, self-recitation, provenance, duplicates, haidh overwrite. |
-| `verify_e1.mjs` / `verify_e2.mjs` | Maktab summary and day-view behaviour. |
-| `verify_settings.mjs` | Maktab settings: single-row table, the asymmetric gate, validation, caching. |
-| `verify_maktabsetup.mjs` | Maktab position store and student setup; the server-side pool/mushaf fix. |
-| `verify_attendance_derived.mjs` | Derived maktab attendance: the maktab-day threshold, status precedence, calendar-day haidh propagation, the absence flag. |
+| Account isolation, roles, private notes | `verify_context`, `verify_roles`, `verify_routing`, `verify_notes`, `verify_v3770_account_separation` |
+| Log persistence, edits, pool updates | `verify_maktab`, `verify_attendance`, `verify_pool`, `verify_e2` |
+| Summary actions, entries, selected date | `verify_e1`, `verify_v3750_phase1`, `verify_v3820_student_summary` |
+| Attendance, Haidh limits, predictions and stop evidence | `verify_attendance_derived`, `verify_v3760_phase2`, `verify_v3761_haidh_predictions`, `verify_v3800_attendance_page`, `verify_v42114_ui`, `verify_v4213_attendance_model`, `verify_v4214_haidh_engine` |
+| Calendar, settings, registration | `verify_v3870_calendar`, `verify_settings`, `verify_maktab_settings_form`, `verify_v42151_admin_haidh`, `verify_v42156_haidh_settings` |
+| Current UI contracts | Relevant `verify_v42*` files; many are source checks, not pixel/layout tests |
+| Release/cache identity, parsing | `verify_build_stamp`, `verify_version_stamp`, `verify_syntax` |
 
-## `verify_routing.mjs` deserves its own note
+For new endpoint fixtures, use `helpers/database.mjs`: it replays all real Worker
+migrations (currently through 0030), enables foreign keys after the historical
+migration rebuilds, and offers a D1-shaped adapter with atomic batches. Seed
+required fields explicitly; do not weaken schema constraints to fit a test.
+Seven repaired endpoint harnesses now use this fixture. Older isolated fixtures
+remain where their tests pass; migration-specific tests deliberately exercise
+historical schema transitions.
 
-One bug class recurred **five times**: code in maktab mode calling an
-endpoint that resolves the student from the auth token, so a teacher
-read or wrote *their own* journal while logging someone else. Every
-instance was found by hand, after shipping. Two careful manual passes
-over the same code missed three sites between them.
+The routing scan's reachable-module list still needs maintenance whenever another
+module becomes reachable in Maktab context. It is not automatic code coverage.
 
-So it is mechanical now. It also demonstrates why that matters: **the
-first draft of the scan was itself broken** — its function-extraction
-regex required a closing brace on its own line, so it silently skipped
-every one-line client, including `apiSaveProfile`, one of the exact
-sites it exists to catch. It reported 13; the truth was 16. A guard
-that reports clean while missing the target is worse than no guard, so
-it was checked against a hand count before being trusted.
+## Cleanup record — 2026-09-24
 
-Two things to know when maintaining it:
+- Declared and locked test dependencies; restored DOM tests previously unable to run.
+- Archived the completed one-off seed-tool diagnostic in `retired/`.
+- Replaced stale endpoint fixtures in Summary, account separation, attendance,
+  Haidh calendar/parity and groups/settings tests with migration-backed databases.
+- Updated menu, monthly summary, attendance reporting, first-Haidh teacher access,
+  and separate Summary action expectations to the agreed V4.2.15.11 behaviour.
+- Replaced the obsolete whole-row Summary click tests with driven Name,
+  Attendance, entry-peek and unified Log action checks, including date carryover.
+- Removed the old five-column/yellow-Haidh Summary styling snapshots; current
+  screen-specific tests cover the replacement UI. Removed the brittle count of
+  calendar client calls; real own-student/teacher routing tests remain.
+- Retired six stale assertions in `verify_v3850_batch`: old Haidh heading layout,
+  exact old navigation wiring, two obsolete per-day register-sheet contracts,
+  separate mobile action row, and Attendance title above the card. Each removal
+  names the current replacement harness beside the retired assertion.
+- Hardened the aggregate runner and added nine subprocess failure-mode checks.
 
-- `MAKTAB_REACHABLE` — the list of modules that run in maktab mode — is
-  maintained **by hand**. The scan cannot verify it. If a maktab screen
-  starts calling a module not on the list, the scan goes quiet about it.
-- `JUSTIFIED` holds call sites that look like violations but are
-  correct. Every entry carries a reason, and the harness asserts those
-  reasons exist. An unexplained entry is how this rots into noise.
+Verified with Node 24.18.0: **74 active harnesses, 1,615 checks passed, zero failures
+or unsuccessful harnesses**. No application code or migration files changed.
 
-It currently **passes at 16 unrouted sites** — it is measuring known
-debt, not asserting the debt is gone. Delivery (i) in TODO.md ends by
-setting the expected count to 0, after which any new unrouted call
-fails the suite.
+## Device checks before a release
 
-## Adding to them
+1. On phone and desktop, check Log, Attendance, Name and +N have independent targets.
+2. Open each Quick Log type; check selector widths, checkbox alignment, Surah search,
+   date changes and Save/Detail behaviour using development test accounts.
+3. Check mobile attendance column collapse, horizontal scrolling and sort reset.
+4. Check User Management cards, student search and Haidh setup on a narrow screen.
+5. Check calendar holiday visibility and native report sharing on a real device.
 
-When a delivery changes behaviour a harness asserts, **update the
-assertion rather than working around it** — a check that no longer
-describes the code is worse than no check. Several assertions in here
-were deliberately rewritten when (g) and (h) changed what they
-described, and each rewrite says why in a comment.
-
-## verify_pool.mjs (added V3.68.0, delivery (i))
-
-Covers the server-side Dhor pool merge that replaced the client-side one.
-A D1-shaped stub over `node:sqlite` drives the real
-`mergeDhorUnitsIntoPool` for both the PJ (`students.baseline_selection`)
-and the maktab (`maktab_position.position_json.baselineSelection`) paths.
-
-**The assertions most worth keeping honest** are the removal ones.
-Clearing juz from the pool is a legitimate action — Hifz Setup, the juz
-tracker and maktab student setup all do it deliberately — so the merge
-must only ever ADD what was just logged, never re-assert or "repair" what
-someone removed on purpose. A design that made the pool a derived union
-was withdrawn for exactly this reason. If a future change makes those
-tests fail, the change is wrong, not the tests.
-
-It also asserts a pool failure never throws: the log row is committed
-before the merge runs, so throwing would turn a good save into a 500 and
-invite a retry that duplicates the row. The failure is reported to the
-worker log instead — which is why running this harness prints one
-`mergeDhorUnitsIntoPool failed` line to stderr. That line is a passing
-test, not a fault.
+DOM and source-pattern checks do not establish browser layout or native-share behaviour.

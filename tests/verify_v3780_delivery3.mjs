@@ -18,6 +18,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { JSDOM } from 'jsdom';
 import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database } from './helpers/database.mjs';
 import { handleGetTajweedTags, handleCreateTajweedTag, handleUpdateTajweedTag, handleGetMaktabGroups, handleCreateMaktabGroup, handleUpdateMaktabGroup } from '../worker/src/lists.js';
 import { handleMaktabSummary } from '../worker/src/maktabLog.js';
 import { handleUpdateUser } from '../worker/src/admin.js';
@@ -91,12 +92,8 @@ const ADMIN = { id: 'A1', role: 'admin' }, TEACHER = { id: 'T1', role: 'teacher'
 const post = (body) => ({ json: async () => body, url: 'https://x/' });
 const get = () => ({ url: 'https://x/' });
 function migratedEnv() {
-  const { db, env } = baseDb();
-  runSql(db, '0022_groups_tags_timezone.sql');
-  runSql(db, '0024_group_descriptions.sql');   // V3.79.0: lists.js selects description now
-  runSql(db, '0025_term_dates.sql');           // V3.80.0: settings selects term_from/term_to now
-  runSql(db, '0026_maktab_calendar.sql');
-  runSql(db, '0027_calendar_dedupe.sql');      // V3.88.0: dedupe + unique index
+  const db = createDatabase();
+  const env = {DB:d1Database(db)};
   return { db, env };
 }
 {
@@ -235,8 +232,8 @@ const tick = () => new Promise(r => setTimeout(r, 0));
   await w.renderMaktabSummaryScreen();
   const rows = [...w.document.querySelectorAll('#maktabSummaryBody tr')];
   const kinds = rows.map(r => r.className.includes('maktab-group-gap') ? 'GAP' : r.className.includes('maktab-summary-row') ? 'ROW' : '?');
-  check('summary: a gap row exactly where the group changes (Alif|Baa|ungrouped)',
-    kinds.join(',') === 'ROW,ROW,GAP,ROW,GAP,ROW,ROW', kinds.join(','));
+  check('summary: V4.2.14.2 removes group gaps; unlogged students sort alphabetically',
+    kinds.join(',') === 'ROW,ROW,ROW,ROW,ROW' && rows.map(r => r.querySelector('.maktab-name-pill').textContent).join(',') === 'Aaliyah,Amina,Basheera,Umme,Zaynab', kinds.join(','));
   check('summary: no gap before the first group and none inside one', kinds[0] === 'ROW' && kinds[1] === 'ROW');
   // search
   const input = w.document.getElementById('maktabSummarySearch');

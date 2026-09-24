@@ -1,4 +1,4 @@
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database } from './helpers/database.mjs';
 import fs from 'fs';
 import { handleMaktabSummary, handleSaveMaktabSabaq, handleSaveMaktabDhor } from '../worker/src/maktabLog.js';
 import { fileURLToPath } from 'url';
@@ -9,11 +9,8 @@ let pass = 0, fail = 0;
 function check(label, cond) { if (cond) pass++; else { fail++; console.log('FAIL:', label); } }
 
 // ================= WORKER SIDE =================
-const db = new DatabaseSync(':memory:');
-db.exec(`CREATE TABLE maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '');
-  CREATE TABLE students (id TEXT PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL,
-  pin_hash TEXT, created_date TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, mushaf TEXT, track_haidh INTEGER NOT NULL DEFAULT 0, group_id INTEGER);
-  CREATE TABLE attendance (student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, PRIMARY KEY (student_id, date));
+const db = createDatabase();
+db.exec(`
   INSERT INTO students (id,name,role,created_date,active) VALUES
     ('STU1','Zayd','student','2026-01-01',1),
     ('STU2','Amina','student','2026-01-01',1),
@@ -21,30 +18,7 @@ db.exec(`CREATE TABLE maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name 
     ('TCH1','Ustadh Ahmed','teacher','2026-01-01',1),
     ('TCH2','Ustadh Bilal','teacher','2026-01-01',1),
     ('ADM1','Admin One','admin','2026-01-01',1);`);
-const mig = fs.readFileSync(ROOT + 'worker/migrations/0019_maktab_tables.sql', 'utf8');
-const noC = mig.split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
-for (const st of noC.split(';').map(s => s.trim()).filter(Boolean)) db.exec(st);
-// V3.78.0 fixture upgrade: the columns/tables migration 0022 adds and the
-// worker now reads (0022 itself is proven whole in verify_v3780).
-db.exec("ALTER TABLE maktab_sabaq_log ADD COLUMN tajweed_tag_ids TEXT");
-db.exec("ALTER TABLE maktab_sabaq_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
-db.exec("ALTER TABLE maktab_dhor_log ADD COLUMN tajweed_tag_ids TEXT");
-db.exec("CREATE TABLE IF NOT EXISTS maktab_groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, retired INTEGER NOT NULL DEFAULT 0, created_at TEXT DEFAULT '')");
-try { db.exec("ALTER TABLE students ADD COLUMN group_id INTEGER"); } catch (e) { /* fixture already has it */ }
-try { db.exec("ALTER TABLE maktab_settings ADD COLUMN timezone TEXT");
-db.exec("ALTER TABLE maktab_settings ADD COLUMN term_from TEXT");
-db.exec("ALTER TABLE maktab_settings ADD COLUMN term_to TEXT"); } catch (e) { /* fixture may lack the table or already have it */ }   // V3.80.0: 0025 rides the same try
-
-
-const DB = { prepare(sql) { return { bind(...args) { return {
-  async run() { const i = db.prepare(sql).run(...args); return { meta: { last_row_id: Number(i.lastInsertRowid) } }; },
-  async first() { return db.prepare(sql).get(...args) ?? null; },
-  async all() { return { results: db.prepare(sql).all(...args) }; },
-}; },
-// summary's roster query has no bind params — support bare .all()
-async all() { return { results: db.prepare(sql).all() }; },
-async run() { const i = db.prepare(sql).run(); return { meta: { last_row_id: Number(i.lastInsertRowid) } }; },
-async first() { return db.prepare(sql).get() ?? null; } }; } };
+const DB = d1Database(db);
 const env = { DB };
 const TCH1 = { id: 'TCH1', role: 'teacher' }, TCH2 = { id: 'TCH2', role: 'teacher' }, STUDENT = { id: 'STU1', role: 'student' };
 const post = (b) => ({ json: async () => b, url: 'https://x/?' });
@@ -132,6 +106,7 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
     // context (openMaktabDay), not a maktab screen of its own.
     var openedWith = null;
     function openMaktabDay(student, date){ openedWith = { student, date }; return Promise.resolve(); }
+    function openStudentSummaryPage(student, date){ openedWith = {student, date}; }
     var setupOpenedWith = null;
     function openMaktabStudentSetup(s){ setupOpenedWith = s; return Promise.resolve(); }
     function apiGetMaktabAttendance(){ return Promise.resolve({ isMaktabDay: true, attendance: {} }); }
@@ -153,72 +128,38 @@ await handleSaveMaktabSabaq(post({ student_id: 'STU2', date: TODAY, sabaq_from: 
   await w.renderMaktabSummaryScreen();
   const rows = w.document.querySelectorAll('#maktabSummaryBody tr');
   check('summary: one row per roster student', rows.length === 2);
-  // V3.80.0: the leading icon is ATTENDANCE, on EVERY student (was haidh,
-  // haa'idah only) — it opens her attendance page.
-  check('V3.80.0: leading col — the attendance control on EVERY student',
-    rows[0].cells[0].querySelector('.maktab-haidh-check') !== null
-    && rows[1].cells[0].querySelector('.maktab-haidh-check') !== null);
-  // V3.72.0 updated this expectation rather than working around it. The
-  // Setup chip left this row: Setup configures the Dhor pool and nothing
-  // else, so it moved to the Dhor card's own button. Names in the second
-  // cell and the haidh control staying OUT of it are unchanged, and both
-  // are still asserted — only the chip's presence changed.
-  check('V3.61.0: names in the SECOND cell, no Setup chip (V3.72.0), no haidh control',
-    rows[0].cells[1].textContent.startsWith('Zayd') && rows[1].cells[1].textContent.startsWith('Amina')
-    && rows[0].cells[1].querySelector('.maktab-setup-btn') === null
-    && rows[0].cells[1].querySelector('.maktab-haidh-check') === null);
-  check('summary: sabaq cell shows PJ shorthand', rows[0].cells[2].textContent.includes('2:1–2:5'));
-  check('summary: multi-entry badge DOWNGRADED to plain span', rows[0].cells[2].querySelector('button[data-count-badge]') === null && rows[0].cells[2].textContent.includes('+1'));
-  check('summary: dhor cell uses describeDhorSegment', rows[1].cells[4].textContent.includes('J1-J2'));
-  check('summary: empty cells show em-dash', rows[1].cells[2].textContent.includes('—'));
-
-  rows[1].dispatchEvent(new w.Event('click', { bubbles: true }));
-  check('V3.64.0: row tap opens the SHARED day view with the student + date',
-    (() => {
-      const o = w.eval('openedWith');
-      return o && o.student.id === 'STU2' && o.student.name === 'Amina'
-        && 'mushaf' in o.student && o.student.track_haidh === true
-        && /^\d{4}-\d{2}-\d{2}$/.test(o.date);
-    })());
-
-  // V3.61.1: header/table alignment — the reported bug was the 5-column
-  // grid inheriting the PJ's 4-column nth-child widths. Assert the CSS
-  // actually defines a width for EVERY column on BOTH sides, and that
-  // the two sets match; a purely-visual check jsdom can't do, but a
-  // missing/mismatched rule is exactly what broke it.
-  {
-    const css = fs.readFileSync(ROOT + 'css/journal-table.css', 'utf8');
-    const grab = (re) => { const out = {}; let m; const r = new RegExp(re, 'g');
-      while ((m = r.exec(css))) out[m[1]] = m[2]; return out; };
-    const hdr = grab('\\.maktab-summary-headers > \\*:nth-child\\((\\d)\\)\\s*\\{[^}]*?(\\d+)%');
-    const tbl = grab('\\.maktab-summary-table td:nth-child\\((\\d)\\)\\s*\\{[^}]*?(\\d+)%');
-    const cols = ['1','2','3','4','5'];
-    check('V3.61.1: all 5 header columns have an explicit width', cols.every(c => hdr[c]));
-    check('V3.61.1: all 5 table columns have an explicit width', cols.every(c => tbl[c]));
-    check('V3.61.1: header and table widths MATCH column-for-column', cols.every(c => hdr[c] === tbl[c]));
-    check('V3.61.1: widths sum to 100% (no overflow pushing the header out)',
-      cols.reduce((n, c) => n + Number(tbl[c] || 0), 0) === 100);
-    check('V3.61.1: table is table-layout:fixed so it obeys those widths', /\.maktab-summary-table\s*\{[^}]*table-layout:\s*fixed/.test(css));
-    // V3.63.0: the pill is constrained the way the PJ constrains its
-    // own (.card-date-row: grid, auto 1fr) -- NOT by overriding the
-    // shared wrap's width. Assert the structure, and assert the two
-    // V3.61.1 hacks are actually gone rather than merely overridden.
-    check('V3.63.0: top row is the PJ auto/1fr grid so the pill self-sizes',
-      /\.maktab-summary-toprow\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*auto 1fr/.test(css));
-    check('V3.63.0: no width override on the shared date wrap, no % indent hack',
-      !/\.maktab-summary-toprow \.custom-date-wrap/.test(css) && !/\.maktab-summary-toprow\s*\{[^}]*padding-left:\s*7%/.test(css));
-    check('V3.63.0: marked haidh is bright yellow, not the old muted pink',
-      /\.maktab-haidh-check\.marked\s*\{[^}]*#FFD400/i.test(css));
-  }
-
-  // date picker: change re-renders for the picked date and threads it
+  // Locate by identity: current Summary sorts logged students alphabetically.
+  const rowFor = name => [...w.document.querySelectorAll('#maktabSummaryBody tr')].find(r => r.querySelector('.maktab-name-pill')?.textContent === name);
+  const zayd = rowFor('Zayd'), amina = rowFor('Amina');
+  check('summary: logged students are alphabetical', rows[0] === amina && rows[1] === zayd);
+  check('summary: every student has independent name, attendance and Log actions',
+    [...rows].every(r => r.querySelector('.maktab-name-pill') && r.querySelector('.maktab-haidh-check') && r.querySelector('.maktab-mobile-log-action')));
+  check('summary: Sabaq and Dhor keep the shared shorthand', zayd.cells[2].textContent.includes('2:1–2:5') && amina.cells[4].textContent.includes('J1-J2'));
+  check('summary: empty cells show em-dash', amina.cells[2].textContent.includes('—'));
+  const badge = zayd.querySelector('[data-entry-peek]');
+  check('summary: multi-entry badge is an independent button', badge?.tagName === 'BUTTON' && badge.textContent === '+1');
+  badge.click();
+  check('summary: badge opens read-only entries without navigation', w.eval('openedWith') === null && w.document.querySelectorAll('.maktab-entry-peek-row').length === 2);
+  w.document.body.click();
+  zayd.cells[2].click();
+  check('summary: activity cell stays display-only', w.eval('openedWith') === null);
+  let logAction = null, attendanceAction = null;
+  w.maktabOpenQuickLog = (...args) => { logAction = args; };
+  w.maktabOpenQuickAttendance = (...args) => { attendanceAction = args; };
+  zayd.querySelector('.maktab-mobile-log-action').click();
+  check('summary: Log opens unified quick action for the selected student', logAction?.[0].id === 'STU1' && logAction[5]?.combined === true);
+  amina.querySelector('.maktab-haidh-check').click();
+  check('summary: attendance action uses the selected student', attendanceAction?.[0].id === 'STU2');
+  amina.querySelector('.maktab-name-pill').click();
+  check('summary: name opens that student summary', w.eval('openedWith').student.id === 'STU2');
   const picker = w.document.getElementById('maktabSummaryDatePicker');
   picker.value = '2026-08-01';
   picker.dispatchEvent(new w.Event('change'));
   await new Promise(r => setTimeout(r, 0));
-  const rows2 = w.document.querySelectorAll('#maktabSummaryBody tr');
-  rows2[1].dispatchEvent(new w.Event('click', { bubbles: true }));
-  check('V3.61.0: picked past date flows to the day view', w.eval('openedWith').date === '2026-08-01');
+  rowFor('Amina').querySelector('.maktab-name-pill').click();
+  check('summary: picked date follows the name action', w.eval('openedWith').date === '2026-08-01');
+  rowFor('Zayd').querySelector('.maktab-mobile-log-action').click();
+  check('summary: picked date follows the Log action', logAction?.[1] === '2026-08-01');
 
   await w.renderMaktabJournalScreen();
   const jrows = w.document.querySelectorAll('#maktabJournalBody tr');
