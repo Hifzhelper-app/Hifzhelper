@@ -15,10 +15,7 @@ const css = read('css/journal-table.css');
 const sw = read('js/sw.js');
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('release/cache keys are V4.2.15.11',
-  /^<!-- Hifzhelper build 4\.2\.15\.11 \| index\.html -->/m.test(html)
-  && versions.length > 0 && versions.every(v => v === '4.2.15.11')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.11'/.test(sw));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('mobile student search sits directly below the Maktab date/actions row',
   /maktab-summary-toprow[\s\S]{0,1600}maktab-summary-mobile-search-row[\s\S]{0,500}id="maktabSummaryMobileSearch"[\s\S]{0,500}maktab-summary-headers/.test(html)
@@ -57,11 +54,7 @@ check('Quick Log Surah picker has search and displays each Surah Ayah count',
   && /maktab-quick-surah-ayah-count/.test(summary)
   && /\$\{maxAyahForSurah\(num\)\} ayahs/.test(summary));
 
-check('last-edit headers are updated only on edited product files',
-  /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| css\/journal-table\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/sw\.js \*\//.test(sw)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(read('js/maktabDay.js')));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

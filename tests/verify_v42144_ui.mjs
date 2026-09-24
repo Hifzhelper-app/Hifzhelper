@@ -66,10 +66,7 @@ const cacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1]
 check('V4.2.14.4 Quick Log date feature remains present while page/cache carry forward together',
   versions.length > 0 && !!cacheVersion && versions.every(v => v === cacheVersion));
 
-check('quick-action files retain their last-edit headers while the later Attendance popup edits carry current headers',
-  /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| css\/journal-table\.css \*\//.test(css));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

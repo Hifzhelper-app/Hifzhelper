@@ -52,7 +52,7 @@ check('duplicate protection is preserved with the established abortable force fl
   && /confirm\(`\$\{duplicateLabel\} has already been saved/.test(js)
   && /force: true/.test(js));
 check('successful Quick Log refreshes the caller or current summary instead of forcing a screen change',
-  /const afterSave = state\.afterSave;[\s\S]{0,180}maktabCloseQuickLog\(\);[\s\S]{0,180}if\(typeof afterSave === 'function'\) await afterSave\(\);[\s\S]{0,120}else await renderMaktabSummaryScreen\(\)/.test(js));
+  /const afterSave = state\.afterSave;[\s\S]{0,180}if\(typeof afterSave === 'function'\) await afterSave\(\);[\s\S]{0,120}else await renderMaktabSummaryScreen\(\)/.test(js));
 check('Sabaq keeps its best-effort maktab position metadata sync after a quick save',
   /maktabQuickSyncSabaqPosition/.test(js)
   && /apiGetMaktabPosition\(studentId\)/.test(js)

@@ -109,11 +109,7 @@ check('registration API carries the full Haidh setup and backend stores it with 
 
 const v42151PageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const v42151CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
-check('later overlays keep page/cache aligned while V4.2.15.2 re-edited files retain their last-edit headers',
-  v42151PageVersions.length > 0 && !!v42151CacheVersion && v42151PageVersions.every(v => v === v42151CacheVersion)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/admin\.css \*\//.test(adminCss));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

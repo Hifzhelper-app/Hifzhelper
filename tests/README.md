@@ -80,6 +80,14 @@ module becomes reachable in Maktab context. It is not automatic code coverage.
 Verified with Node 24.18.0: **74 active harnesses, 1,615 checks passed, zero failures
 or unsuccessful harnesses**. No application code or migration files changed.
 
+## Quick Log follow-up — V4.2.15.12
+
+`verify_quick_log_session.mjs` adds 18 driven checks for multi-entry sessions,
+independent Save/Close, confirmation reset, type switching, duplicate handling,
+write versus refresh failures, save locking and replacement-window isolation.
+Redundant historical release pins now defer to `verify_build_stamp.mjs`.
+Current suite: **75 harnesses, 1,610 checks passed**.
+
 ## Device checks before a release
 
 1. On phone and desktop, check Log, Attendance, Name and +N have independent targets.

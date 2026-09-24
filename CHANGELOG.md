@@ -5,6 +5,30 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.12 — Quick Log Save and Close separated (2026-09-24)
+
+Saving Sabaq, Sabaq Dhor or Dhor now leaves the same student's Quick Log
+window open. Saved entries refresh, confirmation clears, and the user can
+switch activity type or add another entry before using Close. Sabaq planning
+refreshes after a save; Dhor retains its selected portion.
+
+Duplicate confirmation is retained. Save/date/type controls are locked while
+saving, and a late response cannot alter a replacement student's window.
+A successful write followed by a failed refresh is reported as saved, rather
+than inviting a duplicate retry. Caller Summary views still refresh.
+
+Frontend only: `js/maktabSummary.js`, `index.html`, `js/sw.js`; no Worker deployment
+or migration. Page/cache keys are 4.2.15.12; untouched file headers retain their
+last-edit versions.
+
+Validation: 18 driven Quick Log session checks; full suite 75/75 harnesses,
+1,610 checks passed. Repeated historical release pins are consolidated under
+`verify_build_stamp.mjs`, which checks page/cache identity and last-edit headers.
+Device follow-up: add multiple entries of each type, switch types, then close on
+phone and desktop; repeat from Student Summary. Native layout was not re-tested.
+
+---
+
 ## MIGRATION STATUS — hifzhelper-maktab1 (confirmed 2026-08-17)
 
 **All delivered migrations are RUN. Nothing is pending. Do not re-run.**

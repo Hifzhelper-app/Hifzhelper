@@ -23,9 +23,7 @@ const haidhCss = read('css/haidh.css');
 const workerCalendar = read('worker/src/maktabCalendar.js');
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('served asset versions and service-worker cache remain aligned after later overlays',
-  versions.length > 0 && versions.every(v => v === '4.2.15.11')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.11'/.test(sw));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('configured ZOOM is global to the authenticated band rather than screen-gated',
   /function updateAuthBandZoom\(\)/.test(auth)
@@ -105,17 +103,7 @@ check('loading and empty Summary rows span all six columns',
   /colspan="6"[^>]*>Loading/.test(summary)
   && /colspan="6"[^>]*>No active students/.test(summary));
 
-check('last-edit headers still identify V4.2.15.8 files unless a later overlay edited them',
-  /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/auth\.js \*\//.test(auth)
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/app\.js \*\//.test(app)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/maktabSummary\.js \*\//.test(summary)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| js\/sw\.js \*\//.test(sw)
-  && /^\/\* Hifzhelper build 4\.2\.15\.11 \| css\/journal-table\.css \*\//.test(journalCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| css\/haidh\.css \*\//.test(haidhCss)
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| worker\/src\/maktabCalendar\.js \*\//.test(workerCalendar)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(read('js/maktabDay.js'))
-  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(read('js/maktabCalendarPage.js'))
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/nav\.css \*\//.test(read('css/nav.css')));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

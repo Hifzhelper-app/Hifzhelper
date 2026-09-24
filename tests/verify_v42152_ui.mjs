@@ -112,11 +112,7 @@ check('Student Summary keeps the Attendance-style header + Ajzaa navigation; lat
 
 const v42152PageVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 const v42152CacheVersion = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
-check('V4.2.15.2 behaviour survives later page/cache overlays and its touched files retain their last-edit headers',
-  v42152PageVersions.length > 0 && !!v42152CacheVersion && v42152PageVersions.every(v => v === v42152CacheVersion)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(attendance)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| css\/haidh\.css \*\//.test(haidhCss));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

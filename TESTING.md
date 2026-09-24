@@ -1,3 +1,17 @@
+## Current Quick Log regression — V4.2.15.12
+
+Run `npm ci` and `npm test` from the repository root (see `tests/README.md`).
+Current result: 75 harnesses, 1,610 checks passed. `verify_quick_log_session.mjs`
+drives repeated Sabaq/Sabaq Dhor/Dhor saves, refreshed entries, confirmation reset,
+duplicate cancellation/force, failed writes, failed refreshes, in-flight locking,
+close/reopen isolation, and Student Summary callbacks.
+
+Device check: save several entries for one student, switching activity types;
+verify the sheet stays open, the date/student remain correct, and Close dismisses
+it. Repeat on phone/desktop and from both Summary entry points.
+
+---
+
 # Hifzhelper — Testing Guide
 
 A repeatable checklist for confirming the backend actually works, not just

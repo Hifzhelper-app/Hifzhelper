@@ -14,8 +14,7 @@ const settings=read('js/maktabSettings.js'), settingsCss=read('css/settings.css'
 
 const carriedVersions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m=>m[1]);
 const carriedCache = (sw.match(/CACHE_NAME = 'hifzhelper-v([0-9.]+)'/) || [])[1];
-check('V4.2.15.4 behaviour survives later page/cache overlays with aligned keys',
-  carriedVersions.length > 0 && !!carriedCache && carriedVersions.every(v => v === carriedCache));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('Attendance title has a small reset Sort pill and no redundant Maktab Summary button',
   /<h2>Attendance<\/h2>[\s\S]{0,260}id="mkregisterDefaultSortBtn"[^>]*>Sort<\/button>/.test(html)
@@ -94,12 +93,7 @@ check('V4.2.15.4 itself remains frontend-only; the only later schema addition is
   fs.existsSync(path.join(ROOT,'worker/migrations/0030_hifz_class_zoom_link.sql'))
   && /V4\.2\.15\.7/.test(read('worker/migrations/0030_hifz_class_zoom_link.sql')));
 
-check('V4.2.15.4 untouched files retain their last-edit headers while Calendar carries its later fix header',
-  /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(att)
-  && /^\/\* Hifzhelper build 4\.2\.15\.4 \| js\/adminPage\.js \*\//.test(admin)
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/auth\.js \*\//.test(auth)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabSettings\.js \*\//.test(settings)
-  && /^\/\* Hifzhelper build 4\.2\.15\.5 \| js\/maktabCalendarPage\.js \*\//.test(cal));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail?1:0);

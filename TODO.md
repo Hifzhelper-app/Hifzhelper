@@ -8,6 +8,14 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
+## Current release — V4.2.15.12 (2026-09-24)
+
+Quick Log Save and Close are separated; implementation and automated tests are
+complete. Deploy the frontend and device-check repeated saves on phone/desktop,
+from both Maktab Summary and Student Summary. No Worker or migration is required.
+The user confirmed all migrations through 0030 were completed. Older deployment
+instructions below are historical; do not rerun migrations from those entries.
+
 ## LIVE ITEMS — the whole action list, in priority order (2026-08-17, rebuilt)
 
 **If it is not in this table it is not outstanding.** Rebuilt because the

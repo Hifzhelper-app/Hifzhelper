@@ -84,9 +84,7 @@ check('visible Student Management wording is renamed to User Management',
   && !/<h2>Student Management<\/h2>/.test(html));
 
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
-check('page asset keys and service-worker cache are aligned after later overlays',
-  versions.length > 0 && versions.every(v => v === '4.2.15.11')
-  && /CACHE_NAME = 'hifzhelper-v4\.2\.15\.11'/.test(sw));
+// Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
 check('only actually edited representative files carry the V4.2.15.6 last-edit header',
   /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/api\.js \*\//.test(api)
