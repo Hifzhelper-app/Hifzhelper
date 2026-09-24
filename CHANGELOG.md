@@ -5,6 +5,19 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.23 — PNG sharing and simpler report controls (2026-09-24)
+
+Share sends all report pages together as PNG files; Download PDF still saves
+one portrait multipage PDF. If image sharing is unavailable, the report directs
+users to Download PDF rather than triggering multiple automatic downloads.
+Mobile export buttons occupy a row below the heading. Removed the date-range
+limit hint, download attachment instructions, and duplicate date-range heading
+above the preview. Exported pages retain their date range for context.
+
+Files: `js/maktabAttendanceReport.js`, `css/daily-report.css`, `index.html`,
+`js/sw.js`, `tests/verify_attendance_report.mjs`, `CHANGELOG.md`, `TESTING.md`,
+`TODO.md`. No Worker or database changes.
+
 ## V4.2.15.22 — Portrait attendance PDF and direct download (2026-09-24)
 
 Attendance PDFs use portrait A4 with narrower name, percentage and day columns.

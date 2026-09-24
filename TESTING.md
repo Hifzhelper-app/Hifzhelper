@@ -1,3 +1,14 @@
+## PNG sharing and PDF download — V4.2.15.23
+
+All 78 harnesses passed: 1,678 checks, zero failures.
+Report checks cover PNG MIME types and filenames, sending all nine pages of a
+large fixture in one share call, explicit PDF download, unsupported sharing,
+and removal of the requested text. Mobile button placement is defined below
+767px; live device layout and receiving-app attachment delivery remain to be
+checked on devices. Both exports are invalidated when report controls change.
+
+---
+
 ## Portrait attendance PDF — V4.2.15.22
 
 All 78 harnesses passed: 1,674 checks, zero failures.
