@@ -1,3 +1,13 @@
+## Worker clean build — 2026-09-24
+
+The Worker directory now includes its own package-lock.json. Verified `npm ci`
+in `worker/`, then `wrangler deploy --env development --dry-run`. Cloudflare
+Worker Builds should use root directory `worker` and deploy command
+`npm run deploy:dev` for dev. Retry against the latest dev commit, not the failed
+older revision. This fix does not deploy the Worker or apply migrations.
+
+---
+
 ## Attendance report — V4.2.15.20
 
 Validation: 78 harnesses passed (1,664 checks); the report harness then passed

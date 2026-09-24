@@ -5,6 +5,14 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## Worker build fix — dependency lockfile (2026-09-24)
+
+Cloudflare's automatic clean dependency install failed before compilation because
+`worker/package.json` had no adjacent committed lockfile. Add
+`worker/package-lock.json`, resolving the existing Wrangler dependency range.
+Verified clean `npm ci` in worker and a development Wrangler deploy dry run.
+No application, database or environment-binding changes; frontend remains V4.2.15.20.
+
 ## V4.2.15.20 — Attendance reports (2026-09-24)
 
 Attendance now has a Report button. Reports offer Monday-to-today, first-of-month
