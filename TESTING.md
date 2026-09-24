@@ -1,8 +1,9 @@
-## User Management Name column — V4.2.15.13
+## User Management columns — V4.2.15.14
 
 Automated: `npm test` — 76 harnesses, 1,621 checks pass. The new
 `verify_admin_name_column.mjs` covers Name-first rendering/registration,
-autosave, matching headers, reserved width, and mobile structure.
+autosave, matching headers, reserved width, and mobile structure. Confirm desktop
+order: Name, WhatsApp, Role, Group, Status, Haidh, Unique ID, Actions.
 
 Visual check remains pending because browser policy verification blocked the
 preview. Serve the repository locally and open `tests/fixtures/admin-layout.html`

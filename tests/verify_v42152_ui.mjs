@@ -88,7 +88,7 @@ check('Student Management uses the Attendance-style header on all widths',
   && /#screen-admin \.admin-header-row \{[\s\S]{0,320}display:flex[\s\S]{0,260}background:var\(--color-surface\)[\s\S]{0,260}border-radius:var\(--radius-md\)/.test(adminCss));
 
 check('Student Management has a clickable Haidh Settings pill with grey incomplete and active completed states',
-  /<th>Haidh Settings<\/th>/.test(admin)
+  /<th>Haidh<\/th>/.test(admin)
   && /admin-haidh-pill\$\{adminHaidhSetupComplete\(u\) \? ' is-complete' : ''\}/.test(admin)
   && /data-haidh-settings="\$\{u\.id\}">Haidh<\/button>/.test(admin)
   && /\.admin-haidh-pill[^}]*opacity:\.65/.test(adminCss)

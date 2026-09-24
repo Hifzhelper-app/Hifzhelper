@@ -5,6 +5,14 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.14 — User Management column order (2026-09-24)
+
+Desktop columns now read Name, WhatsApp, Role, Group, Status, Haidh, Unique ID,
+Actions. The heading is shortened to Haidh. Existing users and desktop registration
+share the same order and column widths; mobile named-grid cards remain unchanged.
+Frontend files: `js/adminPage.js`, `index.html`, `js/sw.js`. No database changes.
+The existing column regression checks now cover this order.
+
 ## V4.2.15.13 — User Management Name column (2026-09-24)
 
 On tablet/desktop, Name is the first column for existing users and the inline
