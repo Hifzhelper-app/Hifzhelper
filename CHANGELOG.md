@@ -5,6 +5,16 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.24 — All students in attendance PNGs (2026-09-24)
+
+Each shared attendance PNG now includes every student in the selected order.
+Long date ranges still produce one image per group of complete Maktab weeks.
+PDF downloads and the preview retain their existing 20-student pagination.
+
+Files: `js/maktabAttendanceReport.js`, `index.html`, `js/sw.js`,
+`tests/verify_attendance_report.mjs`, `CHANGELOG.md`, `TESTING.md`, `TODO.md`.
+No Worker or database changes.
+
 ## V4.2.15.23 — PNG sharing and simpler report controls (2026-09-24)
 
 Share sends all report pages together as PNG files; Download PDF still saves

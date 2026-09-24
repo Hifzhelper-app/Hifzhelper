@@ -31,6 +31,9 @@ try{
  const weeks=Array.from({length:9},(_,i)=>{const d=new Date('2026-07-06T00:00:00Z');d.setUTCDate(d.getUTCDate()+i*7);return {monday:d.toISOString().slice(0,10),columns:[]};});
  const big={...data,from:'2026-07-06',to:'2026-09-06',teaching_days:['mon','tue','wed','thu'],weeks,students:Array.from({length:41},(_,i)=>({id:String(i),name:'Student '+i,cells:{}}))};
  const pages=w.mkAttendanceReportPages(big,'name');
+ const pngPages=w.mkAttendanceReportPages(big,'name',Infinity);
+ check('each PNG includes all students in order',pngPages.length===3 && pngPages.every(p=>p.students.length===41 && p.students.map(s=>s.id).join(',')===w.mkAttendanceReportRows(big,'name').map(s=>s.id).join(',')));
+ check('one week group shares all students in one image',w.mkAttendanceReportPages({...big,weeks:weeks.slice(0,4)},'name',Infinity).length===1);
  check('four whole Maktab weeks per horizontal page',pages.length===9 && pages[0].weeks.length===4 && pages.every(p=>p.columns.length<=21) && pages.reduce((n,p)=>n+p.students.length*p.columns.length,0)===41*36);
  check('seven-day schedules never exceed 21 columns',w.mkAttendanceReportPages({...big,teaching_days:['mon','tue','wed','thu','fri','sat','sun']},'name').every(p=>p.columns.length<=21));
  check('partial weeks are padded without recording out-of-range activity',w.mkAttendanceReportWeeks({...data,from:'2026-09-01',to:'2026-09-02'})[0].columns[0].outside===true);
@@ -59,7 +62,7 @@ try{
  w.apiGetMaktabAttendanceReport=async()=>({...big,weeks:w.mkAttendanceReportWeeks(big)});
  w.document.getElementById('marFrom').value=big.from;w.document.getElementById('marTo').value=big.to;
  w.document.getElementById('marFrom').dispatchEvent(new w.Event('change'));await new Promise(r=>setTimeout(r,80));
- await w.mkAttendanceReportShare();check('all report pages are passed together as PNGs',shared===9);
+ await w.mkAttendanceReportShare();check('PNG sharing uses one image per week group, without row pagination',shared===3);
  w.apiGetMaktabAttendanceReport=async(from,to)=>({...data,from,to});
  w.document.getElementById('marFrom').dispatchEvent(new w.Event('change'));await new Promise(r=>setTimeout(r,25));
  const sort=w.document.getElementById('marSort');sort.value='attendance';sort.dispatchEvent(new w.Event('change'));await new Promise(r=>setTimeout(r,25));

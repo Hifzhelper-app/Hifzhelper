@@ -1,3 +1,14 @@
+## All-student PNGs — V4.2.15.24
+
+All 78 harnesses passed: 1,680 checks, zero failures. A real 22-student PNG
+was generated and visually checked, including its final rows.
+Checks verify that all 41 fixture students appear in order in every PNG week
+group, four weeks need just one PNG, and nine weeks share three PNGs while PDF
+pagination remains nine pages. Live receiving-app attachment delivery remains
+unverified.
+
+---
+
 ## PNG sharing and PDF download — V4.2.15.23
 
 All 78 harnesses passed: 1,678 checks, zero failures.

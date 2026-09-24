@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.23 | js/maktabAttendanceReport.js */
+/* Hifzhelper build 4.2.15.24 | js/maktabAttendanceReport.js */
 // Read-only report: uses the register's normalized cells, percentages and sort.
 let mkAttendanceReport = null;
 function mkAttendanceReportPreset(mode, today){
@@ -32,7 +32,7 @@ function mkAttendanceReportWeeks(data){
     return [{...(w.columns.find(c=>c.date===date)||{}),date,weekday:key,outside:date<data.from || date>data.to,weekStart:i===keys.findIndex(k=>teaching.includes(k))}];
   })})).filter(w=>w.columns.length);
 }
-function mkAttendanceReportPages(data, sort){
+function mkAttendanceReportPages(data, sort, rowsPerPage=20){
   const weeks=mkAttendanceReportWeeks(data),students=mkAttendanceReportRows(data,sort),groups=[];
   let group=[],count=0;
   for(const week of weeks){
@@ -42,7 +42,7 @@ function mkAttendanceReportPages(data, sort){
   if(group.length)groups.push(group);
   return groups.flatMap(weeks=>{
     const pages=[];
-    for(let r=0;r<students.length;r+=20)pages.push({weeks,columns:weeks.flatMap(w=>w.columns),students:students.slice(r,r+20)});
+    for(let r=0;r<students.length;r+=rowsPerPage)pages.push({weeks,columns:weeks.flatMap(w=>w.columns),students:students.slice(r,r+rowsPerPage)});
     return pages;
   });
 }
@@ -136,16 +136,22 @@ async function mkAttendanceReportRender(state){
     for(let i=0;i<pages.length;i++){
       const canvas=mkAttendanceReportCanvas(data,pages[i],i,pages.length);
       images.push({width:canvas.width,height:canvas.height,bytes:Uint8Array.from(atob(canvas.toDataURL('image/jpeg',0.94).split(',')[1]),c=>c.charCodeAt(0))});
-      const png=await maktabDailyReportCanvasBlob(canvas);
-      shareFiles.push(new File([png],`Attendance-${data.from}-${data.to}-page-${i+1}.png`,{type:'image/png'}));
       // Yield between pages so changing dates or closing invalidates this work.
       await new Promise(resolve=>setTimeout(resolve,0));
       if(mkAttendanceReport!==state || token!==state.token)return;
     }
+    // PNGs retain the week groups, but include every student in each image.
+    const pngPages=mkAttendanceReportPages(data,state.sort,Infinity);
+    for(let i=0;i<pngPages.length;i++){
+      const canvas=mkAttendanceReportCanvas(data,pngPages[i],i,pngPages.length);
+      const png=await maktabDailyReportCanvasBlob(canvas);
+      if(mkAttendanceReport!==state || token!==state.token)return;
+      shareFiles.push(new File([png],`Attendance-${data.from}-${data.to}-page-${i+1}.png`,{type:'image/png'}));
+    }
     const pdf=mkAttendanceReportPdf(images);
     state.files=[new File([pdf],`Attendance-${data.from}-${data.to}.pdf`,{type:'application/pdf'})];
     state.shareFiles=shareFiles;
-    share.disabled=download.disabled=false;status.textContent=`${pages.length} report page${pages.length===1?'':'s'} ready.`;
+    share.disabled=download.disabled=false;status.textContent=`${shareFiles.length} PNG image${shareFiles.length===1?'':'s'} and ${pages.length}-page PDF ready.`;
   }catch(e){if(mkAttendanceReport===state && token===state.token)status.textContent=e.message;}
 }
 
