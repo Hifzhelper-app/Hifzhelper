@@ -1,3 +1,19 @@
+## Sabaq Dhor planning — V4.2.15.17
+
+Automated: 77 harnesses / 1,637 checks pass.
+
+Automated coverage in `verify_sabaq_dhor_planning.mjs`: Juz labels, picker with
+history and in edit, saved edit range preservation, past-date cutoff including
+the selected day, dates before history, reverse Juz 30 progression, picker-applied
+edit ranges, Quick Action date refresh, and restoration after edit closes.
+
+Device checks: inspect long Juz/Quarter labels on phone and desktop; confirm the
+picker and suggested rows remain usable in detail, Quick Action and edit. Change
+an edit date, check the suggested From/To, then Confirm changes and Save. Verify
+Quick Action still supports repeated saves. Visual verification remains pending.
+
+---
+
 ## Maktab Summary Log column — V4.2.15.16
 
 Automated: 76 harnesses / 1,621 checks pass.

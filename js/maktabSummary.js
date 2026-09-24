@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.15 | js/maktabSummary.js */
+/* Hifzhelper build 4.2.15.17 | js/maktabSummary.js */
 // ============================================================
 // Hifzhelper -- Maktab summary screen (V3.61.0; first shipped V3.59.0,
 // day-entry additions V3.60.0, this UI round from device screenshots
@@ -129,6 +129,7 @@ async function maktabQuickChangeDate(nextDate){
   // Never leave the previous day's rows visible under a new date while the
   // exact-day read is in flight.
   state.entriesByType = { sabaq: [], sabaqDhor: [], dhor: [] };
+  state.sabaqDhorRows = [];
   maktabQuickRenderBody();
   const confirmBox = document.getElementById('maktabQuickLogConfirm');
   if(confirmBox) confirmBox.checked = false;
@@ -138,9 +139,14 @@ async function maktabQuickChangeDate(nextDate){
   if(err) err.textContent = 'Loading selected date…';
 
   try{
-    const data = await apiMaktabSummary(nextDate);
+    const [data, planning] = await Promise.all([
+      apiMaktabSummary(nextDate),
+      maktabQuickPlanningDefaults(state.student.id, state.ref, nextDate)
+    ]);
     if(maktabQuickLogState !== state || token !== state.dateLoadToken) return;
     state.entriesByType = maktabQuickEntryMapForDate(data, state.student.id);
+    state.sabaqDhorRows = planning.sabaqDhorRows || [];
+    state.drafts.sabaqDhor = {from:null, to:null};
     maktabQuickRenderBody();
   } catch(e){
     if(maktabQuickLogState !== state || token !== state.dateLoadToken) return;
@@ -188,24 +194,21 @@ function maktabQuickPositionBlob(row){
 // computeActualSabaqFrontier + nextSabaqDefaults chain as renderSabaqScreen.
 // Sabaq Dhor uses the same position/frontier + computeSabaqDhorRows model as
 // its full card, intentionally rendered at the quarter level in Quick Log.
-async function maktabQuickPlanningDefaults(studentId, ref){
+async function maktabQuickPlanningDefaults(studentId, ref, date){
   const safe = (promise, fallback) => Promise.resolve(promise).catch(() => fallback);
   const [sabaqHistory, dhorHistory, posRow] = await Promise.all([
     safe(apiGetMaktabSabaq(studentId), []),
     safe(apiGetMaktabDhor(studentId), []),
     safe(apiGetMaktabPosition(studentId), null)
   ]);
-  const sabaqRows = Array.isArray(sabaqHistory) ? sabaqHistory : [];
+  const sabaqRows = (Array.isArray(sabaqHistory) ? sabaqHistory : []).filter(e => !date || (e.date && e.date <= date));
   const dhorRows = Array.isArray(dhorHistory) ? dhorHistory : [];
   const frontier = computeActualSabaqFrontier(sabaqRows, ref);
   const sabaqDefaults = nextSabaqDefaults(frontier, ref, dhorRows.length > 0);
 
   const position = maktabQuickPositionBlob(posRow);
   const baselineSelection = Array.isArray(position.baselineSelection) ? position.baselineSelection.slice() : [];
-  const decoratedPosition = Object.assign({}, position, {
-    sabaqTo: frontier,
-    activeJuz: frontier ? getJuzForPosition(frontier.surah, frontier.ayah, ref) : null
-  });
+  const decoratedPosition = sabaqDhorPositionAtDate(position, sabaqHistory, ref, date);
   let sabaqDhorRows = [];
   try{ sabaqDhorRows = computeSabaqDhorRows(decoratedPosition, ref, 'quarters', baselineSelection) || []; }
   catch(e){ sabaqDhorRows = []; }
@@ -395,7 +398,7 @@ function maktabQuickSabaqDhorPickerHtml(){
   const juzOptions = Array.from({length:30}, (_, i) => `<option value="${i + 1}"${picker.juz === i + 1 ? ' selected' : ''}>Juz ${i + 1}</option>`).join('');
   const buttons = Array.from({length:4}, (_, i) => `<button type="button" data-mql-sd-quarter="${i + 1}" class="${picker.quarter === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('');
   return `<div class="maktab-quick-sd-empty">
-    <span class="form-hint">No Sabaq position yet — choose the portion revised.</span>
+    <span class="form-hint">Choose a Juz portion to revise.</span>
     <div class="maktab-quick-sd-picker-row">
       <select id="mql_sd_juz" aria-label="Sabaq Dhor Juz">${juzOptions}</select>
       <div class="unit-pill maktab-quick-sd-quarter-pill" aria-label="${maktabQuickEscape(word)} position">${buttons}</div>
@@ -408,11 +411,11 @@ function maktabQuickSabaqDhorPickerHtml(){
 function maktabQuickSabaqDhorHtml(){
   const state = maktabQuickLogState;
   const rows = state && Array.isArray(state.sabaqDhorRows) ? state.sabaqDhorRows : [];
-  const rowsHtml = rows.length ? rows.map(r => `
+  const rowsHtml = rows.map(r => `
     <label class="maktab-quick-sd-row" for="mql_sd_row_${maktabQuickEscape(r.id)}">
-      <span class="maktab-quick-sd-row-pill">${maktabQuickEscape(r.label)}: ${r.fromSurah}:${r.fromAyah} – ${r.toSurah}:${r.toAyah}</span>
+      <span class="maktab-quick-sd-row-pill">${maktabQuickEscape(sabaqDhorRowLabel(r, state.ref))}: ${r.fromSurah}:${r.fromAyah} – ${r.toSurah}:${r.toAyah}</span>
       <input type="checkbox" class="mql-sd-row-cb" id="mql_sd_row_${maktabQuickEscape(r.id)}" data-id="${maktabQuickEscape(r.id)}">
-    </label>`).join('') : maktabQuickSabaqDhorPickerHtml();
+    </label>`).join('') + maktabQuickSabaqDhorPickerHtml();
 
   return `<div class="maktab-quick-sd-layout">
     <div class="maktab-quick-sd-quarters">${rowsHtml}</div>
@@ -631,7 +634,7 @@ async function maktabSaveQuickLog(){
       if(!data || !Array.isArray(data.students)) throw new Error('Invalid summary response');
       if(maktabQuickLogState === state) state.entriesByType = maktabQuickEntryMapForDate(data, state.student.id);
       if(state.type === 'sabaq'){
-        const planning = await maktabQuickPlanningDefaults(state.student.id, state.ref);
+        const planning = await maktabQuickPlanningDefaults(state.student.id, state.ref, state.date);
         if(maktabQuickLogState === state){
           state.drafts.sabaq = { from:maktabQuickCloneVerse(planning.sabaqDefaults.from), to:maktabQuickCloneVerse(planning.sabaqDefaults.to) };
           state.sabaqDhorRows = (planning.sabaqDhorRows || []).slice();
@@ -670,7 +673,7 @@ async function maktabOpenQuickLog(student, date, type, entries, entriesByType, o
   if(!entriesByType) entryMap[type] = (entries || []).slice();
   const ref = maktabQuickRefForMushaf(settings && settings.mushaf);
   let planning = { sabaqDefaults:{from:null,to:null}, sabaqDhorRows:[] };
-  try{ planning = await maktabQuickPlanningDefaults(student.id, ref); } catch(e){ /* prepopulation is convenience, never a blocker */ }
+  try{ planning = await maktabQuickPlanningDefaults(student.id, ref, date); } catch(e){ /* prepopulation is convenience, never a blocker */ }
   if(openToken !== maktabQuickLogOpenToken) return;
   const sabaqDefaults = planning.sabaqDefaults || { from:null, to:null };
   maktabQuickLogState = {

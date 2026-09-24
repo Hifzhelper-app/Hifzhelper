@@ -401,8 +401,8 @@ vm.runInContext(read('shared/data.js'), dataCtx);
 // ---------- V4.2.3: the Sabaq Dhor juz + quarter picker ----------
 {
   const sdSrc = read('js/sabaqDhorPage.js');
-  check('v424: the picker IS the rows block\'s empty state — rendered only when there are no rows, and NOT a child of the flex row (the V4.2.3 defect: a third flex sibling stole the sections list\'s width)',
-    /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
+  check('v424: the picker remains in the sections grid alongside suggested rows',
+    /\.join\(''\) \+ sabaqDhorQuarterPickerHtml\(\)/.test(sdSrc)
     && !/sabaqDhorQuarterPicker/.test(read('index.html'))
     && /id="sabaqDhorManual_from_ayah"/.test(sdSrc)
     && /\.sdq-picker \{ grid-column: 1(?: \/ -1)?; min-width: 0;/.test(read('css/detail-pages.css')));
@@ -430,9 +430,9 @@ vm.runInContext(read('shared/data.js'), dataCtx);
   check('v423: juz 30 quarter 4 ends the Qur\'an at 114:6', `${w304.endSurah}:${w304.endAyah}` === '114:6');
 }
 
-check('v424: with NO rows the picker appears in their place; with rows it does not appear at all',
-  /sabaqDhorRows\.length === 0\n    \? sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
-  && /No history yet — choose the portion she is revising\./.test(read('js/sabaqDhorPage.js'))
+check('v424: picker is available with or without suggested rows',
+  /\.join\(''\) \+ sabaqDhorQuarterPickerHtml\(\)/.test(read('js/sabaqDhorPage.js'))
+  && /Choose a Juz portion to revise\./.test(read('js/sabaqDhorPage.js'))
   && !/Nothing to revise yet/.test(read('js/sabaqDhorPage.js')));
 check('v428: the picker is wired per render and uses the shared switch helper; the old Use button is gone',
   /wireSabaqDhorQuarterPicker\(\);   \/\/ V4\.2\.8: no-op unless the picker is on screen/.test(read('js/sabaqDhorPage.js'))

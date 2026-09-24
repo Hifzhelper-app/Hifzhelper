@@ -1,22 +1,22 @@
-/* Hifzhelper build 4.2.15.16 | js/sw.js */
-// V4.2.15.16 — Maktab pink header and stacked Log label
-const CACHE_NAME = 'hifzhelper-v4.2.15.16'; // V4.2.15.16 Pink Maktab header and stacked Log
+/* Hifzhelper build 4.2.15.17 | js/sw.js */
+// V4.2.15.17 — Sabaq Dhor date-aware suggestions and picker
+const CACHE_NAME = 'hifzhelper-v4.2.15.17'; // V4.2.15.17 Sabaq Dhor planning
 // Kept in sync with index.html's ?v= query strings (V3.6) so this list
 // stays correct for whenever this service worker is actually registered
 // (Level 2, not yet done) — it is currently inert, this is a
 // no-behavior-change consistency edit only.
 const ASSETS = [
-  './index.html', './manifest.json', './js/pwaManifest.js?v=4.2.15.16', 'shared/data.js?v=4.2.15.16', 'shared/haidhRules.js?v=4.2.15.16', './appicons/logo.png',
-  './css/tokens.css?v=4.2.15.16', './css/base.css?v=4.2.15.16', './css/nav.css?v=4.2.15.16', './css/journal-table.css?v=4.2.15.16', './css/daily-report.css?v=4.2.15.16',
-  './css/components.css?v=4.2.15.16', './css/detail-pages.css?v=4.2.15.16', './css/settings.css?v=4.2.15.16', './css/admin.css?v=4.2.15.16',
-  './css/haidh.css?v=4.2.15.16', './css/juzTracker.css?v=4.2.15.16', './css/sih.css?v=4.2.15.16',
-  './js/icons.js?v=4.2.15.16', './js/customDate.js?v=4.2.15.16', './js/api.js?v=4.2.15.16', './js/logContext.js?v=4.2.15.16', './js/uiSwitch.js?v=4.2.15.16', './js/position.js?v=4.2.15.16',
-  './js/auth.js?v=4.2.15.16', './js/home.js?v=4.2.15.16', './js/tajweed.js?v=4.2.15.16',
-  './js/commentPrivacy.js?v=4.2.15.16', './js/maktabSummary.js?v=4.2.15.16', './js/maktabDailyReport.js?v=4.2.15.16', './js/maktabSettings.js?v=4.2.15.16', './js/maktabSetup.js?v=4.2.15.16', './js/maktabDay.js?v=4.2.15.16', './js/maktabJournal.js?v=4.2.15.16', './js/maktabCalendarPage.js?v=4.2.15.16', './js/maktabAttendancePage.js?v=4.2.15.16', './js/session-timer.js?v=4.2.15.16', './js/journal.js?v=4.2.15.16', './js/dhorPage.js?v=4.2.15.16',
-  './js/sabaqPage.js?v=4.2.15.16', './js/sabaqDhorPage.js?v=4.2.15.16', './js/reflectionCard.js?v=4.2.15.16',
-  './js/logDetailScreen.js?v=4.2.15.16', './js/haidhDetailScreen.js?v=4.2.15.16', './js/kaabaTracker.js?v=4.2.15.16',
-  './js/juzTrackerScreen.js?v=4.2.15.16', './js/sihScreen.js?v=4.2.15.16', './assets/quran-heart.svg?v=4.2.15.16', './assets/quran-heart-regions.json?v=4.2.15.16', './assets/quran-heart-lines.svg?v=4.2.15.16',
-  './js/settingsScreen.js?v=4.2.15.16', './js/adminPage.js?v=4.2.15.16', './js/app.js?v=4.2.15.16'
+  './index.html', './manifest.json', './js/pwaManifest.js?v=4.2.15.17', 'shared/data.js?v=4.2.15.17', 'shared/haidhRules.js?v=4.2.15.17', './appicons/logo.png',
+  './css/tokens.css?v=4.2.15.17', './css/base.css?v=4.2.15.17', './css/nav.css?v=4.2.15.17', './css/journal-table.css?v=4.2.15.17', './css/daily-report.css?v=4.2.15.17',
+  './css/components.css?v=4.2.15.17', './css/detail-pages.css?v=4.2.15.17', './css/settings.css?v=4.2.15.17', './css/admin.css?v=4.2.15.17',
+  './css/haidh.css?v=4.2.15.17', './css/juzTracker.css?v=4.2.15.17', './css/sih.css?v=4.2.15.17',
+  './js/icons.js?v=4.2.15.17', './js/customDate.js?v=4.2.15.17', './js/api.js?v=4.2.15.17', './js/logContext.js?v=4.2.15.17', './js/uiSwitch.js?v=4.2.15.17', './js/position.js?v=4.2.15.17',
+  './js/auth.js?v=4.2.15.17', './js/home.js?v=4.2.15.17', './js/tajweed.js?v=4.2.15.17',
+  './js/commentPrivacy.js?v=4.2.15.17', './js/maktabSummary.js?v=4.2.15.17', './js/maktabDailyReport.js?v=4.2.15.17', './js/maktabSettings.js?v=4.2.15.17', './js/maktabSetup.js?v=4.2.15.17', './js/maktabDay.js?v=4.2.15.17', './js/maktabJournal.js?v=4.2.15.17', './js/maktabCalendarPage.js?v=4.2.15.17', './js/maktabAttendancePage.js?v=4.2.15.17', './js/session-timer.js?v=4.2.15.17', './js/journal.js?v=4.2.15.17', './js/dhorPage.js?v=4.2.15.17',
+  './js/sabaqPage.js?v=4.2.15.17', './js/sabaqDhorPage.js?v=4.2.15.17', './js/reflectionCard.js?v=4.2.15.17',
+  './js/logDetailScreen.js?v=4.2.15.17', './js/haidhDetailScreen.js?v=4.2.15.17', './js/kaabaTracker.js?v=4.2.15.17',
+  './js/juzTrackerScreen.js?v=4.2.15.17', './js/sihScreen.js?v=4.2.15.17', './assets/quran-heart.svg?v=4.2.15.17', './assets/quran-heart-regions.json?v=4.2.15.17', './assets/quran-heart-lines.svg?v=4.2.15.17',
+  './js/settingsScreen.js?v=4.2.15.17', './js/adminPage.js?v=4.2.15.17', './js/app.js?v=4.2.15.17'
 ];
 
 self.addEventListener('install', (event) => {

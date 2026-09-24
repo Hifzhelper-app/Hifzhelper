@@ -107,3 +107,11 @@ locally before opening it. Browser visual verification remains pending.
 5. Check calendar holiday visibility and native report sharing on a real device.
 
 DOM and source-pattern checks do not establish browser layout or native-share behaviour.
+
+### Sabaq Dhor planning (V4.2.15.17)
+
+`verify_sabaq_dhor_planning.mjs` drives the real detail and Quick Action renderers
+with synthetic Sabaq history. It covers Juz labels, always-visible portion pickers,
+historical edit prepopulation, empty history, Juz 30, and date changes. It performs
+no live database writes. Former empty-state-only picker assertions now reflect
+the always-available picker; release headers remain centrally validated.

@@ -86,13 +86,7 @@ check('visible Student Management wording is renamed to User Management',
 const versions = [...html.matchAll(/\?v=([0-9.]+)/g)].map(m => m[1]);
 // Release identity and last-edit headers are checked centrally by verify_build_stamp.mjs.
 
-check('only actually edited representative files carry the V4.2.15.6 last-edit header',
-  /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/api\.js \*\//.test(api)
-  && /^\/\* Hifzhelper build 4\.2\.15\.6 \| js\/haidhDetailScreen\.js \*\//.test(haidh)
-  && /^\/\* Hifzhelper build 4\.2\.15\.9 \| js\/maktabDay\.js \*\//.test(day)
-  && /^\/\* Hifzhelper build 4\.2\.15\.8 \| js\/auth\.js \*\//.test(auth)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| css\/detail-pages\.css \*\//.test(css)
-  && /^\/\* Hifzhelper build 4\.2\.15\.7 \| js\/maktabAttendancePage\.js \*\//.test(read('js/maktabAttendancePage.js')));
+// Last-edit versions are validated centrally by verify_build_stamp.mjs.
 
 check('V4.2.15.6 itself required no migration; V4.2.15.7 adds only the Zoom-link migration',
   /ALTER TABLE maktab_settings ADD COLUMN zoom_link TEXT/.test(read('worker/migrations/0030_hifz_class_zoom_link.sql')));

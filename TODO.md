@@ -8,7 +8,12 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Current release — V4.2.15.16 (2026-09-24)
+## Current release — V4.2.15.17 (2026-09-24)
+
+Sabaq Dhor detail and Quick Action now show Juz numbers, always offer the portion
+picker, and derive suggestions from the selected date's Sabaq history. Edit date
+changes update From/To; initial editing preserves the saved entry. Device checks
+remain pending (see TESTING.md).
 
 Maktab Summary now places a compact + Log column next to Name on larger screens,
 with a blank heading and white body background. The whole header is pink and Log

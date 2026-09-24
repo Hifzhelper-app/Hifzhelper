@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.11.3 | js/sabaqDhorPage.js */
+/* Hifzhelper build 4.2.15.17 | js/sabaqDhorPage.js */
 // ============================================================
 // Hifzhelper -- Sabaq Dhor card (one of 4 in the unified day-log view)
 // Current as of V3.45.13
@@ -26,15 +26,10 @@ let sabaqDhorRows = [];
 let sabaqDhorMoveOptions = [];   // V3.74.3: per-juz, not per-row
 let sabaqDhorRef = 'waterval';
 let sabaqDhorPosition = null;
-// V3.21.0: editing state. Sabaq Dhor's checkboxes reflect TODAY's live
-// eligible sections (computeSabaqDhorRows against current position), not
-// whatever was actually checked when a past entry was saved -- there's no
-// way to reconstruct that into the same checkbox UI. So editing here
-// only ever touches mistakes/tajweed/notes; the entry's original
-// from_surah/from_ayah/to_surah/to_ayah are left exactly as they were,
-// simply never included in the PATCH payload. The section list + rollup
-// stepper are hidden while editing since they'd otherwise look editable
-// but silently do nothing.
+let sabaqDhorHistory = [];
+let sabaqDhorStoredPosition = {};
+// Edit opens with the saved range. Date changes refresh suggestions and
+// From/To; checked suggestions or the portion picker can replace that range.
 let sabaqDhorEditingId = null;
 let sabaqDhorRollupLevel = 'quarters';
 let sabaqDhorBaselineSelection = [];
@@ -101,21 +96,11 @@ function renderSabaqDhorRows(){
   // Every row emits exactly 3 direct grid children (text, move-button-or-
   // empty-placeholder, checkbox) so column position is never at the mercy
   // of which rows happen to have a Move to Dhor button and which don't.
-  // V4.2.4 (user's choice of three options): when there are NO rows, this
-  // block shows the JUZ + QUARTER PICKER in their place — the rows are
-  // DERIVED from her position, so a student who has memorised but never
-  // logged has nothing here to pick. The picker occupies exactly the space
-  // the missing information would have filled, costs nothing when she does
-  // have history, and never competes with the rows for attention.
-  // (V4.2.3 put it below the From/To block, inside a FLEX row — it stole
-  // the sections list's width and crushed the pills. Placement, not style.)
-  const rowsHtml = sabaqDhorRows.length === 0
-    ? sabaqDhorQuarterPickerHtml()
-    : sabaqDhorRows.map(r => `
-    <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${r.label}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
+  const rowsHtml = sabaqDhorRows.map(r => `
+    <label class="sabaq-dhor-row-text" for="sabaqDhor_cb_${r.id}">${sabaqDhorRowLabel(r, sabaqDhorRef)}: ${r.fromSurah}:${r.fromAyah} - ${r.toSurah}:${r.toAyah}</label>
     <span></span>
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhor_cb_${r.id}" class="sabaqDhor-row-cb" data-id="${r.id}"></span>
-  `).join('');
+  `).join('') + sabaqDhorQuarterPickerHtml();
 
   // V3.74.3: ONE move option per juz, on its own row, rendered from the
   // juz rather than from any row — so roll-up state cannot make it appear
@@ -176,15 +161,17 @@ function renderSabaqDhorRows(){
     <span class="checkbox-box"><input type="checkbox" id="sabaqDhorManual_cb"></span>
   `;
 
-  // V3.51.1 (confirmed in chat): while editing, the quarter rows are
-  // not rendered at all -- only the manual From/To remain. Structural
-  // by design: CSS-hiding SOME of a shared grid's children would let
-  // the survivors reflow into the wrong columns (the V3.45.6-.11
-  // lesson: fix the structure, not the symptom). Keyed off the same
-  // sabaqDhorEditingId the rest of edit mode already uses.
-  // V3.74.3: the move options follow the rows and are suppressed in edit
-  // mode alongside them — editing an entry is not the moment to move a juz.
-  el.innerHTML = (sabaqDhorEditingId ? '' : rowsHtml + moveHtml) + manualHtml;
+  el.innerHTML = rowsHtml + (sabaqDhorEditingId ? '' : moveHtml) + manualHtml;
+  el.querySelectorAll('.sabaqDhor-row-cb').forEach(cb => cb.addEventListener('change', () => {
+    if(!sabaqDhorEditingId) return;
+    const selected = sabaqDhorRows.filter(r => document.getElementById(`sabaqDhor_cb_${r.id}`)?.checked);
+    if(!selected.length) return;
+    const range = compositeCheckedSabaqDhorRows();
+    if(range){
+      renderSabaqDhorManualField('from', {surah:range.fromSurah, ayah:range.fromAyah});
+      renderSabaqDhorManualField('to', {surah:range.toSurah, ayah:range.toAyah});
+    }
+  }));
 
   el.querySelectorAll('.move-to-dhor-btn[data-juz]').forEach(btn => {
     btn.addEventListener('click', () => moveJuzToDhor(Number(btn.dataset.juz)));
@@ -289,8 +276,8 @@ function updateRollupStepperVisibility(){
   const canSplitDown = idx > 0 && rowIdsAtLevel(order[idx - 1]) !== currentIds;
   const mergeBtn = document.getElementById('sabaqDhor_rollup_up');
   const splitBtn = document.getElementById('sabaqDhor_rollup_down');
-  mergeBtn.style.display = canMergeUp ? '' : 'none';
-  splitBtn.style.display = canSplitDown ? '' : 'none';
+  mergeBtn.style.display = !sabaqDhorEditingId && canMergeUp ? '' : 'none';
+  splitBtn.style.display = !sabaqDhorEditingId && canSplitDown ? '' : 'none';
   // V3.45.13: both hidden buttons used to leave their empty wrapper and
   // the parent flex gap in place. Mobile CSS uses this state class to
   // remove that inactive gutter and return the width to the section grid;
@@ -335,7 +322,8 @@ async function renderSabaqDhorScreen(){
   try{ profile = await logProfile(); } catch(e){ profile = null; }
   sabaqDhorRef = refForMushafSabaqDhor(profile && profile.mushaf);
   sabaqDhorBaselineSelection = (profile && Array.isArray(profile.baseline_selection)) ? profile.baseline_selection.slice() : [];
-  sabaqDhorPosition = await loadPosition();
+  sabaqDhorStoredPosition = await loadPosition();
+  sabaqDhorPosition = sabaqDhorStoredPosition;
   // V3.45.4/V3.45.5: sabaqTo/activeJuz computed fresh from real Sabaq
   // history, same source js/sabaqPage.js's own screen now uses. The
   // manual-select field itself no longer factors into this at all
@@ -344,11 +332,8 @@ async function renderSabaqDhorScreen(){
   // unchecked.
   let entriesForFrontier = [];
   try{ entriesForFrontier = await logClient('sabaq').get(); } catch(e){ entriesForFrontier = []; }
-  const computedFrontier = computeActualSabaqFrontier(entriesForFrontier, sabaqDhorRef);
-  sabaqDhorPosition = Object.assign({}, sabaqDhorPosition, {
-    sabaqTo: computedFrontier,
-    activeJuz: computedFrontier ? getJuzForPosition(computedFrontier.surah, computedFrontier.ayah, sabaqDhorRef) : null
-  });
+  sabaqDhorHistory = entriesForFrontier;
+  sabaqDhorPosition = sabaqDhorPositionAtDate(sabaqDhorStoredPosition, sabaqDhorHistory, sabaqDhorRef, document.getElementById('sabaqDhor_date').value);
   // V3.45.10: the old renderSabaqDhorManualField(null)/checkbox-reset
   // pair that used to sit here is REMOVED -- the manual field's own
   // DOM nodes no longer exist yet at this point in the load flow
@@ -443,7 +428,7 @@ function loadSabaqDhorEntryForEdit(entry){
   document.getElementById('sabaqDhorEditBottombar').classList.remove('hidden');
   document.getElementById('sabaqDhor_rollup_up').style.display = 'none';
   document.getElementById('sabaqDhor_rollup_down').style.display = 'none';
-  renderSabaqDhorRows();   // V3.51.1: re-render WITHOUT the quarter rows (editing id is set)
+  refreshSabaqDhorDate(false);
   renderSabaqDhorManualField('from', (entry.from_surah && entry.from_ayah) ? { surah: entry.from_surah, ayah: entry.from_ayah } : null);
   renderSabaqDhorManualField('to', (entry.to_surah && entry.to_ayah) ? { surah: entry.to_surah, ayah: entry.to_ayah } : null);
   enterEditScreenMode('card-sabaqDhor');
@@ -464,7 +449,8 @@ function cancelSabaqDhorEdit(){
   teardownEditFlow('sabaqDhor');
   restoreDateFromEditSlot('sabaqDhor', 'card-sabaqDhor');
   sabaqDhorEditingId = null;
-  renderSabaqDhorRows();   // V3.51.1: quarter rows come back (id cleared)
+  document.getElementById('sabaqDhor_date').value = (typeof logDetailSelectedDate === 'function' ? logDetailSelectedDate() : todayISO());
+  refreshSabaqDhorDate(false);
   // edit repurposed the manual From/To for the entry's range -- clear
   // them so normal mode starts clean (same V3.45.15 principle)
   renderSabaqDhorManualField('from', null);
@@ -699,14 +685,8 @@ function openSurahPickerForSabaqDhorManual(side){
 // moment the card's own Save button is tapped.
 
 // ============================================================
-// V4.2.4 — THE JUZ + QUARTER PICKER, as the rows block's EMPTY STATE.
-//
-// Why it exists: the suggestion rows are DERIVED from the student's own
-// position, so a student who HAS MEMORISED but has no journal history is
-// offered nothing — computeSabaqDhorRows returns [] for her, verified.
-// Rather than adding a second control below (V4.2.3, which also landed in
-// the wrong container), the picker fills the space those rows would have
-// occupied: visible exactly when it is needed, invisible when it is not.
+// V4.2.15.17 — the Juz/portion picker is always available alongside
+// suggested rows, including in edit mode.
 //
 // V4.2.8 keeps it ADDITIVE to the same save composite: its right-hand
 // checkbox contributes the selected structural quarter beside the derived
@@ -732,7 +712,7 @@ function sabaqDhorQuarterPickerHtml(){
   // control itself is position 1|2|3|4 for every mushaf.
   const qButtons = Array.from({ length: 4 }, (_, i) =>
     `<button type="button" class="switch-option" data-value="${i + 1}">${i + 1}</button>`).join('');
-  return `<p class="form-hint sdq-hint">No history yet — choose the portion she is revising.</p>
+  return `<p class="form-hint sdq-hint">Choose a Juz portion to revise.</p>
       <div class="sdq-picker" id="sabaqDhorQuarterPicker">
         <div class="sdq-row">
           <span class="sdq-field"><label class="dhor-sel-label">Juz</label><select id="sdq_juz">${juzOpts}</select></span>
@@ -771,9 +751,18 @@ function wireSabaqDhorQuarterPicker(){
   const qInput = document.getElementById('sdq_quarter');
   const confirm = document.getElementById('sdq_confirm');
   const track = document.getElementById('sdq_quarter_switch');
-  if(!juzSel || !qInput || !confirm || !track) return;   // rows exist: no picker on screen
-  juzSel.addEventListener('change', sdqUpdatePreview);
+  if(!juzSel || !qInput || !confirm || !track) return;   // grid has not rendered yet
+  confirm.addEventListener('change', () => {
+    if(!sabaqDhorEditingId || !confirm.checked) return;
+    const b = sdqBounds();
+    if(b){
+      renderSabaqDhorManualField('from', {surah:b.startSurah, ayah:b.startAyah});
+      renderSabaqDhorManualField('to', {surah:b.endSurah, ayah:b.endAyah});
+    }
+  });
+  juzSel.addEventListener('change', () => { confirm.checked = false; sdqUpdatePreview(); });
   wireSwitch('sdq_quarter_switch', (value) => {
+    confirm.checked = false;
     qInput.value = value;
     renderSwitch('sdq_quarter_switch', value);
     sdqUpdatePreview();
@@ -781,3 +770,17 @@ function wireSabaqDhorQuarterPicker(){
   renderSwitch('sdq_quarter_switch', qInput.value);
   sdqUpdatePreview();
 }
+
+function refreshSabaqDhorDate(replaceRange = true){
+  const date = document.getElementById('sabaqDhor_date').value;
+  if(!date) return;
+  sabaqDhorPosition = sabaqDhorPositionAtDate(sabaqDhorStoredPosition, sabaqDhorHistory, sabaqDhorRef, date);
+  rebuildRowsFromPosition();
+  document.querySelectorAll('#sabaqDhor_sections input[type="checkbox"]').forEach(cb => { cb.checked = false; });
+  if(sabaqDhorEditingId && replaceRange){
+    const row = sabaqDhorRows.find(r => /current/.test(r.label)) || sabaqDhorRows[0];
+    renderSabaqDhorManualField('from', row ? {surah:row.fromSurah, ayah:row.fromAyah} : null);
+    renderSabaqDhorManualField('to', row ? {surah:row.toSurah, ayah:row.toAyah} : null);
+  }
+}
+document.getElementById('sabaqDhor_date').addEventListener('change', () => refreshSabaqDhorDate());

@@ -5,6 +5,24 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.17 — Sabaq Dhor labels, picker and historical suggestions (2026-09-24)
+
+Detail and Quick Action now prefix suggested portions with Juz number, retaining
+mushaf-specific Quarter/Ru'b/Maqra terminology. The Juz portion picker remains
+available alongside history-derived suggestions and in the edit card.
+Opening an edit preserves its saved range. Changing the date rebuilds suggestions
+from Sabaq entries on or before that date and prepopulates the current portion's
+From/To; a date before history clears the range. Suggested rows and the portion
+picker can set the edit range, with the existing Confirm changes/Save flow retained.
+Quick Action also refreshes suggestions when its date changes. Closing edit
+restores the normal detail date. No Worker or database changes.
+
+Frontend: `js/position.js`, `js/sabaqDhorPage.js`, `js/maktabSummary.js`,
+`css/detail-pages.css`, `index.html`, `js/sw.js`.
+New behavioural coverage: `tests/verify_sabaq_dhor_planning.mjs`; historical
+picker tests updated and redundant old release pins removed.
+Validation: 77 harnesses / 1,637 checks pass. Visual device check pending.
+
 ## V4.2.15.16 — Pink Maktab header and stacked Log label (2026-09-24)
 
 On larger screens, the entire Maktab Summary header uses the existing pink,

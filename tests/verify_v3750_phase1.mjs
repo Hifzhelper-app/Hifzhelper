@@ -100,6 +100,7 @@ const beats = (a, b) => { for (let i = 0; i < 3; i++) { if (a[i] !== b[i]) retur
       { juz: 1, label: 'Juz 1', enabled: false, completeQuarters: 2, units: [1,2,3,4] },
       { juz: 3, label: 'Juz 3', enabled: true,  completeQuarters: 4, units: [9,10,11,12] },
     ];
+    function sabaqDhorRowLabel(r){ return r.label; }
     var sabaqDhorRollupLevel = 'quarter', sabaqDhorPosition = {}, sabaqDhorRef = 'waterval', sabaqDhorBaselineSelection = [];
     var sabaqDhorEditingId = null;
     function readSabaqDhorManualField(){ return null; }

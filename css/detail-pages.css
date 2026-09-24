@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.7 | css/detail-pages.css */
+/* Hifzhelper build 4.2.15.17 | css/detail-pages.css */
 /* ============================================================
    Hifzhelper -- detail pages: tajweed picker, timer, shared form bits
    Current as of V3.45.13
@@ -2560,3 +2560,8 @@
   overflow-wrap: anywhere;
   line-height: 1.35;
 }
+
+/* Sabaq Dhor choices remain usable in the edit card; manual confirmation
+   is still handled by the existing Confirm changes control. */
+.editing-active #sabaqDhor_sections .checkbox-box:has(.sabaqDhor-row-cb),
+.editing-active #sabaqDhor_sections .sdq-confirm-box { display: flex; }
