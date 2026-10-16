@@ -5,6 +5,25 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.27 — Lock Academy-owned development profiles before cutover (2026-10-16)
+
+Development admins could still edit names, WhatsApp numbers, roles and activation
+because ownership was enabled only by the journal-ID cutover receipt. Ownership
+is now a separate Worker deployment policy, enabled for development. The same
+policy protects direct Worker writes and marks admin/self-profile responses so
+the frontend locks those controls. Registration, deletion and teaching-profile
+creation are also closed; local Hifz settings and PIN reset remain available.
+The existing receipt still protects databases after cutover.
+
+No new database migration is required. The production configuration is unchanged.
+Regression coverage includes configured ownership without any cutover receipt,
+every shared field, retained inactive profiles and the real admin renderer.
+
+Files: worker/src/profile-ownership.js, worker/src/admin.js, worker/src/profile.js,
+worker/wrangler.jsonc, js/app.js, index.html, js/sw.js,
+tests/verify_academy_identity.mjs, tests/README.md, ACADEMY-IDENTITY.md, TODO.md,
+CHANGELOG.md.
+
 ## V4.2.15.26 — Academy user IDs and independent login aliases (2026-10-16)
 
 Prepared for development branch testing. Add login_id,

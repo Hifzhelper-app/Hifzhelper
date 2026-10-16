@@ -1,4 +1,4 @@
-# Academy identity foundation — V4.2.15.26
+# Academy identity foundation — V4.2.15.27
 
 Development testing release prepared on 16 October 2026. The additive schema
 migration 0031 has been applied to the development database. The reviewed
@@ -62,8 +62,10 @@ requires a reviewed inverse mapping/reconciliation, not an automatic restore.
 
 ## Profile ownership
 
-After the successful cutover receipt, shared profile administration is owned
-by Academy for the whole Hifz database, including retained inactive rows:
+Shared profile administration is owned by Academy when the Worker has
+PROFILE_AUTHORITY=academy, or when the database has a successful cutover receipt.
+The development configuration enables this policy before the journal-ID cutover.
+It applies to the whole Hifz database, including retained inactive rows:
 
 - Shared name, contact details, account activation and Hifz roles are read-only
   in Hifz admin. Worker endpoints reject direct attempts to change them.
@@ -81,8 +83,11 @@ retries, version ordering and reconciliation) is not implemented here.
 Production rollout should follow that delivery stage. Development cutover
 can be used to validate the identity and journal migration first.
 
-The global registration policy turns on only with the successful data-cutover
-receipt; additive migration 0031 alone retains legacy registration behaviour.
+Profile ownership and the journal-ID cutover are independent. Enabling
+PROFILE_AUTHORITY=academy closes local profile administration and registration
+without rekeying journals or writing a migration receipt. Without that setting,
+additive migration 0031 alone retains legacy registration behaviour until the
+successful cutover receipt. The production configuration is unchanged.
 Do not expose a new administrative profile-sync route without its trusted
 server authentication and operation allowlist.
 
@@ -101,7 +106,8 @@ stored PIN hashes were preserved, all 34 reference columns were covered, and
 foreign-key checks found no violations. The operation used 37 SQL statements.
 There were 34 matched active profiles and five retained inactive profiles.
 
-The additive migration 0031 has been applied to development: all 39 profiles
+V4.2.15.26 was deployed to the GitHub dev branch and both development builds
+were verified. The additive migration 0031 has been applied: all 39 profiles
 retain their original IDs and login aliases, and foreign-key checks still pass.
 The Academy-ID data cutover has not been applied. The GitHub dev branch is
 connected to hifzhelper-api-dev and hifzhelper-dev.pages.dev (Pages project
@@ -109,3 +115,8 @@ hifzhelper-dev); pushing the release there triggers the existing development
 builds. Their deployment results must be verified before the data cutover.
 The refreshed command-line authorization currently covers Hifz D1 and basic
 account information. Production remains unchanged.
+
+V4.2.15.27 corrects the development ownership policy: names, contact numbers,
+roles and activation are protected before rekeying. The same policy drives
+admin/self-profile responses, frontend locks, registration and write validation.
+No further database migration is required.

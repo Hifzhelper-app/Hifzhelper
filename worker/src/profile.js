@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | worker/src/profile.js */
+/* Hifzhelper build 4.2.15.27 | worker/src/profile.js */
 import { haidhOfficialMaxDuration, haidhMinCycleFrequency } from '../../shared/haidhRules.js';
 import { academyOwnsProfiles } from './profile-ownership.js';
 
@@ -7,13 +7,14 @@ import { academyOwnsProfiles } from './profile-ownership.js';
 // Current as of V3.39.
 export async function handleGetProfile(request, env, auth) {
   const row = await env.DB.prepare(
-    'SELECT id, name, role, login_id, academy_managed, EXISTS(SELECT 1 FROM academy_identity_migrations) AS academy_profiles_only, gender, track_haidh, setup_complete, journal_name, mushaf, ' +
+    'SELECT id, name, role, login_id, academy_managed, gender, track_haidh, setup_complete, journal_name, mushaf, ' +
     'baseline_selection, target_mistakes_per_juz, target_minutes_per_juz, target_frequency_days, ' +
     'dhor_granularity, dhor_quantity, dhor_frequency, dhor_days_of_week, ' +
     'haidh_cycle_length, haidh_period_length, haidh_next_expected, haidh_ruling ' +
     'FROM students WHERE id = ?'
   ).bind(auth.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
+  row.academy_profiles_only = Number(await academyOwnsProfiles(env));
   // V3.78.0: the maktab timezone rides on the profile — every client
   // (students included) learns the shared day boundary at boot without a
   // second request or a wider settings read.
@@ -127,8 +128,10 @@ export async function handleSaveProfile(request, env, auth) {
     'haidh_cycle_length, haidh_period_length, haidh_next_expected, haidh_ruling, academy_managed FROM students WHERE id = ?'
   ).bind(auth.id).first();
   if (!current) return { error: 'Student not found', status: 404 };
+  const sharedChange = body.name !== undefined && body.name !== current.name ||
+    ['whatsapp_number', 'role', 'active'].some(field => body[field] !== undefined);
   if (body.id !== undefined || body.login_id !== undefined || body.academy_managed !== undefined ||
-      body.name !== undefined && body.name !== current.name &&
+      sharedChange &&
         (current.academy_managed || await academyOwnsProfiles(env))) {
     return { error: 'Manage shared profile details in Academy.', status: 403, code: 'ACADEMY_MANAGED' };
   }

@@ -1,8 +1,9 @@
-/* Hifzhelper build 4.2.15.26 | worker/src/profile-ownership.js */
-// The receipt is written in the same transaction as the identity cutover.
-// Once present, all shared identity administration belongs to Academy,
-// including legacy inactive rows retained for historical journals.
+/* Hifzhelper build 4.2.15.27 | worker/src/profile-ownership.js */
+// Academy ownership is a deployment policy, independent of the journal-ID
+// cutover. The receipt also keeps migrated databases Academy-owned, including
+// inactive legacy profiles, if their deployment setting is later omitted.
 export async function academyOwnsProfiles(env) {
+  if (env.PROFILE_AUTHORITY === 'academy') return true;
   return Boolean(await env.DB.prepare('SELECT migration_id FROM academy_identity_migrations LIMIT 1').first());
 }
 export const academyManagedError = () => ({

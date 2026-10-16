@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | worker/src/admin.js */
+/* Hifzhelper build 4.2.15.27 | worker/src/admin.js */
 // ============================================================
 // Hifzhelper — admin endpoints
 // Every handler here is gated to role === 'admin' — nothing here is
@@ -21,9 +21,10 @@ export async function handleListUsers(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
   const { results } = await env.DB.prepare(
-    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected, login_id, academy_managed, EXISTS(SELECT 1 FROM academy_identity_migrations) AS academy_profiles_only FROM students ORDER BY created_date DESC'
+    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected, login_id, academy_managed FROM students ORDER BY created_date DESC'
   ).all();
-  return { data: results };
+  const academyOnly = Number(await academyOwnsProfiles(env));
+  return { data: results.map(user => ({ ...user, academy_profiles_only: academyOnly })) };
 }
 
 // POST /admin/reset-pin — body: { id }. Clears pin_hash and any lockout

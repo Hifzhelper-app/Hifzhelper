@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | js/app.js */
+/* Hifzhelper build 4.2.15.27 | js/app.js */
 // ============================================================
 // Hifzhelper — app bootstrap and screen routing
 // ============================================================
@@ -181,7 +181,7 @@ async function bootApp(){
     await loadTajweedVocabulary();
     // V3.77.0 (j): this account is now one the device knows, for the switcher.
     rememberKnownAccount({ id: profile.login_id, name: profile.name, role: profile.role });
-    currentUser = { id: profile.id, loginId: profile.login_id, academyManaged: !!profile.academy_managed, name: profile.name || '', role: profile.role || 'student', trackHaidh: !!profile.track_haidh };
+    currentUser = { id: profile.id, loginId: profile.login_id, academyManaged: !!(profile.academy_managed || profile.academy_profiles_only), name: profile.name || '', role: profile.role || 'student', trackHaidh: !!profile.track_haidh };
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
     showWelcome(currentUser.name || 'back');

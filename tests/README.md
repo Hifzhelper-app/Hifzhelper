@@ -123,9 +123,12 @@ register's custom ranges, plus the real report UI in jsdom with canvas/share
 boundaries stubbed. Live database writes are not used. Manual image export and
 device sharing checks are listed in TESTING.md.
 
-## Academy identity foundation — V4.2.15.26
+## Academy identity foundation and ownership — V4.2.15.27
 
 verify_academy_identity.mjs replays the real migrations and tests complete owner/actor
 rekeying, exact record preservation, independent PIN login, local authorization,
 rollback on stale plans, retry receipts, Academy-only identity writes and alias
-use in the real boot/admin UI. It never connects to a remote database.
+use in the real boot/admin UI. It also covers deployment-configured ownership
+before any cutover receipt: every shared field is rejected, local settings and
+PIN reset work, and the UI receives the same ownership flag. It never connects
+to a remote database.

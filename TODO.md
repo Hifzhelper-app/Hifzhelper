@@ -8,9 +8,11 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Development identity release — V4.2.15.26 (2026-10-16)
+## Development identity release — V4.2.15.27 (2026-10-16)
 
-Identity/schema foundation prepared for development branch testing.
+V4.2.15.26 is deployed to development. V4.2.15.27 enables Academy profile
+ownership independently of the journal-ID cutover, protecting shared name,
+contact number, role and activation in development. No new migration is needed.
 
 **Migration status:** through 0030 previously confirmed; additive 0031 applied to
 development only. The reviewed atomic Academy-ID rekey is still pending.

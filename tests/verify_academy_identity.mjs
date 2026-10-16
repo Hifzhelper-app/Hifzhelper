@@ -6,7 +6,7 @@ import { createDatabase, d1Database, seedStudent } from './helpers/database.mjs'
 import { buildIdentityPlan, applyIdentityPlan } from '../worker/tools/academy-identity.mjs';
 import { handleLogin, handleLookup, authenticate, verifyToken, handleRegister, handleAuthPolicy } from '../worker/src/auth.js';
 import { handleGetProfile, handleSaveProfile } from '../worker/src/profile.js';
-import { handleChangeRole, handleUpdateUser, handleDeleteUser, handleRegisterStudent, handleCreateTeachingProfile } from '../worker/src/admin.js';
+import { handleListUsers, handleResetPin, handleChangeRole, handleUpdateUser, handleDeleteUser, handleRegisterStudent, handleCreateTeachingProfile } from '../worker/src/admin.js';
 import { handleGetSabaq } from '../worker/src/sabaqLog.js';
 
 let pass = 0;
@@ -140,12 +140,46 @@ await assert.rejects(()=>applyIdentityPlan(stale.env.DB,stalePlan,'test'),/CHECK
 check('stale migration rolls back every profile update',JSON.stringify(profiles(stale.db))===staleBefore);
 check('failed migration leaves no receipt or guard',stale.db.prepare('SELECT COUNT(*) AS n FROM academy_identity_migrations').get().n===0&&stale.db.prepare('SELECT COUNT(*) AS n FROM academy_identity_guards').get().n===0);
 
+// Ownership must protect development profiles before any journal rekey. A
+// deployment policy is not a migration receipt and must not invent one.
+const pending=fixture(), managedEnv={...pending.env,PROFILE_AUTHORITY:'academy'};
+const pendingAdmin={id:'A',role:'admin'},pendingLearner={id:'S1',role:'student'};
+check('standalone policy remains local before cutover',(await handleAuthPolicy(request({}),pending.env)).data.academy_profiles_only===false);
+check('configured Academy ownership applies before cutover',(await handleAuthPolicy(request({}),managedEnv)).data.academy_profiles_only===true);
+const managedUsers=(await handleListUsers(new Request('https://test/admin/users'),managedEnv,pendingAdmin)).data;
+check('admin list flags every pre-cutover profile as Academy-owned',managedUsers.length===4&&managedUsers.every(user=>user.academy_profiles_only===1&&user.academy_managed===0));
+const pendingProfile=(await handleGetProfile(new Request('https://test/profile'),managedEnv,pendingLearner)).data;
+check('self profile reports the same pre-cutover ownership',pendingProfile.academy_profiles_only===1&&pendingProfile.academy_managed===0&&pendingProfile.id==='S1');
+const sharedSnapshot=()=>JSON.stringify(pending.db.prepare('SELECT id,login_id,name,whatsapp_number,role,active FROM students ORDER BY id').all());
+const sharedBefore=sharedSnapshot();
+for (const fields of [{name:'Changed'},{whatsapp_number:'1234567890'},{active:false}]) {
+  check('pre-cutover admin rejects '+Object.keys(fields)[0],(await handleUpdateUser(request({id:'S1',...fields}),managedEnv,pendingAdmin)).status===403);
+}
+check('pre-cutover admin rejects role changes',(await handleChangeRole(request({id:'S1',role:'teacher'}),managedEnv,pendingAdmin)).status===403);
+check('retained inactive profiles have the same ownership',(await handleUpdateUser(request({id:'ARCHIVE',active:true}),managedEnv,pendingAdmin)).status===403);
+for (const fields of [{name:'Changed'},{whatsapp_number:'1234567890'},{role:'admin'},{active:false}]) {
+  check('self profile rejects shared '+Object.keys(fields)[0],(await handleSaveProfile(request(fields),managedEnv,pendingLearner)).status===403);
+}
+check('rejected shared writes preserve all profile values',sharedSnapshot()===sharedBefore);
+check('public creation is closed before cutover',(await handleRegister(request({name:'Unlinked'}),managedEnv)).status===403);
+check('admin creation is closed before cutover',(await handleRegisterStudent(request({name:'Unlinked'}),managedEnv,pendingAdmin)).status===403);
+check('teaching-profile creation is closed before cutover',(await handleCreateTeachingProfile(request({id:'S1'}),managedEnv,pendingAdmin)).status===403);
+check('local deletion is closed before cutover',(await handleDeleteUser(new Request('https://test/admin/users?id=S1'),managedEnv,pendingAdmin)).status===403);
+check('unchanged name does not block journal settings',(await handleSaveProfile(request({name:'Learner',journal_name:'Local journal'}),managedEnv,pendingLearner)).data?.saved===true);
+check('Hifz group settings remain editable before cutover',(await handleUpdateUser(request({id:'S1',group_id:null}),managedEnv,pendingAdmin)).data?.saved===true);
+check('Hifz PIN setup remains local under Academy ownership',(await handleLogin(request({id:'S1',pin:'4826'}),managedEnv)).data?.firstLogin===true);
+check('Hifz admin PIN reset remains available',(await handleResetPin(request({id:'S1'}),managedEnv,pendingAdmin)).data?.reset===true&&pending.db.prepare("SELECT pin_hash FROM students WHERE id='S1'").get().pin_hash===null);
+check('ownership setting does not fabricate a cutover receipt',pending.db.prepare('SELECT COUNT(*) AS n FROM academy_identity_migrations').get().n===0);
+check('ownership setting leaves existing owner keys intact',profiles(pending.db).every(user=>user.id===user.login_id));
+const config=JSON.parse(readFileSync(new URL('../worker/wrangler.jsonc',import.meta.url),'utf8').replace(/^\s*\/\/.*$/gm,''));
+check('ownership is enabled only for development configuration',config.env.development.vars.PROFILE_AUTHORITY==='academy'&&!config.env.production.vars?.PROFILE_AUTHORITY);
+
 // Drive the real boot function: aliases select URLs, permanent IDs select data.
 const app=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const boot=app.slice(app.indexOf('async function bootApp(){'),app.indexOf('// Back/forward guard'));
-for (const expectedAlias of ['S1','SOMEONEELSE']) {
+for (const [expectedAlias,bootProfile] of [['S1',profile],['S1',{...profile,academy_managed:0,academy_profiles_only:1}],['SOMEONEELSE',profile]]) {
   const remembered=[];
-  const context={showAppShell(){},apiGetProfile:async()=>profile,getEffectiveLoginId:()=>expectedAlias,
+  const context={showAppShell(){},apiGetProfile:async()=>bootProfile,getEffectiveLoginId:()=>expectedAlias,
     cleared:0,clearToken(){this.cleared++;},routeToLoginScreen(){},rememberLoginId:id=>remembered.push(id),
     rememberKnownAccount:row=>remembered.push(row.id),loadTajweedVocabulary:async()=>{},currentUser:{},
     setupAuthBandAndDropdown(){},renderAuthBand(){},showWelcome(){},armBackGuard(){},showScreen(){},showBanner(){}};
@@ -156,6 +190,7 @@ for (const expectedAlias of ['S1','SOMEONEELSE']) {
   if (expectedAlias==='S1') {
     check('matching URL alias does not log out a distinct permanent ID',context.cleared===0&&context.currentUser.id===ids.S1);
     check('remembered links and switcher entries use only login ID',remembered.length===2&&remembered.every(id=>id==='S1'));
+    check('boot honors shared ownership independently of the rekey marker',context.currentUser.academyManaged===true);
   } else check('different account URL is still rejected',context.cleared===1&&remembered.length===0);
 }
 
@@ -164,7 +199,7 @@ for (const expectedAlias of ['S1','SOMEONEELSE']) {
 const dom=new JSDOM('<body><button id="adminRegisterOpenBtn"></button><input id="admin_search"><div id="adminUsersList"></div></body>',{runScripts:'outside-only',url:'https://test.local'});
 const w=dom.window, copied=[],reset=[];
 w.matchMedia=()=>({matches:false}); w.iconHtml=()=>''; w.showBanner=()=>{}; w.confirm=()=>true;
-w.apiAdminListUsers=async()=>[{id:ids.S1,login_id:'S1',name:'Learner',role:'student',active:1,academy_managed:1,academy_profiles_only:1}];
+w.apiAdminListUsers=async()=>[{id:ids.S1,login_id:'S1',name:'Learner',role:'student',active:1,academy_managed:0,academy_profiles_only:1}];
 w.apiGetMaktabGroups=async()=>[]; w.apiAdminResetPin=async id=>reset.push(id);
 Object.defineProperty(w.navigator,'clipboard',{value:{writeText:async value=>copied.push(value)}});
 w.eval(readFileSync(new URL('../js/uiSwitch.js',import.meta.url),'utf8'));
