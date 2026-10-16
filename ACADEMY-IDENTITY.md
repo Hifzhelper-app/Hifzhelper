@@ -1,4 +1,4 @@
-# Academy identity foundation — V4.2.15.27
+# Academy identity foundation — V4.2.15.28
 
 Development testing release prepared on 16 October 2026. The additive schema
 migration 0031 has been applied to the development database. The reviewed
@@ -17,6 +17,8 @@ Login and public account lookup use login_id. Tokens carry students.id,
 and protected requests check the current account and role in Hifz D1.
 No ordinary Hifz request calls Academy. Existing PIN hashes and their
 Hifz-only pepper remain unchanged; Academy hashes are never copied.
+New or reset Hifz PINs require two matching entries before the Worker stores
+the hash. A mismatch clears both entries and returns to the initial step.
 
 The personal URL, remembered login and device account switcher retain the
 login alias. Journal operations use the permanent user ID. Old sessions

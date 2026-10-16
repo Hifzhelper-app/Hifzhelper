@@ -24,7 +24,7 @@ function fixture() {
   return { db,env:{DB:d1Database(db),HH_AUTH_SECRET:'synthetic-hifz-token-secret',HH_PEPPER:'synthetic-hifz-pin-pepper'} };
 }
 const {db,env}=fixture();
-const beforeLogin=await handleLogin(request({id:'S1',pin:'4826'}),env);
+const beforeLogin=await handleLogin(request({id:'S1',pin:'4826',confirmPin:'4826'}),env);
 check('existing login code still sets the Hifz PIN locally',beforeLogin.data?.firstLogin===true);
 const hashBefore=db.prepare("SELECT pin_hash FROM students WHERE id='S1'").get().pin_hash;
 const plan=buildIdentityPlan(profiles(db),academy,'test');
@@ -76,10 +76,10 @@ check('inactive unmapped account and its login are preserved',db.prepare("SELECT
 check('migration can be retried without a second rekey',(await applyIdentityPlan(env.DB,plan,'test')).alreadyApplied===true);
 check('one audit receipt and no leftover guards',db.prepare('SELECT COUNT(*) AS n FROM academy_identity_migrations').get().n===1&&db.prepare('SELECT COUNT(*) AS n FROM academy_identity_guards').get().n===0);
 await assert.rejects(()=>applyIdentityPlan(env.DB,plan,'production'),/environment mismatch/); pass++;
-const login=await handleLogin(request({id:'S1',pin:'4826'}),env);
+const login=await handleLogin(request({id:'S1',pin:'4826',confirmPin:'4826'}),env);
 check('same personal login and PIN open the migrated account',login.data?.id===ids.S1&&login.data?.login_id==='S1');
 
-const teacherFirst=await handleLogin(request({id:'T',pin:'7391'}),env);
+const teacherFirst=await handleLogin(request({id:'T',pin:'7391',confirmPin:'7391'}),env);
 check('first PIN setup after migration targets the permanent row',teacherFirst.data?.firstLogin===true&&!!db.prepare('SELECT pin_hash FROM students WHERE id=?').get(ids.T).pin_hash);
 let wrong;
 for(let attempt=1;attempt<=5;attempt++) {
@@ -167,7 +167,7 @@ check('teaching-profile creation is closed before cutover',(await handleCreateTe
 check('local deletion is closed before cutover',(await handleDeleteUser(new Request('https://test/admin/users?id=S1'),managedEnv,pendingAdmin)).status===403);
 check('unchanged name does not block journal settings',(await handleSaveProfile(request({name:'Learner',journal_name:'Local journal'}),managedEnv,pendingLearner)).data?.saved===true);
 check('Hifz group settings remain editable before cutover',(await handleUpdateUser(request({id:'S1',group_id:null}),managedEnv,pendingAdmin)).data?.saved===true);
-check('Hifz PIN setup remains local under Academy ownership',(await handleLogin(request({id:'S1',pin:'4826'}),managedEnv)).data?.firstLogin===true);
+check('Hifz PIN setup remains local under Academy ownership',(await handleLogin(request({id:'S1',pin:'4826',confirmPin:'4826'}),managedEnv)).data?.firstLogin===true);
 check('Hifz admin PIN reset remains available',(await handleResetPin(request({id:'S1'}),managedEnv,pendingAdmin)).data?.reset===true&&pending.db.prepare("SELECT pin_hash FROM students WHERE id='S1'").get().pin_hash===null);
 check('ownership setting does not fabricate a cutover receipt',pending.db.prepare('SELECT COUNT(*) AS n FROM academy_identity_migrations').get().n===0);
 check('ownership setting leaves existing owner keys intact',profiles(pending.db).every(user=>user.id===user.login_id));

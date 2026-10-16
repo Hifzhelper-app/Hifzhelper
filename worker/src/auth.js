@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | worker/src/auth.js */
+/* Hifzhelper build 4.2.15.28 | worker/src/auth.js */
 import { generateUniqueId } from './utils.js';
 import { academyOwnsProfiles, academyManagedError } from './profile-ownership.js';
 
@@ -80,7 +80,7 @@ export async function authenticate(request, env) {
 export async function handleLogin(request, env) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
-  const { id, pin } = body || {};
+  const { id, pin, confirmPin } = body || {};
   if (typeof id !== 'string' || !id.trim() || typeof pin !== 'string' || !/^\d{4}$/.test(pin)) {
     return { error: 'id and a 4-digit pin are required', status: 400 };
   }
@@ -95,12 +95,18 @@ export async function handleLogin(request, env) {
     return { error: `Too many attempts. Try again after ${row.locked_until}.`, status: 429 };
   }
 
-  // First login: no PIN set yet — whatever they submit becomes their PIN.
+  // First login and resets require two matching entries before any credential
+  // is saved. A stale login screen cannot silently set a just-reset PIN.
   if (!row.pin_hash) {
+    if (typeof confirmPin !== 'string' || !/^\d{4}$/.test(confirmPin)) {
+      return { error: 'Enter your new PIN again to confirm it.', status: 400, code: 'PIN_CONFIRMATION_REQUIRED' };
+    }
+    if (pin !== confirmPin) return { error: "PINs didn't match. Start again.", status: 400, code: 'PIN_MISMATCH' };
     const salt = randomSalt();
     const hash = await hashPin(pin, salt, env.HH_PEPPER);
-    await env.DB.prepare('UPDATE students SET pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?')
-      .bind(`${salt}:${hash}`, row.id).run();
+    const saved = await env.DB.prepare('UPDATE students SET pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ? AND active = 1 AND pin_hash IS ?')
+      .bind(`${salt}:${hash}`, row.id, row.pin_hash).run();
+    if (saved.meta.changes !== 1) return { error: 'PIN setup changed. Refresh and sign in again.', status: 409, code: 'PIN_STATE_CHANGED' };
     const token = await signToken({ id: row.id, role: row.role, identity_version: 2, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
     return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: true } };
   }

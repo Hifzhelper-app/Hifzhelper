@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | js/api.js */
+/* Hifzhelper build 4.2.15.28 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -132,8 +132,8 @@ async function apiFetch(path, options = {}){
   return body;
 }
 
-async function apiLogin(id, pin){
-  const result = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ id, pin }) });
+async function apiLogin(id, pin, confirmPin){
+  const result = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ id, pin, ...(confirmPin !== undefined ? { confirmPin } : {}) }) });
   setToken(result.token);
   // Save the ID only after the server accepts the ID+PIN pair. Merely opening
   // somebody else's personal link must never replace this device's account.

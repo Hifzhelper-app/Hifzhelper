@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | js/auth.js */
+/* Hifzhelper build 4.2.15.28 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -315,6 +315,7 @@ const CONFIRM_PIN_IDS = ['cf_pin_1','cf_pin_2','cf_pin_3','cf_pin_4'];
 // ---------- screen switching ----------
 const ALL_LOGIN_SCREENS = ['loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen','loginScreenSwitch'];   // loginScreenSwitch: V3.77.0 (j)
 function hideAllLoginScreens(){
+  pendingNewPin = null;
   ALL_LOGIN_SCREENS.forEach(id => { document.getElementById(id).classList.add('hidden'); });
 }
 function showAppShell(){
@@ -327,6 +328,8 @@ function showAppShell(){
 // the remembered device ID supplies it instead. Both routes use the same PIN-
 // only/create-PIN screens and never need their own ID input.
 let activeLoginId = null;
+let pendingNewPin = null; // Memory only; cleared on mismatch, exit or completion.
+let pinSetupBusy = false;
 
 // Decides which login screen to show. An explicit unique-ID URL wins over a
 // remembered device ID. No screen is shown until that lookup resolves
@@ -379,9 +382,28 @@ function showCreatePinScreen(name){
   document.getElementById('createPinScreen').classList.remove('hidden');
   document.getElementById('createPinReminderMessage').textContent = REGISTRATION_CONFIRMATION_TEXT;
   document.getElementById('createPinUrl').value = window.location.origin + '/' + activeLoginId;
+  restartPinCreation();
+}
+function restartPinCreation(message = ''){
+  pendingNewPin = null;
+  document.getElementById('createPinError').textContent = message;
+  document.getElementById('createPinStepHint').textContent = 'Create a PIN to secure your journal';
+  document.getElementById('createPinEntryWrap').classList.remove('hidden');
   document.getElementById('confirmPinWrap').classList.add('hidden');
   clearPinGroup(CONFIRM_PIN_IDS);
   clearPinGroup(CREATE_PIN_IDS);
+}
+function showPinConfirmation(pin){
+  if(!/^\d{4}$/.test(pin)) return;
+  pendingNewPin = pin;
+  document.getElementById('createPinError').textContent = '';
+  clearPinGroup(FALLBACK_PIN_IDS);
+  clearPinGroup(PERSONAL_PIN_IDS);
+  clearPinGroup(CREATE_PIN_IDS);
+  document.getElementById('createPinEntryWrap').classList.add('hidden');
+  document.getElementById('createPinStepHint').textContent = 'Enter your new PIN again to confirm it';
+  document.getElementById('confirmPinWrap').classList.remove('hidden');
+  clearPinGroup(CONFIRM_PIN_IDS);
 }
 async function showRegisterScreen(){
   try {
@@ -478,6 +500,15 @@ setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
     return;
   }
   try{
+    const info = await apiLookup(id);
+    if(!info.hasPin){
+      activeLoginId = id;
+      replaceUrlWithLoginId(id);
+      clearPinGroup(FALLBACK_PIN_IDS);
+      showCreatePinScreen(info.name);
+      showPinConfirmation(pin);
+      return;
+    }
     const loginResult = await apiLogin(id, pin);
     replaceUrlWithLoginId(id);
     await bootApp();
@@ -486,6 +517,12 @@ setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
     // its place on first login through the fallback screen.
     if(loginResult.firstLogin) showFirstLoginMessage();
   } catch(e){
+    if(e.code === 'PIN_CONFIRMATION_REQUIRED'){
+      activeLoginId = id;
+      showCreatePinScreen('');
+      showPinConfirmation(pin);
+      return;
+    }
     errEl.textContent = e.message;
     clearPinGroup(FALLBACK_PIN_IDS);
   }
@@ -499,35 +536,37 @@ setupPinGroup(PERSONAL_PIN_IDS, async (pin) => {
     await apiLogin(activeLoginId, pin);
     await bootApp();
   } catch(e){
+    if(e.code === 'PIN_CONFIRMATION_REQUIRED'){
+      showCreatePinScreen('');
+      showPinConfirmation(pin);
+      return;
+    }
     errEl.textContent = e.message;
     clearPinGroup(PERSONAL_PIN_IDS);
   }
 });
 
 // ---------- create-PIN screen: entered twice to confirm, then logs in ----------
-setupPinGroup(CREATE_PIN_IDS, () => {
-  document.getElementById('confirmPinWrap').classList.remove('hidden');
-  document.getElementById(CONFIRM_PIN_IDS[0]).focus();
-});
+setupPinGroup(CREATE_PIN_IDS, showPinConfirmation);
 setupPinGroup(CONFIRM_PIN_IDS, async (confirmPin) => {
+  if(pinSetupBusy) return;
   const errEl = document.getElementById('createPinError');
   errEl.textContent = '';
-  const firstPin = readPinGroup(CREATE_PIN_IDS);
+  const firstPin = pendingNewPin;
   if(firstPin !== confirmPin){
-    errEl.textContent = "PINs didn't match — try again.";
-    document.getElementById('confirmPinWrap').classList.add('hidden');
-    clearPinGroup(CONFIRM_PIN_IDS);
-    clearPinGroup(CREATE_PIN_IDS);
+    restartPinCreation("PINs didn't match. Start again.");
     return;
   }
+  pinSetupBusy = true;
   try{
-    await apiLogin(activeLoginId, confirmPin); // no pin_hash yet server-side, so this sets it
+    await apiLogin(activeLoginId, firstPin, confirmPin);
+    restartPinCreation();
     await bootApp();
   } catch(e){
-    errEl.textContent = e.message;
-    document.getElementById('confirmPinWrap').classList.add('hidden');
-    clearPinGroup(CONFIRM_PIN_IDS);
-    clearPinGroup(CREATE_PIN_IDS);
+    restartPinCreation(e.message);
+    if(e.code === 'PIN_STATE_CHANGED') await routeToLoginScreen();
+  } finally {
+    pinSetupBusy = false;
   }
 });
 

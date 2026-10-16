@@ -132,3 +132,8 @@ use in the real boot/admin UI. It also covers deployment-configured ownership
 before any cutover receipt: every shared field is rejected, local settings and
 PIN reset work, and the UI receives the same ownership flag. It never connects
 to a remote database.
+
+verify_pin_confirmation.mjs drives the real login UI and Worker against a
+migrated in-memory database: no credential is saved on the first entry,
+mismatches clear both entries, every login route requires confirmation after a
+reset, existing PINs still work, and concurrent setup has only one winner.

@@ -5,6 +5,19 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.28 — Confirm every new or reset Hifz PIN (2026-10-16)
+
+A new PIN now opens a separate confirmation step before it is saved. A mismatch
+clears both entries and restarts setup. The root ID-plus-PIN route now follows
+the same flow as personal links; a PIN reset after a login page was opened also
+requires confirmation. The Worker requires matching entries for PIN setup and
+uses a conditional write so concurrent setup attempts cannot replace each other.
+Existing PIN sign-in still needs one entry. No database migration is required.
+
+Files: index.html, js/sw.js, js/auth.js, js/api.js, worker/src/auth.js,
+tests/verify_pin_confirmation.mjs, tests/verify_academy_identity.mjs,
+tests/README.md, ACADEMY-IDENTITY.md, TODO.md, CHANGELOG.md.
+
 ## V4.2.15.27 — Lock Academy-owned development profiles before cutover (2026-10-16)
 
 Development admins could still edit names, WhatsApp numbers, roles and activation
