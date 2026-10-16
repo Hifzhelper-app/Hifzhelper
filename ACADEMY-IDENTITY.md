@@ -1,8 +1,8 @@
-# Academy identity foundation — V4.2.15.28
+# Academy identity and profile delivery — V4.2.15.29
 
-Development testing release prepared on 16 October 2026. The additive schema
-migration 0031 has been applied to the development database. The reviewed
-Academy-ID data cutover remains a separate operation. Production is unchanged.
+Development release deployed on 16 October 2026. Migrations 0031 and 0032,
+the reviewed 34-profile permanent-ID cutover and authenticated Academy
+profile delivery are applied in development. Production is unchanged.
 
 ## Identifier contract
 
@@ -53,7 +53,7 @@ Stale profile roles, aliases, activation changes, new active users and ID
 collisions abort the whole batch. A successful receipt makes retries harmless.
 The planner refuses to merge two profiles into one Academy user implicitly.
 
-The current schema has 34 declared profile-reference columns. Grouped updates
+The current schema has 35 declared profile-reference columns. Grouped updates
 keep this operation within the Workers Free query budget; the helper refuses
 a schema expansion that would exceed 50 SQL statements in the invocation.
 
@@ -77,48 +77,40 @@ It applies to the whole Hifz database, including retained inactive rows:
 - PIN verification, PIN hashing, lockouts and the existing Hifz PIN reset
   operation remain local and independent.
 
-## Remaining integration stage
+## One-way profile and PIN-reset delivery
 
-This release is the identity/schema foundation and ownership boundary.
-Academy-to-Hifz change delivery (durable outbox, authenticated receiver,
-retries, version ordering and reconciliation) is not implemented here.
-Production rollout should follow that delivery stage. Development cutover
-can be used to validate the identity and journal migration first.
+Migration 0032 adds `academy_profile_links` (Academy user ID, permanent Hifz
+student ID, source revision and PIN-reset version), plus `students.credential_epoch`.
+Academy V106.91 queues changes in the source transaction and sends signed,
+bounded snapshots after saving, with recovery on its existing 15-minute schedule.
+The receiver at `/internal/academy/profile-sync` requires a development-specific
+HMAC secret, matching target and a fresh timestamp. No ordinary Hifz request
+contacts Academy. Each batch applies up to eight profiles atomically.
 
-Profile ownership and the journal-ID cutover are independent. Enabling
-PROFILE_AUTHORITY=academy closes local profile administration and registration
-without rekeying journals or writing a migration receipt. Without that setting,
-additive migration 0031 alone retains legacy registration behaviour until the
-successful cutover receipt. The production configuration is unchanged.
-Do not expose a new administrative profile-sync route without its trusted
-server authentication and operation allowlist.
+Only newer source revisions can update name, login ID, WhatsApp number, role
+and active status. Journal settings and records remain local. Academy PIN resets
+clear Hifz's independent hash and lockout and increment its credential epoch,
+revoking prior sessions. Retries cannot reset a newly confirmed PIN again.
+A newly granted Hifz user receives a profile with the permanent Academy ID;
+conflicting legacy aliases fail for review instead of claiming journals.
 
-## Validation status — 16 October 2026
+Initial links are seeded from the reviewed 34-profile exact match before the
+atomic rekey. Five unmatched inactive profiles keep their original keys/history.
+Academy migration 0028 adds queue metadata, a projection and transactional
+triggers, without copying credentials or changing source profile records.
 
-The migration and PIN flow passed the full local regression suite and a local
-Cloudflare D1 runtime rehearsal. Exact-record comparisons used synthetic data.
-Live profile reconciliation confirms 42/42 production and 34/34 development
-active profiles matched Academy at 17:35 Riyadh time.
+## Development acceptance — 16 October 2026
 
-Cloudflare authorization was refreshed on 16 October, and the development
-database export succeeded at 18:51 Riyadh time. The full exported copy passed
-both SQLite and local Cloudflare D1 runtime rehearsals at 18:53: all 368
-application records matched the expected identity-only changes, all eight
-stored PIN hashes were preserved, all 34 reference columns were covered, and
-foreign-key checks found no violations. The operation used 37 SQL statements.
-There were 34 matched active profiles and five retained inactive profiles.
-
-V4.2.15.26 was deployed to the GitHub dev branch and both development builds
-were verified. The additive migration 0031 has been applied: all 39 profiles
-retain their original IDs and login aliases, and foreign-key checks still pass.
-The Academy-ID data cutover has not been applied. The GitHub dev branch is
-connected to hifzhelper-api-dev and hifzhelper-dev.pages.dev (Pages project
-hifzhelper-dev); pushing the release there triggers the existing development
-builds. Their deployment results must be verified before the data cutover.
-The refreshed command-line authorization currently covers Hifz D1 and basic
-account information. Production remains unchanged.
-
-V4.2.15.27 corrects the development ownership policy: names, contact numbers,
-roles and activation are protected before rekeying. The same policy drives
-admin/self-profile responses, frontend locks, registration and write validation.
-No further database migration is required.
+V4.2.15.27 profile locks and V4.2.15.28 PIN confirmation are deployed on `dev`.
+The current full-export rehearsal passes with all 34 active profiles matched,
+eight existing PIN hashes preserved, journal contents preserved, zero role or
+status changes and zero foreign-key violations. The rekey covers 35 declared
+reference columns and remains within the Workers Free query budget.
+V4.2.15.29 and Academy V106.91 Workers are deployed in development. All 34
+initial snapshots were accepted and acknowledged, with no pending deliveries.
+Live checks preserved all existing PIN hashes, local settings and journal tables.
+A disposable account verified provisioning, every shared field, access revocation,
+PIN confirmation, reset/lockout/session revocation and safe reset replay; it was
+removed afterwards. No real user's PIN was reset during these checks.
+The `dev` and `development` branch builds publish the matching frontend releases.
+Production remains unchanged.

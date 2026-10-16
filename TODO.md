@@ -8,18 +8,19 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
-## Development identity release — V4.2.15.28 (2026-10-16)
+## Development identity and sync — V4.2.15.29 (2026-10-16)
 
-V4.2.15.27 is deployed to development and enables Academy profile
-ownership independently of the journal-ID cutover, protecting shared name,
-contact number, role and activation in development. No new migration is needed.
-V4.2.15.28 requires a separate matching confirmation before saving a new/reset
-Hifz PIN, including the ID-plus-PIN fallback and a reset after page load.
+Development profile locks and new/reset PIN confirmation are deployed. V4.2.15.29
+adds authenticated one-way Academy profile updates, durable source retries and
+PIN-reset versions/session revocation. Ordinary Hifz traffic stays independent.
 
-**Migration status:** through 0030 previously confirmed; additive 0031 applied to
-development only. The reviewed atomic Academy-ID rekey is still pending.
-See ACADEMY-IDENTITY.md. Development acceptance and Academy-to-Hifz change delivery
-remain before production rollout. Older release notes below are historical.
+**Migration status:** 0031/0032, the atomic 34-profile permanent-ID rekey and
+Academy 0028 are applied in development. Both Workers and initial delivery are
+verified, preserving all journals, local settings and existing hashes. Live
+profile/PIN/reset/replay checks passed with a disposable account, now removed.
+The matching frontends publish from the approved development branches.
+See ACADEMY-IDENTITY.md.
+Production remains unchanged; older release notes below are historical.
 
 ## Current release — V4.2.15.25 (2026-09-24)
 

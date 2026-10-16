@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.27 | worker/src/admin.js */
+/* Hifzhelper build 4.2.15.29 | worker/src/admin.js */
 // ============================================================
 // Hifzhelper — admin endpoints
 // Every handler here is gated to role === 'admin' — nothing here is
@@ -41,7 +41,7 @@ export async function handleResetPin(request, env, auth) {
   if (!row) return { error: 'Student not found', status: 404 };
 
   await env.DB.prepare(
-    'UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL WHERE id = ?'
+    'UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL, credential_epoch = credential_epoch + 1 WHERE id = ?'
   ).bind(body.id).run();
   return { data: { reset: true } };
 }

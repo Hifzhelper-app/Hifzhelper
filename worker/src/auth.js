@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.28 | worker/src/auth.js */
+/* Hifzhelper build 4.2.15.29 | worker/src/auth.js */
 import { generateUniqueId } from './utils.js';
 import { academyOwnsProfiles, academyManagedError } from './profile-ownership.js';
 
@@ -72,8 +72,9 @@ export async function authenticate(request, env) {
   // Old tokens used the sign-in code as an owner key. Never reinterpret
   // them after the migration; the person signs in again with the same PIN.
   if (!payload || payload.identity_version !== 2) return null;
-  const row = await env.DB.prepare('SELECT id, role, active FROM students WHERE id = ?').bind(payload.id).first();
+  const row = await env.DB.prepare('SELECT id, role, active, credential_epoch FROM students WHERE id = ?').bind(payload.id).first();
   if (!row || !row.active) return null;
+  if ((payload.credential_epoch ?? 0) !== (row.credential_epoch ?? 0)) return null;
   return { id: row.id, role: row.role, exp: payload.exp };
 }
 
@@ -86,7 +87,7 @@ export async function handleLogin(request, env) {
   }
 
   const row = await env.DB.prepare(
-    'SELECT id, login_id, name, role, pin_hash, active, failed_attempts, locked_until FROM students WHERE login_id = ?'
+    'SELECT id, login_id, name, role, pin_hash, active, failed_attempts, locked_until, credential_epoch FROM students WHERE login_id = ?'
   ).bind(id.trim()).first();
 
   if (!row || !row.active) return { error: 'Invalid ID or PIN', status: 401 }; // deliberately vague — don't reveal which part was wrong
@@ -107,7 +108,7 @@ export async function handleLogin(request, env) {
     const saved = await env.DB.prepare('UPDATE students SET pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ? AND active = 1 AND pin_hash IS ?')
       .bind(`${salt}:${hash}`, row.id, row.pin_hash).run();
     if (saved.meta.changes !== 1) return { error: 'PIN setup changed. Refresh and sign in again.', status: 409, code: 'PIN_STATE_CHANGED' };
-    const token = await signToken({ id: row.id, role: row.role, identity_version: 2, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
+    const token = await signToken({ id: row.id, role: row.role, identity_version: 2, credential_epoch: row.credential_epoch, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
     return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: true } };
   }
 
@@ -124,7 +125,7 @@ export async function handleLogin(request, env) {
   }
 
   await env.DB.prepare('UPDATE students SET failed_attempts = 0, locked_until = NULL WHERE id = ?').bind(row.id).run();
-  const token = await signToken({ id: row.id, role: row.role, identity_version: 2, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
+  const token = await signToken({ id: row.id, role: row.role, identity_version: 2, credential_epoch: row.credential_epoch, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
   return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: false } };
 }
 

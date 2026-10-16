@@ -26,7 +26,8 @@
     "development": {
       "name": "hifzhelper-api-dev",
       "vars": {
-        "PROFILE_AUTHORITY": "academy"
+        "PROFILE_AUTHORITY": "academy",
+        "ACADEMY_SYNC_TARGET": "development"
       },
       "d1_databases": [
         {

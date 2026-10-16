@@ -5,6 +5,28 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.29 — Academy profile delivery and PIN-reset revocation (2026-10-16)
+
+A signed development receiver applies newer Academy profile snapshots atomically,
+using permanent cross-application links. Names, login IDs, contact numbers, roles
+and active status follow Academy. New Hifz grants can create a linked profile;
+conflicting legacy identities fail for review. A reset version clears Hifz's
+independent PIN/lockout and revokes old sessions. Duplicate and delayed deliveries
+preserve newer profile data and newly confirmed PINs. Ordinary Hifz requests stay
+local. Migration 0032 is additive; production configuration is unchanged.
+
+The full development-export rehearsal preserves all journals and eight PIN hashes,
+with all 34 active profiles matched and zero role/status changes. The atomic
+permanent-ID rekey now also covers the link table's foreign key. Development
+migrations, both Workers and all 34 initial deliveries are applied and verified.
+Live disposable-account profile, reset, confirmation and replay checks pass;
+no real user PIN was reset. Production remains unchanged.
+
+Files: index.html, js/sw.js, worker/src/index.js, worker/src/auth.js,
+worker/src/admin.js, worker/src/academy-profile-sync.js, worker/wrangler.jsonc,
+worker/migrations/0032_academy_profile_sync.sql, tests/verify_profile_sync.mjs,
+tests/README.md, SCHEMA.md, ACADEMY-IDENTITY.md, TODO.md, CHANGELOG.md.
+
 ## V4.2.15.28 — Confirm every new or reset Hifz PIN (2026-10-16)
 
 A new PIN now opens a separate confirmation step before it is saved. A mismatch

@@ -1,5 +1,6 @@
-/* Hifzhelper build 4.2.15.26 | worker/src/index.js */
+/* Hifzhelper build 4.2.15.29 | worker/src/index.js */
 import { json, error } from './utils.js';
+import { handleAcademyProfileSync } from './academy-profile-sync.js';
 import { handleLogin, handleRegister, handleLookup, handleAuthPolicy, authenticate } from './auth.js';
 import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq } from './sabaqLog.js';
 import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
@@ -48,6 +49,9 @@ export default {
     const path = url.pathname;
 
     try {
+      if (path === '/internal/academy/profile-sync') {
+        return respond(await handleAcademyProfileSync(request, env));
+      }
       // Public routes — no auth required.
       if (path === '/auth/login' && request.method === 'POST') {
         return respond(await handleLogin(request, env));

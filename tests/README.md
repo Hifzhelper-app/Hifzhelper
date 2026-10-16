@@ -137,3 +137,7 @@ verify_pin_confirmation.mjs drives the real login UI and Worker against a
 migrated in-memory database: no credential is saved on the first entry,
 mismatches clear both entries, every login route requires confirmation after a
 reset, existing PINs still work, and concurrent setup has only one winner.
+
+`verify_profile_sync.mjs` exercises signed Academy delivery against SQLite, including
+field authority, ordering, conflict rollback, reset/replay, session revocation and
+confirmed PIN setup. It uses synthetic identities and never calls Cloudflare.

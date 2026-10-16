@@ -1,6 +1,6 @@
 # Hifzhelper — Data Schema
 
-Reset admin pin : npx wrangler d1 execute hifzhelper-personal-db --remote --command="UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL WHERE login_id = 'ABCDEFG';"
+Reset admin pin : npx wrangler d1 execute hifzhelper-personal-db --remote --command="UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL, credential_epoch = credential_epoch + 1 WHERE login_id = 'ABCDEFG';"
 
 One Cloudflare D1 database per maktab (max ~100 students each). These are the
 canonical table names and column names — the Worker and frontend must use
@@ -20,6 +20,7 @@ human-readable reference for the same thing.
 | `academy_managed` | INTEGER | Added in migration 0031; default 0, set to 1 by the reviewed identity cutover. Shared profile administration is Academy-owned after a successful cutover receipt. |
 | `name` | TEXT | Display name. |
 | `role` | TEXT | `student` / `teacher` / `admin`. Academy-owned after identity cutover. Existing separate learner/staff profiles are preserved; the planner rejects a many-to-one mapping instead of merging journals. Local derived teaching-profile creation is closed after cutover. |
+| `credential_epoch` | INTEGER | Migration 0032; default 0. Local or Academy-triggered PIN reset increments it to revoke prior Hifz sessions. |
 | `pin_hash` | TEXT | Set on first login, not at creation. Never store the raw PIN — this is `salt:hash`, see `worker/src/auth.js`. |
 | `created_date` | TEXT | `YYYY-MM-DD`. |
 | `active` | INTEGER | `1`/`0`. Disable without deleting history. |
@@ -295,3 +296,11 @@ Information-only entries. `id, date_from, date_to, label (NULL for holidays — 
 
 ## 0029 (V3.98.0 — the Attendance screen)
 `maktab_settings` gains `teaching_days TEXT` (JSON weekday array, seeded `["mon","tue","wed","thu"]`), which drives the Attendance screen's columns only. `attendance` is rebuilt so `status` also admits `predicted-absent` — a forward-looking planning marker that never enters the attendance derivation or the statistics.
+
+## Table: `academy_profile_links` (0032)
+
+`academy_user_id` is the immutable Academy account ID/primary key. `student_id`
+is a unique foreign key to `students.id`, included in the atomic identity rekey.
+`source_revision` and `pin_reset_version` default to zero. Only a newer source
+revision can apply shared profile fields; an increased reset version clears the
+local PIN and lockout once and revokes sessions. No Academy credential is stored.
