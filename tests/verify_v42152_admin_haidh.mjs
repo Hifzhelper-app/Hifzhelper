@@ -1,46 +1,19 @@
 #!/usr/bin/env node
 // V4.2.15.2 — Student Management Haidh pill backend persistence/prediction regression.
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database } from './helpers/database.mjs';
 import { handleListUsers, handleUpdateUser } from '../worker/src/admin.js';
 
 let pass = 0, fail = 0;
 const check = (label, cond) => { if(cond) pass++; else { fail++; console.log('FAIL:', label); } };
 
-const db = new DatabaseSync(':memory:');
+const db = createDatabase();
 db.exec(`
-  CREATE TABLE students (
-    id TEXT PRIMARY KEY, name TEXT, role TEXT, active INTEGER, created_date TEXT,
-    gender TEXT, setup_complete INTEGER DEFAULT 0, whatsapp_number TEXT, group_id INTEGER,
-    track_haidh INTEGER DEFAULT 0, haidh_ruling TEXT, haidh_cycle_length INTEGER,
-    haidh_period_length INTEGER, haidh_next_expected TEXT
-  );
-  CREATE TABLE attendance (
-    student_id TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL,
-    PRIMARY KEY(student_id, date)
-  );
-  CREATE TABLE maktab_groups (id INTEGER PRIMARY KEY, retired INTEGER DEFAULT 0);
   INSERT INTO students (id,name,role,active,created_date,gender,track_haidh)
     VALUES ('S1','Amina','student',1,'2026-01-01','F',0);
   INSERT INTO attendance (student_id,date,status) VALUES ('S1','2026-08-15','haidh');
   INSERT INTO attendance (student_id,date,status) VALUES ('S1','2026-08-30','predicted-haidh');
 `);
-
-const makeStmt = (sql, args = []) => ({
-  _sql: sql, _args: args,
-  bind(...next){ return makeStmt(sql, next); },
-  async run(){ const r = db.prepare(sql).run(...args); return { success:true, meta:{ changes:r.changes, last_row_id:Number(r.lastInsertRowid || 0) } }; },
-  async first(){ return db.prepare(sql).get(...args) ?? null; },
-  async all(){ return { results: db.prepare(sql).all(...args) }; },
-});
-const env = { DB: {
-  prepare(sql){ return makeStmt(sql); },
-  async batch(stmts){
-    db.exec('BEGIN');
-    try { for(const st of stmts) db.prepare(st._sql).run(...st._args); db.exec('COMMIT'); }
-    catch(e){ db.exec('ROLLBACK'); throw e; }
-    return stmts.map(() => ({ success:true }));
-  }
-}};
+const env = { DB:d1Database(db) };
 const auth = { id:'ADMIN', role:'admin' };
 
 const before = (await handleListUsers({url:'https://x/admin/users'}, env, auth)).data[0];

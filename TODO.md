@@ -8,6 +8,15 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
+## Development identity release — V4.2.15.26 (2026-10-16)
+
+Identity/schema foundation prepared for development branch testing.
+
+**Migration status:** through 0030 previously confirmed; additive 0031 applied to
+development only. The reviewed atomic Academy-ID rekey is still pending.
+See ACADEMY-IDENTITY.md. Development acceptance and Academy-to-Hifz change delivery
+remain before production rollout. Older release notes below are historical.
+
 ## Current release — V4.2.15.25 (2026-09-24)
 
 Attendance Report shares PNGs containing all students per week group and downloads a single multipage PDF, with

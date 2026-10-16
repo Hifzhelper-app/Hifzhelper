@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.8 | js/app.js */
+/* Hifzhelper build 4.2.15.26 | js/app.js */
 // ============================================================
 // Hifzhelper — app bootstrap and screen routing
 // ============================================================
@@ -163,7 +163,7 @@ async function bootApp(){
     // uses the remembered device ID instead. This keeps the original
     // cross-account guard intact without mistaking "index.html" for an ID.
     const expectedId = getEffectiveLoginId();
-    if(expectedId && profile.id && expectedId !== profile.id){
+    if(!profile.id || !profile.login_id || (expectedId && expectedId !== profile.login_id)){
       clearToken();
       routeToLoginScreen();
       return;
@@ -171,7 +171,7 @@ async function bootApp(){
     // Also upgrades an already-authenticated V3.8.0 session: once the
     // verified profile is known, remember its ID even if that login happened
     // before V3.8.1's apiLogin() persistence existed.
-    rememberLoginId(profile.id);
+    rememberLoginId(profile.login_id);
     // V3.78.0: the shared day boundary and the tag vocabulary, for every
     // role — the PJ cards carry the tajweed picker too. The timezone comes
     // free on the profile; the vocabulary is one small fetch, awaited so no
@@ -180,8 +180,8 @@ async function bootApp(){
     if(typeof setMaktabZoomLink === 'function') setMaktabZoomLink(profile.maktab_zoom_link || null);
     await loadTajweedVocabulary();
     // V3.77.0 (j): this account is now one the device knows, for the switcher.
-    rememberKnownAccount({ id: profile.id, name: profile.name, role: profile.role });
-    currentUser = { name: profile.name || '', role: profile.role || 'student', trackHaidh: !!profile.track_haidh };
+    rememberKnownAccount({ id: profile.login_id, name: profile.name, role: profile.role });
+    currentUser = { id: profile.id, loginId: profile.login_id, academyManaged: !!profile.academy_managed, name: profile.name || '', role: profile.role || 'student', trackHaidh: !!profile.track_haidh };
     setupAuthBandAndDropdown(); // must run AFTER currentUser.role is known — it renders the nav based on it
     renderAuthBand();
     showWelcome(currentUser.name || 'back');

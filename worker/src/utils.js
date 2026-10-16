@@ -1,3 +1,4 @@
+/* Hifzhelper build 4.2.15.26 | worker/src/utils.js */
 // Shared response helpers + validation.
 // Per CONVENTIONS.md principle 4 (validate at the boundary): every handler
 // that writes to D1 should run its input through the relevant validate*
@@ -87,7 +88,7 @@ function randomId(length = 6) {
 export async function generateUniqueId(env) {
   for (let attempt = 0; attempt < 20; attempt++) {
     const candidate = randomId(6);
-    const existing = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(candidate).first();
+    const existing = await env.DB.prepare('SELECT id FROM students WHERE login_id = ? OR id = ?').bind(candidate, candidate).first();
     if (!existing) return candidate;
   }
   throw new Error('Could not generate a unique ID after 20 attempts');

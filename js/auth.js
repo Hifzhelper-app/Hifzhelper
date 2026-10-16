@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.8 | js/auth.js */
+/* Hifzhelper build 4.2.15.26 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -383,7 +383,17 @@ function showCreatePinScreen(name){
   clearPinGroup(CONFIRM_PIN_IDS);
   clearPinGroup(CREATE_PIN_IDS);
 }
-function showRegisterScreen(){
+async function showRegisterScreen(){
+  try {
+    const policy = await apiAuthPolicy();
+    if (policy.academy_profiles_only) {
+      showBanner('Register through Academy.');
+      return;
+    }
+  } catch (error) {
+    showBanner("Couldn't check registration: " + error.message);
+    return;
+  }
   hideAllLoginScreens();
   cancelRegisterMatch();
   document.getElementById('register_name').value = '';

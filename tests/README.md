@@ -48,7 +48,7 @@ a check only with the reason and replacement coverage documented.
 | Release/cache identity, parsing | `verify_build_stamp`, `verify_version_stamp`, `verify_syntax` |
 
 For new endpoint fixtures, use `helpers/database.mjs`: it replays all real Worker
-migrations (currently through 0030), enables foreign keys after the historical
+migrations (currently through 0031), enables foreign keys after the historical
 migration rebuilds, and offers a D1-shaped adapter with atomic batches. Seed
 required fields explicitly; do not weaken schema constraints to fit a test.
 Seven repaired endpoint harnesses now use this fixture. Older isolated fixtures
@@ -122,3 +122,10 @@ the always-available picker; release headers remain centrally validated.
 register's custom ranges, plus the real report UI in jsdom with canvas/share
 boundaries stubbed. Live database writes are not used. Manual image export and
 device sharing checks are listed in TESTING.md.
+
+## Academy identity foundation — V4.2.15.26
+
+verify_academy_identity.mjs replays the real migrations and tests complete owner/actor
+rekeying, exact record preservation, independent PIN login, local authorization,
+rollback on stale plans, retry receipts, Academy-only identity writes and alias
+use in the real boot/admin UI. It never connects to a remote database.

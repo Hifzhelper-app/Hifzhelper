@@ -1,66 +1,14 @@
 #!/usr/bin/env node
 // V4.2.15.1 — Admin registration can initialise Haidh setup + predictions.
-import { DatabaseSync } from 'node:sqlite';
+import { createDatabase, d1Database } from './helpers/database.mjs';
 import { handleRegisterStudent } from '../worker/src/admin.js';
 
 let pass = 0, fail = 0;
 const check = (label, cond) => { if(cond) pass++; else { fail++; console.log('FAIL:', label); } };
 
 function makeEnv(){
-  const db = new DatabaseSync(':memory:');
-  db.exec(`
-    CREATE TABLE students (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      role TEXT,
-      created_date TEXT,
-      active INTEGER DEFAULT 1,
-      whatsapp_number TEXT,
-      gender TEXT,
-      track_haidh INTEGER DEFAULT 0,
-      haidh_ruling TEXT,
-      haidh_cycle_length INTEGER,
-      haidh_period_length INTEGER,
-      haidh_next_expected TEXT
-    );
-    CREATE TABLE attendance (
-      student_id TEXT NOT NULL,
-      date TEXT NOT NULL,
-      status TEXT NOT NULL,
-      PRIMARY KEY(student_id, date)
-    );
-  `);
-  const statement = (sql, args=[]) => ({
-    async run(){ const r = db.prepare(sql).run(...args); return { meta:{ last_row_id:Number(r.lastInsertRowid || 0) } }; },
-    async first(){ return db.prepare(sql).get(...args) ?? null; },
-    async all(){ return { results: db.prepare(sql).all(...args) }; },
-    _sql: sql,
-    _args: args,
-  });
-  const DB = {
-    prepare(sql){
-      const base = statement(sql, []);
-      base.bind = (...args) => {
-        const bound = statement(sql, args);
-        bound.bind = base.bind;
-        return bound;
-      };
-      return base;
-    },
-    async batch(statements){
-      const out = [];
-      db.exec('BEGIN');
-      try {
-        for(const s of statements) out.push(await s.run());
-        db.exec('COMMIT');
-      } catch(e){
-        db.exec('ROLLBACK');
-        throw e;
-      }
-      return out;
-    }
-  };
-  return { env:{ DB }, db };
+  const db = createDatabase();
+  return { env:{ DB:d1Database(db) }, db };
 }
 
 const valid = makeEnv();
@@ -106,7 +54,7 @@ const maleRequest = new Request('https://x/admin/register-student', {
 const maleResult = await handleRegisterStudent(maleRequest, male.env, { id:'ADMIN', role:'admin' });
 const maleStudent = male.db.prepare('SELECT * FROM students WHERE id = ?').get(maleResult.data?.id || '');
 check('track_haidh is never enabled for a non-female registration',
-  maleStudent && maleStudent.track_haidh === 0 && maleStudent.haidh_ruling == null
+  maleStudent && maleStudent.track_haidh === 0 && maleStudent.haidh_ruling === 'hanafi'
   && male.db.prepare('SELECT COUNT(*) AS n FROM attendance').get().n === 0);
 
 console.log(`${pass} passed, ${fail} failed`);

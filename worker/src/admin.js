@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.2 | worker/src/admin.js */
+/* Hifzhelper build 4.2.15.26 | worker/src/admin.js */
 // ============================================================
 // Hifzhelper — admin endpoints
 // Every handler here is gated to role === 'admin' — nothing here is
@@ -8,6 +8,7 @@
 import { generateUniqueId, isValidDate } from './utils.js';
 import { nextDisambiguatedName, findDuplicateMatch } from './auth.js';
 import { haidhOfficialMaxDuration, haidhMinCycleFrequency, haidhAddDaysISO } from '../../shared/haidhRules.js';
+import { academyOwnsProfiles, academyManagedError } from './profile-ownership.js';
 
 function requireAdmin(auth) {
   if (!auth || auth.role !== 'admin') return { error: 'Not authorized', status: 403 };
@@ -20,7 +21,7 @@ export async function handleListUsers(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
   const { results } = await env.DB.prepare(
-    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students ORDER BY created_date DESC'
+    'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected, login_id, academy_managed, EXISTS(SELECT 1 FROM academy_identity_migrations) AS academy_profiles_only FROM students ORDER BY created_date DESC'
   ).all();
   return { data: results };
 }
@@ -55,8 +56,9 @@ export async function handleChangeRole(request, env, auth) {
     return { error: 'role must be student, teacher, or admin', status: 400 };
   }
 
-  const row = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(body.id).first();
+  const row = await env.DB.prepare('SELECT id, academy_managed FROM students WHERE id = ?').bind(body.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
+  if (row.academy_managed || await academyOwnsProfiles(env)) return academyManagedError();
 
   await env.DB.prepare('UPDATE students SET role = ? WHERE id = ?').bind(body.role, body.id).run();
   return { data: { saved: true } };
@@ -72,8 +74,13 @@ export async function handleUpdateUser(request, env, auth) {
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.id) return { error: 'id is required', status: 400 };
 
-  const row = await env.DB.prepare('SELECT id, gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected FROM students WHERE id = ?').bind(body.id).first();
+  const row = await env.DB.prepare('SELECT id, gender, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected, academy_managed FROM students WHERE id = ?').bind(body.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
+  if (body.login_id !== undefined || body.academy_managed !== undefined ||
+      ['name','whatsapp_number','active'].some(field => body[field] !== undefined) &&
+        (row.academy_managed || await academyOwnsProfiles(env))) {
+    return { error: 'Manage shared profile details in Academy.', status: 403, code: 'ACADEMY_MANAGED' };
+  }
 
   const setClauses = [];
   const values = [];
@@ -138,7 +145,7 @@ export async function handleUpdateUser(request, env, auth) {
       if (cycle < minFrequency) return { error: `Haidh cycle frequency must be at least ${minFrequency} days for a ${period}-day duration`, status: 400 };
     }
     setClauses.push('gender = ?', 'track_haidh = ?', 'haidh_ruling = ?', 'haidh_cycle_length = ?', 'haidh_period_length = ?', 'haidh_next_expected = ?');
-    values.push(trackHaidh ? 'F' : (gender || null), trackHaidh ? 1 : 0, trackHaidh ? ruling : null, trackHaidh ? cycle : null, trackHaidh ? period : null, trackHaidh ? nextExpected : null);
+    values.push(trackHaidh ? 'F' : (gender || null), trackHaidh ? 1 : 0, trackHaidh ? ruling : (row.haidh_ruling || 'hanafi'), trackHaidh ? cycle : null, trackHaidh ? period : null, trackHaidh ? nextExpected : null);
     if (trackHaidh) {
       predictionStatements.push(env.DB.prepare(`DELETE FROM attendance WHERE student_id = ? AND status = 'predicted-haidh'`).bind(body.id));
       const lastStart = haidhAddDaysISO(nextExpected, -cycle);
@@ -176,8 +183,9 @@ export async function handleDeleteUser(request, env, auth) {
   const id = url.searchParams.get('id');
   if (!id) return { error: 'id query param is required', status: 400 };
 
-  const row = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT id, academy_managed FROM students WHERE id = ?').bind(id).first();
   if (!row) return { error: 'Student not found', status: 404 };
+  if (row.academy_managed || await academyOwnsProfiles(env)) return academyManagedError();
 
   try {
     await env.DB.prepare('DELETE FROM students WHERE id = ?').bind(id).run();
@@ -212,15 +220,17 @@ export function teachingIdFor(studentId) { return String(studentId) + TEACHING_I
 export async function handleCreateTeachingProfile(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
+  if (await academyOwnsProfiles(env)) return academyManagedError();
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   const sourceId = body && body.id ? String(body.id).trim() : '';
   if (!sourceId) return { error: 'id is required', status: 400 };
 
-  const source = await env.DB.prepare('SELECT id, name, role, active FROM students WHERE id = ?').bind(sourceId).first();
+  const source = await env.DB.prepare('SELECT id, name, role, active, academy_managed FROM students WHERE id = ?').bind(sourceId).first();
   if (!source) return { error: 'Not found', status: 404 };
   if (source.role !== 'student') return { error: 'A teaching profile is created from a STUDENT account', status: 400 };
   if (!source.active) return { error: 'That student account is inactive', status: 400 };
+  if (source.academy_managed) return { error: 'Create linked teaching access through Academy.', status: 403, code: 'ACADEMY_MANAGED' };
 
   const id = teachingIdFor(sourceId);
   const existing = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(id).first();
@@ -238,6 +248,7 @@ export async function handleCreateTeachingProfile(request, env, auth) {
 export async function handleRegisterStudent(request, env, auth) {
   const denied = requireAdmin(auth);
   if (denied) return denied;
+  if (await academyOwnsProfiles(env)) return academyManagedError();
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.name || !body.name.trim()) return { error: 'name is required', status: 400 };
@@ -252,7 +263,7 @@ export async function handleRegisterStudent(request, env, auth) {
   // student would otherwise fill in later. Validate against the shared
   // rules before creating anything so a failed setup never leaves a partial
   // account behind.
-  let haidhRuling = null, haidhCycleLength = null, haidhPeriodLength = null, haidhNextExpected = null;
+  let haidhRuling = 'hanafi', haidhCycleLength = null, haidhPeriodLength = null, haidhNextExpected = null;
   if (trackHaidh) {
     haidhRuling = body.haidh_ruling || 'hanafi';
     if (!['hanafi', 'shafii'].includes(haidhRuling)) return { error: 'haidh_ruling must be hanafi or shafii', status: 400 };

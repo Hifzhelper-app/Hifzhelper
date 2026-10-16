@@ -328,7 +328,7 @@ check('v402: the derivation takes today and explicit absents; today falls throug
 {
   const adminSrc = read('js/adminPage.js');
   check('v410/v421: every column has its header cell; the Teacher-profile column is GONE (user: the Role select promotes directly)',
-    /<th class="admin-th-id">Unique ID<\/th>/.test(adminSrc)
+    /<th class="admin-th-id">Login ID<\/th>/.test(adminSrc)
     && ['Name', 'WhatsApp', 'Role', 'Group', 'Status'].every(h => adminSrc.includes(`<th>${h}</th>`))
     && /<th class="admin-th-actions">Actions<\/th>/.test(adminSrc)
     && !/Teacher profile/.test(adminSrc) && !/data-create-teaching/.test(adminSrc));
@@ -346,8 +346,8 @@ check('v402: the derivation takes today and explicit absents; today falls throug
     /data-copy-url/.test(adminSrc) && /data-share-url/.test(adminSrc)
     && /apiAdminResetPin/.test(adminSrc) && /apiAdminDeleteUser/.test(adminSrc)
     && /Delete \$\{u\.id\} \(\$\{u\.name\}\) permanently\?/.test(adminSrc)
-    && /Change \$\{u\.id\}'s role to/.test(adminSrc)
-    && /Mark \$\{u\.id\} inactive\?/.test(adminSrc)
+    && /Change \$\{u\.name\}'s role to/.test(adminSrc)
+    && /Mark \$\{u\.name\} inactive\?/.test(adminSrc)
     && !/apiAdminCreateTeachingProfile\(/.test(adminSrc));
   // Retired 2026-09-24: Separate action row replaced by four-row user card; verify_v429_ui and verify_v4291_ui cover it.
   check('v410/v421: the table wears the APP palette (sage id column, mauve header); header and body share ONE width and ONE colgroup',

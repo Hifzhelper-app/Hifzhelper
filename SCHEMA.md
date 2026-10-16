@@ -1,6 +1,6 @@
 # Hifzhelper — Data Schema
 
-Reset admin pin : npx wrangler d1 execute hifzhelper-personal-db --remote --command="UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL WHERE id = 'ABCDEFG';"
+Reset admin pin : npx wrangler d1 execute hifzhelper-personal-db --remote --command="UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL WHERE login_id = 'ABCDEFG';"
 
 One Cloudflare D1 database per maktab (max ~100 students each). These are the
 canonical table names and column names — the Worker and frontend must use
@@ -15,9 +15,11 @@ human-readable reference for the same thing.
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | TEXT (PK) | Random code, not sequential (e.g. `K7M2QX`). Used to log in. |
+| `id` | TEXT (PK) | Permanent journal/profile owner. After the reviewed Academy cutover, equals Academy `accounts.account_id` for linked profiles. Unmatched inactive legacy profiles retain their old keys. |
+| `login_id` | TEXT (UNIQUE) | Added in migration 0031. Sign-in alias shared with Academy; initially copied from the old `id`. Login and personal URLs use this field. |
+| `academy_managed` | INTEGER | Added in migration 0031; default 0, set to 1 by the reviewed identity cutover. Shared profile administration is Academy-owned after a successful cutover receipt. |
 | `name` | TEXT | Display name. |
-| `role` | TEXT | `student` / `teacher` / `admin` (`admin` added in migration 0007). **V3.77.0 (j), no migration:** a teaching account is a row with role `teacher` (or `admin`) and NO journal — the PJ screens are gated off it and the maktab roster (`handleMaktabSummary`, derived attendance) selects `role = 'student'` only. A person who teaches AND does hifz holds two unlinked rows. **Convention, not a key:** the teaching id is the PJ id + `TEACHER` (`K7M2QX` → `K7M2QXTEACHER`), created by `POST /admin/create-teaching-profile`; nothing in the data links the two rows and the worker never compares them. ADMIN-01 keeps its own id (`ABCDEFG`). |
+| `role` | TEXT | `student` / `teacher` / `admin`. Academy-owned after identity cutover. Existing separate learner/staff profiles are preserved; the planner rejects a many-to-one mapping instead of merging journals. Local derived teaching-profile creation is closed after cutover. |
 | `pin_hash` | TEXT | Set on first login, not at creation. Never store the raw PIN — this is `salt:hash`, see `worker/src/auth.js`. |
 | `created_date` | TEXT | `YYYY-MM-DD`. |
 | `active` | INTEGER | `1`/`0`. Disable without deleting history. |

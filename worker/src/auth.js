@@ -1,4 +1,6 @@
+/* Hifzhelper build 4.2.15.26 | worker/src/auth.js */
 import { generateUniqueId } from './utils.js';
+import { academyOwnsProfiles, academyManagedError } from './profile-ownership.js';
 
 // Login: unique ID + 4-digit PIN (see the auth decision in chat).
 // Two things a 4-digit PIN needs, since it only has 10,000 possibilities:
@@ -37,8 +39,7 @@ async function verifyPin(pin, storedHash, pepper) {
 }
 
 // Compact HMAC-signed token: base64(payload json).base64(signature).
-// Stateless on purpose — verifying a request doesn't need a D1 lookup, which
-// matters given the burst-usage pattern (many logins in a short window).
+// The signed ID is the permanent journal owner, never the login alias.
 async function signToken(payload, secret) {
   const body = btoa(JSON.stringify(payload));
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -48,17 +49,18 @@ async function signToken(payload, secret) {
 }
 
 export async function verifyToken(token, secret) {
-  if (!token) return null;
-  const [body, sig] = token.split('.');
-  if (!body || !sig) return null;
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const expectedSigBuffer = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
-  const expectedSig = btoa(String.fromCharCode(...new Uint8Array(expectedSigBuffer)));
-  if (expectedSig !== sig) return null; // tampered or wrong secret
-  let payload;
-  try { payload = JSON.parse(atob(body)); } catch (e) { return null; }
-  if (!payload.exp || Date.now() > payload.exp) return null; // expired
-  return payload; // { id, role, exp }
+  if (typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const [body, sig] = parts;
+  try {
+    const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    const signature = Uint8Array.from(atob(sig), char => char.charCodeAt(0));
+    if (!await crypto.subtle.verify('HMAC', key, signature, new TextEncoder().encode(body))) return null;
+    const payload = JSON.parse(atob(body));
+    if (typeof payload.id !== 'string' || !payload.id || !Number.isFinite(payload.exp) || Date.now() >= payload.exp) return null;
+    return payload;
+  } catch { return null; }
 }
 
 // Pulls the token out of "Authorization: Bearer <token>" and verifies it.
@@ -66,20 +68,26 @@ export async function verifyToken(token, secret) {
 export async function authenticate(request, env) {
   const header = request.headers.get('Authorization') || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  return await verifyToken(token, env.HH_AUTH_SECRET);
+  const payload = await verifyToken(token, env.HH_AUTH_SECRET);
+  // Old tokens used the sign-in code as an owner key. Never reinterpret
+  // them after the migration; the person signs in again with the same PIN.
+  if (!payload || payload.identity_version !== 2) return null;
+  const row = await env.DB.prepare('SELECT id, role, active FROM students WHERE id = ?').bind(payload.id).first();
+  if (!row || !row.active) return null;
+  return { id: row.id, role: row.role, exp: payload.exp };
 }
 
 export async function handleLogin(request, env) {
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   const { id, pin } = body || {};
-  if (!id || !pin || !/^\d{4}$/.test(pin)) {
+  if (typeof id !== 'string' || !id.trim() || typeof pin !== 'string' || !/^\d{4}$/.test(pin)) {
     return { error: 'id and a 4-digit pin are required', status: 400 };
   }
 
   const row = await env.DB.prepare(
-    'SELECT id, name, role, pin_hash, active, failed_attempts, locked_until FROM students WHERE id = ?'
-  ).bind(id).first();
+    'SELECT id, login_id, name, role, pin_hash, active, failed_attempts, locked_until FROM students WHERE login_id = ?'
+  ).bind(id.trim()).first();
 
   if (!row || !row.active) return { error: 'Invalid ID or PIN', status: 401 }; // deliberately vague — don't reveal which part was wrong
 
@@ -92,9 +100,9 @@ export async function handleLogin(request, env) {
     const salt = randomSalt();
     const hash = await hashPin(pin, salt, env.HH_PEPPER);
     await env.DB.prepare('UPDATE students SET pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ?')
-      .bind(`${salt}:${hash}`, id).run();
-    const token = await signToken({ id: row.id, role: row.role, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
-    return { data: { token, name: row.name, role: row.role, firstLogin: true } };
+      .bind(`${salt}:${hash}`, row.id).run();
+    const token = await signToken({ id: row.id, role: row.role, identity_version: 2, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
+    return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: true } };
   }
 
   const ok = await verifyPin(pin, row.pin_hash, env.HH_PEPPER);
@@ -102,16 +110,16 @@ export async function handleLogin(request, env) {
     const attempts = (row.failed_attempts || 0) + 1;
     if (attempts >= LOCKOUT_THRESHOLD) {
       const until = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString();
-      await env.DB.prepare('UPDATE students SET failed_attempts = ?, locked_until = ? WHERE id = ?').bind(attempts, until, id).run();
+      await env.DB.prepare('UPDATE students SET failed_attempts = ?, locked_until = ? WHERE id = ?').bind(attempts, until, row.id).run();
       return { error: `Too many attempts. Locked until ${until}.`, status: 429 };
     }
-    await env.DB.prepare('UPDATE students SET failed_attempts = ? WHERE id = ?').bind(attempts, id).run();
+    await env.DB.prepare('UPDATE students SET failed_attempts = ? WHERE id = ?').bind(attempts, row.id).run();
     return { error: 'Invalid ID or PIN', status: 401 };
   }
 
-  await env.DB.prepare('UPDATE students SET failed_attempts = 0, locked_until = NULL WHERE id = ?').bind(id).run();
-  const token = await signToken({ id: row.id, role: row.role, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
-  return { data: { token, name: row.name, role: row.role, firstLogin: false } };
+  await env.DB.prepare('UPDATE students SET failed_attempts = 0, locked_until = NULL WHERE id = ?').bind(row.id).run();
+  const token = await signToken({ id: row.id, role: row.role, identity_version: 2, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
+  return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: false } };
 }
 
 // Normalizes a name for duplicate comparison — trimmed, lowercased, so
@@ -183,6 +191,7 @@ export async function findDuplicateMatch(env, trimmedName, whatsapp) {
 // number (V3.4.1) since two students can otherwise be indistinguishable
 // in any admin-facing list except by their random ID.
 export async function handleRegister(request, env) {
+  if (await academyOwnsProfiles(env)) return academyManagedError();
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.name || !body.name.trim()) return { error: 'name is required', status: 400 };
@@ -214,7 +223,11 @@ export async function handleLookup(request, env) {
   const url = new URL(request.url);
   const id = (url.searchParams.get('id') || '').trim();
   if (!id) return { error: 'id is required', status: 400 };
-  const row = await env.DB.prepare('SELECT name, pin_hash, active FROM students WHERE id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT name, pin_hash, active FROM students WHERE login_id = ?').bind(id).first();
   if (!row || !row.active) return { error: 'Not found', status: 404 };
   return { data: { name: row.name, hasPin: !!row.pin_hash } };
+}
+
+export async function handleAuthPolicy(request, env) {
+  return { data: { academy_profiles_only: await academyOwnsProfiles(env) } };
 }

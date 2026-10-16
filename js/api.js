@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.20 | js/api.js */
+/* Hifzhelper build 4.2.15.26 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -152,6 +152,9 @@ function apiRegister(name, whatsapp_number, force){
 // personalized before any PIN is entered (V3.4, items 3/6/7/10).
 function apiLookup(id){
   return apiFetch('/auth/lookup?id=' + encodeURIComponent(id));
+}
+function apiAuthPolicy(){
+  return apiFetch('/auth/policy');
 }
 
 // ---------- the four independent logs ----------

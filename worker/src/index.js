@@ -1,5 +1,6 @@
+/* Hifzhelper build 4.2.15.26 | worker/src/index.js */
 import { json, error } from './utils.js';
-import { handleLogin, handleRegister, handleLookup, authenticate } from './auth.js';
+import { handleLogin, handleRegister, handleLookup, handleAuthPolicy, authenticate } from './auth.js';
 import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq } from './sabaqLog.js';
 import { handleGetSabaqDhor, handleSaveSabaqDhor, handleUpdateSabaqDhor, handleDeleteSabaqDhor } from './sabaqDhorLog.js';
 import { handleGetDhor, handleSaveDhor, handleUpdateDhor, handleDeleteDhor } from './dhorLog.js';
@@ -56,6 +57,9 @@ export default {
       }
       if (path === '/auth/lookup' && request.method === 'GET') {
         return respond(await handleLookup(request, env));
+      }
+      if (path === '/auth/policy' && request.method === 'GET') {
+        return respond(await handleAuthPolicy(request, env));
       }
 
       // Everything past this point requires a valid token.

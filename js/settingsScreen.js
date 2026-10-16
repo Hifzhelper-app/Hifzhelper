@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.8 | js/settingsScreen.js */
+/* Hifzhelper build 4.2.15.26 | js/settingsScreen.js */
 // ============================================================
 // Hifzhelper — Setup screen (V3.9.0, switch redesign V3.10.0, V2 refinements V3.11.0)
 // Current as of V3.38
@@ -240,8 +240,8 @@ async function renderSettingsScreen(){
 
   // Profile section
   document.getElementById('setup_name_display').textContent = profile.name || '';
-  document.getElementById('setup_id_display').textContent = profile.id || '';
-  document.getElementById('setup_url_display').value = window.location.origin + '/' + profile.id;
+  document.getElementById('setup_id_display').textContent = profile.login_id || '';
+  document.getElementById('setup_url_display').value = window.location.origin + '/' + encodeURIComponent(profile.login_id);
   document.getElementById('setup_journal_name').value = profile.journal_name || '';
   setupSelectedGender = profile.gender || null;
   renderSwitch('gender_switch', setupSelectedGender);

@@ -105,7 +105,7 @@ function adminDom(users) {
     function iconHtml(){ return ''; }
     function showBanner(m){ banners.push(m); }
     var USERS = ${JSON.stringify(users)};
-    function apiAdminListUsers(){ return Promise.resolve(USERS); }
+    function apiAdminListUsers(){ return Promise.resolve(USERS.map(u => Object.assign({},u,{login_id:u.id}))); }
     function apiAdminCreateTeachingProfile(id){ created.push(id); const t = { id: id + 'TEACHER', name: 'x (Teacher)', role: 'teacher', active: 1 }; USERS.push(t); return Promise.resolve(t); }
     function apiAdminUpdateUser(){ return Promise.resolve({}); } function apiAdminChangeRole(){ return Promise.resolve({}); }
     function apiAdminResetPin(){ return Promise.resolve({}); } function apiAdminDeleteUser(){ return Promise.resolve({}); }
@@ -217,7 +217,7 @@ check('menu: Switch account sits between Refresh and Log out', /\{ id: 'switchAc
 check('menu: its listener clears the token BEFORE requesting the switch and reloading',
   /switchAccountBtn'\)\.addEventListener\('click', \(\) => \{\n\s*clearToken\(\);\n\s*requestAccountSwitch\(\);\n\s*location\.reload\(\);/.test(authSrc));
 check('router: the switch flag is checked first and only honoured with known accounts', /if\(consumeAccountSwitchRequest\(\) && getKnownAccounts\(\)\.length\)\{\n\s*showSwitchScreen\(\);/.test(authSrc));
-check('boot: the signed-in account is recorded for the switcher', /rememberKnownAccount\(\{ id: profile\.id, name: profile\.name, role: profile\.role \}\)/.test(read('js/app.js')));
+check('boot: the signed-in account is recorded for the switcher', /rememberKnownAccount\(\{ id: profile\.login_id, name: profile\.name, role: profile\.role \}\)/.test(read('js/app.js')));
 check('html: the switch screen and its list exist', /id="loginScreenSwitch"/.test(read('index.html')) && /id="switchAccountList"/.test(read('index.html')));
 check('icons: switchAccount icon exists', /switchAccount: '<svg/.test(read('js/icons.js')));
 check('worker: the summary roster query filters on role (V3.78.0: with the group join)', /WHERE s\.active = 1 AND s\.role = 'student'/.test(read('worker/src/maktabLog.js')));

@@ -74,10 +74,10 @@ check('5: the close label no longer claims to exit Home',
 // treatment is retired. What that check protected still holds: copy and
 // search both still have the id.
 check('6: the id has its own column in the table (V4.1.0 supersedes the hidden span)',
-  /<th class="admin-th-id">Unique ID<\/th>/.test(admin)
-  && /class="mono admin-cell-id" data-label="Unique ID">\$\{u\.id\}</.test(admin));
+  /<th class="admin-th-id">Login ID<\/th>/.test(admin)
+  && /class="mono admin-cell-id" data-label="Login ID">\$\{esc\(loginId\)\}</.test(admin));
 check('6: but the id is still RENDERED, so copy and search still have it',
-  /\$\{u\.id\}/.test(admin));
+  /\$\{esc\(loginId\)\}/.test(admin));
 
 // ---------- 7: menu groups ----------
 {

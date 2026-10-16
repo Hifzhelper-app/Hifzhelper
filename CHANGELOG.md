@@ -5,6 +5,25 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.26 — Academy user IDs and independent login aliases (2026-10-16)
+
+Prepared for development branch testing. Add login_id,
+backfill it from existing profile IDs, and prepare a reviewed atomic rekey to
+Academy permanent account IDs. Journals and every declared staff/author reference
+move together. Hifz keeps its own PIN hashes, and existing personal links retain
+the sign-in alias. Tokens and journal operations use the permanent user ID.
+
+After cutover, shared profile fields are read-only in Hifz and protected by the
+Worker; local registration/deletion/profile creation are closed. Hifz settings
+and local PIN operations remain available. Updated two legacy fixtures to replay
+real migrations; this exposed and corrected the NOT NULL Haidh ruling default in
+legacy registration and disabling Haidh tracking, without changing its rules.
+
+**Migration status — 16 October 2026:** through 0030 was previously confirmed;
+additive 0031 is applied to development only. The data rekey is a
+separate atomic operation. See ACADEMY-IDENTITY.md for release order, validation
+and the remaining Academy-to-Hifz change-delivery stage.
+
 ## V4.2.15.25 — Maktab row order and student heading (2026-09-24)
 
 Maktab rows place the attendance icon before the row number, with the icon

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.14 | js/adminPage.js */
+/* Hifzhelper build 4.2.15.26 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -20,6 +20,7 @@ function adminIsMobile(){
 // V4.2.1 (user): "Register a user" sits ABOVE the table and opens the new
 // user as its FIRST ROW — no separate register box any more.
 function adminShowAddRow(show){
+  if(show && adminUsers.some(user => user.academy_profiles_only)) return;
   adminAdding = !!show;
   if(show) adminNewHaidhRuling = 'hanafi';
   if(!show) adminMatchedId = null;
@@ -41,6 +42,10 @@ async function loadAdminUsers(){
   list.innerHTML = `<div class="admin-list-empty">Loading…</div>`;
   try{
     adminUsers = await apiAdminListUsers();
+    const academyOnly = adminUsers.some(user => user.academy_profiles_only);
+    if (academyOnly) adminAdding = false;
+    const addButton = document.getElementById('adminRegisterOpenBtn');
+    if (addButton) addButton.hidden = academyOnly;
     renderAdminUsersList();
   } catch(e){
     list.innerHTML = `<div class="admin-list-empty" style="color:var(--color-error);">Couldn't load: ${e.message}</div>`;
@@ -146,7 +151,7 @@ function adminOpenHaidhSettings(user){
 function renderAdminUsersList(){
   const query = (document.getElementById('admin_search').value || '').trim().toLowerCase();
   let filtered = adminUsers.filter(u =>
-    !query || u.id.toLowerCase().includes(query) || u.name.toLowerCase().includes(query)
+    !query || u.id.toLowerCase().includes(query) || (u.login_id || '').toLowerCase().includes(query) || u.name.toLowerCase().includes(query)
   );
   if(adminJustCreatedId){
     const idx = filtered.findIndex(u => u.id === adminJustCreatedId);
@@ -194,7 +199,7 @@ function renderAdminUsersList(){
     <div class="admin-table-region"><div class="admin-table-layout">
     <table class="admin-table admin-table-head">${ADMIN_COLGROUP}<thead><tr>
       <th>Name</th><th>WhatsApp</th><th>Role</th>
-      <th>Group</th><th>Status</th><th>Haidh</th><th class="admin-th-id">Unique ID</th><th class="admin-th-actions">Actions</th>
+      <th>Group</th><th>Status</th><th>Haidh</th><th class="admin-th-id">Login ID</th><th class="admin-th-actions">Actions</th>
     </tr></thead></table>
     <div class="admin-wrap"><table class="admin-table admin-table-body">${ADMIN_COLGROUP}<tbody></tbody></table></div>
     </div></div>`;
@@ -217,7 +222,7 @@ function renderAdminUsersList(){
           <label class="admin-register-check admin-register-haidh-check hidden" id="admin_new_haidh_wrap"><span>Haaidha</span><input type="checkbox" id="admin_new_haidh"></label>
         </span></td>
         <td data-label="Haidh Settings"><span class="admin-dash">—</span></td>
-        <td class="mono admin-cell-id admin-dash" data-label="Unique ID">new</td>
+        <td class="mono admin-cell-id admin-dash" data-label="Login ID">new</td>
         <td class="admin-actions-cell" data-label="Actions">
           <button type="button" class="secondary admin-register-btn" id="adminRegisterBtn">Register</button>
           <button type="button" class="icon-btn" id="adminRegisterCloseBtn" aria-label="Cancel">&times;</button>
@@ -264,28 +269,30 @@ function renderAdminUsersList(){
   }
 
   filtered.forEach(u => {
+    const managed = !!(u.academy_managed || u.academy_profiles_only);
+    const loginId = typeof u.login_id === 'string' ? u.login_id : '';
     const tr = document.createElement('tr');
     tr.className = 'admin-row admin-row-fields' + (u.id === adminJustCreatedId ? ' admin-row-just-created' : '');
     tr.innerHTML = `
-      <td data-label="Name"><input type="text" class="admin-inline" data-f="name" value="${esc(u.name)}"></td>
-      <td data-label="WhatsApp"><input type="text" class="admin-inline" data-f="whatsapp_number" value="${esc(u.whatsapp_number)}"></td>
-      <td data-label="Role"><select class="admin-inline" data-f="role">
+      <td data-label="Name"><input type="text" class="admin-inline" data-f="name" value="${esc(u.name)}"${managed ? ' readonly title="Managed in Academy"' : ''}></td>
+      <td data-label="WhatsApp"><input type="text" class="admin-inline" data-f="whatsapp_number" value="${esc(u.whatsapp_number)}"${managed ? ' readonly title="Managed in Academy"' : ''}></td>
+      <td data-label="Role"><select class="admin-inline" data-f="role"${managed ? ' disabled title="Managed in Academy"' : ''}>
         <option value="student"${u.role === 'student' ? ' selected' : ''}>Student</option>
         <option value="teacher"${u.role === 'teacher' ? ' selected' : ''}>Teacher</option>
         <option value="admin"${u.role === 'admin' ? ' selected' : ''}>Admin</option>
       </select></td>
       <td data-label="Group">${u.role === 'student' ? '<select class="admin-inline" data-f="group_id" disabled><option>…</option></select>' : '<span class="admin-dash">—</span>'}</td>
-      <td data-label="Status"><label class="admin-status"><input type="checkbox" class="admin-inline" data-f="active"${u.active ? ' checked' : ''}><span>${u.active ? 'Active' : 'Inactive'}</span></label></td>
+      <td data-label="Status"><label class="admin-status"><input type="checkbox" class="admin-inline" data-f="active"${u.active ? ' checked' : ''}${managed ? ' disabled title="Managed in Academy"' : ''}><span>${u.active ? 'Active' : 'Inactive'}</span></label></td>
       <td data-label="Haidh Settings">${u.role === 'student' ? `<button type="button" class="admin-haidh-pill${adminHaidhSetupComplete(u) ? ' is-complete' : ''}" data-haidh-settings="${u.id}">Haidh</button>` : '<span class="admin-dash">—</span>'}</td>
-      <td class="mono admin-cell-id" data-label="Unique ID">${u.id}</td>
+      <td class="mono admin-cell-id" data-label="Login ID">${esc(loginId)}</td>
       <td class="admin-actions-cell" data-label="Actions"></td>`;
     tbody.appendChild(tr);
 
     const actionsHtml = `
-      <button type="button" class="icon-btn" data-copy-url="${u.id}" aria-label="Copy personal URL"></button>
-      ${canShare ? `<button type="button" class="icon-btn" data-share-url="${u.id}" aria-label="Share personal URL"></button>` : ''}
+      <button type="button" class="icon-btn" data-copy-url="${esc(loginId)}" aria-label="Copy personal URL"${loginId ? '' : ' disabled'}></button>
+      ${canShare ? `<button type="button" class="icon-btn" data-share-url="${esc(loginId)}" aria-label="Share personal URL"${loginId ? '' : ' disabled'}></button>` : ''}
       <button type="button" class="secondary admin-pin-btn" data-reset-pin>Reset PIN</button>
-      <button type="button" class="icon-btn admin-delete-btn" data-delete aria-label="Delete user"></button>`;
+      ${managed ? '<span class="admin-managed-label">Managed in Academy</span>' : '<button type="button" class="icon-btn admin-delete-btn" data-delete aria-label="Delete user"></button>'}`;
     tr.querySelector('.admin-actions-cell').innerHTML = actionsHtml;
     const trActions = document.createElement('tr');
     trActions.className = 'admin-row admin-row-actions';
@@ -308,14 +315,14 @@ function renderAdminUsersList(){
       if(roleEl) roleEl.addEventListener('change', async () => {
         const v = roleEl.value;
         if(v === u.role) return;
-        if(!confirm(`Change ${u.id}'s role to "${v}"?`)){ roleEl.value = u.role; return; }
+        if(!confirm(`Change ${u.name}'s role to "${v}"?`)){ roleEl.value = u.role; return; }
         try{ await apiAdminChangeRole(u.id, v); adminFlash('Role saved'); await loadAdminUsers(); }
         catch(e){ adminFlash("Couldn't change the role: " + e.message, true); roleEl.value = u.role; }
       });
       const activeEl = scope.querySelector('[data-f="active"]');
       if(activeEl) activeEl.addEventListener('change', async () => {
         const v = activeEl.checked;
-        if(!v && u.active && !confirm(`Mark ${u.id} inactive? They won't be able to log in until reactivated.`)){
+        if(!v && u.active && !confirm(`Mark ${u.name} inactive? They won't be able to log in until reactivated.`)){
           activeEl.checked = true; return;
         }
         await adminSaveField(u, { active: v }, 'Status');
@@ -332,7 +339,7 @@ function renderAdminUsersList(){
       if(copyBtn){
         copyBtn.innerHTML = iconHtml('copy');
         copyBtn.addEventListener('click', async () => {
-          try{ await navigator.clipboard.writeText(window.location.origin + '/' + u.id); } catch(err){ /* nothing to fall back to */ }
+          try{ await navigator.clipboard.writeText(window.location.origin + '/' + encodeURIComponent(loginId)); } catch(err){ /* nothing to fall back to */ }
           copyBtn.innerHTML = iconHtml('check');
           copyBtn.classList.add('copied');
           setTimeout(() => { copyBtn.innerHTML = iconHtml('copy'); copyBtn.classList.remove('copied'); }, 1500);
@@ -342,13 +349,13 @@ function renderAdminUsersList(){
       if(shareBtn){
         shareBtn.innerHTML = iconHtml('share');
         shareBtn.addEventListener('click', async () => {
-          try{ await navigator.share({ url: window.location.origin + '/' + u.id }); } catch(err){ /* cancelled */ }
+          try{ await navigator.share({ url: window.location.origin + '/' + encodeURIComponent(loginId) }); } catch(err){ /* cancelled */ }
         });
       }
       const pinBtn = scope.querySelector('[data-reset-pin]');
       if(pinBtn) pinBtn.addEventListener('click', async () => {
-        if(!confirm(`Reset ${u.id}'s PIN? They'll set a new one on their next login.`)) return;
-        try{ await apiAdminResetPin(u.id); adminFlash(`PIN reset for ${u.id}.`); }
+        if(!confirm(`Reset ${u.name}'s PIN? They'll set a new one on their next login.`)) return;
+        try{ await apiAdminResetPin(u.id); adminFlash(`PIN reset for ${u.name}.`); }
         catch(e){ adminFlash("Couldn't reset PIN: " + e.message, true); }
       });
       const delBtn = scope.querySelector('[data-delete]');
