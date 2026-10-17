@@ -8,6 +8,14 @@ Specs for delivered work live in `SPECS.md`; what changed and which files
 were touched lives in `CHANGELOG.md`. Neither is an action list. This file
 is the only one that is.
 
+## Development hostname — V4.2.15.30 (2026-10-17)
+
+`hifz.maktab4life.org` is the selected Academy-branded address for the Hifz
+`dev` release. The client maps it to the existing development Worker, including
+when browser storage is blocked. The Pages custom domain and Academy-zone CNAME
+are configured separately from code publication. No database or PIN changes.
+See ACADEMY-IDENTITY.md for the hosting contract. Production remains unchanged.
+
 ## Development identity and sync — V4.2.15.29 (2026-10-16)
 
 Development profile locks and new/reset PIN confirmation are deployed. V4.2.15.29

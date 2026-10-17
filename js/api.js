@@ -1,26 +1,25 @@
-/* Hifzhelper build 4.2.15.28 | js/api.js */
+/* Hifzhelper build 4.2.15.30 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
 // reason as shared/data.js. Loaded before every other JS file.
 // ============================================================
 
-// V3.97.1 (user — "fix the seam"): the API base picks itself by where
-// the app is served. A dev-hosted frontend (any hostname containing
-// "-dev", or localhost) talks to the DEV worker; everything else talks
-// to production — so one identical codebase serves both streams and a
-// dev page can never quietly write into real maktab data. For ad-hoc
-// work, localStorage 'hh_api_base' overrides both (set it in the
-// browser console; remove the key to return to automatic).
+// Environment selection is kept here for every API request. The Academy-branded
+// hostname is development while the separate-account integration is being tested.
+// A storage privacy restriction must not make a development hostname use production.
+// The existing manual override remains available for deliberate local development.
 const API_BASE = (() => {
   try {
     const override = localStorage.getItem('hh_api_base');
     if (override) return override;
-    const h = location.hostname;
-    if (h.includes('-dev') || h === 'localhost' || h === '127.0.0.1') {
+  } catch (e) { /* Host-based routing still works without browser storage. */ }
+  try {
+    const h = location.hostname.toLowerCase();
+    if (h.includes('-dev') || h === 'localhost' || h === '127.0.0.1' || h === 'hifz.maktab4life.org') {
       return 'https://hifzhelper-api-dev.hifzhelper-app.workers.dev';
     }
-  } catch (e) { /* no location/storage (harness) — production default */ }
+  } catch (e) { /* No location in standalone harnesses/file-based tools. */ }
   return 'https://hifzhelper-api.hifzhelper-app.workers.dev';
 })();
 

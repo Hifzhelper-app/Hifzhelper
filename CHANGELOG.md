@@ -5,6 +5,21 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V4.2.15.30 — Academy-branded development hostname (2026-10-17)
+
+`hifz.maktab4life.org` selects the existing Hifz development Worker. The custom
+hostname is attached to the `hifzhelper-dev` Pages project, whose release branch
+is `dev`; hosting, API and D1 remain in the Hifz account. Existing production
+hostnames retain their API selection. Blocked browser storage no longer skips
+hostname selection and sends a development site to production.
+
+The hostname/request regression covers personal links, existing development and
+production hosts, localhost, storage restrictions and the deliberate API override.
+No database migration or PIN change is required. Production remains unchanged.
+
+Files: js/api.js, index.html, js/sw.js, tests/verify_custom_domain.mjs,
+ACADEMY-IDENTITY.md, TODO.md, CHANGELOG.md.
+
 ## V4.2.15.29 — Academy profile delivery and PIN-reset revocation (2026-10-16)
 
 A signed development receiver applies newer Academy profile snapshots atomically,

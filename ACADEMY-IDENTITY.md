@@ -4,6 +4,21 @@ Development release deployed on 16 October 2026. Migrations 0031 and 0032,
 the reviewed 34-profile permanent-ID cutover and authenticated Academy
 profile delivery are applied in development. Production is unchanged.
 
+## Academy-branded hosting — V4.2.15.30 (17 October 2026)
+
+The selected address is `https://hifz.maktab4life.org/`, attached to the existing
+Hifz-account Pages project `hifzhelper-dev` (release branch `dev`). The Academy
+DNS zone holds a CNAME to `hifzhelper-dev.pages.dev`. The client explicitly maps
+the new hostname to `hifzhelper-api-dev.hifzhelper-app.workers.dev`; it must remain
+a development endpoint until a separately reviewed production rollout.
+
+Academy links point to this address plus the account's current login ID. Requests
+go directly to Hifz hosting and its Worker; Academy is not a proxy and its D1 is
+not queried for ordinary Hifz use. Custom-domain association precedes DNS
+activation, after the matching frontend is published. Browser storage being
+unavailable must not change the selected backend. Existing PINs and journals
+stay in their development D1; PIN formats and credential sharing are unchanged.
+
 ## Identifier contract
 
 | Field | Meaning |
