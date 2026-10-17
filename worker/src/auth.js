@@ -1,4 +1,5 @@
-/* Hifzhelper build 4.2.15.29 | worker/src/auth.js */
+/* Hifzhelper build 5.0 | worker/src/auth.js */
+import {createSharedPinHash,isSharedPinHash,verifySharedPin} from './shared-pin-credential.js';
 import { generateUniqueId } from './utils.js';
 import { academyOwnsProfiles, academyManagedError } from './profile-ownership.js';
 
@@ -35,7 +36,7 @@ async function verifyPin(pin, storedHash, pepper) {
   const [salt, hash] = (storedHash || '').split(':');
   if (!salt || !hash) return false;
   const computed = await hashPin(pin, salt, pepper);
-  return computed === hash;
+  let difference=computed.length^hash.length;for(let i=0;i<computed.length;i++)difference|=computed.charCodeAt(i)^(hash.charCodeAt(i)||0);return difference===0;
 }
 
 // Compact HMAC-signed token: base64(payload json).base64(signature).
@@ -79,6 +80,7 @@ export async function authenticate(request, env) {
 }
 
 export async function handleLogin(request, env) {
+  if(env.ACADEMY_HANDOFF_ENABLED==='1'&&(typeof env.SHARED_PIN_SECRET!=='string'||env.SHARED_PIN_SECRET.length<32))return {error:'PIN verification is temporarily unavailable.',status:503};
   let body;
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   const { id, pin, confirmPin } = body || {};
@@ -87,7 +89,7 @@ export async function handleLogin(request, env) {
   }
 
   const row = await env.DB.prepare(
-    'SELECT id, login_id, name, role, pin_hash, active, failed_attempts, locked_until, credential_epoch FROM students WHERE login_id = ?'
+    'SELECT id, login_id, name, role, pin_hash, active, failed_attempts, locked_until, credential_epoch, academy_managed FROM students WHERE login_id = ?'
   ).bind(id.trim()).first();
 
   if (!row || !row.active) return { error: 'Invalid ID or PIN', status: 401 }; // deliberately vague — don't reveal which part was wrong
@@ -99,31 +101,40 @@ export async function handleLogin(request, env) {
   // First login and resets require two matching entries before any credential
   // is saved. A stale login screen cannot silently set a just-reset PIN.
   if (!row.pin_hash) {
+    if(row.academy_managed&&(env.SHARED_PIN_SECRET||env.ACADEMY_HANDOFF_ENABLED==='1'))return {error:'Choose and confirm your PIN in Academy, then open Hifz from Academy.',status:403,code:'ACADEMY_PIN_REQUIRED'};
     if (typeof confirmPin !== 'string' || !/^\d{4}$/.test(confirmPin)) {
       return { error: 'Enter your new PIN again to confirm it.', status: 400, code: 'PIN_CONFIRMATION_REQUIRED' };
     }
     if (pin !== confirmPin) return { error: "PINs didn't match. Start again.", status: 400, code: 'PIN_MISMATCH' };
     const salt = randomSalt();
-    const hash = await hashPin(pin, salt, env.HH_PEPPER);
+    const hash = env.SHARED_PIN_SECRET?await createSharedPinHash(pin,env.SHARED_PIN_SECRET):`${salt}:${await hashPin(pin,salt,env.HH_PEPPER)}`;
     const saved = await env.DB.prepare('UPDATE students SET pin_hash = ?, failed_attempts = 0, locked_until = NULL WHERE id = ? AND active = 1 AND pin_hash IS ?')
-      .bind(`${salt}:${hash}`, row.id, row.pin_hash).run();
+      .bind(hash, row.id, row.pin_hash).run();
     if (saved.meta.changes !== 1) return { error: 'PIN setup changed. Refresh and sign in again.', status: 409, code: 'PIN_STATE_CHANGED' };
     const token = await signToken({ id: row.id, role: row.role, identity_version: 2, credential_epoch: row.credential_epoch, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
     return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: true } };
   }
 
-  const ok = await verifyPin(pin, row.pin_hash, env.HH_PEPPER);
+  const shared=isSharedPinHash(row.pin_hash);
+  const ok = shared?await verifySharedPin(pin,row.pin_hash,env.SHARED_PIN_SECRET):await verifyPin(pin, row.pin_hash, env.HH_PEPPER);
   if (!ok) {
-    const attempts = (row.failed_attempts || 0) + 1;
-    if (attempts >= LOCKOUT_THRESHOLD) {
-      const until = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString();
-      await env.DB.prepare('UPDATE students SET failed_attempts = ?, locked_until = ? WHERE id = ?').bind(attempts, until, row.id).run();
-      return { error: `Too many attempts. Locked until ${until}.`, status: 429 };
-    }
-    await env.DB.prepare('UPDATE students SET failed_attempts = ? WHERE id = ?').bind(attempts, row.id).run();
+    const until=new Date(Date.now()+LOCKOUT_MINUTES*60000).toISOString();
+    // Count attempts atomically: parallel guesses must not overwrite each
+    // other's counters and evade a four-digit PIN's online lockout.
+    const failure=await env.DB.prepare(`UPDATE students SET failed_attempts=failed_attempts+1,
+      locked_until=CASE WHEN failed_attempts+1>=? THEN ? ELSE locked_until END
+      WHERE id=? AND active=1 AND pin_hash=? AND credential_epoch=? RETURNING failed_attempts,locked_until`)
+      .bind(LOCKOUT_THRESHOLD,until,row.id,row.pin_hash,row.credential_epoch).first();
+    if(failure?.failed_attempts>=LOCKOUT_THRESHOLD)return {error:`Too many attempts. Locked until ${failure.locked_until}.`,status:429};
     return { error: 'Invalid ID or PIN', status: 401 };
   }
 
+  if(!shared&&env.SHARED_PIN_SECRET){
+    const hash=await createSharedPinHash(pin,env.SHARED_PIN_SECRET);
+    const updated=await env.DB.prepare('UPDATE students SET pin_hash=?,credential_epoch=credential_epoch+1 WHERE id=? AND active=1 AND pin_hash=? AND credential_epoch=?').bind(hash,row.id,row.pin_hash,row.credential_epoch).run();
+    if(updated.meta.changes!==1)return {error:'PIN changed. Sign in again.',status:409,code:'PIN_STATE_CHANGED'};
+    row.credential_epoch++;
+  }
   await env.DB.prepare('UPDATE students SET failed_attempts = 0, locked_until = NULL WHERE id = ?').bind(row.id).run();
   const token = await signToken({ id: row.id, role: row.role, identity_version: 2, credential_epoch: row.credential_epoch, exp: Date.now() + TOKEN_TTL_HOURS * 3600 * 1000 }, env.HH_AUTH_SECRET);
   return { data: { token, id: row.id, login_id: row.login_id, name: row.name, role: row.role, firstLogin: false } };
@@ -230,11 +241,17 @@ export async function handleLookup(request, env) {
   const url = new URL(request.url);
   const id = (url.searchParams.get('id') || '').trim();
   if (!id) return { error: 'id is required', status: 400 };
-  const row = await env.DB.prepare('SELECT name, pin_hash, active FROM students WHERE login_id = ?').bind(id).first();
+  const row = await env.DB.prepare('SELECT name, pin_hash, active, academy_managed FROM students WHERE login_id = ?').bind(id).first();
   if (!row || !row.active) return { error: 'Not found', status: 404 };
-  return { data: { name: row.name, hasPin: !!row.pin_hash } };
+  return { data: { name: row.name, hasPin: !!row.pin_hash, ...(env.SHARED_PIN_SECRET?{academyPinOnly:Boolean(row.academy_managed)}:{}) } };
 }
 
 export async function handleAuthPolicy(request, env) {
   return { data: { academy_profiles_only: await academyOwnsProfiles(env) } };
+}
+
+// Used only after a one-use Academy pass has been consumed against current D1.
+export async function issueHifzSession(row,env){
+ const token=await signToken({id:row.id,role:row.role,identity_version:2,credential_epoch:row.credential_epoch,exp:Date.now()+TOKEN_TTL_HOURS*3600000},env.HH_AUTH_SECRET);
+ return {token,id:row.id,login_id:row.login_id,name:row.name,role:row.role,firstLogin:false};
 }

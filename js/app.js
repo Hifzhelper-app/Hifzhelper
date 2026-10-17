@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.27 | js/app.js */
+/* Hifzhelper build 5.0 | js/app.js */
 // ============================================================
 // Hifzhelper — app bootstrap and screen routing
 // ============================================================
@@ -241,7 +241,7 @@ window.addEventListener('popstate', () => {
   }
 });
 
-(function init(){
+(async function init(){
   document.getElementById('th_sabaq').innerHTML = iconHtml('sabaq') + '<span>Sabaq</span>';
   document.getElementById('th_sabaqDhor').innerHTML = iconHtml('sabaqDhor') + '<span>Sabaq Dhor</span>';
   document.getElementById('th_dhor').innerHTML = iconHtml('dhor') + '<span>Dhor</span>';
@@ -286,6 +286,7 @@ window.addEventListener('popstate', () => {
     btn.addEventListener('click', () => showScreen(homeScreenFor()));   // V4.1.1
   });
 
+  if(typeof handleAcademyHandoff==='function'&&await handleAcademyHandoff())return;
   if(getToken()){
     bootApp();
   } else {

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | worker/src/utils.js */
+/* Hifzhelper build 5.0 | worker/src/utils.js */
 // Shared response helpers + validation.
 // Per CONVENTIONS.md principle 4 (validate at the boundary): every handler
 // that writes to D1 should run its input through the relevant validate*
@@ -10,6 +10,8 @@ export function json(data, status = 200) {
     status,
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'private, no-store',
+      'Referrer-Policy': 'no-referrer',
       'Access-Control-Allow-Origin': '*', // tighten to your real frontend origin once it has one
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS'

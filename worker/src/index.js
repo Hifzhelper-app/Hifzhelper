@@ -1,5 +1,6 @@
-/* Hifzhelper build 4.2.15.29 | worker/src/index.js */
+/* Hifzhelper build 5.0 | worker/src/index.js */
 import { json, error } from './utils.js';
+import {handleAcademyHandoff,handleAcademySignin} from './academy-handoff.js';
 import { handleAcademyProfileSync } from './academy-profile-sync.js';
 import { handleLogin, handleRegister, handleLookup, handleAuthPolicy, authenticate } from './auth.js';
 import { handleGetSabaq, handleSaveSabaq, handleUpdateSabaq, handleDeleteSabaq } from './sabaqLog.js';
@@ -49,9 +50,12 @@ export default {
     const path = url.pathname;
 
     try {
+      if(path==='/api/health'&&request.method==='GET')return json({success:true,service:'hifzhelper',version:'5.0',environment:env.ACADEMY_SYNC_TARGET||'production'});
       if (path === '/internal/academy/profile-sync') {
         return respond(await handleAcademyProfileSync(request, env));
       }
+      if(path==='/internal/academy/handoff')return respond(await handleAcademyHandoff(request,env));
+      if(path==='/auth/academy'&&request.method==='POST')return respond(await handleAcademySignin(request,env));
       // Public routes — no auth required.
       if (path === '/auth/login' && request.method === 'POST') {
         return respond(await handleLogin(request, env));

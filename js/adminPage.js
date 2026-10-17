@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.26 | js/adminPage.js */
+/* Hifzhelper build 5.0 | js/adminPage.js */
 // ============================================================
 // Hifzhelper — Admin screen
 // Compact searchable list (ID / Name / Status) — selecting a row opens a
@@ -291,7 +291,7 @@ function renderAdminUsersList(){
     const actionsHtml = `
       <button type="button" class="icon-btn" data-copy-url="${esc(loginId)}" aria-label="Copy personal URL"${loginId ? '' : ' disabled'}></button>
       ${canShare ? `<button type="button" class="icon-btn" data-share-url="${esc(loginId)}" aria-label="Share personal URL"${loginId ? '' : ' disabled'}></button>` : ''}
-      <button type="button" class="secondary admin-pin-btn" data-reset-pin>Reset PIN</button>
+      <button type="button" class="secondary admin-pin-btn" data-reset-pin${u.academy_pin_only ? ' disabled title="Reset PIN in Academy"' : ''}>${u.academy_pin_only ? 'Reset PIN in Academy' : 'Reset PIN'}</button>
       ${managed ? '<span class="admin-managed-label">Managed in Academy</span>' : '<button type="button" class="icon-btn admin-delete-btn" data-delete aria-label="Delete user"></button>'}`;
     tr.querySelector('.admin-actions-cell').innerHTML = actionsHtml;
     const trActions = document.createElement('tr');

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.29 | worker/src/admin.js */
+/* Hifzhelper build 5.0 | worker/src/admin.js */
 // ============================================================
 // Hifzhelper — admin endpoints
 // Every handler here is gated to role === 'admin' — nothing here is
@@ -24,7 +24,7 @@ export async function handleListUsers(request, env, auth) {
     'SELECT id, name, role, active, created_date, gender, setup_complete, whatsapp_number, group_id, track_haidh, haidh_ruling, haidh_cycle_length, haidh_period_length, haidh_next_expected, login_id, academy_managed FROM students ORDER BY created_date DESC'
   ).all();
   const academyOnly = Number(await academyOwnsProfiles(env));
-  return { data: results.map(user => ({ ...user, academy_profiles_only: academyOnly })) };
+  return { data: results.map(user => ({ ...user, academy_profiles_only: academyOnly, academy_pin_only:Number(Boolean((env.SHARED_PIN_SECRET||env.ACADEMY_HANDOFF_ENABLED==='1')&&user.academy_managed)) })) };
 }
 
 // POST /admin/reset-pin — body: { id }. Clears pin_hash and any lockout
@@ -37,8 +37,10 @@ export async function handleResetPin(request, env, auth) {
   try { body = await request.json(); } catch (e) { return { error: 'Invalid JSON body', status: 400 }; }
   if (!body.id) return { error: 'id is required', status: 400 };
 
-  const row = await env.DB.prepare('SELECT id FROM students WHERE id = ?').bind(body.id).first();
+  const row = await env.DB.prepare('SELECT id, academy_managed FROM students WHERE id = ?').bind(body.id).first();
   if (!row) return { error: 'Student not found', status: 404 };
+
+  if(row.academy_managed&&(env.SHARED_PIN_SECRET||env.ACADEMY_HANDOFF_ENABLED==='1'))return {error:'Reset this PIN in Academy.',status:403,code:'ACADEMY_MANAGED'};
 
   await env.DB.prepare(
     'UPDATE students SET pin_hash = NULL, failed_attempts = 0, locked_until = NULL, credential_epoch = credential_epoch + 1 WHERE id = ?'

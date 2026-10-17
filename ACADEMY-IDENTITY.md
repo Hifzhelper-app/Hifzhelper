@@ -4,6 +4,13 @@ Development release deployed on 16 October 2026. Migrations 0031 and 0032,
 the reviewed 34-profile permanent-ID cutover and authenticated Academy
 profile delivery are applied in development. Production is unchanged.
 
+## Current sign-in contract — V5.0 (17 October 2026)
+
+Academy now owns the linked user's PIN as well as shared profile fields. The
+stronger shared credential and secure Academy entry replace the earlier
+independent-PIN design below. See ACADEMY-SIGNIN.md. Journal UUID ownership and
+separate Cloudflare accounts, Workers and databases remain unchanged.
+
 ## Academy-branded hosting — V4.2.15.30 (17 October 2026)
 
 The selected address is `https://hifz.maktab4life.org/`, attached to the existing

@@ -5,6 +5,20 @@ future delivery only needs those specific files re-uploaded — not the whole
 repo. See `SETUP.md` for initial setup, `SCHEMA.md`/`CONVENTIONS.md` for the
 standing reference docs (those aren't repeated here unless they change).
 
+## V5.0 — Academy PIN and sign-in handoff (2026-10-17)
+
+New/reset Academy-linked PINs are chosen and confirmed in Academy. Both systems
+use the same salted, peppered PBKDF2 credential after the next successful Academy
+sign-in; existing PINs do not need to be changed. Direct Hifz sign-in verifies
+locally. Academy entry uses a PKCE-bound, one-use pass with a 60-second expiry,
+current effective membership and credential-epoch checks. PIN reset revokes
+sessions and unconsumed passes; local Hifz admin reset is disabled for linked
+users. Ordinary journal requests remain in the separate Hifz Worker and D1.
+
+Development uses `hifz.maktab4life.org`. Git main/dev history is copied to
+`MaktabForlife/Hifz`; the original repository and production are retained.
+See ACADEMY-SIGNIN.md for the protocol, migration and verification details.
+
 ## V4.2.15.30 — Academy-branded development hostname (2026-10-17)
 
 `hifz.maktab4life.org` selects the existing Hifz development Worker. The custom

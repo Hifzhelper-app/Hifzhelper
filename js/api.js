@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.30 | js/api.js */
+/* Hifzhelper build 5.0 | js/api.js */
 // ============================================================
 // Hifzhelper — API client (V3)
 // Plain classic script (not an ES module) for the same file:// portability
@@ -22,6 +22,9 @@ const API_BASE = (() => {
   } catch (e) { /* No location in standalone harnesses/file-based tools. */ }
   return 'https://hifzhelper-api.hifzhelper-app.workers.dev';
 })();
+
+const ACADEMY_INTEGRATION = API_BASE==='https://hifzhelper-api-dev.hifzhelper-app.workers.dev'
+  ? Object.freeze({home:'https://maktab4life.org/academy/',handoff:'https://maktab4life.org/academy/hifz/',hifzOrigin:'https://hifz.maktab4life.org',origins:Object.freeze({'1':'https://maktab4life.org',www:'https://www.maktab4life.org',pages:'https://academy-maktab4life.pages.dev'})}) : null;
 
 const TOKEN_KEY = 'hh_token';
 const REMEMBERED_ID_KEY = 'hh_login_id';

@@ -1,4 +1,4 @@
-/* Hifzhelper build 4.2.15.28 | js/auth.js */
+/* Hifzhelper build 5.0 | js/auth.js */
 // ============================================================
 // Hifzhelper — auth: login screen, top auth band, dropdown menu
 // ============================================================
@@ -313,7 +313,7 @@ const CREATE_PIN_IDS = ['cr_pin_1','cr_pin_2','cr_pin_3','cr_pin_4'];
 const CONFIRM_PIN_IDS = ['cf_pin_1','cf_pin_2','cf_pin_3','cf_pin_4'];
 
 // ---------- screen switching ----------
-const ALL_LOGIN_SCREENS = ['loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen','loginScreenSwitch'];   // loginScreenSwitch: V3.77.0 (j)
+const ALL_LOGIN_SCREENS = ['academyHandoffScreen','loginScreenFallback','loginScreenPersonal','createPinScreen','registerScreen','registeredScreen','loginScreenSwitch'];   // loginScreenSwitch: V3.77.0 (j)
 function hideAllLoginScreens(){
   pendingNewPin = null;
   ALL_LOGIN_SCREENS.forEach(id => { document.getElementById(id).classList.add('hidden'); });
@@ -354,6 +354,7 @@ async function routeToLoginScreen(){
       // lookup. This keeps refresh/logout on the student's personal path too.
       if(!pathId) replaceUrlWithLoginId(candidateId);
       if(info.hasPin) showLoginScreenPersonal(info.name);
+      else if(info.academyPinOnly)showAcademyPinSetup(info.name);
       else showCreatePinScreen(info.name);
       return;
     } catch(e){
@@ -502,6 +503,7 @@ setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
   try{
     const info = await apiLookup(id);
     if(!info.hasPin){
+      if(info.academyPinOnly){showAcademyPinSetup(info.name);clearPinGroup(FALLBACK_PIN_IDS);return;}
       activeLoginId = id;
       replaceUrlWithLoginId(id);
       clearPinGroup(FALLBACK_PIN_IDS);
@@ -517,6 +519,7 @@ setupPinGroup(FALLBACK_PIN_IDS, async (pin) => {
     // its place on first login through the fallback screen.
     if(loginResult.firstLogin) showFirstLoginMessage();
   } catch(e){
+    if(e.code==='ACADEMY_PIN_REQUIRED'){showAcademyPinSetup('');clearPinGroup(FALLBACK_PIN_IDS);clearPinGroup(PERSONAL_PIN_IDS);return;}
     if(e.code === 'PIN_CONFIRMATION_REQUIRED'){
       activeLoginId = id;
       showCreatePinScreen('');
@@ -536,6 +539,7 @@ setupPinGroup(PERSONAL_PIN_IDS, async (pin) => {
     await apiLogin(activeLoginId, pin);
     await bootApp();
   } catch(e){
+    if(e.code==='ACADEMY_PIN_REQUIRED'){showAcademyPinSetup('');clearPinGroup(FALLBACK_PIN_IDS);clearPinGroup(PERSONAL_PIN_IDS);return;}
     if(e.code === 'PIN_CONFIRMATION_REQUIRED'){
       showCreatePinScreen('');
       showPinConfirmation(pin);
@@ -709,4 +713,12 @@ function showFirstLoginMessage(){
   </div>`;
   document.body.appendChild(overlay);
   document.getElementById('firstLoginOkBtn').addEventListener('click', () => overlay.remove());
+}
+
+function showAcademyPinSetup(name){
+ hideAllLoginScreens();document.getElementById('appShell').style.display='none';
+ document.getElementById('academyHandoffTitle').textContent=name?`Ahlan wa Sahlan, ${name}`:'Set your PIN in Academy';
+ document.getElementById('academyHandoffStatus').textContent='Sign into Academy and open HifzHelper. New and reset PINs are chosen and confirmed in Academy, then shared with Hifz.';
+ document.getElementById('academyHandoffReturn').href=ACADEMY_INTEGRATION?.home||'/';
+ document.getElementById('academyHandoffScreen').classList.remove('hidden');
 }

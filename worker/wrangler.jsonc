@@ -27,7 +27,9 @@
       "name": "hifzhelper-api-dev",
       "vars": {
         "PROFILE_AUTHORITY": "academy",
-        "ACADEMY_SYNC_TARGET": "development"
+        "ACADEMY_SYNC_TARGET": "development",
+        "ACADEMY_HANDOFF_ENABLED": "1",
+        "HIFZ_FRONTEND_ORIGIN": "https://hifz.maktab4life.org"
       },
       "d1_databases": [
         {
